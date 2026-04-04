@@ -20,13 +20,13 @@ export default function GamerLayout({ children, user, profile, cartCount = 0, no
   const location = useLocation();
   
   const navItems = [
-    { icon: Home, label: 'Home', path: 'GamerHome' },
-    { icon: Trophy, label: 'Tournaments', path: 'Tournaments' },
-    { icon: Users, label: 'Teams', path: 'Teams' },
-    { icon: ShoppingBag, label: 'Shop', path: 'Marketplace' },
+    { icon: Home, label: 'Home', path: '/gamer/home' },
+    { icon: Trophy, label: 'Tournaments', path: '/gamer/tournaments' },
+    { icon: Users, label: 'Teams', path: '/gamer/teams' },
+    { icon: ShoppingBag, label: 'Shop', path: '/gamer/marketplace' },
   ];
 
-  const isActive = (path) => location.pathname.includes(path.toLowerCase());
+  const isActive = (path) => location.pathname === path || location.pathname.startsWith(path + '/');
 
   const handleLogout = async () => {
     await logout();

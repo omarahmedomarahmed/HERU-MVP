@@ -6,8 +6,7 @@ import FloatingPanel from '@/components/ui/FloatingPanel';
 import GlowButton from '@/components/ui/GlowButton';
 import { Input } from '@/components/ui/input';
 import { Shield, ArrowLeft, Eye, EyeOff, AlertTriangle, Lock, Mail } from 'lucide-react';
-import { supabase } from '@/lib/supabase';
-import { apiCall } from '@/api/heruClient';
+import { useAuth } from '@/lib/AuthContext';
 import { isStaffAuthenticated } from '@/lib/staffAuth';
 
 export default function StaffLogin() {
@@ -17,6 +16,7 @@ export default function StaffLogin() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const navigate = useNavigate();
+  const { staffLogin } = useAuth();
 
   useEffect(() => {
     if (isStaffAuthenticated()) {
@@ -36,28 +36,7 @@ export default function StaffLogin() {
     setError('');
 
     try {
-      // 1. Sign in with Supabase Auth
-      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
-        email: email.trim(),
-        password,
-      });
-
-      if (authError) {
-        setError('Invalid email or password');
-        setLoading(false);
-        return;
-      }
-
-      // 2. Call backend to create staff session and verify admin role
-      const result = await apiCall('/auth/staff/login', {
-        method: 'POST',
-        body: { email: email.trim(), password },
-      });
-
-      // 3. Store staff session token
-      localStorage.setItem('heru_staff_token', result.staff_session.session_token);
-      localStorage.setItem('heru_staff_expires', result.staff_session.expires_at);
-
+      await staffLogin(email.trim(), password);
       navigate('/staff/dashboard', { replace: true });
     } catch (err) {
       setError(err.message || 'Access denied. Admin credentials required.');

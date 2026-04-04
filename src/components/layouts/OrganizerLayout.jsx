@@ -40,21 +40,21 @@ const navSections = [
   {
     title: 'Overview',
     items: [
-      { icon: LayoutDashboard, label: 'Dashboard', href: '/dashboard/organizer' },
-      { icon: Radar, label: 'Sponsorship Radar', href: '/radar', highlight: true },
+      { icon: LayoutDashboard, label: 'Dashboard', href: '/organizer/dashboard' },
+      { icon: Radar, label: 'Sponsorship Radar', href: '/organizer/radar', highlight: true },
     ]
   },
   {
     title: 'Tournaments',
     items: [
-      { icon: Trophy, label: 'My Tournaments', path: 'OrganizerTournaments' },
-      { icon: Wrench, label: 'Build Tournament', path: 'TournamentBuilder' },
+      { icon: Trophy, label: 'My Tournaments', path: '/organizer/tournaments' },
+      { icon: Wrench, label: 'Build Tournament', path: '/organizer/tournaments/new' },
     ]
   },
   {
     title: 'Account',
     items: [
-      { icon: User, label: 'My Profile', path: 'OrganizerSettings' },
+      { icon: User, label: 'My Profile', path: '/organizer/profile' },
     ]
   },
 ];

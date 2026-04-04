@@ -7,6 +7,7 @@ import GlowButton from '@/components/ui/GlowButton';
 import { Input } from '@/components/ui/input';
 import { ArrowLeft, Lock, Eye, EyeOff, CheckCircle } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
+import { useAuth } from '@/lib/AuthContext';
 
 export default function ResetPassword() {
   const [password, setPassword] = useState('');
@@ -17,6 +18,7 @@ export default function ResetPassword() {
   const [error, setError] = useState('');
   const [sessionReady, setSessionReady] = useState(false);
   const navigate = useNavigate();
+  const { fetchUserProfile } = useAuth();
 
   useEffect(() => {
     // Supabase sets the session automatically from the recovery link hash
@@ -54,7 +56,15 @@ export default function ResetPassword() {
       const { error: updateError } = await supabase.auth.updateUser({ password });
       if (updateError) throw updateError;
       setSuccess(true);
-      setTimeout(() => navigate('/auth', { replace: true }), 3000);
+      // Fetch profile to determine role-based redirect
+      const { data: { user } } = await supabase.auth.getUser();
+      const profile = user ? await fetchUserProfile(user) : null;
+      const userRole = profile?.role;
+      const dest = userRole === 'organizer' ? '/organizer/dashboard'
+                 : userRole === 'admin' ? '/staff/dashboard'
+                 : userRole === 'gamer' ? '/gamer/home'
+                 : '/auth';
+      setTimeout(() => navigate(dest, { replace: true }), 2000);
     } catch (err) {
       setError(err.message || 'Failed to update password');
       setLoading(false);

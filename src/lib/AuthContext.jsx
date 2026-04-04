@@ -6,12 +6,16 @@ const AuthContext = createContext(null)
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null)            // Supabase auth user
-  const [userProfile, setUserProfile] = useState(null) // user_profiles row
+  const [userProfile, setUserProfile] = useState(null) // user_profiles row (normalized)
   const [loading, setLoading] = useState(true)
   const [authError, setAuthError] = useState(null)
 
   // -------------------------------------------------------------------
-  // Fetch the user_profiles row for the authenticated user
+  // Fetch the user profile and normalize the response so `role` is
+  // always available at the top level.
+  //
+  // Backend /auth/me returns: { user: { id, email, role, ... }, gamer_profile: {...} }
+  // We normalize to:          { role, full_name, is_verified, user: {...}, gamer_profile: {...} }
   // -------------------------------------------------------------------
   const fetchUserProfile = useCallback(async (authUser) => {
     if (!authUser) {
@@ -19,7 +23,14 @@ export const AuthProvider = ({ children }) => {
       return null
     }
     try {
-      const profile = await apiCall(`/auth/me`)
+      const data = await apiCall('/auth/me')
+      // Normalize: pull role/full_name up from nested user object
+      const profile = {
+        ...data,
+        role: data?.user?.role || data?.role || null,
+        full_name: data?.user?.full_name || data?.full_name || '',
+        is_verified: data?.user?.is_verified || false,
+      }
       setUserProfile(profile)
       return profile
     } catch (err) {
@@ -95,44 +106,45 @@ export const AuthProvider = ({ children }) => {
   }
 
   /**
-   * Register a new user.
+   * Register a new user via the backend.
+   * Backend creates auth user + user_profiles + role-specific profile.
    * @param {string} email
    * @param {string} password
    * @param {'gamer'|'organizer'} role
-   * @param {object} profileData - extra fields for gamer_profiles / organizer_profiles
+   * @param {object} profileData - extra fields (full_name, brand_name, etc.)
    */
   const register = async (email, password, role = 'gamer', profileData = {}) => {
     setAuthError(null)
 
-    // 1. Create the Supabase Auth user
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: { role, full_name: profileData.full_name || '' },
-      },
+    // Call backend registration which creates auth user + profiles
+    const endpoint = role === 'organizer' ? '/auth/register/organizer' : '/auth/register/gamer'
+    const result = await apiCall(endpoint, {
+      method: 'POST',
+      body: { email, password, ...profileData },
+    }).catch(err => {
+      setAuthError(err.message)
+      throw err
     })
 
-    if (error) {
-      setAuthError(error.message)
-      throw error
-    }
-
-    // 2. Create user_profiles + role-specific profile via backend
-    //    The backend will use the service-role key so RLS is bypassed.
-    try {
-      await apiCall('/auth/register-profile', {
-        method: 'POST',
-        body: { role, ...profileData },
+    // If backend returned a session, set it client-side
+    if (result?.session?.access_token) {
+      await supabase.auth.setSession({
+        access_token: result.session.access_token,
+        refresh_token: result.session.refresh_token,
       })
-    } catch (profileErr) {
-      console.error('Profile creation failed:', profileErr)
-      // Auth user was still created; profile can be retried later
+    } else {
+      // Fall back to signing in client-side
+      await supabase.auth.signInWithPassword({ email, password })
     }
 
-    setUser(data.user)
-    const profile = await fetchUserProfile(data.user)
-    return { user: data.user, profile }
+    const { data: { session } } = await supabase.auth.getSession()
+    if (session?.user) {
+      setUser(session.user)
+      const profile = await fetchUserProfile(session.user)
+      return { user: session.user, profile }
+    }
+
+    return { user: result?.user, profile: { role } }
   }
 
   /**
@@ -149,26 +161,25 @@ export const AuthProvider = ({ children }) => {
   }
 
   /**
-   * Staff login — validates email + access key via backend,
+   * Staff login — authenticates with email + password via backend,
    * stores the returned staff session token locally.
-   * Returns { staffSession, profile }.
+   * Returns { user, staff_session }.
    */
-  const staffLogin = async (email, accessKey) => {
+  const staffLogin = async (email, password) => {
     setAuthError(null)
     try {
       const result = await apiCall('/auth/staff/login', {
         method: 'POST',
-        body: { email, access_key: accessKey },
+        body: { email, password },
       })
 
       // Store staff session token
-      localStorage.setItem('heru_staff_token', result.session_token)
-      localStorage.setItem('heru_staff_expires', result.expires_at)
+      localStorage.setItem('heru_staff_token', result.staff_session.session_token)
+      localStorage.setItem('heru_staff_expires', result.staff_session.expires_at)
 
-      // If the staff member also has a Supabase session, fetch profile
       if (result.user) {
         setUser(result.user)
-        setUserProfile(result.profile || null)
+        setUserProfile({ ...result.user, role: 'admin' })
       }
 
       return result

@@ -33,10 +33,8 @@ export default function GamerAuthLogin() {
     setError('');
     try {
       const { profile } = await login(email, password);
-      const userRole = profile?.role || profile?.user?.role;
-      if (userRole === 'gamer') {
-        navigate('/gamer/home', { replace: true });
-      } else if (userRole === 'organizer') {
+      const userRole = profile?.role;
+      if (userRole === 'organizer') {
         navigate('/organizer/dashboard', { replace: true });
       } else if (userRole === 'admin') {
         navigate('/staff/dashboard', { replace: true });
