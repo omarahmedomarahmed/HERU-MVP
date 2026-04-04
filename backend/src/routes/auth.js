@@ -1,9 +1,22 @@
 import { Router } from 'express';
 import crypto from 'crypto';
-import { supabaseAdmin } from '../lib/supabase.js';
+import { createClient } from '@supabase/supabase-js';
+import { supabaseAdmin, SUPABASE_URL, SUPABASE_ANON_KEY } from '../lib/supabase.js';
 import { requireAuth } from '../middleware/auth.js';
 
 const router = Router();
+
+// ---------------------------------------------------------------------------
+// Separate client for signInWithPassword.
+// NEVER call signInWithPassword on supabaseAdmin — it contaminates the
+// service-role client's internal session, making subsequent DB queries use the
+// user's JWT instead of the service-role key, which causes RLS failures.
+// ---------------------------------------------------------------------------
+function createAuthClient() {
+  return createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+    auth: { autoRefreshToken: false, persistSession: false },
+  });
+}
 
 // ---------------------------------------------------------------------------
 // POST /register/gamer
@@ -59,8 +72,9 @@ router.post('/register/gamer', async (req, res) => {
       console.error('[register/gamer] gamer_profiles insert error:', gamerError);
     }
 
-    // Sign in to return a session
-    const { data: session, error: signInError } = await supabaseAdmin.auth.signInWithPassword({
+    // Sign in to return a session (use separate client to avoid contaminating supabaseAdmin)
+    const authClient = createAuthClient();
+    const { data: session, error: signInError } = await authClient.auth.signInWithPassword({
       email,
       password,
     });
@@ -139,8 +153,9 @@ router.post('/register/organizer', async (req, res) => {
       console.error('[register/organizer] organizer_profiles insert error:', orgError);
     }
 
-    // Sign in to return a session
-    const { data: session, error: signInError } = await supabaseAdmin.auth.signInWithPassword({
+    // Sign in to return a session (use separate client to avoid contaminating supabaseAdmin)
+    const authClient = createAuthClient();
+    const { data: session, error: signInError } = await authClient.auth.signInWithPassword({
       email,
       password,
     });
@@ -177,7 +192,8 @@ router.post('/login', async (req, res) => {
       return res.status(400).json({ error: 'Email and password are required' });
     }
 
-    const { data, error } = await supabaseAdmin.auth.signInWithPassword({
+    const authClient = createAuthClient();
+    const { data, error } = await authClient.auth.signInWithPassword({
       email,
       password,
     });
@@ -186,7 +202,7 @@ router.post('/login', async (req, res) => {
       return res.status(401).json({ error: 'Invalid email or password' });
     }
 
-    // Fetch user profile
+    // Fetch user profile (uses supabaseAdmin — service role, bypasses RLS)
     const { data: profile } = await supabaseAdmin
       .from('user_profiles')
       .select('role, full_name, is_verified, disabled')
@@ -228,30 +244,36 @@ router.post('/staff/login', async (req, res) => {
       return res.status(400).json({ error: 'Email and password are required' });
     }
 
-    // 1. Authenticate with Supabase Auth
-    const { data: authData, error: authError } = await supabaseAdmin.auth.signInWithPassword({
+    // 1. Authenticate with Supabase Auth (separate client to avoid contaminating supabaseAdmin)
+    const authClient = createAuthClient();
+    const { data: authData, error: authError } = await authClient.auth.signInWithPassword({
       email,
       password,
     });
 
     if (authError) {
-      return res.status(401).json({ error: 'Invalid email or password' });
+      return res.status(401).json({ error: 'Invalid email or password', step: 'auth' });
     }
 
     const user = authData.user;
 
-    // 2. Verify role is admin
-    const { data: profile } = await supabaseAdmin
+    // 2. Verify role is admin (uses supabaseAdmin — service role, bypasses RLS)
+    const { data: profile, error: profileError } = await supabaseAdmin
       .from('user_profiles')
       .select('role, full_name')
       .eq('id', user.id)
       .single();
 
-    if (profile?.role !== 'admin') {
-      return res.status(403).json({ error: 'Access denied. Admin privileges required.' });
+    if (profileError) {
+      console.error('[staff/login] profile lookup error:', profileError);
+      return res.status(500).json({ error: 'Failed to verify admin role', step: 'role_check', detail: profileError.message });
     }
 
-    // 3. Create staff session (24h expiry)
+    if (profile?.role !== 'admin') {
+      return res.status(403).json({ error: 'Access denied. Admin privileges required.', step: 'role_check' });
+    }
+
+    // 3. Create staff session (24h expiry) — uses supabaseAdmin (service role) to bypass RLS
     const sessionToken = crypto.randomBytes(48).toString('hex');
     const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
 
@@ -272,7 +294,7 @@ router.post('/staff/login', async (req, res) => {
 
     if (sessionError) {
       console.error('[staff/login] session creation error:', sessionError);
-      return res.status(500).json({ error: 'Failed to create staff session' });
+      return res.status(500).json({ error: 'Failed to create staff session', step: 'session_insert', detail: sessionError.message });
     }
 
     res.json({
@@ -291,6 +313,70 @@ router.post('/staff/login', async (req, res) => {
   } catch (err) {
     console.error('[staff/login]', err);
     res.status(500).json({ error: 'Staff login failed' });
+  }
+});
+
+// ---------------------------------------------------------------------------
+// POST /staff/validate  — check if a staff session token is still valid
+// ---------------------------------------------------------------------------
+router.post('/staff/validate', async (req, res) => {
+  try {
+    const staffToken = req.headers['x-staff-token'];
+    if (!staffToken) {
+      return res.status(401).json({ valid: false, error: 'No staff token provided' });
+    }
+
+    const { data: session, error } = await supabaseAdmin
+      .from('staff_sessions')
+      .select('id, user_id, staff_email, staff_name, expires_at, is_active')
+      .eq('session_token', staffToken)
+      .eq('is_active', true)
+      .single();
+
+    if (error || !session) {
+      return res.status(401).json({ valid: false, error: 'Invalid or expired staff session' });
+    }
+
+    if (new Date(session.expires_at) < new Date()) {
+      // Deactivate expired session
+      await supabaseAdmin
+        .from('staff_sessions')
+        .update({ is_active: false })
+        .eq('id', session.id);
+      return res.status(401).json({ valid: false, error: 'Staff session expired' });
+    }
+
+    res.json({
+      valid: true,
+      user: {
+        id: session.user_id,
+        email: session.staff_email,
+        full_name: session.staff_name,
+        role: 'admin',
+      },
+    });
+  } catch (err) {
+    console.error('[staff/validate]', err);
+    res.status(500).json({ valid: false, error: 'Validation failed' });
+  }
+});
+
+// ---------------------------------------------------------------------------
+// POST /staff/logout  — deactivate a staff session
+// ---------------------------------------------------------------------------
+router.post('/staff/logout', async (req, res) => {
+  try {
+    const staffToken = req.headers['x-staff-token'];
+    if (staffToken) {
+      await supabaseAdmin
+        .from('staff_sessions')
+        .update({ is_active: false })
+        .eq('session_token', staffToken);
+    }
+    res.json({ message: 'Staff session ended' });
+  } catch (err) {
+    console.error('[staff/logout]', err);
+    res.status(500).json({ error: 'Staff logout failed' });
   }
 });
 
