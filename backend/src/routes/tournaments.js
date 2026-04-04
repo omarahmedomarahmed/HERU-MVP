@@ -4,7 +4,7 @@ import { requireAuth } from '../middleware/auth.js';
 import { requireRole } from '../middleware/roleGuard.js';
 import { requireStaff } from '../middleware/staffGuard.js';
 import { calculateTournamentCost, generateBrackets } from '../logic/tournament.js';
-import { generateBillNumber, createBillForSolo } from '../logic/billing.js';
+import { generateBillNumber, createBill } from '../logic/billing.js';
 
 const router = Router();
 
