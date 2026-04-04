@@ -5,54 +5,62 @@ import HeruLogo from '@/components/shared/HeruLogo';
 import FloatingPanel from '@/components/ui/FloatingPanel';
 import GlowButton from '@/components/ui/GlowButton';
 import { Input } from '@/components/ui/input';
-import { Shield, ArrowLeft, Key, Eye, EyeOff, AlertTriangle, Lock } from 'lucide-react';
-
-const MASTER_STAFF_KEY = 'HERUGGMASTERSOFGGGODMODE:ON';
+import { Shield, ArrowLeft, Eye, EyeOff, AlertTriangle, Lock, Mail } from 'lucide-react';
+import { supabase } from '@/lib/supabase';
+import { apiCall } from '@/api/heruClient';
+import { isStaffAuthenticated } from '@/lib/staffAuth';
 
 export default function StaffLogin() {
-  const [accessKey, setAccessKey] = useState('');
-  const [showKey, setShowKey] = useState(false);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const navigate = useNavigate();
 
   useEffect(() => {
-    checkExistingSession();
-  }, []);
-
-  const checkExistingSession = () => {
-    const token = localStorage.getItem('heru_staff_token');
-    const expires = localStorage.getItem('heru_staff_expires');
-    if (token && expires && new Date(expires) > new Date()) {
-      navigate('/dashboard/staff', { replace: true });
-    } else {
-      localStorage.removeItem('heru_staff_token');
-      localStorage.removeItem('heru_staff_expires');
+    if (isStaffAuthenticated()) {
+      navigate('/staff/dashboard', { replace: true });
     }
-  };
+  }, [navigate]);
 
   const handleLogin = async (e) => {
     e.preventDefault();
-    
-    if (!accessKey.trim()) {
-      setError('Please enter the staff access key');
+
+    if (!email.trim() || !password.trim()) {
+      setError('Please enter your email and password');
       return;
     }
 
     setLoading(true);
     setError('');
 
-    if (accessKey.trim() === MASTER_STAFF_KEY) {
-      const sessionToken = crypto.randomUUID();
-      const expiresAt = new Date();
-      expiresAt.setHours(expiresAt.getHours() + 24);
+    try {
+      // 1. Sign in with Supabase Auth
+      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+        email: email.trim(),
+        password,
+      });
 
-      localStorage.setItem('heru_staff_token', sessionToken);
-      localStorage.setItem('heru_staff_expires', expiresAt.toISOString());
+      if (authError) {
+        setError('Invalid email or password');
+        setLoading(false);
+        return;
+      }
 
-      navigate('/dashboard/staff', { replace: true });
-    } else {
-      setError('Invalid staff access key.');
+      // 2. Call backend to create staff session and verify admin role
+      const result = await apiCall('/auth/staff/login', {
+        method: 'POST',
+        body: { email: email.trim(), password },
+      });
+
+      // 3. Store staff session token
+      localStorage.setItem('heru_staff_token', result.staff_session.session_token);
+      localStorage.setItem('heru_staff_expires', result.staff_session.expires_at);
+
+      navigate('/staff/dashboard', { replace: true });
+    } catch (err) {
+      setError(err.message || 'Access denied. Admin credentials required.');
       setLoading(false);
     }
   };
@@ -62,7 +70,7 @@ export default function StaffLogin() {
       <AnimatedBackground />
 
       <div className="w-full max-w-md">
-        <Link to={'/'} className="inline-flex items-center gap-2 text-gray-400 hover:text-red-400 mb-6 transition-colors">
+        <Link to="/" className="inline-flex items-center gap-2 text-gray-400 hover:text-red-400 mb-6 transition-colors">
           <ArrowLeft className="w-4 h-4" />
           <span className="text-sm">Back to Home</span>
         </Link>
@@ -79,33 +87,50 @@ export default function StaffLogin() {
 
           <div className="flex items-center gap-2 p-3 bg-purple-500/10 border border-purple-500/30 rounded-lg mb-6">
             <Lock className="w-4 h-4 text-purple-400 flex-shrink-0" />
-            <p className="text-purple-300 text-xs">This area is protected by a staff access key. Unauthorized access attempts are logged.</p>
+            <p className="text-purple-300 text-xs">This area is restricted to HERU staff with admin privileges.</p>
           </div>
 
           <form onSubmit={handleLogin} className="space-y-4">
-             <div>
-               <label className="text-sm text-gray-400 block mb-2">
-                 <Key className="w-4 h-4 inline mr-1" />
-                 Staff Access Key
-               </label>
-               <div className="relative">
-                 <Input
-                   type={showKey ? 'text' : 'password'}
-                   value={accessKey}
-                   onChange={(e) => setAccessKey(e.target.value)}
-                   placeholder="Enter staff access key"
-                   className="bg-zinc-800 border-zinc-700 text-white pr-10"
-                   autoComplete="off"
-                 />
-                 <button
-                   type="button"
-                   onClick={() => setShowKey(!showKey)}
-                   className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white"
-                 >
-                   {showKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                 </button>
-               </div>
-             </div>
+            <div>
+              <label className="text-sm text-gray-400 block mb-2">
+                <Mail className="w-4 h-4 inline mr-1" />
+                Email
+              </label>
+              <Input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="admin@heru.gg"
+                className="bg-zinc-800 border-zinc-700 text-white"
+                autoComplete="email"
+                required
+              />
+            </div>
+
+            <div>
+              <label className="text-sm text-gray-400 block mb-2">
+                <Lock className="w-4 h-4 inline mr-1" />
+                Password
+              </label>
+              <div className="relative">
+                <Input
+                  type={showPassword ? 'text' : 'password'}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="••••••••"
+                  className="bg-zinc-800 border-zinc-700 text-white pr-10"
+                  autoComplete="current-password"
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white"
+                >
+                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
+            </div>
 
             {error && (
               <div className="flex items-center gap-2 p-3 bg-red-500/10 border border-red-500/30 rounded-lg">

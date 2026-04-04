@@ -14,6 +14,8 @@ import GamerAuthRegister from './pages/auth/GamerAuthRegister'
 import OrganizerAuthLogin from './pages/auth/OrganizerAuthLogin'
 import OrganizerAuthRegister from './pages/auth/OrganizerAuthRegister'
 import StaffLogin from './pages/StaffLogin'
+import ForgotPassword from './pages/auth/ForgotPassword'
+import ResetPassword from './pages/auth/ResetPassword'
 
 // Public pages
 import Home from './pages/Home'
@@ -97,6 +99,8 @@ function App() {
             <Route path="/auth/gamer/register" element={<GamerAuthRegister />} />
             <Route path="/auth/organizer/login" element={<OrganizerAuthLogin />} />
             <Route path="/auth/organizer/register" element={<OrganizerAuthRegister />} />
+            <Route path="/auth/forgot-password" element={<ForgotPassword />} />
+            <Route path="/auth/reset-password" element={<ResetPassword />} />
             <Route path="/admin" element={<StaffLogin />} />
 
             {/* ============ GAMER ZONE ============ */}

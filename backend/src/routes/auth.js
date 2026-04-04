@@ -218,73 +218,50 @@ router.post('/login', async (req, res) => {
 });
 
 // ---------------------------------------------------------------------------
-// POST /staff/login
+// POST /staff/login  (email + password)
 // ---------------------------------------------------------------------------
 router.post('/staff/login', async (req, res) => {
   try {
-    const { email, access_key } = req.body;
+    const { email, password } = req.body;
 
-    if (!email || !access_key) {
-      return res.status(400).json({ error: 'Email and access key are required' });
+    if (!email || !password) {
+      return res.status(400).json({ error: 'Email and password are required' });
     }
 
-    // Validate access key
-    const { data: keyRecord, error: keyError } = await supabaseAdmin
-      .from('staff_access_keys')
-      .select('*')
-      .eq('access_key', access_key)
-      .eq('staff_email', email)
-      .eq('is_active', true)
-      .single();
+    // 1. Authenticate with Supabase Auth
+    const { data: authData, error: authError } = await supabaseAdmin.auth.signInWithPassword({
+      email,
+      password,
+    });
 
-    if (keyError || !keyRecord) {
-      return res.status(401).json({ error: 'Invalid staff credentials' });
+    if (authError) {
+      return res.status(401).json({ error: 'Invalid email or password' });
     }
 
-    // Look up the user by email
-    const { data: userList, error: userListError } = await supabaseAdmin.auth.admin.listUsers();
+    const user = authData.user;
 
-    if (userListError) {
-      return res.status(500).json({ error: 'Failed to look up user' });
-    }
-
-    const user = userList.users.find((u) => u.email === email);
-    if (!user) {
-      return res.status(401).json({ error: 'No user account found for this email' });
-    }
-
-    // Verify role is admin
+    // 2. Verify role is admin
     const { data: profile } = await supabaseAdmin
       .from('user_profiles')
-      .select('role')
+      .select('role, full_name')
       .eq('id', user.id)
       .single();
 
     if (profile?.role !== 'admin') {
-      return res.status(403).json({ error: 'User is not an admin' });
+      return res.status(403).json({ error: 'Access denied. Admin privileges required.' });
     }
 
-    // Update access key usage
-    await supabaseAdmin
-      .from('staff_access_keys')
-      .update({
-        use_count: (keyRecord.use_count || 0) + 1,
-        last_used_at: new Date().toISOString(),
-      })
-      .eq('id', keyRecord.id);
-
-    // Create staff session (24h expiry)
+    // 3. Create staff session (24h expiry)
     const sessionToken = crypto.randomBytes(48).toString('hex');
     const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
 
-    const { data: session, error: sessionError } = await supabaseAdmin
+    const { error: sessionError } = await supabaseAdmin
       .from('staff_sessions')
       .insert({
         user_id: user.id,
         session_token: sessionToken,
         staff_email: email,
-        staff_name: keyRecord.staff_name,
-        access_key_id: keyRecord.id,
+        staff_name: profile.full_name || email,
         expires_at: expiresAt,
         is_active: true,
         ip_address: req.ip || req.connection?.remoteAddress,
@@ -303,12 +280,12 @@ router.post('/staff/login', async (req, res) => {
         id: user.id,
         email,
         role: 'admin',
-        full_name: keyRecord.staff_name,
+        full_name: profile.full_name || '',
       },
       staff_session: {
         session_token: sessionToken,
         expires_at: expiresAt,
-        staff_name: keyRecord.staff_name,
+        staff_name: profile.full_name || email,
       },
     });
   } catch (err) {

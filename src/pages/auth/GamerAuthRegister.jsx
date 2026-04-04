@@ -20,10 +20,16 @@ export default function GamerAuthRegister() {
   const [error, setError] = useState('');
   const navigate = useNavigate();
 
+  const { register } = useAuth();
+
   const handleRegister = async (e) => {
     e.preventDefault();
     if (!form.email || !form.password) {
       setError('Please fill in all fields');
+      return;
+    }
+    if (form.password.length < 6) {
+      setError('Password must be at least 6 characters');
       return;
     }
     if (form.password !== form.confirmPassword) {
@@ -33,9 +39,10 @@ export default function GamerAuthRegister() {
     setLoading(true);
     setError('');
     try {
-      await navigate('/auth/gamer/login');
+      await register(form.email, form.password, 'gamer');
+      navigate('/gamer/home', { replace: true });
     } catch (err) {
-      setError('Registration failed. Please try again.');
+      setError(err.message || 'Registration failed. Please try again.');
       setLoading(false);
     }
   };

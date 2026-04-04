@@ -4,37 +4,47 @@ import AnimatedBackground from '@/components/shared/AnimatedBackground';
 import HeruLogo from '@/components/shared/HeruLogo';
 import FloatingPanel from '@/components/ui/FloatingPanel';
 import GlowButton from '@/components/ui/GlowButton';
-import { Building2, ArrowLeft } from 'lucide-react';
-import { useAuth } from '@/lib/AuthContext'
-
+import { Input } from '@/components/ui/input';
+import { Building2, ArrowLeft, Eye, EyeOff } from 'lucide-react';
+import { useAuth } from '@/lib/AuthContext';
 
 export default function OrganizerAuthLogin() {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const navigate = useNavigate();
+  const { login, isAuthenticated, role } = useAuth();
 
   useEffect(() => {
-    const checkAuth = async () => {
-      try {
-        const isAuth = await supabase.auth.getSession().then(({data}) => !!data.session);
-        if (isAuth) {
-          const user = await apiCall('/auth/me');
-          if (user?.role === 'organizer' || user?.role === 'admin') {
-            navigate('/dashboard/organizer/tournaments', { replace: true });
-          }
-        }
-      } catch (e) {}
-    };
-    checkAuth();
-  }, [navigate]);
+    if (isAuthenticated && role === 'organizer') {
+      navigate('/organizer/dashboard', { replace: true });
+    }
+  }, [isAuthenticated, role, navigate]);
 
-  const handleLogin = async () => {
+  const handleLogin = async (e) => {
+    e.preventDefault();
+    if (!email || !password) {
+      setError('Please enter your email and password');
+      return;
+    }
     setLoading(true);
     setError('');
     try {
-      await navigate('/auth/gamer/login');
+      const { profile } = await login(email, password);
+      const userRole = profile?.role || profile?.user?.role;
+      if (userRole === 'organizer') {
+        navigate('/organizer/dashboard', { replace: true });
+      } else if (userRole === 'gamer') {
+        navigate('/gamer/home', { replace: true });
+      } else if (userRole === 'admin') {
+        navigate('/staff/dashboard', { replace: true });
+      } else {
+        navigate('/organizer/dashboard', { replace: true });
+      }
     } catch (err) {
-      setError('Login failed. Please try again.');
+      setError(err.message || 'Invalid email or password');
       setLoading(false);
     }
   };
@@ -58,12 +68,53 @@ export default function OrganizerAuthLogin() {
             <p className="text-gray-400 mt-1 text-sm">Sign in to your organizer account</p>
           </div>
 
-          {error && <p className="text-red-400 text-sm text-center mb-4">{error}</p>}
+          <form onSubmit={handleLogin} className="space-y-4">
+            <div>
+              <label className="text-sm text-gray-400 block mb-1.5">Email</label>
+              <Input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="brand@email.com"
+                className="bg-zinc-800 border-zinc-700 text-white"
+                required
+              />
+            </div>
 
-          <GlowButton onClick={handleLogin} variant="secondary" className="w-full !border-blue-500 !text-blue-400 hover:!bg-blue-500/10" disabled={loading}>
-            <Building2 className="w-4 h-4" />
-            {loading ? 'Redirecting...' : 'Sign In with HERU'}
-          </GlowButton>
+            <div>
+              <label className="text-sm text-gray-400 block mb-1.5">Password</label>
+              <div className="relative">
+                <Input
+                  type={showPassword ? 'text' : 'password'}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="••••••••"
+                  className="bg-zinc-800 border-zinc-700 text-white pr-10"
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white"
+                >
+                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
+            </div>
+
+            <div className="text-right">
+              <Link to="/auth/forgot-password" className="text-xs text-blue-400 hover:text-blue-300">
+                Forgot password?
+              </Link>
+            </div>
+
+            {error && <p className="text-red-400 text-sm text-center">{error}</p>}
+
+            <GlowButton type="submit" variant="secondary" className="w-full !border-blue-500 !text-blue-400 hover:!bg-blue-500/10" disabled={loading}>
+              <Building2 className="w-4 h-4" />
+              {loading ? 'Signing in...' : 'Sign In'}
+            </GlowButton>
+          </form>
 
           <div className="border-t border-zinc-700 pt-5 mt-6 space-y-3 text-center">
             <p className="text-gray-500 text-sm">
