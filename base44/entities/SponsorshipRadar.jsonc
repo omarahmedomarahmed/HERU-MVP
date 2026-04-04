@@ -1,0 +1,175 @@
+{
+  "name": "SponsorshipRadar",
+  "type": "object",
+  "properties": {
+    "tournament_id": {
+      "type": "string"
+    },
+    "tournament_name": {
+      "type": "string"
+    },
+    "main_organizer_id": {
+      "type": "string"
+    },
+    "main_organizer_brand": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "logo": {
+          "type": "string"
+        },
+        "primary_color": {
+          "type": "string"
+        }
+      }
+    },
+    "game": {
+      "type": "string"
+    },
+    "schedule": {
+      "type": "string"
+    },
+    "description": {
+      "type": "string"
+    },
+    "total_cost": {
+      "type": "number",
+      "description": "Items + prizepool combined"
+    },
+    "prizepool_amount": {
+      "type": "number"
+    },
+    "main_organizer_contribution": {
+      "type": "number",
+      "description": "Minimum 30% of total_cost"
+    },
+    "main_organizer_percent": {
+      "type": "number",
+      "default": 30
+    },
+    "amount_still_needed": {
+      "type": "number",
+      "description": "Auto: total_cost minus all committed amounts"
+    },
+    "funding_percent": {
+      "type": "number",
+      "description": "0-100, auto-calculated from all commitments"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "open",
+        "in_progress",
+        "fully_funded",
+        "closed"
+      ],
+      "default": "open"
+    },
+    "co_organizers": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "organizer_id": {
+            "type": "string"
+          },
+          "brand_name": {
+            "type": "string"
+          },
+          "brand_logo": {
+            "type": "string"
+          },
+          "committed_amount": {
+            "type": "number"
+          },
+          "committed_percent": {
+            "type": "number"
+          },
+          "payment_status": {
+            "type": "string",
+            "enum": [
+              "pending",
+              "paid"
+            ]
+          },
+          "access_granted": {
+            "type": "boolean"
+          }
+        }
+      }
+    },
+    "required_branding_items": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Item IDs that must be selected"
+    },
+    "branding_committed": {
+      "type": "boolean",
+      "default": false
+    },
+    "order_breakdown": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "item_id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "price": {
+            "type": "number"
+          },
+          "category": {
+            "type": "string"
+          },
+          "paid_by": {
+            "type": "string",
+            "enum": [
+              "organizer",
+              "sponsor",
+              "split"
+            ]
+          }
+        }
+      }
+    },
+    "minimum_commitment_warning": {
+      "type": "string",
+      "default": "You must commit a minimum of 30% of the total tournament cost to list on Sponsorship Radar"
+    },
+    "chat": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "sender_id": {
+            "type": "string"
+          },
+          "sender_name": {
+            "type": "string"
+          },
+          "sender_brand": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          },
+          "timestamp": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  },
+  "required": [
+    "tournament_id",
+    "main_organizer_id",
+    "total_cost"
+  ]
+}

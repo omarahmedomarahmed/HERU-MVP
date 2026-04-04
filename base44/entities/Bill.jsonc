@@ -1,0 +1,126 @@
+{
+  "name": "Bill",
+  "type": "object",
+  "properties": {
+    "bill_number": {
+      "type": "string",
+      "description": "Unique bill identifier"
+    },
+    "bill_type": {
+      "type": "string",
+      "enum": [
+        "gamer",
+        "organizer",
+        "co_organizer"
+      ],
+      "description": "Type of bill"
+    },
+    "tournament_id": {
+      "type": "string",
+      "description": "Reference to Tournament"
+    },
+    "tournament_name": {
+      "type": "string"
+    },
+    "tournament_order_id": {
+      "type": "string",
+      "description": "Reference to TournamentOrder"
+    },
+    "payer_id": {
+      "type": "string",
+      "description": "User/Organizer ID responsible for payment"
+    },
+    "payer_type": {
+      "type": "string",
+      "enum": [
+        "gamer",
+        "organizer",
+        "co_organizer"
+      ]
+    },
+    "payer_name": {
+      "type": "string"
+    },
+    "payer_email": {
+      "type": "string"
+    },
+    "items": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "item_id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "category": {
+            "type": "string"
+          },
+          "price": {
+            "type": "number"
+          },
+          "quantity": {
+            "type": "number",
+            "default": 1
+          },
+          "subtotal": {
+            "type": "number"
+          }
+        }
+      }
+    },
+    "subtotal": {
+      "type": "number",
+      "description": "Items total before tax"
+    },
+    "tax": {
+      "type": "number",
+      "default": 0
+    },
+    "grand_total": {
+      "type": "number",
+      "description": "Final amount due"
+    },
+    "paid_amount": {
+      "type": "number",
+      "default": 0
+    },
+    "payment_status": {
+      "type": "string",
+      "enum": [
+        "unpaid",
+        "partial",
+        "paid",
+        "overdue"
+      ],
+      "default": "unpaid"
+    },
+    "due_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "paid_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "payment_method": {
+      "type": "string"
+    },
+    "notes": {
+      "type": "string"
+    },
+    "issued_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "required": [
+    "bill_number",
+    "bill_type",
+    "tournament_id",
+    "payer_id",
+    "grand_total"
+  ]
+}

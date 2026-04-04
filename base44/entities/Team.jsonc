@@ -1,0 +1,137 @@
+{
+  "name": "Team",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string"
+    },
+    "logo": {
+      "type": "string"
+    },
+    "leader_id": {
+      "type": "string"
+    },
+    "members": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "games": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "description": {
+      "type": "string"
+    },
+    "story": {
+      "type": "string"
+    },
+    "contact_number": {
+      "type": "string"
+    },
+    "images": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "social_links": {
+      "type": "object",
+      "properties": {
+        "twitter": {
+          "type": "string"
+        },
+        "instagram": {
+          "type": "string"
+        },
+        "discord": {
+          "type": "string"
+        }
+      }
+    },
+    "is_recruiting": {
+      "type": "boolean",
+      "default": true
+    },
+    "join_requests": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "user_id": {
+            "type": "string"
+          },
+          "game": {
+            "type": "string"
+          },
+          "game_id": {
+            "type": "string"
+          },
+          "rank": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "pending",
+              "approved",
+              "rejected"
+            ]
+          }
+        }
+      }
+    },
+    "tournament_invites": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "tournament_id": {
+            "type": "string"
+          },
+          "tournament_name": {
+            "type": "string"
+          },
+          "game": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "pending",
+              "accepted",
+              "rejected"
+            ]
+          },
+          "invited_by": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "tournament_history": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "tournament_id": {
+            "type": "string"
+          },
+          "tournament_name": {
+            "type": "string"
+          },
+          "placement": {
+            "type": "number"
+          },
+          "completed_at": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  },
+  "required": []
+}

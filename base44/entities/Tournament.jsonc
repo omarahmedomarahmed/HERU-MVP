@@ -1,0 +1,366 @@
+{
+  "name": "Tournament",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string"
+    },
+    "game": {
+      "type": "string"
+    },
+    "tournament_image": {
+      "type": "string"
+    },
+    "organizer_id": {
+      "type": "string"
+    },
+    "main_organizer_id": {
+      "type": "string",
+      "description": "Always the creator"
+    },
+    "organizer_brand": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "logo": {
+          "type": "string"
+        },
+        "primary_color": {
+          "type": "string"
+        },
+        "secondary_color": {
+          "type": "string"
+        }
+      }
+    },
+    "tournament_type": {
+      "type": "string",
+      "enum": [
+        "solo",
+        "shared"
+      ],
+      "default": "solo"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "draft",
+        "published",
+        "live",
+        "completed"
+      ],
+      "default": "draft"
+    },
+    "format": {
+      "type": "string"
+    },
+    "max_teams": {
+      "type": "number"
+    },
+    "schedule": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "description": {
+      "type": "string"
+    },
+    "is_offline": {
+      "type": "boolean",
+      "default": false
+    },
+    "venue": {
+      "type": "string"
+    },
+    "teams": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "invited_teams": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "join_requests": {
+      "type": "array",
+      "description": "Team join requests submitted by gamers",
+      "items": {
+        "type": "object",
+        "properties": {
+          "team_id": {
+            "type": "string"
+          },
+          "team_name": {
+            "type": "string"
+          },
+          "user_id": {
+            "type": "string"
+          },
+          "game": {
+            "type": "string"
+          },
+          "game_id": {
+            "type": "string"
+          },
+          "rank": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "pending",
+              "approved",
+              "rejected"
+            ]
+          },
+          "submitted_at": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "talents": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "user_id": {
+            "type": "string"
+          },
+          "talent_type": {
+            "type": "string"
+          },
+          "price": {
+            "type": "number"
+          }
+        }
+      }
+    },
+    "branding_items": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "production_items": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "prizepool_items": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "venue_items": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "total_cost": {
+      "type": "number"
+    },
+    "prizepool_total": {
+      "type": "number"
+    },
+    "prizepool_coins": {
+      "type": "number"
+    },
+    "prizepool_in_total_cost": {
+      "type": "boolean",
+      "default": true
+    },
+    "on_radar": {
+      "type": "boolean",
+      "default": false
+    },
+    "sponsorship_radar_id": {
+      "type": "string",
+      "description": "Link to SponsorshipRadar record"
+    },
+    "radar_funding_percent": {
+      "type": "number",
+      "description": "0-100, auto-calculated"
+    },
+    "required_branding_committed": {
+      "type": "boolean",
+      "default": false
+    },
+    "co_organizers": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "organizer_id": {
+            "type": "string"
+          },
+          "brand_name": {
+            "type": "string"
+          },
+          "brand_logo": {
+            "type": "string"
+          },
+          "commitment_amount": {
+            "type": "number"
+          },
+          "commitment_percent": {
+            "type": "number"
+          },
+          "payment_status": {
+            "type": "string",
+            "enum": [
+              "pending",
+              "paid"
+            ]
+          },
+          "access_granted": {
+            "type": "boolean",
+            "default": false
+          },
+          "joined_at": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "organizer_chat": {
+      "type": "array",
+      "description": "Shared tournament only \u2014 visible to co-organizers who paid",
+      "items": {
+        "type": "object",
+        "properties": {
+          "sender_id": {
+            "type": "string"
+          },
+          "sender_name": {
+            "type": "string"
+          },
+          "sender_role": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          },
+          "timestamp": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "brackets": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "round": {
+            "type": "number"
+          },
+          "matches": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "match_id": {
+                  "type": "string"
+                },
+                "team1": {
+                  "type": "string"
+                },
+                "team2": {
+                  "type": "string"
+                },
+                "winner": {
+                  "type": "string"
+                },
+                "score1": {
+                  "type": "number"
+                },
+                "score2": {
+                  "type": "number"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "support_chat": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "sender_id": {
+            "type": "string"
+          },
+          "sender_name": {
+            "type": "string"
+          },
+          "sender_role": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          },
+          "timestamp": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "general_chat": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "sender_id": {
+            "type": "string"
+          },
+          "sender_name": {
+            "type": "string"
+          },
+          "sender_type": {
+            "type": "string",
+            "enum": [
+              "gamer",
+              "organizer"
+            ]
+          },
+          "message": {
+            "type": "string"
+          },
+          "timestamp": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "stream_link": {
+      "type": "string"
+    },
+    "tournament_log": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "action": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "timestamp": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  },
+  "required": []
+}
