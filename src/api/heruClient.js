@@ -1,0 +1,191 @@
+import { supabase } from '@/lib/supabase'
+
+const API_URL = import.meta.env.VITE_API_URL || '/api'
+
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+function buildQuery(filters) {
+  if (!filters || typeof filters !== 'object') return ''
+  const params = new URLSearchParams()
+  Object.entries(filters).forEach(([key, value]) => {
+    if (value !== undefined && value !== null) {
+      params.append(key, String(value))
+    }
+  })
+  const qs = params.toString()
+  return qs ? `?${qs}` : ''
+}
+
+async function getAuthHeaders() {
+  const headers = { 'Content-Type': 'application/json' }
+
+  // Attach Supabase JWT if a session exists
+  const { data: { session } } = await supabase.auth.getSession()
+  if (session?.access_token) {
+    headers['Authorization'] = `Bearer ${session.access_token}`
+  }
+
+  // Attach staff token when present (staff routes need it)
+  const staffToken = localStorage.getItem('heru_staff_token')
+  if (staffToken) {
+    headers['X-Staff-Token'] = staffToken
+  }
+
+  return headers
+}
+
+async function apiCall(endpoint, options = {}) {
+  const { method = 'GET', body, headers: extraHeaders = {} } = options
+  const authHeaders = await getAuthHeaders()
+
+  const fetchOptions = {
+    method,
+    headers: { ...authHeaders, ...extraHeaders },
+  }
+
+  if (body !== undefined && method !== 'GET') {
+    fetchOptions.body = JSON.stringify(body)
+  }
+
+  const response = await fetch(`${API_URL}${endpoint}`, fetchOptions)
+
+  // Handle 204 No Content
+  if (response.status === 204) return null
+
+  const data = await response.json().catch(() => null)
+
+  if (!response.ok) {
+    const error = new Error(data?.error || data?.message || `API error ${response.status}`)
+    error.status = response.status
+    error.data = data
+    throw error
+  }
+
+  return data
+}
+
+// ---------------------------------------------------------------------------
+// Standard CRUD factory — builds the common list/get/create/update/delete set
+// ---------------------------------------------------------------------------
+
+function createEntity(basePath) {
+  return {
+    list:   (filters) => apiCall(`${basePath}${buildQuery(filters)}`),
+    get:    (id)      => apiCall(`${basePath}/${id}`),
+    create: (data)    => apiCall(basePath, { method: 'POST', body: data }),
+    update: (id, data) => apiCall(`${basePath}/${id}`, { method: 'PUT', body: data }),
+    delete: (id)      => apiCall(`${basePath}/${id}`, { method: 'DELETE' }),
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Entity helpers — mirror the Base44 pattern for easy migration
+// ---------------------------------------------------------------------------
+
+export const Tournament = {
+  ...createEntity('/tournaments'),
+  publish:          (id)          => apiCall(`/tournaments/${id}/publish`, { method: 'POST' }),
+  updateBrackets:   (id, data)    => apiCall(`/tournaments/${id}/brackets`, { method: 'PUT', body: data }),
+  sendChat:         (id, msg)     => apiCall(`/tournaments/${id}/chat`, { method: 'POST', body: msg }),
+  sendGeneralChat:  (id, msg)     => apiCall(`/tournaments/${id}/general-chat`, { method: 'POST', body: msg }),
+  sendSupportChat:  (id, msg)     => apiCall(`/tournaments/${id}/support-chat`, { method: 'POST', body: msg }),
+  joinRequest:      (id, data)    => apiCall(`/tournaments/${id}/join-request`, { method: 'POST', body: data }),
+  handleJoinRequest:(id, reqId, data) => apiCall(`/tournaments/${id}/join-request/${reqId}`, { method: 'PUT', body: data }),
+  inviteTeam:       (id, data)    => apiCall(`/tournaments/${id}/invite`, { method: 'POST', body: data }),
+  removeTeam:       (id, teamId)  => apiCall(`/tournaments/${id}/teams/${teamId}`, { method: 'DELETE' }),
+  addTalent:        (id, data)    => apiCall(`/tournaments/${id}/talents`, { method: 'POST', body: data }),
+  removeTalent:     (id, talentId)=> apiCall(`/tournaments/${id}/talents/${talentId}`, { method: 'DELETE' }),
+}
+
+export const Team = {
+  ...createEntity('/teams'),
+  joinRequest:      (id, data)    => apiCall(`/teams/${id}/join-request`, { method: 'POST', body: data }),
+  handleJoinRequest:(id, reqId, data) => apiCall(`/teams/${id}/join-request/${reqId}`, { method: 'PUT', body: data }),
+  inviteMember:     (id, data)    => apiCall(`/teams/${id}/invite`, { method: 'POST', body: data }),
+  removeMember:     (id, memberId)=> apiCall(`/teams/${id}/members/${memberId}`, { method: 'DELETE' }),
+}
+
+export const GamerProfile = {
+  ...createEntity('/gamers'),
+  me:               ()            => apiCall('/gamers/me'),
+  updateMe:         (data)        => apiCall('/gamers/me', { method: 'PUT', body: data }),
+  applyTalent:      (data)        => apiCall('/gamers/me/talent', { method: 'POST', body: data }),
+}
+
+export const OrganizerProfile = {
+  ...createEntity('/organizers'),
+  me:               ()            => apiCall('/organizers/me'),
+  updateMe:         (data)        => apiCall('/organizers/me', { method: 'PUT', body: data }),
+}
+
+export const MarketplaceItem = {
+  ...createEntity('/marketplace'),
+}
+
+export const Order = {
+  ...createEntity('/orders'),
+  sendSupportChat:  (id, msg)     => apiCall(`/orders/${id}/support-chat`, { method: 'POST', body: msg }),
+}
+
+export const TournamentOrder = {
+  ...createEntity('/tournament-orders'),
+  sendInternalChat: (id, msg)     => apiCall(`/tournament-orders/${id}/internal-chat`, { method: 'POST', body: msg }),
+  updateFulfillment:(id, data)    => apiCall(`/tournament-orders/${id}/fulfillment`, { method: 'PUT', body: data }),
+}
+
+export const SponsorshipRadar = {
+  ...createEntity('/radar'),
+  commit:           (id, data)    => apiCall(`/radar/${id}/commit`, { method: 'POST', body: data }),
+  sendChat:         (id, msg)     => apiCall(`/radar/${id}/chat`, { method: 'POST', body: msg }),
+}
+
+export const GigRequest = {
+  ...createEntity('/gigs'),
+  accept:           (id)          => apiCall(`/gigs/${id}/accept`, { method: 'POST' }),
+  reject:           (id, data)    => apiCall(`/gigs/${id}/reject`, { method: 'POST', body: data }),
+  complete:         (id)          => apiCall(`/gigs/${id}/complete`, { method: 'POST' }),
+  sendChat:         (id, msg)     => apiCall(`/gigs/${id}/chat`, { method: 'POST', body: msg }),
+  uploadFile:       (id, data)    => apiCall(`/gigs/${id}/files`, { method: 'POST', body: data }),
+}
+
+export const Bill = {
+  ...createEntity('/bills'),
+  getByNumber:      (num)         => apiCall(`/bills/by-number/${num}`),
+  markPaid:         (id, data)    => apiCall(`/bills/${id}/pay`, { method: 'POST', body: data }),
+}
+
+export const BillingSnapshot = {
+  ...createEntity('/billing-snapshots'),
+}
+
+export const ApprovalRequest = {
+  ...createEntity('/approvals'),
+  approve:          (id, data)    => apiCall(`/approvals/${id}/approve`, { method: 'POST', body: data }),
+  reject:           (id, data)    => apiCall(`/approvals/${id}/reject`, { method: 'POST', body: data }),
+}
+
+export const AppSettings = {
+  list:             ()            => apiCall('/settings'),
+  get:              (key)         => apiCall(`/settings/${key}`),
+  update:           (key, data)   => apiCall(`/settings/${key}`, { method: 'PUT', body: data }),
+}
+
+export const Staff = {
+  dashboard:        ()            => apiCall('/staff/dashboard'),
+  revenue:          (filters)     => apiCall(`/staff/revenue${buildQuery(filters)}`),
+  users:            (filters)     => apiCall(`/staff/users${buildQuery(filters)}`),
+  getUser:          (id)          => apiCall(`/staff/users/${id}`),
+  updateUser:       (id, data)    => apiCall(`/staff/users/${id}`, { method: 'PUT', body: data }),
+  organizers:       (filters)     => apiCall(`/staff/organizers${buildQuery(filters)}`),
+  messages:         (filters)     => apiCall(`/staff/messages${buildQuery(filters)}`),
+  accessKeys:       ()            => apiCall('/staff/access-keys'),
+  createAccessKey:  (data)        => apiCall('/staff/access-keys', { method: 'POST', body: data }),
+  deactivateKey:    (id)          => apiCall(`/staff/access-keys/${id}/deactivate`, { method: 'POST' }),
+}
+
+// ---------------------------------------------------------------------------
+// Raw API call export for custom one-off requests
+// ---------------------------------------------------------------------------
+export { apiCall, buildQuery, API_URL }
