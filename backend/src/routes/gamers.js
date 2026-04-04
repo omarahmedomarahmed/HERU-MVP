@@ -66,4 +66,50 @@ router.post('/talent-application', requireAuth, async (req, res) => {
   }
 });
 
+// GET /:id/stats - get gamer stats
+router.get('/:id/stats', async (req, res) => {
+  try {
+    const { data: profile } = await supabaseAdmin
+      .from('gamer_profiles')
+      .select('total_matches, total_wins, tournaments_played, tournaments_won, team_ids, username, avatar')
+      .or(`id.eq.${req.params.id},user_id.eq.${req.params.id}`)
+      .single();
+    if (!profile) return res.status(404).json({ error: 'Gamer not found' });
+
+    const winRate = profile.total_matches > 0 ? ((profile.total_wins / profile.total_matches) * 100).toFixed(1) : 0;
+
+    res.json({
+      ...profile,
+      win_rate: Number(winRate),
+      teams_count: (profile.team_ids || []).length,
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// GET /:id/achievements - get gamer's earned achievements
+router.get('/:id/achievements', async (req, res) => {
+  try {
+    // Resolve to user_id
+    let userId = req.params.id;
+    const { data: profile } = await supabaseAdmin
+      .from('gamer_profiles')
+      .select('user_id')
+      .or(`id.eq.${req.params.id},user_id.eq.${req.params.id}`)
+      .single();
+    if (profile) userId = profile.user_id;
+
+    const { data, error } = await supabaseAdmin
+      .from('gamer_achievements')
+      .select('*, achievements(*)')
+      .eq('user_id', userId)
+      .order('earned_at', { ascending: false });
+    if (error) throw error;
+    res.json(data || []);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 export default router;

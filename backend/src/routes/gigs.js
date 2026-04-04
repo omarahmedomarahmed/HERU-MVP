@@ -81,4 +81,60 @@ router.post('/:id/files', requireAuth, async (req, res) => {
   }
 });
 
+// POST /:id/accept - talent accepts gig
+router.post('/:id/accept', requireAuth, async (req, res) => {
+  try {
+    const { data: gig } = await supabaseAdmin.from('gig_requests').select('talent_user_id, status').eq('id', req.params.id).single();
+    if (!gig) return res.status(404).json({ error: 'Gig not found' });
+    if (gig.talent_user_id !== req.user.id) return res.status(403).json({ error: 'Only the assigned talent can accept' });
+    if (gig.status !== 'pending') return res.status(400).json({ error: `Cannot accept a gig with status: ${gig.status}` });
+
+    const { data, error } = await supabaseAdmin.from('gig_requests')
+      .update({ status: 'accepted', updated_at: new Date().toISOString() })
+      .eq('id', req.params.id).select().single();
+    if (error) throw error;
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// POST /:id/reject - talent rejects gig
+router.post('/:id/reject', requireAuth, async (req, res) => {
+  try {
+    const { data: gig } = await supabaseAdmin.from('gig_requests').select('talent_user_id, status').eq('id', req.params.id).single();
+    if (!gig) return res.status(404).json({ error: 'Gig not found' });
+    if (gig.talent_user_id !== req.user.id) return res.status(403).json({ error: 'Only the assigned talent can reject' });
+    if (gig.status !== 'pending') return res.status(400).json({ error: `Cannot reject a gig with status: ${gig.status}` });
+
+    const { data, error } = await supabaseAdmin.from('gig_requests')
+      .update({ status: 'rejected', notes: req.body?.reason || '', updated_at: new Date().toISOString() })
+      .eq('id', req.params.id).select().single();
+    if (error) throw error;
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// POST /:id/complete - mark gig as completed
+router.post('/:id/complete', requireAuth, async (req, res) => {
+  try {
+    const { data: gig } = await supabaseAdmin.from('gig_requests').select('talent_user_id, organizer_id, status').eq('id', req.params.id).single();
+    if (!gig) return res.status(404).json({ error: 'Gig not found' });
+    if (gig.organizer_id !== req.user.id && gig.talent_user_id !== req.user.id) {
+      return res.status(403).json({ error: 'Not authorized' });
+    }
+    if (gig.status !== 'accepted') return res.status(400).json({ error: 'Gig must be accepted before completing' });
+
+    const { data, error } = await supabaseAdmin.from('gig_requests')
+      .update({ status: 'completed', deliverable_status: 'completed', updated_at: new Date().toISOString() })
+      .eq('id', req.params.id).select().single();
+    if (error) throw error;
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 export default router;

@@ -93,10 +93,13 @@ export const Tournament = {
   sendSupportChat:  (id, msg)     => apiCall(`/tournaments/${id}/support-chat`, { method: 'POST', body: msg }),
   joinRequest:      (id, data)    => apiCall(`/tournaments/${id}/join-request`, { method: 'POST', body: data }),
   handleJoinRequest:(id, reqId, data) => apiCall(`/tournaments/${id}/join-request/${reqId}`, { method: 'PUT', body: data }),
-  inviteTeam:       (id, data)    => apiCall(`/tournaments/${id}/invite`, { method: 'POST', body: data }),
+  inviteTeam:       (id, data)    => apiCall(`/tournaments/${id}/invite-team`, { method: 'POST', body: data }),
   removeTeam:       (id, teamId)  => apiCall(`/tournaments/${id}/teams/${teamId}`, { method: 'DELETE' }),
   addTalent:        (id, data)    => apiCall(`/tournaments/${id}/talents`, { method: 'POST', body: data }),
   removeTalent:     (id, talentId)=> apiCall(`/tournaments/${id}/talents/${talentId}`, { method: 'DELETE' }),
+  updateMatchScore: (id, matchId, data) => apiCall(`/tournaments/${id}/brackets/${matchId}`, { method: 'PUT', body: data }),
+  announceWinner:   (id, data)   => apiCall(`/tournaments/${id}/announce-winner`, { method: 'POST', body: data }),
+  updateSignupPage: (id, data)   => apiCall(`/tournaments/${id}/signup-page`, { method: 'PUT', body: data }),
 }
 
 export const Team = {
@@ -112,6 +115,8 @@ export const GamerProfile = {
   me:               ()            => apiCall('/gamers/me'),
   updateMe:         (data)        => apiCall('/gamers/me', { method: 'PUT', body: data }),
   applyTalent:      (data)        => apiCall('/gamers/me/talent', { method: 'POST', body: data }),
+  stats:            (id)          => apiCall(`/gamers/${id}/stats`),
+  achievements:     (id)          => apiCall(`/gamers/${id}/achievements`),
 }
 
 export const OrganizerProfile = {
@@ -183,6 +188,32 @@ export const Staff = {
   accessKeys:       ()            => apiCall('/staff/access-keys'),
   createAccessKey:  (data)        => apiCall('/staff/access-keys', { method: 'POST', body: data }),
   deactivateKey:    (id)          => apiCall(`/staff/access-keys/${id}/deactivate`, { method: 'POST' }),
+}
+
+export const TournamentReport = {
+  ...createEntity('/tournament-reports'),
+}
+
+export const Deliverable = {
+  ...createEntity('/deliverables'),
+}
+
+export const OrganizerPageConfig = {
+  get:      (orgId) => apiCall(`/organizer-pages/${orgId}`),
+  updateMe: (data)  => apiCall('/organizer-pages/me', { method: 'PUT', body: data }),
+}
+
+export const Achievement = {
+  list:             ()       => apiCall('/achievements'),
+  userAchievements: (userId) => apiCall(`/achievements/user/${userId}`),
+  check:            (userId) => apiCall(`/achievements/check/${userId}`, { method: 'POST' }),
+  grant:            (data)   => apiCall('/achievements/grant', { method: 'POST', body: data }),
+}
+
+export const TeamMember = {
+  list:       (teamId)                      => apiCall(`/teams/${teamId}/members`),
+  updateRole: (teamId, userId, role, customRole) =>
+    apiCall(`/teams/${teamId}/members/${userId}/role`, { method: 'PUT', body: { role, custom_role: customRole } }),
 }
 
 // ---------------------------------------------------------------------------

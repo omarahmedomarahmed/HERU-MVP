@@ -275,4 +275,123 @@ router.put('/:id/join-request/:requestId', requireAuth, async (req, res) => {
   }
 });
 
+// POST /:id/invite-team - invite a team to tournament
+router.post('/:id/invite-team', requireAuth, async (req, res) => {
+  try {
+    const { data: tournament } = await supabaseAdmin.from('tournaments').select('organizer_id, invited_teams, teams, max_teams').eq('id', req.params.id).single();
+    if (!tournament) return res.status(404).json({ error: 'Tournament not found' });
+    if (tournament.organizer_id !== req.user.id) return res.status(403).json({ error: 'Not authorized' });
+
+    const { team_id } = req.body;
+    if (!team_id) return res.status(400).json({ error: 'team_id required' });
+    if ((tournament.teams || []).includes(team_id)) return res.status(400).json({ error: 'Team already in tournament' });
+    if ((tournament.invited_teams || []).includes(team_id)) return res.status(400).json({ error: 'Team already invited' });
+
+    const invited = [...(tournament.invited_teams || []), team_id];
+    const { data, error } = await supabaseAdmin.from('tournaments').update({ invited_teams: invited, updated_at: new Date().toISOString() }).eq('id', req.params.id).select().single();
+    if (error) throw error;
+
+    // Also add invite to the team's tournament_invites
+    const { data: team } = await supabaseAdmin.from('teams').select('tournament_invites').eq('id', team_id).single();
+    if (team) {
+      const invites = [...(team.tournament_invites || []), { tournament_id: req.params.id, invited_at: new Date().toISOString(), status: 'pending' }];
+      await supabaseAdmin.from('teams').update({ tournament_invites: invites }).eq('id', team_id);
+    }
+
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// PUT /:id/brackets/:matchId - update individual match score
+router.put('/:id/brackets/:matchId', requireAuth, async (req, res) => {
+  try {
+    const { data: tournament } = await supabaseAdmin.from('tournaments').select('brackets, organizer_id').eq('id', req.params.id).single();
+    if (!tournament) return res.status(404).json({ error: 'Tournament not found' });
+    if (tournament.organizer_id !== req.user.id) return res.status(403).json({ error: 'Not authorized' });
+
+    const { winner_id, score1, score2 } = req.body;
+    const matchId = req.params.matchId;
+    let brackets = tournament.brackets || [];
+    let matchFound = false;
+
+    brackets = brackets.map(round => ({
+      ...round,
+      matches: (round.matches || []).map(match => {
+        if (match.id === matchId) {
+          matchFound = true;
+          return { ...match, winner_id, score1, score2, status: winner_id ? 'completed' : match.status };
+        }
+        return match;
+      }),
+    }));
+
+    if (!matchFound) return res.status(404).json({ error: 'Match not found' });
+
+    // Advance winner to next round if applicable
+    if (winner_id) {
+      for (let i = 0; i < brackets.length - 1; i++) {
+        const currentRound = brackets[i];
+        const nextRound = brackets[i + 1];
+        const matchIndex = (currentRound.matches || []).findIndex(m => m.id === matchId);
+        if (matchIndex !== -1) {
+          const nextMatchIndex = Math.floor(matchIndex / 2);
+          if (nextRound.matches && nextRound.matches[nextMatchIndex]) {
+            const slot = matchIndex % 2 === 0 ? 'team1' : 'team2';
+            nextRound.matches[nextMatchIndex][slot] = winner_id;
+          }
+          break;
+        }
+      }
+    }
+
+    const { data, error } = await supabaseAdmin.from('tournaments').update({ brackets, updated_at: new Date().toISOString() }).eq('id', req.params.id).select().single();
+    if (error) throw error;
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// POST /:id/announce-winner - set tournament results
+router.post('/:id/announce-winner', requireAuth, async (req, res) => {
+  try {
+    const { data: tournament } = await supabaseAdmin.from('tournaments').select('organizer_id').eq('id', req.params.id).single();
+    if (!tournament) return res.status(404).json({ error: 'Tournament not found' });
+    if (tournament.organizer_id !== req.user.id) return res.status(403).json({ error: 'Not authorized' });
+
+    const { winner_team_id, results } = req.body;
+    const { data, error } = await supabaseAdmin.from('tournaments').update({
+      status: 'completed',
+      winner_team_id,
+      results: results || {},
+      updated_at: new Date().toISOString(),
+    }).eq('id', req.params.id).select().single();
+    if (error) throw error;
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// PUT /:id/signup-page - update custom signup page settings
+router.put('/:id/signup-page', requireAuth, async (req, res) => {
+  try {
+    const { data: tournament } = await supabaseAdmin.from('tournaments').select('organizer_id').eq('id', req.params.id).single();
+    if (!tournament) return res.status(404).json({ error: 'Tournament not found' });
+    if (tournament.organizer_id !== req.user.id) return res.status(403).json({ error: 'Not authorized' });
+
+    const { signup_banner, signup_description, signup_rules, signup_custom_fields, stream_embed_url } = req.body;
+    const { data, error } = await supabaseAdmin.from('tournaments').update({
+      signup_banner, signup_description, signup_rules, signup_custom_fields, stream_embed_url,
+      updated_at: new Date().toISOString(),
+    }).eq('id', req.params.id).select().single();
+    if (error) throw error;
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 export default router;

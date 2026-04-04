@@ -22,6 +22,10 @@ import staffRoutes from './src/routes/staff.js';
 import settingsRoutes from './src/routes/settings.js';
 import paymentRoutes from './src/routes/payments.js';
 import uploadRoutes from './src/routes/upload.js';
+import tournamentReportRoutes from './src/routes/tournament-reports.js';
+import achievementRoutes from './src/routes/achievements.js';
+import deliverableRoutes from './src/routes/deliverables.js';
+import organizerPageRoutes from './src/routes/organizer-pages.js';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -83,6 +87,10 @@ app.use('/api/staff', staffRoutes);
 app.use('/api/settings', settingsRoutes);
 app.use('/api/payments', paymentRoutes);
 app.use('/api/upload', uploadRoutes);
+app.use('/api/tournament-reports', tournamentReportRoutes);
+app.use('/api/achievements', achievementRoutes);
+app.use('/api/deliverables', deliverableRoutes);
+app.use('/api/organizer-pages', organizerPageRoutes);
 
 // ---------------------------------------------------------------------------
 // 404 handler
