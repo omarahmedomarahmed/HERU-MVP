@@ -20,20 +20,13 @@ export default function SharedBillPage() {
 
   const { data: bill } = useQuery({
     queryKey: ['bill', bill_number],
-    queryFn: async () => {
-      const bills = await Bill.list({ bill_number });
-      return bills?.[0] || null;
-    },
+    queryFn: () => Bill.getByNumber(bill_number),
     enabled: !!bill_number,
   });
 
   const { data: tournament } = useQuery({
     queryKey: ['bill-tournament', bill?.tournament_id],
-    queryFn: async () => {
-      if (!bill?.tournament_id) return null;
-      const tours = await Tournament.list({ id: bill.tournament_id });
-      return tours?.[0] || null;
-    },
+    queryFn: () => bill?.tournament_id ? Tournament.get(bill.tournament_id) : null,
     enabled: !!bill?.tournament_id,
   });
 
@@ -47,11 +40,7 @@ export default function SharedBillPage() {
   });
 
   const handleMarkPaid = async () => {
-    await Bill.update(bill.id, {
-      payment_status: 'paid',
-      paid_amount: bill.grand_total,
-      paid_date: new Date().toISOString().split('T')[0],
-    });
+    await Bill.markPaid(bill.id, { payment_method: 'test' });
     alert('✓ Payment confirmed (test mode)');
     window.location.reload();
   };
@@ -111,6 +100,11 @@ export default function SharedBillPage() {
                     </div>
                     <div className="text-right">
                       <p className="text-white font-black">EGP {(partyBill.grand_total || 0).toLocaleString()}</p>
+                      {partyBill.total_tournament_cost > 0 && (
+                        <p className="text-gray-500 text-xs">
+                          {Math.round((partyBill.grand_total / partyBill.total_tournament_cost) * 100)}% share
+                        </p>
+                      )}
                       <p className={`text-xs mt-1 ${partyBill.payment_status === 'paid' ? 'text-green-400' : 'text-red-400'}`}>
                         {partyBill.payment_status === 'paid' ? '✓ Paid' : 'Unpaid'}
                       </p>
@@ -176,10 +170,12 @@ export default function SharedBillPage() {
                 <span className="text-gray-400">Subtotal</span>
                 <span className="text-white">EGP {(bill.subtotal || 0).toLocaleString()}</span>
               </div>
-              <div className="flex justify-between">
-                <span className="text-gray-400">Tax</span>
-                <span className="text-white">EGP {(bill.tax || 0).toLocaleString()}</span>
-              </div>
+              {bill.platform_fee > 0 && (
+                <div className="flex justify-between">
+                  <span className="text-blue-400">Platform Fee (15%)</span>
+                  <span className="text-blue-400">EGP {(bill.platform_fee || 0).toLocaleString()}</span>
+                </div>
+              )}
               <div className="flex justify-between border-t border-zinc-800 pt-2 font-bold">
                 <span className="text-white">Grand Total</span>
                 <span className="text-white text-lg">EGP {(bill.grand_total || 0).toLocaleString()}</span>

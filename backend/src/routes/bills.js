@@ -7,8 +7,14 @@ const router = Router();
 // GET / - list own bills
 router.get('/', requireAuth, async (req, res) => {
   try {
-    const { payment_status, bill_type, limit = 50 } = req.query;
-    let query = supabaseAdmin.from('bills').select('*').eq('payer_id', req.user.id);
+    const { payment_status, bill_type, tournament_id, limit = 50 } = req.query;
+    let query = supabaseAdmin.from('bills').select('*');
+    // If tournament_id filter, show all bills for that tournament (for shared bill view)
+    if (tournament_id) {
+      query = query.eq('tournament_id', tournament_id);
+    } else {
+      query = query.eq('payer_id', req.user.id);
+    }
     if (payment_status) query = query.eq('payment_status', payment_status);
     if (bill_type) query = query.eq('bill_type', bill_type);
     query = query.order('created_at', { ascending: false }).limit(limit);

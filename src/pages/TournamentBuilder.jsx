@@ -11,7 +11,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { GamerProfile, MarketplaceItem, OrganizerProfile, SponsorshipRadar, Team, Tournament, TournamentOrder, apiCall } from '@/api/heruClient'
+import { GamerProfile, MarketplaceItem, OrganizerProfile, Team, Tournament, apiCall } from '@/api/heruClient'
 import { useAuth } from '@/lib/AuthContext'
 
 import {
@@ -179,23 +179,13 @@ export default function TournamentBuilder() {
 
   const publishTournamentMutation = useMutation({
     mutationFn: async () => {
-      const totalCost = calculateTotalCost();
-      const itemsSubtotal = calculateItemsSubtotal();
-      const mainContribution = Math.round(totalCost * (commitmentPercent / 100));
-
-      const platformFee = calculatePlatformFee();
-
-      // Save with updated cost fields
+      // Step 1: Save tournament with all fields (including radar funding percent for shared)
       const dataToSave = {
         ...tournament,
         organizer_id: user?.id,
         main_organizer_id: user?.id,
-        total_cost: totalCost,
-        platform_fee: platformFee,
-        platform_fee_percent: 15,
-        organizer_contribution: mainContribution,
+        radar_funding_percent: tournament.tournament_type === 'shared' ? commitmentPercent : 100,
         main_organizer_percent: commitmentPercent,
-        status: tournament.tournament_type === 'shared' ? 'draft' : 'published',
       };
 
       let tId = tournamentId;
@@ -206,86 +196,14 @@ export default function TournamentBuilder() {
         tId = created.id;
       }
 
-      // Build order items list
-      const orderItems = [];
-      tournament.branding_items?.forEach(id => {
-        const item = marketplaceItems.find(i => i.id === id);
-        if (item) orderItems.push({ item_id: id, title: item.title, price: item.price, quantity: 1, category: 'branding', status: 'pending', assigned_to: 'main_organizer' });
-      });
-      tournament.production_items?.forEach(id => {
-        const item = marketplaceItems.find(i => i.id === id);
-        if (item) orderItems.push({ item_id: id, title: item.title, price: item.price, quantity: 1, category: 'production', status: 'pending', assigned_to: 'main_organizer' });
-      });
-      tournament.talents?.forEach(t => {
-        orderItems.push({ item_id: t.user_id, title: `Talent: ${t.talent_type}`, price: t.price, quantity: 1, category: 'talent', status: 'pending', assigned_to: 'main_organizer' });
-      });
-      tournament.prizepool_items?.forEach(id => {
-        const item = marketplaceItems.find(i => i.id === id);
-        if (item) orderItems.push({ item_id: id, title: item.title, price: item.price, quantity: 1, category: 'prizepool', status: 'pending', assigned_to: 'main_organizer' });
-      });
-      tournament.venue_items?.forEach(id => {
-        const item = marketplaceItems.find(i => i.id === id);
-        if (item) orderItems.push({ item_id: id, title: item.title, price: item.price, quantity: 1, category: 'venue', status: 'pending', assigned_to: 'main_organizer' });
-      });
-
-      // Auto-create TournamentOrder
-      await TournamentOrder.create({
-        tournament_id: tId,
-        tournament_name: tournament.name,
-        tournament_type: tournament.tournament_type,
-        main_organizer_id: user?.id,
-        main_organizer_brand: profile?.brand_name || '',
-        items: orderItems,
-        subtotal_items: itemsSubtotal,
-        prizepool_amount: tournament.prizepool_total || 0,
-        platform_fee: platformFee,
-        grand_total: totalCost,
-        main_organizer_owes: mainContribution,
-        fulfillment_status: 'pending_payment',
-      });
-
-      // If shared: auto-create SponsorshipRadar
-      if (tournament.tournament_type === 'shared') {
-        const orderBreakdown = orderItems.map(i => ({
-          item_id: i.item_id,
-          title: i.title,
-          price: i.price,
-          category: i.category,
-          paid_by: 'organizer',
-        }));
-
-        const radarRecord = await SponsorshipRadar.create({
-          tournament_id: tId,
-          tournament_name: tournament.name,
-          main_organizer_id: user?.id,
-          main_organizer_brand: { name: profile?.brand_name, logo: profile?.brand_logo, primary_color: profile?.primary_color },
-          game: tournament.game,
-          schedule: tournament.schedule,
-          description: tournament.description,
-          total_cost: totalCost,
-          prizepool_amount: tournament.prizepool_total || 0,
-          main_organizer_contribution: mainContribution,
-          main_organizer_percent: commitmentPercent,
-          amount_still_needed: totalCost - mainContribution,
-          funding_percent: commitmentPercent,
-          status: 'open',
-          co_organizers: [],
-          order_breakdown: orderBreakdown,
-          chat: [],
-        });
-
-        // Link radar record back to tournament
-        await Tournament.update(tId, {
-          sponsorship_radar_id: radarRecord.id,
-          on_radar: true,
-          radar_funding_percent: commitmentPercent,
-        });
-      }
+      // Step 2: Call backend publish endpoint — handles TournamentOrder, Bill, SponsorshipRadar atomically
+      await Tournament.publish(tId);
 
       queryClient.invalidateQueries(['organizer-tournaments']);
+      return tId;
     },
     onSuccess: () => {
-      navigate('/organizer/tournaments');
+      navigate('/organizer/billing');
     }
   });
 

@@ -3,7 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '@/lib/AuthContext'
 import HeruLogo from '@/components/shared/HeruLogo'
 import {
-  LayoutDashboard, Trophy, Plus, Radar, CreditCard,
+  LayoutDashboard, Trophy, Plus, Radar, CreditCard, Share2,
   MessageSquare, User, Menu, X, LogOut, ChevronLeft, ChevronRight,
 } from 'lucide-react'
 
@@ -26,6 +26,7 @@ const NAV_SECTIONS = [
     label: 'Finance',
     items: [
       { to: '/organizer/billing', icon: CreditCard, text: 'Billing' },
+      { to: '/organizer/sponsored', icon: Share2, text: 'Co-Organized' },
     ],
   },
   {

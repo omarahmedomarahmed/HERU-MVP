@@ -1,38 +1,45 @@
 import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
-import { getOrganizerSession } from '@/lib/auth-guards';
-import AnimatedBackground from '@/components/shared/AnimatedBackground';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import FloatingPanel from '@/components/ui/FloatingPanel';
 import GlowButton from '@/components/ui/GlowButton';
-import { ArrowLeft, Download, Copy, Check, DollarSign, AlertCircle, CheckCircle } from 'lucide-react';
+import { ArrowLeft, Download, Copy, Check, DollarSign, AlertCircle, CheckCircle, Users, CreditCard } from 'lucide-react';
 import { format } from 'date-fns';
 import { Bill, TournamentOrder } from '@/api/heruClient'
 
 
 export default function BillDetail() {
-  const { bill_id } = useParams();
+  const { bill_number } = useParams();
   const navigate = useNavigate();
-  const [session] = useState(getOrganizerSession());
+  const queryClient = useQueryClient();
   const [copied, setCopied] = useState(false);
+  const [paymentMethod, setPaymentMethod] = useState('test');
 
   const { data: bill, isLoading } = useQuery({
-    queryKey: ['bill', bill_id],
-    queryFn: async () => {
-      const bills = await Bill.list({ id: bill_id });
-      return bills[0] || null;
-    },
-    enabled: !!bill_id,
+    queryKey: ['bill', bill_number],
+    queryFn: () => Bill.getByNumber(bill_number),
+    enabled: !!bill_number,
   });
 
   const { data: tournamentOrder } = useQuery({
     queryKey: ['tournament-order-bill', bill?.tournament_order_id],
-    queryFn: async () => {
-      if (!bill?.tournament_order_id) return null;
-      const orders = await TournamentOrder.list({ id: bill.tournament_order_id });
-      return orders[0] || null;
-    },
+    queryFn: () => bill?.tournament_order_id ? TournamentOrder.get(bill.tournament_order_id) : null,
     enabled: !!bill?.tournament_order_id,
+  });
+
+  // For shared bills: fetch all bills for the same tournament
+  const { data: sharedBills = [] } = useQuery({
+    queryKey: ['shared-bills', bill?.tournament_id],
+    queryFn: () => Bill.list({ tournament_id: bill.tournament_id }),
+    enabled: !!bill?.shared_tournament && !!bill?.tournament_id,
+  });
+
+  const payMutation = useMutation({
+    mutationFn: () => Bill.markPaid(bill.id, { payment_method: paymentMethod }),
+    onSuccess: () => {
+      queryClient.invalidateQueries(['bill', bill_number]);
+      queryClient.invalidateQueries(['shared-bills']);
+    },
   });
 
   const downloadPDF = () => {
@@ -74,24 +81,20 @@ Status: ${bill.payment_status?.toUpperCase()}
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#0a0a0a]">
-        <AnimatedBackground />
-        <div className="animate-spin w-10 h-10 border-2 border-red-500 border-t-transparent rounded-full" />
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin w-10 h-10 border-2 border-purple-500 border-t-transparent rounded-full" />
       </div>
     );
   }
 
   if (!bill) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#0a0a0a]">
-        <AnimatedBackground />
-        <FloatingPanel className="p-12 text-center">
-          <h3 className="text-xl text-white font-bold">Bill not found</h3>
-          <button onClick={() => navigate(-1)} className="mt-4 text-gray-400 hover:text-white flex items-center gap-2 mx-auto">
-            <ArrowLeft className="w-4 h-4" /> Go back
-          </button>
-        </FloatingPanel>
-      </div>
+      <FloatingPanel className="p-12 text-center">
+        <h3 className="text-xl text-white font-bold">Bill not found</h3>
+        <button onClick={() => navigate(-1)} className="mt-4 text-gray-400 hover:text-white flex items-center gap-2 mx-auto">
+          <ArrowLeft className="w-4 h-4" /> Go back
+        </button>
+      </FloatingPanel>
     );
   }
 
@@ -116,12 +119,10 @@ Status: ${bill.payment_status?.toUpperCase()}
   const canMarkAsPaid = allItemsFulfilled && bill?.payment_status !== 'paid';
 
   return (
-    <div className="min-h-screen bg-[#0a0a0a] text-white">
-      <AnimatedBackground />
-      <div className="relative z-10 max-w-4xl mx-auto px-4 py-8">
-        <button onClick={() => navigate(-1)} className="flex items-center gap-2 text-gray-400 hover:text-white mb-6">
-          <ArrowLeft className="w-4 h-4" /> Back
-        </button>
+    <div className="max-w-4xl mx-auto">
+      <button onClick={() => navigate('/organizer/billing')} className="flex items-center gap-2 text-gray-400 hover:text-white mb-6">
+        <ArrowLeft className="w-4 h-4" /> Back to Billing
+      </button>
 
         <FloatingPanel className="p-8">
           <div className="flex items-center justify-between mb-8">
@@ -192,56 +193,121 @@ Status: ${bill.payment_status?.toUpperCase()}
               <span className="text-gray-400">Subtotal</span>
               <span className="text-white">EGP {bill.subtotal?.toLocaleString()}</span>
             </div>
-            {bill.tax > 0 && (
+            {bill.platform_fee > 0 && (
               <div className="flex justify-between">
-                <span className="text-gray-400">Tax</span>
-                <span className="text-white">EGP {bill.tax?.toLocaleString()}</span>
+                <span className="text-blue-400">Platform Fee (15%)</span>
+                <span className="text-blue-400">EGP {bill.platform_fee?.toLocaleString()}</span>
               </div>
             )}
             <div className="flex justify-between pt-3 border-t border-zinc-700">
               <span className="text-white font-bold">Total Due</span>
-              <span className="text-green-400 font-black text-xl">EGP {bill.grand_total?.toLocaleString()}</span>
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-cyan-400 font-black text-xl">
+                EGP {bill.grand_total?.toLocaleString()}
+              </span>
             </div>
             {bill.paid_amount > 0 && (
               <div className="flex justify-between pt-2">
                 <span className="text-gray-400">Paid</span>
-                <span className="text-yellow-400">EGP {bill.paid_amount?.toLocaleString()}</span>
+                <span className="text-green-400 font-bold">EGP {bill.paid_amount?.toLocaleString()}</span>
+              </div>
+            )}
+            {bill.shared_tournament && bill.total_tournament_cost > 0 && (
+              <div className="flex justify-between pt-2 text-xs">
+                <span className="text-gray-500">Your share of total tournament cost</span>
+                <span className="text-gray-400">
+                  {Math.round((bill.grand_total / bill.total_tournament_cost) * 100)}%
+                </span>
               </div>
             )}
           </div>
 
-          {!canMarkAsPaid && bill?.payment_status !== 'paid' && (
-            <div className="mb-6 p-4 bg-yellow-500/10 border border-yellow-500/30 rounded-lg flex items-start gap-3">
-              <AlertCircle className="w-5 h-5 text-yellow-400 flex-shrink-0 mt-0.5" />
+          {/* Shared Tournament — All Parties */}
+          {bill.shared_tournament && sharedBills.length > 1 && (
+            <div className="mb-8">
+              <h2 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                <Users className="w-5 h-5 text-purple-400" />
+                All Parties ({sharedBills.length})
+              </h2>
+              <div className="space-y-2">
+                {sharedBills.map(sb => (
+                  <div key={sb.id} className={`flex items-center justify-between px-4 py-3 rounded-lg ${sb.id === bill.id ? 'bg-purple-500/10 border border-purple-500/30' : 'bg-zinc-800/40'}`}>
+                    <div>
+                      <p className="text-white font-medium">{sb.payer_name || 'Unknown'}</p>
+                      <p className="text-xs text-gray-500 capitalize">{sb.bill_type?.replace('_', ' ')}</p>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <span className={`text-xs px-2 py-1 rounded-full ${sb.payment_status === 'paid' ? 'bg-green-500/20 text-green-400' : 'bg-yellow-500/20 text-yellow-400'}`}>
+                        {sb.payment_status}
+                      </span>
+                      <span className="text-white font-bold">EGP {sb.grand_total?.toLocaleString()}</span>
+                      {sb.total_tournament_cost > 0 && (
+                        <span className="text-gray-500 text-xs">({Math.round((sb.grand_total / sb.total_tournament_cost) * 100)}%)</span>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Payment Section */}
+          {bill.payment_status !== 'paid' && (
+            <div className="mb-6 p-5 bg-zinc-800/50 border border-zinc-700 rounded-lg">
+              <h3 className="text-white font-bold mb-3 flex items-center gap-2">
+                <CreditCard className="w-5 h-5 text-purple-400" />
+                Payment Method
+              </h3>
+              <div className="grid grid-cols-3 gap-2 mb-4">
+                {['test', 'bank_transfer', 'paymob'].map(method => (
+                  <button
+                    key={method}
+                    onClick={() => setPaymentMethod(method)}
+                    className={`p-3 rounded-lg text-sm text-center transition-all ${paymentMethod === method
+                      ? 'bg-purple-500/20 border border-purple-500/50 text-purple-300'
+                      : 'bg-zinc-800 border border-zinc-700 text-gray-400 hover:border-zinc-600'
+                    }`}
+                  >
+                    {method === 'test' ? 'Test Mode' : method === 'bank_transfer' ? 'Bank Transfer' : 'Paymob Card'}
+                  </button>
+                ))}
+              </div>
+              {paymentMethod === 'paymob' && (
+                <p className="text-xs text-gray-500 mb-3">Paymob integration coming soon. Use Test Mode for now.</p>
+              )}
+              <GlowButton
+                onClick={() => payMutation.mutate()}
+                disabled={payMutation.isPending || paymentMethod === 'paymob'}
+                className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500"
+              >
+                <DollarSign className="w-4 h-4" />
+                {payMutation.isPending ? 'Processing...' : `Pay EGP ${bill.grand_total?.toLocaleString()}`}
+              </GlowButton>
+              {payMutation.isError && (
+                <p className="text-red-400 text-sm mt-2">Payment failed: {payMutation.error?.message}</p>
+              )}
+            </div>
+          )}
+
+          {bill.payment_status === 'paid' && (
+            <div className="mb-6 p-4 bg-green-500/10 border border-green-500/30 rounded-lg flex items-center gap-3">
+              <CheckCircle className="w-5 h-5 text-green-400" />
               <div>
-                <p className="text-yellow-400 font-bold text-sm">Payment Blocked</p>
-                <p className="text-yellow-300 text-sm mt-1">
-                  All items must be fulfilled before marking this bill as paid. {fulfilledCount}/{totalItems} items are currently fulfilled.
+                <p className="text-green-400 font-bold text-sm">Payment Complete</p>
+                <p className="text-green-300 text-xs mt-0.5">
+                  Paid EGP {bill.paid_amount?.toLocaleString()} via {bill.payment_method || 'test'} on {bill.paid_date ? format(new Date(bill.paid_date), 'MMM dd, yyyy') : 'N/A'}
                 </p>
               </div>
             </div>
           )}
 
-          {canMarkAsPaid && (
-            <div className="mb-6 p-4 bg-green-500/10 border border-green-500/30 rounded-lg flex items-start gap-3">
-              <CheckCircle className="w-5 h-5 text-green-400 flex-shrink-0 mt-0.5" />
-              <p className="text-green-400 text-sm">All items fulfilled. Ready to process payment.</p>
-            </div>
-          )}
-
           <div className="flex gap-3">
-            <GlowButton onClick={downloadPDF} className="flex-1">
-              <Download className="w-4 h-4" /> Download as Text
+            <GlowButton onClick={downloadPDF} variant="ghost" className="flex-1">
+              <Download className="w-4 h-4" /> Download
             </GlowButton>
             <GlowButton onClick={copyToClipboard} variant="ghost" className="flex-1">
               {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
               {copied ? 'Copied!' : 'Copy Info'}
             </GlowButton>
-            {bill?.payment_status !== 'paid' && (
-              <GlowButton disabled={!canMarkAsPaid} className="flex-1">
-                <DollarSign className="w-4 h-4" /> Mark as Paid {canMarkAsPaid ? '' : '(Blocked)'}
-              </GlowButton>
-            )}
           </div>
 
           {bill.notes && (
@@ -251,7 +317,6 @@ Status: ${bill.payment_status?.toUpperCase()}
             </div>
           )}
         </FloatingPanel>
-      </div>
     </div>
   );
 }

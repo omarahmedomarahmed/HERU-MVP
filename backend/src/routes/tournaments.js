@@ -97,8 +97,50 @@ router.post('/:id/publish', requireAuth, async (req, res) => {
     if (!tournament) return res.status(404).json({ error: 'Tournament not found' });
     if (tournament.organizer_id !== req.user.id) return res.status(403).json({ error: 'Not authorized' });
 
-    const costs = calculateTournamentCost(tournament);
+    // Resolve marketplace item IDs to full objects with prices
+    const allItemIds = [
+      ...(tournament.branding_items || []),
+      ...(tournament.production_items || []),
+      ...(tournament.venue_items || []),
+      ...(tournament.prizepool_items || []),
+    ].filter(id => typeof id === 'string');
+
+    let resolvedItemsMap = {};
+    if (allItemIds.length > 0) {
+      const { data: mpItems } = await supabaseAdmin.from('marketplace_items').select('*').in('id', allItemIds);
+      (mpItems || []).forEach(item => { resolvedItemsMap[item.id] = item; });
+    }
+
+    // Build resolved tournament for cost calculation
+    const resolvedTournament = {
+      ...tournament,
+      branding_items: (tournament.branding_items || []).map(id => resolvedItemsMap[id]).filter(Boolean),
+      production_items: (tournament.production_items || []).map(id => resolvedItemsMap[id]).filter(Boolean),
+      venue_items: (tournament.venue_items || []).map(id => resolvedItemsMap[id]).filter(Boolean),
+      prizepool_items: (tournament.prizepool_items || []).map(id => resolvedItemsMap[id]).filter(Boolean),
+    };
+
+    const costs = calculateTournamentCost(resolvedTournament);
     const brackets = tournament.teams?.length ? generateBrackets(tournament.teams, tournament.format || 'single_elimination') : [];
+
+    // Build order items from resolved marketplace objects
+    const orderItems = [];
+    resolvedTournament.branding_items.forEach(item => {
+      orderItems.push({ item_id: item.id, title: item.title, price: item.price, quantity: 1, category: 'branding', status: 'pending' });
+    });
+    resolvedTournament.production_items.forEach(item => {
+      orderItems.push({ item_id: item.id, title: item.title, price: item.price, quantity: 1, category: 'production', status: 'pending' });
+    });
+    resolvedTournament.venue_items.forEach(item => {
+      orderItems.push({ item_id: item.id, title: item.title, price: item.price, quantity: 1, category: 'venue', status: 'pending' });
+    });
+    resolvedTournament.prizepool_items.forEach(item => {
+      orderItems.push({ item_id: item.id, title: item.title, price: item.price, quantity: 1, category: 'prizepool', status: 'pending' });
+    });
+    // Add talent items
+    (tournament.talents || []).forEach(t => {
+      orderItems.push({ item_id: t.user_id, title: `Talent: ${t.talent_type}`, price: t.price, quantity: 1, category: 'talent', status: 'pending' });
+    });
 
     // Create tournament order
     const { data: order } = await supabaseAdmin.from('tournament_orders').insert({
@@ -107,7 +149,7 @@ router.post('/:id/publish', requireAuth, async (req, res) => {
       tournament_type: tournament.tournament_type,
       main_organizer_id: tournament.organizer_id,
       main_organizer_brand: tournament.organizer_brand?.brand_name || '',
-      items: [...(tournament.branding_items || []), ...(tournament.production_items || []), ...(tournament.venue_items || [])],
+      items: orderItems,
       subtotal_items: costs.subtotal - (tournament.prizepool_total || 0),
       prizepool_amount: tournament.prizepool_total || 0,
       platform_fee: costs.platformFee,
@@ -117,9 +159,10 @@ router.post('/:id/publish', requireAuth, async (req, res) => {
     }).select().single();
 
     const updateData = {
-      status: 'published',
-      total_cost: costs.subtotal,
+      status: tournament.tournament_type === 'shared' ? 'draft' : 'published',
+      total_cost: costs.total,
       platform_fee: costs.platformFee,
+      platform_fee_percent: costs.platformFeePercent,
       brackets,
       updated_at: new Date().toISOString(),
     };

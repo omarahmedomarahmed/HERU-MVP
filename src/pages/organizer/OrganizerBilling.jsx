@@ -154,6 +154,11 @@ export default function OrganizerBilling() {
     return allBills
   }, [allBills, activeTab])
 
+  // Group into three sections
+  const soloBills = filteredBills.filter(b => b.bill_type === 'organizer' && !b.shared_tournament)
+  const sharedMainBills = filteredBills.filter(b => b.bill_type === 'organizer' && b.shared_tournament)
+  const coOrgBills = filteredBills.filter(b => b.bill_type === 'co_organizer')
+
   // Summary stats
   const totalOwed = allBills
     .filter((b) => b.payment_status !== 'paid')
@@ -231,7 +236,25 @@ export default function OrganizerBilling() {
         </div>
 
         {/* ----------------------------------------------------------------- */}
-        {/* Bills List                                                        */}
+        {/* Unpaid Bills Banner                                               */}
+        {/* ----------------------------------------------------------------- */}
+        {totalOwed > 0 && activeTab === 'all' && (
+          <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-xl flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <AlertCircle className="w-5 h-5 text-red-400" />
+              <div>
+                <p className="text-red-400 font-bold text-sm">You have unpaid bills</p>
+                <p className="text-red-300/70 text-xs">Total outstanding: {formatEGP(totalOwed)}</p>
+              </div>
+            </div>
+            <button onClick={() => setActiveTab('unpaid')} className="text-xs text-red-400 hover:text-red-300 font-medium">
+              View Unpaid →
+            </button>
+          </div>
+        )}
+
+        {/* ----------------------------------------------------------------- */}
+        {/* Bills List — Three Sections                                       */}
         {/* ----------------------------------------------------------------- */}
         {isLoading ? (
           <SectionLoader />
@@ -246,14 +269,54 @@ export default function OrganizerBilling() {
             </p>
           </div>
         ) : (
-          <div className="space-y-3">
-            {filteredBills.map((bill) => (
-              <BillCard
-                key={bill.id}
-                bill={bill}
-                onClick={() => navigate(`/organizer/billing/${bill.bill_number}`)}
-              />
-            ))}
+          <div className="space-y-6">
+            {/* Solo Bills */}
+            {soloBills.length > 0 && (
+              <div>
+                <h2 className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-3 flex items-center gap-2">
+                  <DollarSign className="w-4 h-4 text-violet-400" />
+                  Solo Tournaments
+                  <span className="text-xs text-gray-600 font-normal">({soloBills.length})</span>
+                </h2>
+                <div className="space-y-3">
+                  {soloBills.map((bill) => (
+                    <BillCard key={bill.id} bill={bill} onClick={() => navigate(`/organizer/billing/${bill.bill_number}`)} />
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Shared Bills — Main Organizer */}
+            {sharedMainBills.length > 0 && (
+              <div>
+                <h2 className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-3 flex items-center gap-2">
+                  <Receipt className="w-4 h-4 text-purple-400" />
+                  Shared Tournaments (My Share)
+                  <span className="text-xs text-gray-600 font-normal">({sharedMainBills.length})</span>
+                </h2>
+                <div className="space-y-3">
+                  {sharedMainBills.map((bill) => (
+                    <BillCard key={bill.id} bill={bill} onClick={() => navigate(`/organizer/billing/${bill.bill_number}`)} />
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Co-Organized Bills */}
+            {coOrgBills.length > 0 && (
+              <div>
+                <h2 className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-3 flex items-center gap-2">
+                  <Receipt className="w-4 h-4 text-blue-400" />
+                  Co-Organized (Partner Share)
+                  <span className="text-xs text-gray-600 font-normal">({coOrgBills.length})</span>
+                </h2>
+                <div className="space-y-3">
+                  {coOrgBills.map((bill) => (
+                    <BillCard key={bill.id} bill={bill} onClick={() => navigate(`/organizer/billing/${bill.bill_number}`)} />
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>

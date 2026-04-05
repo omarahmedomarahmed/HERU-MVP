@@ -159,8 +159,8 @@ export const GigRequest = {
 
 export const Bill = {
   ...createEntity('/bills'),
-  getByNumber:      (num)         => apiCall(`/bills/by-number/${num}`),
-  markPaid:         (id, data)    => apiCall(`/bills/${id}/pay`, { method: 'POST', body: data }),
+  getByNumber:      (num)         => apiCall(`/bills/number/${num}`),
+  markPaid:         (id, data)    => apiCall(`/bills/${id}/pay`, { method: 'PUT', body: data }),
 }
 
 export const BillingSnapshot = {

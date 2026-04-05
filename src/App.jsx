@@ -55,6 +55,8 @@ import OrganizerSettings from './pages/OrganizerSettings'
 import OrganizerTeams from './pages/OrganizerTeams'
 import OrganizerMessages from './pages/OrganizerMessages'
 import BillDetail from './pages/BillDetail'
+import OrganizerBilling from './pages/organizer/OrganizerBilling'
+import CoOrganizedTournaments from './pages/organizer/CoOrganizedTournaments'
 
 // Staff pages
 import StaffLayout from '@/components/layouts/StaffLayout'
@@ -72,6 +74,7 @@ import StaffRadarPanel from './pages/StaffRadarPanel'
 import StaffBilling from './pages/StaffBilling'
 import StaffTournamentOrders from './pages/StaffTournamentOrders'
 import StaffOrganizers from './pages/StaffOrganizers'
+import StaffRevenue from './pages/staff/StaffRevenue'
 import StaffSettings from './pages/StaffSettings'
 
 function App() {
@@ -123,13 +126,15 @@ function App() {
             <Route path="/organizer/dashboard" element={<RequireOrganizer><OrganizerLayout isDashboard={true} /></RequireOrganizer>} />
             <Route path="/organizer/tournaments" element={<RequireOrganizer><OrganizerLayout><OrganizerTournaments /></OrganizerLayout></RequireOrganizer>} />
             <Route path="/organizer/tournaments/new" element={<RequireOrganizer><OrganizerLayout><TournamentBuilder /></OrganizerLayout></RequireOrganizer>} />
+            <Route path="/organizer/tournaments/new/:id" element={<RequireOrganizer><OrganizerLayout><TournamentBuilder /></OrganizerLayout></RequireOrganizer>} />
             <Route path="/organizer/tournaments/:id/manage" element={<RequireOrganizer><OrganizerLayout><OrganizerTournamentManage /></OrganizerLayout></RequireOrganizer>} />
             <Route path="/organizer/tournaments/:id/manage/teams" element={<RequireOrganizer><OrganizerLayout><TournamentManage /></OrganizerLayout></RequireOrganizer>} />
             <Route path="/organizer/tournaments/:id/view" element={<RequireOrganizer><OrganizerLayout><CoOrganizerView /></OrganizerLayout></RequireOrganizer>} />
             <Route path="/organizer/radar" element={<RequireOrganizer><OrganizerLayout><SponsorshipRadar /></OrganizerLayout></RequireOrganizer>} />
             <Route path="/organizer/radar/:radar_id" element={<RequireOrganizer><OrganizerLayout><RadarDetailPage /></OrganizerLayout></RequireOrganizer>} />
-            <Route path="/organizer/billing" element={<RequireOrganizer><OrganizerLayout><BillDetail /></OrganizerLayout></RequireOrganizer>} />
+            <Route path="/organizer/billing" element={<RequireOrganizer><OrganizerLayout><OrganizerBilling /></OrganizerLayout></RequireOrganizer>} />
             <Route path="/organizer/billing/:bill_number" element={<RequireOrganizer><OrganizerLayout><BillDetail /></OrganizerLayout></RequireOrganizer>} />
+            <Route path="/organizer/sponsored" element={<RequireOrganizer><OrganizerLayout><CoOrganizedTournaments /></OrganizerLayout></RequireOrganizer>} />
             <Route path="/organizer/teams" element={<RequireOrganizer><OrganizerLayout><OrganizerTeams /></OrganizerLayout></RequireOrganizer>} />
             <Route path="/organizer/messages" element={<RequireOrganizer><OrganizerLayout><OrganizerMessages /></OrganizerLayout></RequireOrganizer>} />
             <Route path="/organizer/profile" element={<RequireOrganizer><OrganizerLayout><OrganizerSettings /></OrganizerLayout></RequireOrganizer>} />
@@ -150,6 +155,7 @@ function App() {
             <Route path="/staff/billing/:bill_number" element={<RequireStaff><StaffLayout><BillDetail /></StaffLayout></RequireStaff>} />
             <Route path="/staff/tournament-orders" element={<RequireStaff><StaffLayout><StaffTournamentOrders /></StaffLayout></RequireStaff>} />
             <Route path="/staff/organizers" element={<RequireStaff><StaffLayout><StaffOrganizers /></StaffLayout></RequireStaff>} />
+            <Route path="/staff/revenue" element={<RequireStaff><StaffLayout><StaffRevenue /></StaffLayout></RequireStaff>} />
             <Route path="/staff/settings" element={<RequireStaff><StaffLayout><StaffSettings /></StaffLayout></RequireStaff>} />
 
             {/* ============ SHARED PAGES ============ */}
