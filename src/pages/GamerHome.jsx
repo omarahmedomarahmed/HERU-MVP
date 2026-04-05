@@ -9,12 +9,13 @@ import HexBadge from '@/components/ui/HexBadge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { motion } from 'framer-motion';
-import { GamerProfile, MarketplaceItem, Team, Tournament, apiCall } from '@/api/heruClient'
+import { GamerProfile, MarketplaceItem, Team, Tournament, Achievement, apiCall } from '@/api/heruClient'
 import { useAuth } from '@/lib/AuthContext'
 
 import {
-  Trophy, Users, ShoppingBag, Star,
-  Zap, Target, Award, Play, ArrowRight, ShoppingCart, X
+  Trophy, Users, ShoppingBag, Star, Swords, TrendingUp,
+  Target, Award, Play, ArrowRight, ShoppingCart,
+  Gamepad2, Shield, Crown, Medal, Clock, ChevronRight
 } from 'lucide-react';
 
 export default function GamerHome() {
@@ -47,10 +48,38 @@ export default function GamerHome() {
     enabled: !!user?.id,
   });
 
-  const { data: tournaments = [] } = useQuery({
-    queryKey: ['tournaments-published'],
+  // Fetch gamer stats
+  const { data: stats } = useQuery({
+    queryKey: ['gamer-stats', user?.id],
+    queryFn: () => GamerProfile.stats(user.id),
+    enabled: !!user?.id,
+  });
+
+  // Fetch earned achievements
+  const { data: earnedAchievements = [] } = useQuery({
+    queryKey: ['gamer-achievements', user?.id],
+    queryFn: () => GamerProfile.achievements(user.id),
+    enabled: !!user?.id,
+  });
+
+  // Fetch all achievement definitions
+  const { data: allAchievements = [] } = useQuery({
+    queryKey: ['achievements-all'],
+    queryFn: () => Achievement.list(),
+  });
+
+  // Live + published tournaments
+  const { data: liveTournaments = [] } = useQuery({
+    queryKey: ['tournaments-live'],
+    queryFn: () => Tournament.list({ status: 'live' }, '-created_date', 6),
+  });
+
+  const { data: upcomingTournaments = [] } = useQuery({
+    queryKey: ['tournaments-upcoming'],
     queryFn: () => Tournament.list({ status: 'published' }, '-created_date', 6),
   });
+
+  const allTournaments = [...liveTournaments, ...upcomingTournaments].slice(0, 6);
 
   const { data: marketplaceItems = [] } = useQuery({
     queryKey: ['marketplace-prizepool'],
@@ -81,45 +110,124 @@ export default function GamerHome() {
 
   const unreadNotifications = profile?.notifications?.filter(n => !n.read)?.length || 0;
 
+  // Achievement icon mapping
+  const achievementIcons = {
+    wins: Trophy,
+    tournaments_played: Swords,
+    tournaments_won: Crown,
+    teams_created: Shield,
+    teams_joined: Users,
+  };
+
   return (
     <GamerLayout user={user} profile={profile} cartCount={cart.length} notificationCount={unreadNotifications}>
       {/* Hero Section */}
-      <section className="relative min-h-[50vh] flex items-center justify-center mb-12">
-        <div className="absolute inset-0 bg-[url('https://variety.com/wp-content/uploads/2020/08/league-of-legends-world-championship.jpg')] bg-cover bg-center opacity-20 rounded-2xl" />
-        <div className="absolute inset-0 bg-gradient-to-b from-zinc-950/50 via-zinc-950/80 to-zinc-950 rounded-2xl" />
-        
-        <div className="relative z-10 text-center px-4 py-12">
+      <section className="relative min-h-[40vh] flex items-center mb-10">
+        <div className="absolute inset-0 bg-gradient-to-br from-red-950/40 via-zinc-950/90 to-zinc-950 rounded-2xl overflow-hidden">
+          <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHZpZXdCb3g9IjAgMCA0MCA0MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cGF0aCBkPSJNMCAwaDQwdjQwSDB6IiBmaWxsPSJub25lIi8+PHBhdGggZD0iTTAgMGg0MHY0MEgweiIgZmlsbD0ibm9uZSIgc3Ryb2tlPSJyZ2JhKDI1NSwyNTUsMjU1LDAuMDMpIiBzdHJva2Utd2lkdGg9IjEiLz48L3N2Zz4=')] opacity-50" />
+        </div>
+
+        <div className="relative z-10 w-full px-2 py-10">
           <motion.div
-            initial={{ opacity: 0, y: 30 }}
+            initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
+            transition={{ duration: 0.6 }}
           >
-            <h1 className="text-4xl md:text-6xl font-black text-white mb-4">
-              Welcome, <span className="text-red-500">{user?.full_name || 'Gamer'}</span>
-            </h1>
-            <p className="text-xl text-gray-400 mb-4">Ready to compete?</p>
-            
-            <div className="flex flex-col sm:flex-row gap-4 justify-center mb-8">
-              <Link to={'/teams'}>
-                <GlowButton size="lg">
-                  <Users className="w-5 h-5" />
-                  JOIN A TEAM
-                </GlowButton>
-              </Link>
-              <Link to={'/tournaments'}>
-                <GlowButton variant="secondary" size="lg">
-                  <Trophy className="w-5 h-5" />
-                  PLAY TO WIN
-                </GlowButton>
-              </Link>
+            <div className="flex flex-col lg:flex-row gap-8 items-start">
+              {/* Welcome + Quick Actions */}
+              <div className="flex-1">
+                <p className="text-red-500 text-sm font-bold tracking-widest mb-2">WELCOME BACK</p>
+                <h1 className="text-4xl md:text-5xl font-black text-white mb-3">
+                  {profile?.username || user?.full_name || 'Gamer'}
+                </h1>
+                <p className="text-gray-400 text-lg mb-6">Ready to compete?</p>
+
+                <div className="flex flex-wrap gap-3">
+                  <Link to="/gamer/teams/create">
+                    <GlowButton size="lg">
+                      <Users className="w-5 h-5" />
+                      CREATE TEAM
+                    </GlowButton>
+                  </Link>
+                  <Link to="/tournaments">
+                    <GlowButton variant="secondary" size="lg">
+                      <Trophy className="w-5 h-5" />
+                      FIND TOURNAMENTS
+                    </GlowButton>
+                  </Link>
+                </div>
+              </div>
+
+              {/* Stats Cards */}
+              <div className="grid grid-cols-2 gap-3 w-full lg:w-auto lg:min-w-[320px]">
+                <FloatingPanel className="p-4 text-center">
+                  <Swords className="w-5 h-5 text-red-500 mx-auto mb-1" />
+                  <p className="text-2xl font-black text-white">{stats?.total_matches || 0}</p>
+                  <p className="text-xs text-gray-500 uppercase tracking-wider">Matches</p>
+                </FloatingPanel>
+                <FloatingPanel className="p-4 text-center">
+                  <Trophy className="w-5 h-5 text-yellow-500 mx-auto mb-1" />
+                  <p className="text-2xl font-black text-white">{stats?.total_wins || 0}</p>
+                  <p className="text-xs text-gray-500 uppercase tracking-wider">Wins</p>
+                </FloatingPanel>
+                <FloatingPanel className="p-4 text-center">
+                  <TrendingUp className="w-5 h-5 text-green-500 mx-auto mb-1" />
+                  <p className="text-2xl font-black text-white">{stats?.win_rate || 0}%</p>
+                  <p className="text-xs text-gray-500 uppercase tracking-wider">Win Rate</p>
+                </FloatingPanel>
+                <FloatingPanel className="p-4 text-center">
+                  <Medal className="w-5 h-5 text-purple-500 mx-auto mb-1" />
+                  <p className="text-2xl font-black text-white">{earnedAchievements.length}</p>
+                  <p className="text-xs text-gray-500 uppercase tracking-wider">Badges</p>
+                </FloatingPanel>
+              </div>
             </div>
           </motion.div>
         </div>
       </section>
 
+      {/* Achievement Showcase */}
+      {earnedAchievements.length > 0 && (
+        <section className="mb-10">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <Award className="w-5 h-5 text-yellow-500" />
+              <h2 className="text-lg font-bold text-white">Recent Achievements</h2>
+            </div>
+            <Link to="/gamer/profile">
+              <GlowButton variant="ghost" size="sm">
+                View All <ChevronRight className="w-3 h-3" />
+              </GlowButton>
+            </Link>
+          </div>
+          <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
+            {earnedAchievements.slice(0, 5).map((ea, i) => {
+              const ach = ea.achievements || ea;
+              const IconComp = achievementIcons[ach.criteria?.type] || Award;
+              return (
+                <motion.div
+                  key={ea.id || i}
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ delay: i * 0.1 }}
+                >
+                  <FloatingPanel className="p-4 min-w-[140px] text-center" glowBorder>
+                    <div className="w-12 h-12 rounded-full bg-gradient-to-br from-yellow-500/20 to-red-500/20 flex items-center justify-center mx-auto mb-2">
+                      <IconComp className="w-6 h-6 text-yellow-400" />
+                    </div>
+                    <p className="text-white text-sm font-bold truncate">{ach.name || ach.title}</p>
+                    <p className="text-gray-500 text-xs mt-1 truncate">{ach.description}</p>
+                  </FloatingPanel>
+                </motion.div>
+              );
+            })}
+          </div>
+        </section>
+      )}
+
       {/* Tournaments Section */}
-      <section className="mb-12">
-        <div className="flex items-center justify-between mb-6">
+      <section className="mb-10">
+        <div className="flex items-center justify-between mb-5">
           <div>
             <HexBadge className="mb-2">
               <Trophy className="w-3 h-3 mr-1" /> COMPETE
@@ -128,68 +236,84 @@ export default function GamerHome() {
               ACTIVE <span className="text-red-500">TOURNAMENTS</span>
             </h2>
           </div>
-          <Link to={'/tournaments'}>
+          <Link to="/tournaments">
             <GlowButton variant="ghost" size="sm">
               View All <ArrowRight className="w-4 h-4" />
             </GlowButton>
           </Link>
         </div>
 
-        <div className="grid md:grid-cols-3 gap-6">
-          {tournaments.map((tournament, i) => (
-            <motion.div
-              key={tournament.id}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.1 }}
-            >
-              <Link to={`/tournaments/$\{tournament.id}`}>
-                <GameCard className="h-full group">
-                  <div className="h-40 bg-gradient-to-br from-red-900/30 to-zinc-900 relative">
-                    {tournament.tournament_image ? (
-                      <img src={tournament.tournament_image} alt="" className="w-full h-full object-cover opacity-70" />
-                    ) : tournament.organizer_brand?.logo && (
-                      <img src={tournament.organizer_brand.logo} alt="" className="w-full h-full object-cover opacity-50" />
-                    )}
-                    <div className="absolute inset-0 bg-gradient-to-t from-zinc-900 to-transparent" />
-                    <div className="absolute top-3 left-3">
-                      <HexBadge>{tournament.status}</HexBadge>
-                    </div>
-                    {tournament.prizepool_total > 0 && (
-                      <div className="absolute top-3 right-3">
-                        <span className="bg-yellow-500 text-black text-xs font-bold px-2 py-1 rounded">
-                          EGP {tournament.prizepool_total?.toLocaleString()}
+        <div className="grid md:grid-cols-3 gap-5">
+          {allTournaments.map((tournament, i) => {
+            const isLive = tournament.status === 'live';
+            return (
+              <motion.div
+                key={tournament.id}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: i * 0.1 }}
+              >
+                <Link to={`/tournaments/${tournament.id}`}>
+                  <GameCard className="h-full group">
+                    <div className="h-40 bg-gradient-to-br from-red-900/30 to-zinc-900 relative overflow-hidden">
+                      {tournament.tournament_image ? (
+                        <img src={tournament.tournament_image} alt="" className="w-full h-full object-cover opacity-70 group-hover:scale-105 transition-transform duration-500" />
+                      ) : tournament.organizer_brand?.logo && (
+                        <img src={tournament.organizer_brand.logo} alt="" className="w-full h-full object-cover opacity-50" />
+                      )}
+                      <div className="absolute inset-0 bg-gradient-to-t from-zinc-900 to-transparent" />
+
+                      {/* Status Badge */}
+                      <div className="absolute top-3 left-3">
+                        {isLive ? (
+                          <span className="flex items-center gap-1.5 bg-red-600 text-white text-xs font-bold px-3 py-1 rounded-full">
+                            <span className="w-2 h-2 bg-white rounded-full animate-pulse" />
+                            LIVE
+                          </span>
+                        ) : (
+                          <HexBadge className="bg-zinc-900/80">
+                            <Clock className="w-3 h-3 mr-1" /> {tournament.status}
+                          </HexBadge>
+                        )}
+                      </div>
+
+                      {/* Prizepool */}
+                      {tournament.prizepool_total > 0 && (
+                        <div className="absolute top-3 right-3">
+                          <span className="bg-yellow-500 text-black text-xs font-bold px-2 py-1 rounded">
+                            EGP {tournament.prizepool_total?.toLocaleString()}
+                          </span>
+                        </div>
+                      )}
+
+                      {/* Game */}
+                      <div className="absolute bottom-3 left-3">
+                        <span className="text-xs bg-zinc-900/70 text-gray-300 px-2 py-0.5 rounded">
+                          {tournament.game || 'TBD'}
                         </span>
                       </div>
-                    )}
-                    <div className="absolute bottom-3 left-3">
-                      <span className="text-xs text-gray-400">{tournament.game}</span>
                     </div>
-                  </div>
-                  <div className="p-4">
-                    <h3 className="text-white font-bold text-lg mb-2">{tournament.name}</h3>
-                    <div className="flex items-center gap-4 text-sm text-gray-400">
-                      <span className="flex items-center gap-1">
-                        <Users className="w-4 h-4" />
-                        {tournament.teams?.length || 0}/{tournament.max_teams || '∞'}
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <Trophy className="w-4 h-4 text-yellow-500" />
-                        {tournament.format || 'TBD'}
-                      </span>
+                    <div className="p-4">
+                      <h3 className="text-white font-bold text-lg mb-2 truncate">{tournament.name}</h3>
+                      <div className="flex items-center gap-4 text-sm text-gray-400">
+                        <span className="flex items-center gap-1">
+                          <Users className="w-4 h-4" />
+                          {tournament.teams?.length || 0}/{tournament.max_teams || '∞'}
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <Gamepad2 className="w-4 h-4 text-red-400" />
+                          {tournament.format || 'TBD'}
+                        </span>
+                      </div>
                     </div>
-                    <GlowButton size="sm" className="w-full mt-4">
-                      <Play className="w-3 h-3" />
-                      View Tournament
-                    </GlowButton>
-                  </div>
-                </GameCard>
-              </Link>
-            </motion.div>
-          ))}
+                  </GameCard>
+                </Link>
+              </motion.div>
+            );
+          })}
         </div>
 
-        {tournaments.length === 0 && (
+        {allTournaments.length === 0 && (
           <FloatingPanel className="p-12 text-center">
             <Trophy className="w-16 h-16 text-zinc-700 mx-auto mb-4" />
             <h3 className="text-xl text-white font-bold mb-2">No Active Tournaments</h3>
@@ -199,8 +323,8 @@ export default function GamerHome() {
       </section>
 
       {/* Teams Section */}
-      <section className="mb-12">
-        <div className="flex items-center justify-between mb-6">
+      <section className="mb-10">
+        <div className="flex items-center justify-between mb-5">
           <div>
             <HexBadge className="mb-2">
               <Users className="w-3 h-3 mr-1" /> RECRUIT
@@ -209,14 +333,14 @@ export default function GamerHome() {
               TEAMS <span className="text-red-500">RECRUITING</span>
             </h2>
           </div>
-          <Link to={'/teams'}>
+          <Link to="/teams">
             <GlowButton variant="ghost" size="sm">
               View All <ArrowRight className="w-4 h-4" />
             </GlowButton>
           </Link>
         </div>
 
-        <div className="grid md:grid-cols-3 gap-6">
+        <div className="grid md:grid-cols-3 gap-5">
           {teams.map((team, i) => (
             <motion.div
               key={team.id}
@@ -262,17 +386,17 @@ export default function GamerHome() {
       </section>
 
       {/* Prizepool Shop Section */}
-      <section className="mb-12">
-        <div className="flex items-center justify-between mb-6">
+      <section className="mb-10">
+        <div className="flex items-center justify-between mb-5">
           <div>
             <HexBadge className="mb-2">
-              <ShoppingBag className="w-3 h-3 mr-1" /> PRIZEPOOL
+              <ShoppingBag className="w-3 h-3 mr-1" /> SHOP
             </HexBadge>
             <h2 className="text-2xl md:text-3xl font-black text-white">
-              🔥 PRIZE<span className="text-red-500">POOL</span> STORE
+              PRIZE<span className="text-red-500">POOL</span> STORE
             </h2>
           </div>
-          <Link to={'/gamer/marketplace'}>
+          <Link to="/gamer/marketplace">
             <GlowButton variant="ghost" size="sm">
               View All <ArrowRight className="w-4 h-4" />
             </GlowButton>
@@ -287,12 +411,12 @@ export default function GamerHome() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.05 }}
             >
-              <GameCard className="h-full cursor-pointer" onClick={() => setSelectedItem(item)}>
+              <GameCard className="h-full cursor-pointer group" onClick={() => setSelectedItem(item)}>
                 <div className="aspect-square bg-zinc-800 relative overflow-hidden">
                   {item.image ? (
-                    <img src={item.image} alt={item.title} className="w-full h-full object-cover" />
+                    <img src={item.image} alt={item.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
                   ) : (
-                    <div className="w-full h-full flex items-center justify-center">
+                    <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-red-900/20 to-zinc-900">
                       <Award className="w-12 h-12 text-zinc-600" />
                     </div>
                   )}
@@ -302,7 +426,7 @@ export default function GamerHome() {
                     </span>
                   </div>
                 </div>
-                <div className="p-4">
+                <div className="p-3">
                   <h3 className="text-white font-bold text-sm truncate">{item.title}</h3>
                   <p className="text-gray-500 text-xs mt-1 truncate">{item.description}</p>
                 </div>
@@ -313,7 +437,7 @@ export default function GamerHome() {
       </section>
 
       {/* Become Talent CTA */}
-      <section className="mb-12">
+      <section className="mb-10">
         <FloatingPanel className="p-8 text-center" glowBorder>
           <Star className="w-12 h-12 text-red-500 mx-auto mb-4" />
           <h2 className="text-2xl md:text-3xl font-black text-white mb-3">
@@ -322,7 +446,7 @@ export default function GamerHome() {
           <p className="text-gray-400 mb-6 max-w-xl mx-auto">
             Are you a caster, host, analyst, or observer? Apply to join our talent roster.
           </p>
-          <Link to={'/talents'}>
+          <Link to="/gamer/profile">
             <GlowButton size="lg">
               <Star className="w-5 h-5" />
               APPLY NOW
@@ -355,7 +479,7 @@ export default function GamerHome() {
                   <span className="text-gray-500 text-sm">{selectedItem.stock} in stock</span>
                 )}
               </div>
-              
+
               {selectedItem.type === 'gaming_currency' && (
                 <div className="mb-4">
                   <label className="text-sm text-gray-400 block mb-2">Your Game Tag/Username *</label>
@@ -368,7 +492,7 @@ export default function GamerHome() {
                 </div>
               )}
 
-              <GlowButton 
+              <GlowButton
                 className="w-full"
                 onClick={() => addToCart(selectedItem, gameTag)}
                 disabled={selectedItem.type === 'gaming_currency' && !gameTag}

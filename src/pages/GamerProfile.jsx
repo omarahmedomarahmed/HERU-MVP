@@ -8,23 +8,56 @@ import GameCard from '@/components/ui/GameCard';
 import HexBadge from '@/components/ui/HexBadge';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { GamerProfile as GamerProfileAPI, Order, Team, apiCall } from '@/api/heruClient'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { motion } from 'framer-motion';
+import { GamerProfile as GamerProfileAPI, Order, Team, Achievement, apiCall } from '@/api/heruClient'
 import { useAuth } from '@/lib/AuthContext'
 
 import {
   User, Edit2, Save, X, Gamepad2, Users, Star,
-  Package, Plus, Trash2, LogOut, Briefcase
+  Package, Plus, Trash2, LogOut, Briefcase, Trophy,
+  Swords, TrendingUp, Crown, Shield, Medal, Award,
+  Target, Lock, ShoppingBag
 } from 'lucide-react';
+
+// Achievement icon mapping
+const ACHIEVEMENT_ICONS = {
+  wins: Trophy,
+  tournaments_played: Swords,
+  tournaments_won: Crown,
+  teams_created: Shield,
+  teams_joined: Users,
+};
+
+// Achievement rarity colors
+const RARITY_COLORS = {
+  common: 'from-zinc-500/20 to-zinc-700/20 border-zinc-600/30',
+  uncommon: 'from-green-500/20 to-green-700/20 border-green-600/30',
+  rare: 'from-blue-500/20 to-blue-700/20 border-blue-600/30',
+  epic: 'from-purple-500/20 to-purple-700/20 border-purple-600/30',
+  legendary: 'from-yellow-500/20 to-red-500/20 border-yellow-500/30',
+};
+
+const RARITY_GLOW = {
+  common: '',
+  uncommon: 'text-green-400',
+  rare: 'text-blue-400',
+  epic: 'text-purple-400',
+  legendary: 'text-yellow-400',
+};
 
 export default function GamerProfile() {
   const { logout } = useAuth();
   const [user, setUser] = useState(null);
   const [editing, setEditing] = useState(false);
   const [addGameModal, setAddGameModal] = useState(false);
+  const [talentModal, setTalentModal] = useState(false);
   const [orderChatModal, setOrderChatModal] = useState(null);
   const [newMessage, setNewMessage] = useState('');
   const [newGame, setNewGame] = useState({ game_name: '', game_id: '', rank: '' });
+  const [talentForm, setTalentForm] = useState({ talent_type: '', talent_price: '', talent_video_link: '' });
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
@@ -60,6 +93,26 @@ export default function GamerProfile() {
       return profiles[0];
     },
     enabled: !!user?.id,
+  });
+
+  // Fetch stats
+  const { data: stats } = useQuery({
+    queryKey: ['gamer-stats', user?.id],
+    queryFn: () => GamerProfileAPI.stats(user.id),
+    enabled: !!user?.id,
+  });
+
+  // Fetch earned achievements
+  const { data: earnedAchievements = [] } = useQuery({
+    queryKey: ['gamer-achievements', user?.id],
+    queryFn: () => GamerProfileAPI.achievements(user.id),
+    enabled: !!user?.id,
+  });
+
+  // Fetch all achievement definitions (to show locked ones)
+  const { data: allAchievements = [] } = useQuery({
+    queryKey: ['achievements-all'],
+    queryFn: () => Achievement.list(),
   });
 
   const [editForm, setEditForm] = useState({});
@@ -101,6 +154,14 @@ export default function GamerProfile() {
       return GamerProfileAPI.update(profile.id, { games });
     },
     onSuccess: () => queryClient.invalidateQueries(['gamer-profile', user?.id])
+  });
+
+  const applyTalentMutation = useMutation({
+    mutationFn: async (data) => GamerProfileAPI.applyTalent(data),
+    onSuccess: () => {
+      setTalentModal(false);
+      setTalentForm({ talent_type: '', talent_price: '', talent_video_link: '' });
+    }
   });
 
   const { data: teams = [] } = useQuery({
@@ -147,6 +208,14 @@ export default function GamerProfile() {
 
   const cart = JSON.parse(localStorage.getItem(`cart_${user?.id}`) || '[]');
 
+  // Build achievement grid (earned + locked)
+  const earnedIds = new Set(earnedAchievements.map(ea => ea.achievement_id || ea.achievements?.id));
+  const achievementGrid = allAchievements.map(ach => ({
+    ...ach,
+    earned: earnedIds.has(ach.id),
+    earnedData: earnedAchievements.find(ea => (ea.achievement_id || ea.achievements?.id) === ach.id),
+  }));
+
   if (isLoading) {
     return (
       <GamerLayout user={user} profile={profile} cartCount={cart.length}>
@@ -163,18 +232,23 @@ export default function GamerProfile() {
       <FloatingPanel className="p-6 mb-6" glowBorder>
         <div className="flex flex-col md:flex-row gap-6">
           {/* Avatar */}
-          <div className="relative">
-            <div className="w-32 h-32 rounded-2xl bg-gradient-to-br from-red-600/30 to-zinc-800 flex items-center justify-center overflow-hidden">
+          <div className="relative flex-shrink-0">
+            <div className="w-32 h-32 rounded-2xl bg-gradient-to-br from-red-600/30 to-zinc-800 flex items-center justify-center overflow-hidden ring-2 ring-red-500/20">
               {profile?.avatar ? (
                 <img src={profile.avatar} alt="" className="w-full h-full object-cover" />
               ) : (
                 <User className="w-16 h-16 text-red-500" />
               )}
             </div>
+            {profile?.is_talent && (
+              <div className="absolute -bottom-2 -right-2 bg-yellow-500 text-black text-xs font-bold px-2 py-0.5 rounded-full flex items-center gap-1">
+                <Star className="w-3 h-3" /> TALENT
+              </div>
+            )}
           </div>
 
           {/* Info */}
-          <div className="flex-1">
+          <div className="flex-1 min-w-0">
             {editing ? (
               <div className="space-y-4">
                 <Input
@@ -207,170 +281,421 @@ export default function GamerProfile() {
               </div>
             ) : (
               <>
-                <div className="flex items-start justify-between">
-                  <div>
-                    <h1 className="text-3xl font-black text-white mb-1">
+                <div className="flex items-start justify-between gap-4">
+                  <div className="min-w-0">
+                    <h1 className="text-3xl font-black text-white mb-1 truncate">
                       {profile?.username || user?.full_name}
                     </h1>
-                    <p className="text-gray-400">{user?.email}</p>
+                    <p className="text-gray-400 text-sm">{user?.email}</p>
                   </div>
-                  <GlowButton variant="secondary" size="sm" onClick={() => setEditing(true)}>
-                    <Edit2 className="w-4 h-4" /> Edit
-                  </GlowButton>
+                  <div className="flex gap-2 flex-shrink-0">
+                    <GlowButton variant="secondary" size="sm" onClick={() => setEditing(true)}>
+                      <Edit2 className="w-4 h-4" /> Edit
+                    </GlowButton>
+                  </div>
                 </div>
                 {profile?.bio && (
-                  <p className="text-gray-300 mt-4">{profile.bio}</p>
+                  <p className="text-gray-300 mt-3 line-clamp-3">{profile.bio}</p>
                 )}
-
-                <div className="flex gap-6 mt-4">
-                  <div className="text-center">
-                    <p className="text-2xl font-bold text-white">{teams.length}</p>
-                    <p className="text-gray-500 text-sm">Teams</p>
-                  </div>
-                  <div className="text-center">
-                    <p className="text-2xl font-bold text-white">{profile?.games?.length || 0}</p>
-                    <p className="text-gray-500 text-sm">Games</p>
-                  </div>
-                </div>
-
-                {/* Talent Gig Requests */}
-                {profile?.is_talent && (
-                  <div className="mt-4">
-                    <Link to={'/gamer/gigs'}>
-                      <GlowButton variant="secondary" size="sm">
-                        <Briefcase className="w-4 h-4" /> My Gig Requests
-                      </GlowButton>
-                    </Link>
-                  </div>
-                )}
-
-                {/* Logout Button */}
-                <div className="mt-6 pt-4 border-t border-zinc-800">
-                  <button
-                    onClick={handleLogout}
-                    className="flex items-center gap-2 text-gray-400 hover:text-red-400 transition-colors"
-                  >
-                    <LogOut className="w-4 h-4" /> Logout
-                  </button>
-                </div>
               </>
             )}
           </div>
         </div>
+
+        {/* Stats Bar */}
+        {!editing && (
+          <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 mt-6 pt-6 border-t border-zinc-800">
+            <div className="text-center p-3 bg-zinc-800/40 rounded-lg">
+              <Swords className="w-4 h-4 text-red-500 mx-auto mb-1" />
+              <p className="text-xl font-black text-white">{stats?.total_matches || 0}</p>
+              <p className="text-xs text-gray-500 uppercase">Matches</p>
+            </div>
+            <div className="text-center p-3 bg-zinc-800/40 rounded-lg">
+              <Trophy className="w-4 h-4 text-yellow-500 mx-auto mb-1" />
+              <p className="text-xl font-black text-white">{stats?.total_wins || 0}</p>
+              <p className="text-xs text-gray-500 uppercase">Wins</p>
+            </div>
+            <div className="text-center p-3 bg-zinc-800/40 rounded-lg">
+              <TrendingUp className="w-4 h-4 text-green-500 mx-auto mb-1" />
+              <p className="text-xl font-black text-white">{stats?.win_rate || 0}%</p>
+              <p className="text-xs text-gray-500 uppercase">Win Rate</p>
+            </div>
+            <div className="text-center p-3 bg-zinc-800/40 rounded-lg">
+              <Users className="w-4 h-4 text-blue-500 mx-auto mb-1" />
+              <p className="text-xl font-black text-white">{stats?.teams_count || teams.length}</p>
+              <p className="text-xs text-gray-500 uppercase">Teams</p>
+            </div>
+            <div className="text-center p-3 bg-zinc-800/40 rounded-lg col-span-2 sm:col-span-1">
+              <Medal className="w-4 h-4 text-purple-500 mx-auto mb-1" />
+              <p className="text-xl font-black text-white">{earnedAchievements.length}</p>
+              <p className="text-xs text-gray-500 uppercase">Badges</p>
+            </div>
+          </div>
+        )}
       </FloatingPanel>
 
-      <div className="grid lg:grid-cols-2 gap-6">
-        {/* Games */}
-        <FloatingPanel className="p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-bold text-white flex items-center gap-2">
-              <Gamepad2 className="w-5 h-5 text-red-500" />
-              My Games
-            </h2>
-            <GlowButton variant="secondary" size="sm" onClick={() => setAddGameModal(true)}>
-              <Plus className="w-4 h-4" /> Add
-            </GlowButton>
-          </div>
+      {/* Main Tabs */}
+      <Tabs defaultValue="games" className="space-y-6">
+        <TabsList className="bg-zinc-900 border border-zinc-800 p-1">
+          <TabsTrigger value="games" className="data-[state=active]:bg-red-600 data-[state=active]:text-white text-gray-400">
+            <Gamepad2 className="w-4 h-4 mr-1.5" /> Games
+          </TabsTrigger>
+          <TabsTrigger value="teams" className="data-[state=active]:bg-red-600 data-[state=active]:text-white text-gray-400">
+            <Users className="w-4 h-4 mr-1.5" /> Teams
+          </TabsTrigger>
+          <TabsTrigger value="achievements" className="data-[state=active]:bg-red-600 data-[state=active]:text-white text-gray-400">
+            <Award className="w-4 h-4 mr-1.5" /> Badges
+          </TabsTrigger>
+          <TabsTrigger value="orders" className="data-[state=active]:bg-red-600 data-[state=active]:text-white text-gray-400">
+            <Package className="w-4 h-4 mr-1.5" /> Orders
+          </TabsTrigger>
+          {profile?.is_talent && (
+            <TabsTrigger value="talent" className="data-[state=active]:bg-red-600 data-[state=active]:text-white text-gray-400">
+              <Star className="w-4 h-4 mr-1.5" /> Talent
+            </TabsTrigger>
+          )}
+        </TabsList>
 
-          <div className="space-y-3">
-            {profile?.games?.map((game, i) => (
-              <div key={i} className="flex items-center justify-between p-3 bg-zinc-800/50 rounded-lg">
-                <div>
-                  <p className="text-white font-medium">{game.game_name}</p>
-                  <p className="text-gray-500 text-sm">ID: {game.game_id} • {game.rank}</p>
-                </div>
-                <button
-                  onClick={() => removeGameMutation.mutate(i)}
-                  className="p-2 text-gray-500 hover:text-red-400"
+        {/* Games Tab */}
+        <TabsContent value="games">
+          <FloatingPanel className="p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                <Gamepad2 className="w-5 h-5 text-red-500" />
+                My Games
+              </h2>
+              <GlowButton variant="secondary" size="sm" onClick={() => setAddGameModal(true)}>
+                <Plus className="w-4 h-4" /> Add Game
+              </GlowButton>
+            </div>
+
+            <div className="grid sm:grid-cols-2 gap-3">
+              {profile?.games?.map((game, i) => (
+                <motion.div
+                  key={i}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: i * 0.05 }}
                 >
-                  <Trash2 className="w-4 h-4" />
-                </button>
-              </div>
-            ))}
+                  <div className="flex items-center justify-between p-4 bg-zinc-800/50 rounded-xl border border-zinc-700/30 hover:border-red-500/20 transition-colors">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-red-600/20 to-zinc-700 flex items-center justify-center">
+                        <Gamepad2 className="w-5 h-5 text-red-400" />
+                      </div>
+                      <div>
+                        <p className="text-white font-bold">{game.game_name}</p>
+                        <p className="text-gray-500 text-xs">
+                          {game.game_id && `ID: ${game.game_id}`}
+                          {game.game_id && game.rank && ' · '}
+                          {game.rank && <span className="text-red-400">{game.rank}</span>}
+                        </p>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => removeGameMutation.mutate(i)}
+                      className="p-2 text-gray-600 hover:text-red-400 transition-colors"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
             {(!profile?.games || profile.games.length === 0) && (
-              <div className="text-center py-8">
-                <Gamepad2 className="w-12 h-12 text-zinc-700 mx-auto mb-2" />
-                <p className="text-gray-500">No games added yet</p>
+              <div className="text-center py-12">
+                <Gamepad2 className="w-16 h-16 text-zinc-700 mx-auto mb-3" />
+                <p className="text-gray-400 font-medium mb-1">No games added yet</p>
+                <p className="text-gray-600 text-sm mb-4">Add your games so teams and organizers can find you</p>
+                <GlowButton size="sm" onClick={() => setAddGameModal(true)}>
+                  <Plus className="w-4 h-4" /> Add Your First Game
+                </GlowButton>
               </div>
             )}
-          </div>
-        </FloatingPanel>
+          </FloatingPanel>
+        </TabsContent>
 
-        {/* Teams */}
-        <FloatingPanel className="p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-bold text-white flex items-center gap-2">
-              <Users className="w-5 h-5 text-red-500" />
-              My Teams
-            </h2>
-          </div>
+        {/* Teams Tab */}
+        <TabsContent value="teams">
+          <FloatingPanel className="p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                <Users className="w-5 h-5 text-red-500" />
+                My Teams
+              </h2>
+              <Link to="/gamer/teams/create">
+                <GlowButton variant="secondary" size="sm">
+                  <Plus className="w-4 h-4" /> Create Team
+                </GlowButton>
+              </Link>
+            </div>
 
-          <div className="space-y-3">
-            {teams.map((team) => (
-              <Link key={team.id} to={`/teams/$\{team.id}`}>
-                <GameCard className="p-3">
-                  <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 rounded-lg bg-zinc-800 flex items-center justify-center overflow-hidden">
-                      {team.logo ? (
-                        <img src={team.logo} alt="" className="w-full h-full object-cover" />
-                      ) : (
-                        <Users className="w-6 h-6 text-red-500" />
+            <div className="grid sm:grid-cols-2 gap-3">
+              {teams.map((team, i) => (
+                <motion.div
+                  key={team.id}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: i * 0.05 }}
+                >
+                  <Link to={`/gamer/teams/${team.id}`}>
+                    <GameCard className="p-4 hover:border-red-500/30 transition-colors">
+                      <div className="flex items-center gap-4">
+                        <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-red-600/20 to-zinc-800 flex items-center justify-center overflow-hidden flex-shrink-0">
+                          {team.logo ? (
+                            <img src={team.logo} alt="" className="w-full h-full object-cover" />
+                          ) : (
+                            <Users className="w-7 h-7 text-red-500" />
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-white font-bold truncate">{team.name}</p>
+                          <p className="text-gray-500 text-sm">{team.members?.length || 0} members</p>
+                          <div className="flex flex-wrap gap-1 mt-1.5">
+                            {team.games?.slice(0, 2).map((game, gi) => (
+                              <span key={gi} className="text-xs bg-zinc-800 text-gray-300 px-2 py-0.5 rounded">
+                                {game}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                        {team.leader_id === user?.id && (
+                          <span className="text-xs bg-red-500/20 text-red-400 px-2 py-0.5 rounded-full font-bold flex-shrink-0">
+                            LEADER
+                          </span>
+                        )}
+                      </div>
+                    </GameCard>
+                  </Link>
+                </motion.div>
+              ))}
+            </div>
+            {teams.length === 0 && (
+              <div className="text-center py-12">
+                <Users className="w-16 h-16 text-zinc-700 mx-auto mb-3" />
+                <p className="text-gray-400 font-medium mb-1">Not part of any team yet</p>
+                <p className="text-gray-600 text-sm mb-4">Create or join a team to compete in tournaments</p>
+                <div className="flex gap-3 justify-center">
+                  <Link to="/gamer/teams/create">
+                    <GlowButton size="sm">
+                      <Plus className="w-4 h-4" /> Create Team
+                    </GlowButton>
+                  </Link>
+                  <Link to="/teams">
+                    <GlowButton variant="secondary" size="sm">
+                      <Target className="w-4 h-4" /> Browse Teams
+                    </GlowButton>
+                  </Link>
+                </div>
+              </div>
+            )}
+          </FloatingPanel>
+        </TabsContent>
+
+        {/* Achievements Tab */}
+        <TabsContent value="achievements">
+          <FloatingPanel className="p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                <Award className="w-5 h-5 text-yellow-500" />
+                Achievements
+              </h2>
+              <HexBadge className="bg-yellow-500/10 text-yellow-400">
+                {earnedAchievements.length}/{allAchievements.length}
+              </HexBadge>
+            </div>
+
+            {/* Progress bar */}
+            <div className="mb-6">
+              <div className="h-2 bg-zinc-800 rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-gradient-to-r from-red-600 to-yellow-500 rounded-full transition-all duration-500"
+                  style={{ width: `${allAchievements.length > 0 ? (earnedAchievements.length / allAchievements.length) * 100 : 0}%` }}
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+              {achievementGrid.map((ach, i) => {
+                const IconComp = ACHIEVEMENT_ICONS[ach.criteria?.type] || Award;
+                const rarity = ach.rarity || 'common';
+                const colorClass = RARITY_COLORS[rarity] || RARITY_COLORS.common;
+                const glowClass = RARITY_GLOW[rarity] || '';
+
+                return (
+                  <motion.div
+                    key={ach.id || i}
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ delay: i * 0.03 }}
+                  >
+                    <div className={`relative p-4 rounded-xl border text-center transition-all
+                      ${ach.earned
+                        ? `bg-gradient-to-br ${colorClass} hover:scale-105`
+                        : 'bg-zinc-900/50 border-zinc-800 opacity-50'
+                      }`}
+                    >
+                      <div className={`w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-2
+                        ${ach.earned ? 'bg-zinc-900/60' : 'bg-zinc-800/60'}`}
+                      >
+                        {ach.earned ? (
+                          <IconComp className={`w-6 h-6 ${glowClass || 'text-white'}`} />
+                        ) : (
+                          <Lock className="w-5 h-5 text-zinc-600" />
+                        )}
+                      </div>
+                      <p className={`text-sm font-bold truncate ${ach.earned ? 'text-white' : 'text-zinc-600'}`}>
+                        {ach.name || ach.title}
+                      </p>
+                      <p className={`text-xs mt-0.5 truncate ${ach.earned ? 'text-gray-400' : 'text-zinc-700'}`}>
+                        {ach.description}
+                      </p>
+                      {ach.earned && (
+                        <p className="text-xs text-gray-500 mt-1">
+                          {new Date(ach.earnedData?.earned_at).toLocaleDateString()}
+                        </p>
                       )}
                     </div>
-                    <div className="flex-1">
-                      <p className="text-white font-medium">{team.name}</p>
-                      <p className="text-gray-500 text-sm">{team.members?.length || 0} members</p>
-                    </div>
-                  </div>
-                </GameCard>
+                  </motion.div>
+                );
+              })}
+            </div>
+
+            {allAchievements.length === 0 && (
+              <div className="text-center py-12">
+                <Award className="w-16 h-16 text-zinc-700 mx-auto mb-3" />
+                <p className="text-gray-400 font-medium">No achievements available yet</p>
+                <p className="text-gray-600 text-sm">Achievements will appear as you play tournaments</p>
+              </div>
+            )}
+          </FloatingPanel>
+        </TabsContent>
+
+        {/* Orders Tab */}
+        <TabsContent value="orders">
+          <FloatingPanel className="p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                <Package className="w-5 h-5 text-red-500" />
+                My Orders
+              </h2>
+              <Link to="/gamer/orders">
+                <GlowButton variant="ghost" size="sm">View All</GlowButton>
               </Link>
-            ))}
-            {teams.length === 0 && (
-              <div className="text-center py-8">
-                <Users className="w-12 h-12 text-zinc-700 mx-auto mb-2" />
-                <p className="text-gray-500">Not part of any team yet</p>
-              </div>
-            )}
-          </div>
-        </FloatingPanel>
+            </div>
 
-        {/* My Orders */}
-        <FloatingPanel className="p-6 lg:col-span-2">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-bold text-white flex items-center gap-2">
-              <Package className="w-5 h-5 text-red-500" />
-              My Orders
-            </h2>
-            <Link to={'/gamer/orders'}>
-              <GlowButton variant="ghost" size="sm">View All</GlowButton>
-            </Link>
-          </div>
-
-          <div className="space-y-3">
-            {orders.slice(0, 3).map((order) => (
-              <div
-                key={order.id}
-                className="p-3 bg-zinc-800/50 rounded-lg cursor-pointer hover:bg-zinc-800"
-                onClick={() => setOrderChatModal(order)}
-              >
-                <div className="flex items-center justify-between mb-2">
-                  <p className="text-white font-medium">Order #{order.id.slice(0, 8)}</p>
-                  <HexBadge className={
-                    order.status === 'completed' ? 'bg-green-500/20 text-green-400' :
-                    order.status === 'processing' ? 'bg-blue-500/20 text-blue-400' :
-                    'bg-yellow-500/20 text-yellow-400'
-                  }>
-                    {order.status}
-                  </HexBadge>
+            <div className="space-y-3">
+              {orders.slice(0, 5).map((order) => (
+                <div
+                  key={order.id}
+                  className="p-4 bg-zinc-800/50 rounded-xl cursor-pointer hover:bg-zinc-800 transition-colors border border-zinc-700/20"
+                  onClick={() => setOrderChatModal(order)}
+                >
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="text-white font-medium">Order #{order.id.slice(0, 8)}</p>
+                    <HexBadge className={
+                      order.status === 'completed' ? 'bg-green-500/20 text-green-400' :
+                      order.status === 'processing' ? 'bg-blue-500/20 text-blue-400' :
+                      order.status === 'cancelled' ? 'bg-red-500/20 text-red-400' :
+                      'bg-yellow-500/20 text-yellow-400'
+                    }>
+                      {order.status}
+                    </HexBadge>
+                  </div>
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-gray-500">{order.items?.length || 0} items</span>
+                    <span className="text-white font-bold">EGP {order.total?.toLocaleString()}</span>
+                  </div>
                 </div>
-                <p className="text-gray-500 text-sm">${order.total?.toFixed(2)} • {order.items?.length || 0} items</p>
+              ))}
+              {orders.length === 0 && (
+                <div className="text-center py-8">
+                  <Package className="w-12 h-12 text-zinc-700 mx-auto mb-2" />
+                  <p className="text-gray-500">No orders yet</p>
+                  <Link to="/gamer/marketplace" className="inline-block mt-3">
+                    <GlowButton size="sm" variant="secondary">
+                      <ShoppingBag className="w-4 h-4" /> Browse Store
+                    </GlowButton>
+                  </Link>
+                </div>
+              )}
+            </div>
+          </FloatingPanel>
+        </TabsContent>
+
+        {/* Talent Tab */}
+        {profile?.is_talent && (
+          <TabsContent value="talent">
+            <FloatingPanel className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                  <Star className="w-5 h-5 text-yellow-500" />
+                  Talent Profile
+                </h2>
+                <Link to="/gamer/gigs">
+                  <GlowButton variant="secondary" size="sm">
+                    <Briefcase className="w-4 h-4" /> My Gig Requests
+                  </GlowButton>
+                </Link>
               </div>
-            ))}
-            {orders.length === 0 && (
-              <p className="text-gray-500 text-center py-4">No orders yet</p>
-            )}
-          </div>
+
+              <div className="grid sm:grid-cols-3 gap-4 mb-6">
+                <div className="p-4 bg-zinc-800/50 rounded-xl text-center">
+                  <p className="text-gray-500 text-xs uppercase mb-1">Type</p>
+                  <p className="text-white font-bold capitalize">{profile.talent_type || 'N/A'}</p>
+                </div>
+                <div className="p-4 bg-zinc-800/50 rounded-xl text-center">
+                  <p className="text-gray-500 text-xs uppercase mb-1">Rate</p>
+                  <p className="text-white font-bold">EGP {profile.talent_price?.toLocaleString() || '0'}</p>
+                </div>
+                <div className="p-4 bg-zinc-800/50 rounded-xl text-center">
+                  <p className="text-gray-500 text-xs uppercase mb-1">Rating</p>
+                  <p className="text-white font-bold flex items-center justify-center gap-1">
+                    <Star className="w-4 h-4 text-yellow-400" />
+                    {profile.talent_rating?.toFixed(1) || 'N/A'}
+                  </p>
+                </div>
+              </div>
+
+              {profile.talent_video_link && (
+                <div className="p-4 bg-zinc-800/50 rounded-xl">
+                  <p className="text-gray-500 text-xs uppercase mb-2">Showreel</p>
+                  <a
+                    href={profile.talent_video_link}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-red-400 hover:text-red-300 text-sm break-all"
+                  >
+                    {profile.talent_video_link}
+                  </a>
+                </div>
+              )}
+            </FloatingPanel>
+          </TabsContent>
+        )}
+      </Tabs>
+
+      {/* Talent Application CTA (if not talent yet) */}
+      {!profile?.is_talent && (
+        <FloatingPanel className="p-6 mt-6 text-center" glowBorder>
+          <Star className="w-10 h-10 text-yellow-500 mx-auto mb-3" />
+          <h3 className="text-xl font-bold text-white mb-2">Become a Talent</h3>
+          <p className="text-gray-400 text-sm mb-4 max-w-md mx-auto">
+            Are you a caster, host, analyst, or observer? Apply to join our talent roster and get booked for tournaments.
+          </p>
+          <GlowButton onClick={() => setTalentModal(true)}>
+            <Star className="w-4 h-4" /> Apply Now
+          </GlowButton>
         </FloatingPanel>
+      )}
+
+      {/* Logout */}
+      <div className="mt-6 pt-4 border-t border-zinc-800">
+        <button
+          onClick={handleLogout}
+          className="flex items-center gap-2 text-gray-500 hover:text-red-400 transition-colors text-sm"
+        >
+          <LogOut className="w-4 h-4" /> Sign Out
+        </button>
       </div>
 
       {/* Add Game Modal */}
@@ -418,6 +743,72 @@ export default function GamerProfile() {
         </DialogContent>
       </Dialog>
 
+      {/* Talent Application Modal */}
+      <Dialog open={talentModal} onOpenChange={setTalentModal}>
+        <DialogContent className="bg-zinc-900 border-zinc-800 text-white">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Star className="w-5 h-5 text-yellow-500" /> Apply as Talent
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div>
+              <label className="text-sm text-gray-400 block mb-1">Talent Type</label>
+              <Select
+                value={talentForm.talent_type}
+                onValueChange={(val) => setTalentForm({ ...talentForm, talent_type: val })}
+              >
+                <SelectTrigger className="bg-zinc-800 border-zinc-700 text-white">
+                  <SelectValue placeholder="Select your talent type" />
+                </SelectTrigger>
+                <SelectContent className="bg-zinc-800 border-zinc-700">
+                  <SelectItem value="caster">Caster</SelectItem>
+                  <SelectItem value="host">Host</SelectItem>
+                  <SelectItem value="analyst">Analyst</SelectItem>
+                  <SelectItem value="observer">Observer</SelectItem>
+                  <SelectItem value="coach">Coach</SelectItem>
+                  <SelectItem value="streamer">Streamer</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <label className="text-sm text-gray-400 block mb-1">Rate per Event (EGP)</label>
+              <Input
+                type="number"
+                value={talentForm.talent_price}
+                onChange={(e) => setTalentForm({ ...talentForm, talent_price: e.target.value })}
+                placeholder="e.g. 1500"
+                className="bg-zinc-800 border-zinc-700 text-white"
+              />
+            </div>
+            <div>
+              <label className="text-sm text-gray-400 block mb-1">Showreel / Demo Link</label>
+              <Input
+                value={talentForm.talent_video_link}
+                onChange={(e) => setTalentForm({ ...talentForm, talent_video_link: e.target.value })}
+                placeholder="YouTube or Twitch link"
+                className="bg-zinc-800 border-zinc-700 text-white"
+              />
+            </div>
+            <GlowButton
+              className="w-full"
+              onClick={() => applyTalentMutation.mutate(talentForm)}
+              disabled={!talentForm.talent_type || !talentForm.talent_price || applyTalentMutation.isPending}
+            >
+              {applyTalentMutation.isPending ? 'Submitting...' : (
+                <><Star className="w-4 h-4" /> Submit Application</>
+              )}
+            </GlowButton>
+            {applyTalentMutation.isSuccess && (
+              <p className="text-green-400 text-sm text-center">Application submitted! Staff will review it.</p>
+            )}
+            {applyTalentMutation.isError && (
+              <p className="text-red-400 text-sm text-center">Failed to submit. Please try again.</p>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
       {/* Order Chat Modal */}
       <Dialog open={!!orderChatModal} onOpenChange={() => setOrderChatModal(null)}>
         <DialogContent className="bg-zinc-900 border-zinc-800 text-white max-w-lg">
@@ -433,7 +824,7 @@ export default function GamerProfile() {
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-400">Total:</span>
-                  <span className="text-white font-bold">${orderChatModal.total?.toFixed(2)}</span>
+                  <span className="text-white font-bold">EGP {orderChatModal.total?.toLocaleString()}</span>
                 </div>
               </div>
 
