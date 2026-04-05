@@ -90,19 +90,51 @@ export const AuthProvider = ({ children }) => {
   // -------------------------------------------------------------------
 
   /**
-   * Login with email + password via Supabase Auth.
+   * Login with email + password via backend /auth/login.
+   * Uses backend to authenticate and get role, then sets Supabase session.
    * Returns { user, profile } on success.
    */
   const login = async (email, password) => {
     setAuthError(null)
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password })
-    if (error) {
-      setAuthError(error.message)
-      throw error
+    try {
+      // Call backend login which returns user info + session tokens
+      const result = await fetch(`${import.meta.env.VITE_API_URL || '/api'}/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      })
+      const data = await result.json()
+      if (!result.ok) throw new Error(data.error || 'Login failed')
+
+      // Set Supabase session from backend-returned tokens
+      if (data.session?.access_token) {
+        await supabase.auth.setSession({
+          access_token: data.session.access_token,
+          refresh_token: data.session.refresh_token,
+        })
+      }
+
+      const { data: { session } } = await supabase.auth.getSession()
+      const authUser = session?.user || data.user
+      setUser(authUser)
+
+      // Build profile from backend response (already has role)
+      const profile = {
+        user: data.user,
+        role: data.user?.role || null,
+        full_name: data.user?.full_name || '',
+        is_verified: data.user?.is_verified || false,
+      }
+      setUserProfile(profile)
+
+      // Also fetch full profile in background for organizer/gamer data
+      fetchUserProfile(authUser)
+
+      return { user: authUser, profile }
+    } catch (err) {
+      setAuthError(err.message)
+      throw err
     }
-    setUser(data.user)
-    const profile = await fetchUserProfile(data.user)
-    return { user: data.user, profile }
   }
 
   /**
