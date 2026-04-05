@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import OrganizerLayout from '@/components/layouts/OrganizerLayout.jsx';
 import FloatingPanel from '@/components/ui/FloatingPanel';
@@ -52,8 +52,13 @@ export default function TournamentBuilder() {
     branding_items: [],
     production_items: [],
     prizepool_items: [],
+    tournament_image: '',
+    stream_embed_url: '',
+    signup_rules: '',
     total_cost: 0,
     prizepool_total: 0,
+    platform_fee: 0,
+    platform_fee_percent: 15,
     status: 'draft',
     tournament_type: 'solo',
     main_organizer_id: null,
@@ -64,11 +69,10 @@ export default function TournamentBuilder() {
   // Shared tournament commitment state
   const [commitmentPercent, setCommitmentPercent] = useState(33);
   const [commitmentConfirmed, setCommitmentConfirmed] = useState(false);
+  const { id: tournamentId } = useParams();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-
-  const urlParams = new URLSearchParams(window.location.search);
-  const tournamentId = urlParams.get('id');
+  const [lastSaved, setLastSaved] = useState(null);
 
   useEffect(() => {
     loadUser();
@@ -95,10 +99,7 @@ export default function TournamentBuilder() {
 
   const { data: existingTournament } = useQuery({
     queryKey: ['tournament', tournamentId],
-    queryFn: async () => {
-      const tournaments = await Tournament.list({ id: tournamentId });
-      return tournaments[0];
-    },
+    queryFn: () => Tournament.get(tournamentId),
     enabled: !!tournamentId,
   });
 
@@ -117,6 +118,24 @@ export default function TournamentBuilder() {
       }));
     }
   }, [existingTournament, profile]);
+
+  // Autosave every 30 seconds when tournament has a name
+  useEffect(() => {
+    if (!tournament.name || !user?.id) return;
+    const interval = setInterval(() => {
+      const data = { ...tournament, organizer_id: user?.id, total_cost: calculateTotalCost(), platform_fee: calculatePlatformFee() };
+      const save = tournamentId
+        ? Tournament.update(tournamentId, data)
+        : Tournament.create(data);
+      save.then((result) => {
+        setLastSaved(new Date());
+        if (!tournamentId && result?.id) {
+          navigate(`/organizer/tournaments/new/${result.id}`, { replace: true });
+        }
+      }).catch(() => {});
+    }, 30000);
+    return () => clearInterval(interval);
+  }, [tournament.name, user?.id, tournamentId]);
 
   const { data: allTeams = [] } = useQuery({
     queryKey: ['all-teams'],
@@ -164,12 +183,16 @@ export default function TournamentBuilder() {
       const itemsSubtotal = calculateItemsSubtotal();
       const mainContribution = Math.round(totalCost * (commitmentPercent / 100));
 
+      const platformFee = calculatePlatformFee();
+
       // Save with updated cost fields
       const dataToSave = {
         ...tournament,
         organizer_id: user?.id,
         main_organizer_id: user?.id,
         total_cost: totalCost,
+        platform_fee: platformFee,
+        platform_fee_percent: 15,
         organizer_contribution: mainContribution,
         main_organizer_percent: commitmentPercent,
         status: tournament.tournament_type === 'shared' ? 'draft' : 'published',
@@ -215,6 +238,7 @@ export default function TournamentBuilder() {
         items: orderItems,
         subtotal_items: itemsSubtotal,
         prizepool_amount: tournament.prizepool_total || 0,
+        platform_fee: platformFee,
         grand_total: totalCost,
         main_organizer_owes: mainContribution,
         fulfillment_status: 'pending_payment',
@@ -261,7 +285,7 @@ export default function TournamentBuilder() {
       queryClient.invalidateQueries(['organizer-tournaments']);
     },
     onSuccess: () => {
-      navigate('/organizer-tournaments');
+      navigate('/organizer/tournaments');
     }
   });
 
@@ -287,8 +311,16 @@ export default function TournamentBuilder() {
     return cost;
   };
 
-  const calculateTotalCost = () => {
+  const calculateSubtotal = () => {
     return calculateItemsSubtotal() + (tournament.prizepool_total || 0);
+  };
+
+  const calculatePlatformFee = () => {
+    return Math.round(calculateSubtotal() * 0.15);
+  };
+
+  const calculateTotalCost = () => {
+    return calculateSubtotal() + calculatePlatformFee();
   };
 
   // Required items for shared tournaments: live_talent + production categories
@@ -437,6 +469,43 @@ export default function TournamentBuilder() {
                 placeholder="Describe your tournament..."
                 className="bg-zinc-800 border-zinc-700 text-white"
                 rows={4}
+              />
+            </div>
+
+            <div>
+              <label className="text-sm text-gray-400 block mb-2">Tournament Cover Image URL</label>
+              <Input
+                value={tournament.tournament_image}
+                onChange={(e) => setTournament({ ...tournament, tournament_image: e.target.value })}
+                placeholder="https://... (cover image shown on tournament page)"
+                className="bg-zinc-800 border-zinc-700 text-white"
+              />
+              {tournament.tournament_image && (
+                <div className="mt-2 h-32 rounded-lg overflow-hidden bg-zinc-800">
+                  <img src={tournament.tournament_image} alt="Preview" className="w-full h-full object-cover opacity-80" />
+                </div>
+              )}
+            </div>
+
+            <div>
+              <label className="text-sm text-gray-400 block mb-2">Stream Embed URL (optional)</label>
+              <Input
+                value={tournament.stream_embed_url}
+                onChange={(e) => setTournament({ ...tournament, stream_embed_url: e.target.value })}
+                placeholder="https://player.twitch.tv/?channel=... or YouTube embed URL"
+                className="bg-zinc-800 border-zinc-700 text-white"
+              />
+              <p className="text-xs text-gray-500 mt-1">Stream will appear on the tournament page when live</p>
+            </div>
+
+            <div>
+              <label className="text-sm text-gray-400 block mb-2">Signup Rules</label>
+              <Textarea
+                value={tournament.signup_rules}
+                onChange={(e) => setTournament({ ...tournament, signup_rules: e.target.value })}
+                placeholder="Rules for teams joining this tournament..."
+                className="bg-zinc-800 border-zinc-700 text-white"
+                rows={3}
               />
             </div>
           </div>
@@ -968,23 +1037,43 @@ export default function TournamentBuilder() {
       {/* Header */}
       <div className="flex items-start justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-black text-white">
-            {tournamentId ? 'Edit Tournament' : 'Create Tournament'}
-          </h1>
-          <p className="text-gray-400">{tournament.name || 'Untitled Tournament'}</p>
+          <div className="flex items-center gap-3 mb-1">
+            <h1 className="text-2xl font-black text-white">
+              {tournamentId ? 'Edit Tournament' : 'Build Tournament'}
+            </h1>
+            <span className="text-xs bg-purple-500/20 text-purple-400 border border-purple-500/30 px-2 py-0.5 rounded-full font-medium">
+              Stage {currentStage + 1}/{STAGES.length}
+            </span>
+          </div>
+          <div className="flex items-center gap-3">
+            <p className="text-gray-400">{tournament.name || 'Untitled Tournament'}</p>
+            {lastSaved && (
+              <span className="text-xs text-gray-500 flex items-center gap-1">
+                <Check className="w-3 h-3 text-green-500" />
+                Saved {lastSaved.toLocaleTimeString()}
+              </span>
+            )}
+            {saveTournamentMutation.isPending && (
+              <span className="text-xs text-purple-400 animate-pulse">Saving...</span>
+            )}
+          </div>
         </div>
         <div className="flex gap-2">
-          <GlowButton 
-            variant="ghost" 
-            onClick={() => saveTournamentMutation.mutate()}
+          <GlowButton
+            variant="ghost"
+            onClick={() => {
+              saveTournamentMutation.mutate();
+              setLastSaved(new Date());
+            }}
           >
             <Save className="w-4 h-4" /> Save Draft
           </GlowButton>
-          <GlowButton 
+          <GlowButton
             onClick={() => publishTournamentMutation.mutate()}
             disabled={!tournament.name || !tournament.game}
+            className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500"
           >
-            <Send className="w-4 h-4" /> Publish
+            <Send className="w-4 h-4" /> {tournament.tournament_type === 'shared' ? 'Publish to Radar' : 'Publish'}
           </GlowButton>
         </div>
       </div>
@@ -997,10 +1086,10 @@ export default function TournamentBuilder() {
             onClick={() => setCurrentStage(i)}
             className={`flex items-center gap-2 px-4 py-2 rounded-lg whitespace-nowrap transition-all ${
               i === currentStage
-                ? 'bg-red-500/20 text-red-400 border border-red-500/50'
+                ? 'bg-purple-500/20 text-purple-400 border border-purple-500/50 shadow-lg shadow-purple-500/10'
                 : i < currentStage
-                ? 'bg-green-500/10 text-green-400'
-                : 'bg-zinc-800/50 text-gray-500 hover:bg-zinc-800'
+                ? 'bg-green-500/10 text-green-400 border border-green-500/20'
+                : 'bg-zinc-800/50 text-gray-500 hover:bg-zinc-800 hover:text-gray-300'
             }`}
           >
             <stage.icon className="w-4 h-4" />
@@ -1044,9 +1133,9 @@ export default function TournamentBuilder() {
 
         {/* Sidebar - Cost Summary */}
         <div>
-          <FloatingPanel className="p-5 sticky top-4" glowBorder>
+          <FloatingPanel className="p-5 sticky top-4 border border-purple-500/20" glowBorder>
             <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
-              <DollarSign className="w-5 h-5 text-green-500" />
+              <DollarSign className="w-5 h-5 text-purple-400" />
               Cost Summary
             </h3>
             
@@ -1110,15 +1199,36 @@ export default function TournamentBuilder() {
               </div>
               {(tournament.prizepool_total || 0) > 0 && (
                 <div className="flex justify-between text-sm">
-                  <span className="text-yellow-400">Prize Pool (included in total)</span>
+                  <span className="text-yellow-400">Prize Pool</span>
                   <span className="text-yellow-400 font-bold">EGP {(tournament.prizepool_total || 0).toLocaleString()}</span>
                 </div>
               )}
-              <div className="flex justify-between text-lg font-bold border-t border-zinc-700 pt-2">
-                <span className="text-gray-400">Total</span>
-                <span className="text-green-400">EGP {calculateTotalCost().toLocaleString()}</span>
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-400">Subtotal</span>
+                <span className="text-white">EGP {calculateSubtotal().toLocaleString()}</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-blue-400">Platform Fee (15%)</span>
+                <span className="text-blue-400 font-medium">EGP {calculatePlatformFee().toLocaleString()}</span>
+              </div>
+              <div className="flex justify-between text-lg font-bold border-t border-purple-500/30 pt-2">
+                <span className="text-gray-300">Grand Total</span>
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-cyan-400">EGP {calculateTotalCost().toLocaleString()}</span>
               </div>
             </div>
+
+            {tournament.tournament_type === 'shared' && commitmentPercent > 0 && (
+              <div className="mt-3 p-3 bg-purple-500/10 border border-purple-500/20 rounded-lg space-y-1">
+                <div className="flex justify-between text-xs">
+                  <span className="text-purple-300">Your Share ({commitmentPercent}%)</span>
+                  <span className="text-purple-400 font-bold">EGP {Math.round(calculateTotalCost() * (commitmentPercent / 100)).toLocaleString()}</span>
+                </div>
+                <div className="flex justify-between text-xs">
+                  <span className="text-gray-500">Needed from co-orgs</span>
+                  <span className="text-gray-400">EGP {Math.round(calculateTotalCost() * ((100 - commitmentPercent) / 100)).toLocaleString()}</span>
+                </div>
+              </div>
+            )}
 
             <div className="mt-4 pt-4 border-t border-zinc-800">
               <p className="text-xs text-gray-500 mb-2">Summary</p>
@@ -1126,6 +1236,7 @@ export default function TournamentBuilder() {
                 <li>• {tournament.invited_teams?.length || 0} teams invited</li>
                 <li>• {tournament.talents?.length || 0} talents hired</li>
                 <li>• {tournament.prizepool_items?.length || 0} prizes</li>
+                <li>• Type: {tournament.tournament_type === 'shared' ? 'Shared (Radar)' : 'Solo'}</li>
               </ul>
             </div>
           </FloatingPanel>
