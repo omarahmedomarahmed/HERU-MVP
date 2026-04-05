@@ -8,8 +8,8 @@ import GameCard from '@/components/ui/GameCard';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
-import { 
-  Users, Plus, Check, ArrowLeft, UserPlus
+import {
+  Users, Plus, Check, ArrowLeft, UserPlus, Palette, Image
 } from 'lucide-react';
 import { awardCoins, COIN_REWARDS } from '@/components/utils/coinRewards';
 import { GamerProfile, Team, apiCall } from '@/api/heruClient'
@@ -18,14 +18,32 @@ import { useAuth } from '@/lib/AuthContext'
 
 const GAMES = ['Valorant', 'CS2', 'League of Legends', 'Dota 2', 'Rocket League', 'Apex Legends', 'Fortnite', 'Call of Duty'];
 
+const COLOR_PRESETS = [
+  { name: 'Red', primary: '#ff1a1a', secondary: '#0a0a0a' },
+  { name: 'Blue', primary: '#2563eb', secondary: '#0a0a2e' },
+  { name: 'Purple', primary: '#7c3aed', secondary: '#1a0a2e' },
+  { name: 'Green', primary: '#16a34a', secondary: '#0a1a0a' },
+  { name: 'Orange', primary: '#ea580c', secondary: '#1a0e0a' },
+  { name: 'Cyan', primary: '#06b6d4', secondary: '#0a1a1e' },
+  { name: 'Pink', primary: '#ec4899', secondary: '#1e0a1a' },
+  { name: 'Gold', primary: '#eab308', secondary: '#1a1a0a' },
+];
+
 export default function CreateTeam() {
   const [user, setUser] = useState(null);
+  const [step, setStep] = useState(1); // 1: basics, 2: branding, 3: invite
   const [teamData, setTeamData] = useState({
     name: '',
     description: '',
+    story: '',
     logo: '',
+    banner: '',
+    primary_color: '#ff1a1a',
+    secondary_color: '#0a0a0a',
     games: [],
-    is_recruiting: true
+    is_recruiting: true,
+    social_links: { twitter: '', instagram: '', discord: '' },
+    contact_number: '',
   });
   const [selectedFriends, setSelectedFriends] = useState([]);
   const navigate = useNavigate();
@@ -66,15 +84,15 @@ export default function CreateTeam() {
   const toggleGame = (game) => {
     setTeamData(prev => ({
       ...prev,
-      games: prev.games.includes(game) 
+      games: prev.games.includes(game)
         ? prev.games.filter(g => g !== game)
         : [...prev.games, game]
     }));
   };
 
   const toggleFriend = (friendId) => {
-    setSelectedFriends(prev => 
-      prev.includes(friendId) 
+    setSelectedFriends(prev =>
+      prev.includes(friendId)
         ? prev.filter(id => id !== friendId)
         : [...prev, friendId]
     );
@@ -82,23 +100,29 @@ export default function CreateTeam() {
 
   const createTeamMutation = useMutation({
     mutationFn: async () => {
-      // Create team with user as leader
       const members = [user.id, ...selectedFriends];
-      
+
       const team = await Team.create({
-        ...teamData,
+        name: teamData.name,
+        description: teamData.description,
+        story: teamData.story,
+        logo: teamData.logo,
         leader_id: user.id,
         members,
+        games: teamData.games,
+        is_recruiting: teamData.is_recruiting,
+        social_links: teamData.social_links,
+        contact_number: teamData.contact_number,
+        images: teamData.banner ? [teamData.banner] : [],
         join_requests: [],
         tournament_invites: [],
-        chat_messages: [],
         tournament_history: []
       });
-      
+
       // Update creator's profile
       const teamIds = [...(profile.team_ids || []), team.id];
       await GamerProfile.update(profile.id, { team_ids: teamIds });
-      
+
       // Update invited friends' profiles
       for (const friendId of selectedFriends) {
         const friendProfiles = await GamerProfile.list({ user_id: friendId });
@@ -108,150 +132,367 @@ export default function CreateTeam() {
           await GamerProfile.update(friendProfile.id, { team_ids: friendTeamIds });
         }
       }
-      
-      // Award coins for creating team
+
       awardCoins(user.id, COIN_REWARDS.CREATE_TEAM, 'Created a team');
-      
-      // Award coins for inviting friends
       if (selectedFriends.length >= 5) {
         awardCoins(user.id, COIN_REWARDS.INVITE_5_TO_TEAM, 'Invited 5 friends to team');
       }
-      
+
       return team;
     },
     onSuccess: (team) => {
       queryClient.invalidateQueries(['gamer-profile', user?.id]);
-      navigate(`/teams/$\{team.id}`);
+      navigate(`/gamer/teams/${team.id}`);
     }
   });
 
   const cart = JSON.parse(localStorage.getItem(`cart_${user?.id}`) || '[]');
 
+  const canProceedStep1 = teamData.name && teamData.games.length > 0;
+
   return (
     <GamerLayout user={user} profile={profile} cartCount={cart.length}>
       <div className="max-w-2xl mx-auto">
-        <button 
-          onClick={() => navigate('/teams')}
+        <button
+          onClick={() => navigate('/gamer/teams')}
           className="flex items-center gap-2 text-gray-400 hover:text-white mb-6"
         >
           <ArrowLeft className="w-4 h-4" />
-          Back to Teams
+          Back to My Teams
         </button>
 
-        <FloatingPanel className="p-6" glowBorder>
-          <div className="flex items-center gap-4 mb-6">
-            <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-red-600/30 to-zinc-800 flex items-center justify-center">
-              <Users className="w-8 h-8 text-red-500" />
+        {/* Progress */}
+        <div className="flex items-center gap-2 mb-6">
+          {[1, 2, 3].map(s => (
+            <div key={s} className="flex items-center flex-1">
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold
+                ${step >= s ? 'bg-red-600 text-white' : 'bg-zinc-800 text-gray-500'}`}>
+                {step > s ? <Check className="w-4 h-4" /> : s}
+              </div>
+              {s < 3 && (
+                <div className={`flex-1 h-0.5 mx-2 ${step > s ? 'bg-red-600' : 'bg-zinc-800'}`} />
+              )}
             </div>
-            <div>
-              <h1 className="text-2xl font-black text-white">CREATE TEAM</h1>
-              <p className="text-gray-400">Build your competitive squad</p>
-            </div>
-          </div>
+          ))}
+        </div>
+        <div className="flex justify-between mb-6 text-xs text-gray-500">
+          <span>Basics</span>
+          <span>Branding</span>
+          <span>Invite</span>
+        </div>
 
-          <div className="space-y-6">
-            <div>
-              <label className="text-sm text-gray-400 block mb-2">Team Name *</label>
-              <Input
-                value={teamData.name}
-                onChange={(e) => setTeamData({ ...teamData, name: e.target.value })}
-                placeholder="Enter team name"
-                className="bg-zinc-800 border-zinc-700 text-white"
-              />
-            </div>
-
-            <div>
-              <label className="text-sm text-gray-400 block mb-2">Description</label>
-              <Textarea
-                value={teamData.description}
-                onChange={(e) => setTeamData({ ...teamData, description: e.target.value })}
-                placeholder="Describe your team..."
-                className="bg-zinc-800 border-zinc-700 text-white"
-                rows={3}
-              />
-            </div>
-
-            <div>
-              <label className="text-sm text-gray-400 block mb-2">Logo URL</label>
-              <Input
-                value={teamData.logo}
-                onChange={(e) => setTeamData({ ...teamData, logo: e.target.value })}
-                placeholder="https://..."
-                className="bg-zinc-800 border-zinc-700 text-white"
-              />
-            </div>
-
-            <div>
-              <label className="text-sm text-gray-400 block mb-2">Games *</label>
-              <div className="flex flex-wrap gap-2">
-                {GAMES.map(game => (
-                  <button
-                    key={game}
-                    onClick={() => toggleGame(game)}
-                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                      teamData.games.includes(game)
-                        ? 'bg-red-500 text-white'
-                        : 'bg-zinc-800 text-gray-400 hover:bg-zinc-700'
-                    }`}
-                  >
-                    {teamData.games.includes(game) && <Check className="w-4 h-4 inline mr-1" />}
-                    {game}
-                  </button>
-                ))}
+        {/* Step 1: Basics */}
+        {step === 1 && (
+          <FloatingPanel className="p-6" glowBorder>
+            <div className="flex items-center gap-4 mb-6">
+              <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-red-600/30 to-zinc-800 flex items-center justify-center">
+                <Users className="w-7 h-7 text-red-500" />
+              </div>
+              <div>
+                <h1 className="text-2xl font-black text-white">CREATE TEAM</h1>
+                <p className="text-gray-400 text-sm">Step 1: Team basics</p>
               </div>
             </div>
 
-            <div className="flex items-center gap-3">
-              <Switch
-                checked={teamData.is_recruiting}
-                onCheckedChange={(v) => setTeamData({ ...teamData, is_recruiting: v })}
-              />
-              <label className="text-white">Open for recruiting</label>
-            </div>
-
-            {friends.length > 0 && (
+            <div className="space-y-5">
               <div>
-                <label className="text-sm text-gray-400 block mb-3">
-                  <UserPlus className="w-4 h-4 inline mr-1" />
-                  Invite Friends ({selectedFriends.length} selected)
-                </label>
-                <div className="grid grid-cols-2 gap-3">
-                  {friends.map((friend) => (
-                    <GameCard
-                      key={friend.id}
-                      className={`p-3 cursor-pointer ${selectedFriends.includes(friend.user_id) ? 'border-red-500' : ''}`}
-                      onClick={() => toggleFriend(friend.user_id)}
+                <label className="text-sm text-gray-400 block mb-2">Team Name *</label>
+                <Input
+                  value={teamData.name}
+                  onChange={(e) => setTeamData({ ...teamData, name: e.target.value })}
+                  placeholder="Enter team name"
+                  className="bg-zinc-800 border-zinc-700 text-white"
+                />
+              </div>
+
+              <div>
+                <label className="text-sm text-gray-400 block mb-2">Description</label>
+                <Textarea
+                  value={teamData.description}
+                  onChange={(e) => setTeamData({ ...teamData, description: e.target.value })}
+                  placeholder="Describe your team in a sentence..."
+                  className="bg-zinc-800 border-zinc-700 text-white"
+                  rows={2}
+                />
+              </div>
+
+              <div>
+                <label className="text-sm text-gray-400 block mb-2">Team Story</label>
+                <Textarea
+                  value={teamData.story}
+                  onChange={(e) => setTeamData({ ...teamData, story: e.target.value })}
+                  placeholder="Tell your team's story, history, goals..."
+                  className="bg-zinc-800 border-zinc-700 text-white"
+                  rows={3}
+                />
+              </div>
+
+              <div>
+                <label className="text-sm text-gray-400 block mb-2">Games *</label>
+                <div className="flex flex-wrap gap-2">
+                  {GAMES.map(game => (
+                    <button
+                      key={game}
+                      onClick={() => toggleGame(game)}
+                      className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                        teamData.games.includes(game)
+                          ? 'bg-red-500 text-white'
+                          : 'bg-zinc-800 text-gray-400 hover:bg-zinc-700'
+                      }`}
                     >
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-full bg-zinc-800 overflow-hidden">
-                          {friend.avatar ? (
-                            <img src={friend.avatar} className="w-full h-full object-cover" />
-                          ) : (
-                            <Users className="w-5 h-5 text-red-500 m-auto mt-2" />
-                          )}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-white text-sm font-medium truncate">{friend.username}</p>
-                        </div>
-                        {selectedFriends.includes(friend.user_id) && (
-                          <Check className="w-5 h-5 text-green-400" />
-                        )}
-                      </div>
-                    </GameCard>
+                      {teamData.games.includes(game) && <Check className="w-4 h-4 inline mr-1" />}
+                      {game}
+                    </button>
                   ))}
                 </div>
               </div>
-            )}
 
-            <GlowButton
-              className="w-full"
-              onClick={() => createTeamMutation.mutate()}
-              disabled={!teamData.name || teamData.games.length === 0}
-            >
-              <Plus className="w-4 h-4" /> Create Team
-            </GlowButton>
-          </div>
-        </FloatingPanel>
+              <div className="flex items-center gap-3">
+                <Switch
+                  checked={teamData.is_recruiting}
+                  onCheckedChange={(v) => setTeamData({ ...teamData, is_recruiting: v })}
+                />
+                <label className="text-white">Open for recruiting</label>
+              </div>
+
+              <GlowButton
+                className="w-full"
+                onClick={() => setStep(2)}
+                disabled={!canProceedStep1}
+              >
+                Next: Team Branding <ArrowLeft className="w-4 h-4 rotate-180" />
+              </GlowButton>
+            </div>
+          </FloatingPanel>
+        )}
+
+        {/* Step 2: Branding */}
+        {step === 2 && (
+          <FloatingPanel className="p-6" glowBorder>
+            <div className="flex items-center gap-4 mb-6">
+              <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-red-600/30 to-zinc-800 flex items-center justify-center">
+                <Palette className="w-7 h-7 text-red-500" />
+              </div>
+              <div>
+                <h1 className="text-2xl font-black text-white">TEAM BRANDING</h1>
+                <p className="text-gray-400 text-sm">Step 2: Customize your look</p>
+              </div>
+            </div>
+
+            <div className="space-y-5">
+              {/* Preview */}
+              <div
+                className="rounded-xl overflow-hidden border border-zinc-700/30"
+                style={{ backgroundColor: teamData.secondary_color }}
+              >
+                {teamData.banner && (
+                  <div className="h-24 overflow-hidden">
+                    <img src={teamData.banner} alt="" className="w-full h-full object-cover opacity-60" />
+                  </div>
+                )}
+                <div className="p-4 flex items-center gap-3">
+                  <div
+                    className="w-12 h-12 rounded-xl flex items-center justify-center overflow-hidden"
+                    style={{ backgroundColor: teamData.primary_color + '33' }}
+                  >
+                    {teamData.logo ? (
+                      <img src={teamData.logo} alt="" className="w-full h-full object-cover" />
+                    ) : (
+                      <Users className="w-6 h-6" style={{ color: teamData.primary_color }} />
+                    )}
+                  </div>
+                  <div>
+                    <p className="font-bold text-white">{teamData.name || 'Team Name'}</p>
+                    <p className="text-xs" style={{ color: teamData.primary_color }}>Preview</p>
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <label className="text-sm text-gray-400 block mb-2">Logo URL</label>
+                <Input
+                  value={teamData.logo}
+                  onChange={(e) => setTeamData({ ...teamData, logo: e.target.value })}
+                  placeholder="https://..."
+                  className="bg-zinc-800 border-zinc-700 text-white"
+                />
+              </div>
+
+              <div>
+                <label className="text-sm text-gray-400 block mb-2">
+                  <Image className="w-4 h-4 inline mr-1" /> Banner Image URL
+                </label>
+                <Input
+                  value={teamData.banner}
+                  onChange={(e) => setTeamData({ ...teamData, banner: e.target.value })}
+                  placeholder="https://..."
+                  className="bg-zinc-800 border-zinc-700 text-white"
+                />
+              </div>
+
+              <div>
+                <label className="text-sm text-gray-400 block mb-2">
+                  <Palette className="w-4 h-4 inline mr-1" /> Team Colors
+                </label>
+                <div className="flex flex-wrap gap-2 mb-3">
+                  {COLOR_PRESETS.map(preset => (
+                    <button
+                      key={preset.name}
+                      onClick={() => setTeamData({ ...teamData, primary_color: preset.primary, secondary_color: preset.secondary })}
+                      className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium transition-all border ${
+                        teamData.primary_color === preset.primary
+                          ? 'border-white/40 bg-zinc-800'
+                          : 'border-zinc-700/30 bg-zinc-900 hover:bg-zinc-800'
+                      }`}
+                    >
+                      <span className="w-4 h-4 rounded-full" style={{ backgroundColor: preset.primary }} />
+                      <span className="text-gray-300">{preset.name}</span>
+                    </button>
+                  ))}
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-xs text-gray-500 block mb-1">Primary</label>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="color"
+                        value={teamData.primary_color}
+                        onChange={(e) => setTeamData({ ...teamData, primary_color: e.target.value })}
+                        className="w-8 h-8 rounded cursor-pointer bg-transparent"
+                      />
+                      <Input
+                        value={teamData.primary_color}
+                        onChange={(e) => setTeamData({ ...teamData, primary_color: e.target.value })}
+                        className="bg-zinc-800 border-zinc-700 text-white text-xs font-mono"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="text-xs text-gray-500 block mb-1">Background</label>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="color"
+                        value={teamData.secondary_color}
+                        onChange={(e) => setTeamData({ ...teamData, secondary_color: e.target.value })}
+                        className="w-8 h-8 rounded cursor-pointer bg-transparent"
+                      />
+                      <Input
+                        value={teamData.secondary_color}
+                        onChange={(e) => setTeamData({ ...teamData, secondary_color: e.target.value })}
+                        className="bg-zinc-800 border-zinc-700 text-white text-xs font-mono"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Social Links */}
+              <div>
+                <label className="text-sm text-gray-400 block mb-2">Social Links</label>
+                <div className="space-y-2">
+                  <Input
+                    value={teamData.social_links.twitter}
+                    onChange={(e) => setTeamData({ ...teamData, social_links: { ...teamData.social_links, twitter: e.target.value } })}
+                    placeholder="Twitter/X handle"
+                    className="bg-zinc-800 border-zinc-700 text-white"
+                  />
+                  <Input
+                    value={teamData.social_links.instagram}
+                    onChange={(e) => setTeamData({ ...teamData, social_links: { ...teamData.social_links, instagram: e.target.value } })}
+                    placeholder="Instagram handle"
+                    className="bg-zinc-800 border-zinc-700 text-white"
+                  />
+                  <Input
+                    value={teamData.social_links.discord}
+                    onChange={(e) => setTeamData({ ...teamData, social_links: { ...teamData.social_links, discord: e.target.value } })}
+                    placeholder="Discord invite link"
+                    className="bg-zinc-800 border-zinc-700 text-white"
+                  />
+                </div>
+              </div>
+
+              <div className="flex gap-3">
+                <GlowButton variant="ghost" className="flex-1" onClick={() => setStep(1)}>
+                  <ArrowLeft className="w-4 h-4" /> Back
+                </GlowButton>
+                <GlowButton className="flex-1" onClick={() => setStep(3)}>
+                  Next: Invite <ArrowLeft className="w-4 h-4 rotate-180" />
+                </GlowButton>
+              </div>
+            </div>
+          </FloatingPanel>
+        )}
+
+        {/* Step 3: Invite */}
+        {step === 3 && (
+          <FloatingPanel className="p-6" glowBorder>
+            <div className="flex items-center gap-4 mb-6">
+              <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-red-600/30 to-zinc-800 flex items-center justify-center">
+                <UserPlus className="w-7 h-7 text-red-500" />
+              </div>
+              <div>
+                <h1 className="text-2xl font-black text-white">INVITE MEMBERS</h1>
+                <p className="text-gray-400 text-sm">Step 3: Invite friends (optional)</p>
+              </div>
+            </div>
+
+            <div className="space-y-5">
+              {friends.length > 0 ? (
+                <div>
+                  <label className="text-sm text-gray-400 block mb-3">
+                    Select friends to invite ({selectedFriends.length} selected)
+                  </label>
+                  <div className="grid grid-cols-2 gap-3">
+                    {friends.map((friend) => (
+                      <GameCard
+                        key={friend.id}
+                        className={`p-3 cursor-pointer transition-colors ${selectedFriends.includes(friend.user_id) ? 'border-red-500' : ''}`}
+                        onClick={() => toggleFriend(friend.user_id)}
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-full bg-zinc-800 overflow-hidden">
+                            {friend.avatar ? (
+                              <img src={friend.avatar} className="w-full h-full object-cover" alt="" />
+                            ) : (
+                              <Users className="w-5 h-5 text-red-500 m-auto mt-2" />
+                            )}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-white text-sm font-medium truncate">{friend.username}</p>
+                          </div>
+                          {selectedFriends.includes(friend.user_id) && (
+                            <Check className="w-5 h-5 text-green-400" />
+                          )}
+                        </div>
+                      </GameCard>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <UserPlus className="w-12 h-12 text-zinc-700 mx-auto mb-2" />
+                  <p className="text-gray-400">No friends to invite yet</p>
+                  <p className="text-gray-600 text-sm">You can invite members after creating the team</p>
+                </div>
+              )}
+
+              <div className="flex gap-3">
+                <GlowButton variant="ghost" className="flex-1" onClick={() => setStep(2)}>
+                  <ArrowLeft className="w-4 h-4" /> Back
+                </GlowButton>
+                <GlowButton
+                  className="flex-1"
+                  onClick={() => createTeamMutation.mutate()}
+                  disabled={createTeamMutation.isPending}
+                >
+                  {createTeamMutation.isPending ? 'Creating...' : (
+                    <><Plus className="w-4 h-4" /> Create Team</>
+                  )}
+                </GlowButton>
+              </div>
+            </div>
+          </FloatingPanel>
+        )}
       </div>
     </GamerLayout>
   );

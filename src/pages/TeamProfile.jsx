@@ -43,10 +43,7 @@ export default function TeamProfile() {
 
   const { data: team, isLoading } = useQuery({
     queryKey: ['team', id],
-    queryFn: async () => {
-      const teams = await Team.list();
-      return teams.find(t => t.id === id) || null;
-    },
+    queryFn: () => Team.get(id),
     enabled: !!id,
   });
 
@@ -177,8 +174,8 @@ export default function TeamProfile() {
           </div>
           <div className="flex flex-col gap-2 shrink-0">
             {isLeader && (
-              <Link to="/gamer/teams">
-                <GlowButton variant="secondary" size="sm">Edit Team</GlowButton>
+              <Link to={`/gamer/teams/${id}`}>
+                <GlowButton variant="secondary" size="sm">Manage Team</GlowButton>
               </Link>
             )}
             {!isLeader && !isMember && !hasPendingRequest && team.is_recruiting && user && (
