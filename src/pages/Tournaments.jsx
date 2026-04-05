@@ -127,29 +127,31 @@ export default function Tournaments() {
       ) : filteredTournaments.length > 0 ? (
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredTournaments.map((tournament) => (
-            <Link key={tournament.id} to={`/tournaments/$\{tournament.id}`}>
+            <Link key={tournament.id} to={`/tournaments/${tournament.id}`}>
               <GameCard className="h-full group">
                 <div className="h-44 bg-gradient-to-br from-red-900/30 to-zinc-900 relative overflow-hidden">
-                  {tournament.organizer_brand?.logo && (
-                    <img 
-                      src={tournament.organizer_brand.logo} 
-                      alt="" 
-                      className="w-full h-full object-cover opacity-40"
-                    />
+                  {tournament.tournament_image ? (
+                    <img src={tournament.tournament_image} alt="" className="w-full h-full object-cover opacity-60 group-hover:scale-105 transition-transform duration-500" />
+                  ) : tournament.organizer_brand?.logo && (
+                    <img src={tournament.organizer_brand.logo} alt="" className="w-full h-full object-cover opacity-40" />
                   )}
                   <div className="absolute inset-0 bg-gradient-to-t from-zinc-900 to-transparent" />
                   
                   {/* Status Badge */}
                   <div className="absolute top-3 left-3">
-                    <HexBadge className={
-                      tournament.status === 'live' ? 'bg-green-500/20 text-green-400 border-green-500/50' :
-                      tournament.status === 'completed' ? 'bg-gray-500/20 text-gray-400 border-gray-500/50' :
-                      ''
-                    }>
-                      {tournament.status === 'live' && '🔴 LIVE'}
-                      {tournament.status === 'published' && 'OPEN'}
-                      {tournament.status === 'completed' && 'ENDED'}
-                    </HexBadge>
+                    {tournament.status === 'live' ? (
+                      <span className="flex items-center gap-1.5 bg-red-600 text-white text-xs font-bold px-3 py-1 rounded-full">
+                        <span className="w-2 h-2 bg-white rounded-full animate-pulse" />
+                        LIVE
+                      </span>
+                    ) : (
+                      <HexBadge className={
+                        tournament.status === 'completed' ? 'bg-gray-500/20 text-gray-400 border-gray-500/50' : ''
+                      }>
+                        {tournament.status === 'published' && 'OPEN'}
+                        {tournament.status === 'completed' && 'ENDED'}
+                      </HexBadge>
+                    )}
                   </div>
 
                   {/* Game */}
@@ -158,14 +160,19 @@ export default function Tournaments() {
                     <span className="text-sm text-gray-300">{tournament.game}</span>
                   </div>
 
-                  {/* Organizer Brand */}
-                  {tournament.organizer_brand?.name && (
-                    <div className="absolute top-3 right-3">
-                      <span className="text-xs text-gray-400 bg-black/50 px-2 py-1 rounded">
-                        by {tournament.organizer_brand.name}
+                  {/* Prizepool / Organizer */}
+                  <div className="absolute top-3 right-3 flex flex-col gap-1 items-end">
+                    {tournament.prizepool_total > 0 && (
+                      <span className="bg-yellow-500 text-black text-xs font-bold px-2 py-0.5 rounded">
+                        EGP {tournament.prizepool_total?.toLocaleString()}
                       </span>
-                    </div>
-                  )}
+                    )}
+                    {tournament.organizer_brand?.name && (
+                      <span className="text-xs text-gray-400 bg-black/50 px-2 py-0.5 rounded">
+                        {tournament.organizer_brand.name}
+                      </span>
+                    )}
+                  </div>
                 </div>
 
                 <div className="p-5">
