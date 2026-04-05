@@ -39,6 +39,8 @@ import TeamDetails from './pages/TeamDetails'
 import GigRequests from './pages/GigRequests'
 import GigDetailPage from './pages/GigDetailPage'
 import MyOrders from './pages/MyOrders'
+import GamerOrderDetail from './pages/GamerOrderDetail'
+import GamerNotifications from './pages/GamerNotifications'
 import Marketplace from './pages/Marketplace'
 import Cart from './pages/Cart'
 import TournamentDetails from './pages/TournamentDetails'
@@ -57,6 +59,7 @@ import OrganizerMessages from './pages/OrganizerMessages'
 import BillDetail from './pages/BillDetail'
 import OrganizerBilling from './pages/organizer/OrganizerBilling'
 import CoOrganizedTournaments from './pages/organizer/CoOrganizedTournaments'
+import PaymentMethod from './pages/organizer/PaymentMethod'
 
 // Staff pages
 import StaffLayout from '@/components/layouts/StaffLayout'
@@ -118,6 +121,8 @@ function App() {
             <Route path="/gamer/gigs" element={<RequireGamer><GigRequests /></RequireGamer>} />
             <Route path="/gamer/gigs/:gig_id" element={<RequireGamer><GigDetailPage /></RequireGamer>} />
             <Route path="/gamer/orders" element={<RequireGamer><MyOrders /></RequireGamer>} />
+            <Route path="/gamer/orders/:id" element={<RequireGamer><GamerOrderDetail /></RequireGamer>} />
+            <Route path="/gamer/notifications" element={<RequireGamer><GamerNotifications /></RequireGamer>} />
             <Route path="/gamer/marketplace" element={<RequireGamer><Marketplace /></RequireGamer>} />
             <Route path="/gamer/cart" element={<RequireGamer><Cart /></RequireGamer>} />
             <Route path="/gamer/:id" element={<GamerProfileView />} />
@@ -129,14 +134,19 @@ function App() {
             <Route path="/organizer/tournaments/new/:id" element={<RequireOrganizer><OrganizerLayout><TournamentBuilder /></OrganizerLayout></RequireOrganizer>} />
             <Route path="/organizer/tournaments/:id/manage" element={<RequireOrganizer><OrganizerLayout><OrganizerTournamentManage /></OrganizerLayout></RequireOrganizer>} />
             <Route path="/organizer/tournaments/:id/manage/teams" element={<RequireOrganizer><OrganizerLayout><TournamentManage /></OrganizerLayout></RequireOrganizer>} />
+            <Route path="/organizer/tournaments/:id/manage/brackets" element={<RequireOrganizer><OrganizerLayout><OrganizerTournamentManage /></OrganizerLayout></RequireOrganizer>} />
+            <Route path="/organizer/tournaments/:id/manage/chat" element={<RequireOrganizer><OrganizerLayout><OrganizerTournamentManage /></OrganizerLayout></RequireOrganizer>} />
+            <Route path="/organizer/tournaments/:id/manage/settings" element={<RequireOrganizer><OrganizerLayout><OrganizerTournamentManage /></OrganizerLayout></RequireOrganizer>} />
             <Route path="/organizer/tournaments/:id/view" element={<RequireOrganizer><OrganizerLayout><CoOrganizerView /></OrganizerLayout></RequireOrganizer>} />
             <Route path="/organizer/radar" element={<RequireOrganizer><OrganizerLayout><SponsorshipRadar /></OrganizerLayout></RequireOrganizer>} />
             <Route path="/organizer/radar/:radar_id" element={<RequireOrganizer><OrganizerLayout><RadarDetailPage /></OrganizerLayout></RequireOrganizer>} />
             <Route path="/organizer/billing" element={<RequireOrganizer><OrganizerLayout><OrganizerBilling /></OrganizerLayout></RequireOrganizer>} />
+            <Route path="/organizer/billing/payment-method" element={<RequireOrganizer><OrganizerLayout><PaymentMethod /></OrganizerLayout></RequireOrganizer>} />
             <Route path="/organizer/billing/:bill_number" element={<RequireOrganizer><OrganizerLayout><BillDetail /></OrganizerLayout></RequireOrganizer>} />
             <Route path="/organizer/sponsored" element={<RequireOrganizer><OrganizerLayout><CoOrganizedTournaments /></OrganizerLayout></RequireOrganizer>} />
             <Route path="/organizer/teams" element={<RequireOrganizer><OrganizerLayout><OrganizerTeams /></OrganizerLayout></RequireOrganizer>} />
             <Route path="/organizer/messages" element={<RequireOrganizer><OrganizerLayout><OrganizerMessages /></OrganizerLayout></RequireOrganizer>} />
+            <Route path="/organizer/marketplace" element={<RequireOrganizer><OrganizerLayout><Marketplace /></OrganizerLayout></RequireOrganizer>} />
             <Route path="/organizer/profile" element={<RequireOrganizer><OrganizerLayout><OrganizerSettings /></OrganizerLayout></RequireOrganizer>} />
 
             {/* ============ STAFF ZONE ============ */}
@@ -150,6 +160,10 @@ function App() {
             <Route path="/staff/orders" element={<RequireStaff><StaffLayout><StaffOrders /></StaffLayout></RequireStaff>} />
             <Route path="/staff/orders/:id" element={<RequireStaff><StaffLayout><StaffOrderDetail /></StaffLayout></RequireStaff>} />
             <Route path="/staff/marketplace" element={<RequireStaff><StaffLayout><StaffMarketplace /></StaffLayout></RequireStaff>} />
+            <Route path="/staff/marketplace/new" element={<RequireStaff><StaffLayout><StaffMarketplace /></StaffLayout></RequireStaff>} />
+            <Route path="/staff/marketplace/:id" element={<RequireStaff><StaffLayout><StaffMarketplace /></StaffLayout></RequireStaff>} />
+            <Route path="/staff/orders/gamer/:id" element={<RequireStaff><StaffLayout><StaffOrderDetail /></StaffLayout></RequireStaff>} />
+            <Route path="/staff/orders/tournament/:id" element={<RequireStaff><StaffLayout><StaffOrderDetail /></StaffLayout></RequireStaff>} />
             <Route path="/staff/radar" element={<RequireStaff><StaffLayout><StaffRadarPanel /></StaffLayout></RequireStaff>} />
             <Route path="/staff/billing" element={<RequireStaff><StaffLayout><StaffBilling /></StaffLayout></RequireStaff>} />
             <Route path="/staff/billing/:bill_number" element={<RequireStaff><StaffLayout><BillDetail /></StaffLayout></RequireStaff>} />
