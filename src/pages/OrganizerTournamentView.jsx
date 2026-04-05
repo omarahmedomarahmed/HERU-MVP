@@ -209,7 +209,7 @@ export default function OrganizerTournamentView() {
           </div>
           <div className="flex gap-3">
             {canEdit && (
-              <Link to={`/organizer/tournaments/new/$\{tournamentId}`}>
+              <Link to={`/organizer/tournaments/new/${tournamentId}`}>
                 <GlowButton variant="secondary" size="sm">
                   <Edit className="w-4 h-4" /> Edit in Builder
                 </GlowButton>

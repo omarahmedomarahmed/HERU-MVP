@@ -79,12 +79,12 @@ export default function OrganizerTournaments() {
           </div>
         </div>
         <div className="flex gap-2">
-          <Link to={`/organizer/tournaments/$\{tournament.id}`}>
+          <Link to={`/organizer/tournaments/${tournament.id}`}>
             <GlowButton variant="secondary" size="sm">
               <Settings className="w-4 h-4" /> Manage
             </GlowButton>
           </Link>
-          <Link to={`/organizer/tournaments/$\{tournament.id}`}>
+          <Link to={`/organizer/tournaments/${tournament.id}`}>
             <GlowButton variant="ghost" size="sm">
               <Eye className="w-4 h-4" />
             </GlowButton>

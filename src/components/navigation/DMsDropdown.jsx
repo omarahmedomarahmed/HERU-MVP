@@ -66,7 +66,7 @@ export default function DMsDropdown({ isOpen, onClose, conversations = [], profi
                 return (
                   <Link
                     key={conv.id}
-                    to={`/gamer/notifications/$\{conv.id}`}
+                    to={`/gamer/notifications/${conv.id}`}
                     onClick={onClose}
                     className="block p-4 border-b border-zinc-800/50 hover:bg-zinc-800/50 transition-colors"
                   >

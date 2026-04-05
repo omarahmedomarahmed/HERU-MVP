@@ -175,7 +175,7 @@ export default function SocialFeed({
             <FloatingPanel className="overflow-hidden">
               {/* Post Header */}
               <div className="flex items-center gap-3 p-4">
-                <Link to={`/gamer/$\{post.author_id}`}>
+                <Link to={`/gamer/${post.author_id}`}>
                   <div className="w-12 h-12 rounded-full bg-gradient-to-br from-red-600/30 to-zinc-800 flex items-center justify-center overflow-hidden">
                     {post.author_avatar ? (
                       <img src={post.author_avatar} className="w-full h-full object-cover" alt="" />
@@ -186,11 +186,11 @@ export default function SocialFeed({
                 </Link>
                 <div className="flex-1">
                   <div className="flex items-center gap-2">
-                    <Link to={`/gamer/$\{post.author_id}`}>
+                    <Link to={`/gamer/${post.author_id}`}>
                       <p className="text-white font-bold hover:text-red-400">{post.author_name}</p>
                     </Link>
                     <span className="text-gray-600">•</span>
-                    <Link to={`/teams/$\{post.spaceId}`}>
+                    <Link to={`/teams/${post.spaceId}`}>
                       <span className="text-red-400 text-sm hover:underline">{post.spaceName}</span>
                     </Link>
                   </div>
@@ -262,7 +262,7 @@ export default function SocialFeed({
                         <User className="w-4 h-4 text-gray-500" />
                       </div>
                       <div className="flex-1 bg-zinc-800/50 rounded-xl p-3">
-                        <Link to={`/gamer/$\{comment.author_id}`}>
+                        <Link to={`/gamer/${comment.author_id}`}>
                           <p className="text-white text-sm font-medium hover:text-red-400">{comment.author_name}</p>
                         </Link>
                         <p className="text-gray-400 text-sm">{comment.content}</p>

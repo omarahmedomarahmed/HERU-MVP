@@ -26,7 +26,7 @@ export default function OrdersDropdown({ isOpen, onClose, orders = [] }) {
               {orders.slice(0, 5).map((order) => (
                 <Link
                   key={order.id}
-                  to={`/gamer/orders/$\{order.id}`}
+                  to={`/gamer/orders/${order.id}`}
                   onClick={onClose}
                   className="block p-4 border-b border-zinc-800/50 hover:bg-zinc-800/50 transition-colors"
                 >

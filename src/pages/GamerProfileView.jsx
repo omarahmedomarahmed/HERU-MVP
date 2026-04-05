@@ -155,7 +155,7 @@ export default function GamerProfileView() {
           </h2>
           <div className="space-y-3">
             {teams.map((team) => (
-              <Link key={team.id} to={`/teams/$\{team.id}`}>
+              <Link key={team.id} to={`/teams/${team.id}`}>
                 <GameCard className="p-3">
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-lg bg-zinc-800 flex items-center justify-center overflow-hidden">

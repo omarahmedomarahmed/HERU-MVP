@@ -165,7 +165,7 @@ export default function OrganizerTeams() {
                 </div>
               )}
 
-              <Link to={`/teams/$\{team.id}`}>
+              <Link to={`/teams/${team.id}`}>
                 <GlowButton variant="secondary" size="sm" className="w-full">
                   <Eye className="w-4 h-4" /> View Team
                 </GlowButton>

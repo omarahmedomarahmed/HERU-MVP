@@ -230,7 +230,7 @@ export default function OrganizerTournamentManage() {
           </div>
         </div>
         <div className="flex gap-2">
-          <Link to={`/organizer/tournaments/new/$\{tournamentId}`}>
+          <Link to={`/organizer/tournaments/new/${tournamentId}`}>
             <GlowButton variant="secondary" size="sm">
               <Edit2 className="w-4 h-4" /> Edit in Builder
             </GlowButton>

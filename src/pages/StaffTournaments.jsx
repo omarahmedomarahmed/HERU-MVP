@@ -134,7 +134,7 @@ export default function StaffTournaments() {
   };
 
   const TournamentCard = ({ tournament }) => (
-    <GameCard className="p-4 cursor-pointer" onClick={() => navigate(`/staff/tournaments/$\{tournament.id}`)}>
+    <GameCard className="p-4 cursor-pointer" onClick={() => navigate(`/staff/tournaments/${tournament.id}`)}>
       <div className="flex items-start gap-4">
         <div className="w-16 h-16 rounded-xl bg-zinc-800 flex items-center justify-center overflow-hidden">
           {tournament.tournament_image ? <img src={tournament.tournament_image} className="w-full h-full object-cover" /> : <Trophy className="w-8 h-8 text-red-500" />}

@@ -152,7 +152,7 @@ export default function TournamentBuilder() {
     },
     onSuccess: (result) => {
       if (!tournamentId && result?.id) {
-        navigate(`/organizer/tournaments/new/$\{result.id}`);
+        navigate(`/organizer/tournaments/new/${result.id}`);
       }
       queryClient.invalidateQueries(['organizer-tournaments']);
     }
