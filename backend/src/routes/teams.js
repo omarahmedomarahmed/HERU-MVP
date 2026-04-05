@@ -56,7 +56,9 @@ router.put('/:id', requireAuth, async (req, res) => {
     const { data: existing } = await supabaseAdmin.from('teams').select('leader_id').eq('id', req.params.id).single();
     if (!existing) return res.status(404).json({ error: 'Team not found' });
     if (existing.leader_id !== req.user.id) return res.status(403).json({ error: 'Only team leader can update' });
-    const { data, error } = await supabaseAdmin.from('teams').update({ ...req.body, updated_at: new Date().toISOString() }).eq('id', req.params.id).select().single();
+    // Blacklist sensitive fields that shouldn't be changed via generic update
+    const { leader_id: _l, members: _m, join_requests: _j, tournament_invites: _t, ...safeUpdates } = req.body;
+    const { data, error } = await supabaseAdmin.from('teams').update({ ...safeUpdates, updated_at: new Date().toISOString() }).eq('id', req.params.id).select().single();
     if (error) throw error;
     res.json(data);
   } catch (err) {

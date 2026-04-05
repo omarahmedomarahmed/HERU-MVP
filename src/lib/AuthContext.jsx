@@ -165,12 +165,12 @@ export const AuthProvider = ({ children }) => {
    * stores the returned staff session token locally.
    * Returns { user, staff_session }.
    */
-  const staffLogin = async (email, password) => {
+  const staffLogin = async (email, password, access_key) => {
     setAuthError(null)
     try {
       const result = await apiCall('/auth/staff/login', {
         method: 'POST',
-        body: { email, password },
+        body: { email, password, access_key },
       })
 
       // Store staff session token

@@ -46,9 +46,21 @@ app.use(
   })
 );
 
+// Strict rate limiter for auth endpoints (prevent brute force)
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10, // 10 login attempts per 15 minutes
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many login attempts, please try again later.' },
+});
+app.use('/api/auth/login', authLimiter);
+app.use('/api/auth/staff/login', authLimiter);
+
+// General rate limiter
 const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100,
+  windowMs: 15 * 60 * 1000,
+  max: 200,
   standardHeaders: true,
   legacyHeaders: false,
   message: { error: 'Too many requests, please try again later.' },

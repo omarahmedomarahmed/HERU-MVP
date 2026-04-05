@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 
 export default function GamerProfile() {
+  const { logout } = useAuth();
   const [user, setUser] = useState(null);
   const [editing, setEditing] = useState(false);
   const [addGameModal, setAddGameModal] = useState(false);
@@ -235,7 +236,7 @@ export default function GamerProfile() {
                 {/* Talent Gig Requests */}
                 {profile?.is_talent && (
                   <div className="mt-4">
-                    <Link to={'/gig-requests'}>
+                    <Link to={'/gamer/gigs'}>
                       <GlowButton variant="secondary" size="sm">
                         <Briefcase className="w-4 h-4" /> My Gig Requests
                       </GlowButton>
@@ -340,7 +341,7 @@ export default function GamerProfile() {
               <Package className="w-5 h-5 text-red-500" />
               My Orders
             </h2>
-            <Link to={'/my-orders'}>
+            <Link to={'/gamer/orders'}>
               <GlowButton variant="ghost" size="sm">View All</GlowButton>
             </Link>
           </div>

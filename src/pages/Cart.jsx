@@ -164,7 +164,7 @@ export default function Cart() {
     },
     onSuccess: () => {
       setCheckoutModal(false);
-      navigate('/my-orders');
+      navigate('/gamer/orders');
     }
   });
 

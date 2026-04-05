@@ -224,7 +224,7 @@ export default function GamerHome() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.1 }}
             >
-              <Link to={`/team/${team.id}`}>
+              <Link to={`/gamer/teams/${team.id}`}>
                 <GameCard className="p-5">
                   <div className="flex items-center gap-4">
                     <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-red-600/20 to-zinc-800 flex items-center justify-center overflow-hidden">
@@ -272,7 +272,7 @@ export default function GamerHome() {
               🔥 PRIZE<span className="text-red-500">POOL</span> STORE
             </h2>
           </div>
-          <Link to={'/marketplace'}>
+          <Link to={'/gamer/marketplace'}>
             <GlowButton variant="ghost" size="sm">
               View All <ArrowRight className="w-4 h-4" />
             </GlowButton>

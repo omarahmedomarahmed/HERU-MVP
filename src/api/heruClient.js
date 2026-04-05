@@ -100,6 +100,8 @@ export const Tournament = {
   updateMatchScore: (id, matchId, data) => apiCall(`/tournaments/${id}/brackets/${matchId}`, { method: 'PUT', body: data }),
   announceWinner:   (id, data)   => apiCall(`/tournaments/${id}/announce-winner`, { method: 'POST', body: data }),
   updateSignupPage: (id, data)   => apiCall(`/tournaments/${id}/signup-page`, { method: 'PUT', body: data }),
+  getTeamChat:      (id, teamId) => apiCall(`/tournaments/${id}/team-chat/${teamId}`),
+  sendTeamChat:     (id, teamId, msg) => apiCall(`/tournaments/${id}/team-chat/${teamId}`, { method: 'POST', body: msg }),
 }
 
 export const Team = {

@@ -10,11 +10,14 @@ router.post('/paymob/callback', async (req, res) => {
     const { obj } = req.body;
     if (!obj) return res.status(400).json({ error: 'Invalid payload' });
 
-    // Verify HMAC if secret is configured
+    // Verify HMAC — mandatory for payment integrity
     const hmac = req.query.hmac || req.headers['x-paymob-hmac'];
-    if (process.env.PAYMOB_HMAC_SECRET && hmac) {
-      const valid = verifyHmac(obj, hmac);
-      if (!valid) return res.status(401).json({ error: 'Invalid HMAC' });
+    if (!process.env.PAYMOB_HMAC_SECRET) {
+      console.error('[payments] PAYMOB_HMAC_SECRET not configured — rejecting callback');
+      return res.status(500).json({ error: 'Payment verification not configured' });
+    }
+    if (!hmac || !verifyHmac(obj, hmac)) {
+      return res.status(401).json({ error: 'Invalid or missing HMAC signature' });
     }
 
     const merchantOrderId = obj.order?.merchant_order_id;

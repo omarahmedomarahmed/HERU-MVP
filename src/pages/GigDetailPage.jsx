@@ -270,7 +270,7 @@ export default function GigDetailPage() {
                 </FloatingPanel>
               ) : (
                 teams.map((team, i) => (
-                  <Link key={team.id} to={`/team/${team.id}`}>
+                  <Link key={team.id} to={`/gamer/teams/${team.id}`}>
                     <FloatingPanel className="p-4 hover:border-red-500/30 transition-all">
                       <div className="flex items-center gap-3">
                         <span className="text-gray-600 text-xs font-bold w-5">#{i+1}</span>

@@ -28,6 +28,7 @@ export default function GamerLayout({ children, user, profile, cartCount = 0, no
 
   const isActive = (path) => location.pathname === path || location.pathname.startsWith(path + '/');
 
+  const { logout } = useAuth();
   const handleLogout = async () => {
     await logout();
   };
@@ -98,7 +99,7 @@ export default function GamerLayout({ children, user, profile, cartCount = 0, no
             {/* Cart */}
             {cartCount > 0 && (
               <Link
-                to={'/cart'}
+                to={'/gamer/cart'}
                 className="relative p-2 text-gray-400 hover:text-white transition-colors"
               >
                 <ShoppingCart className="w-5 h-5" />
@@ -162,7 +163,7 @@ export default function GamerLayout({ children, user, profile, cartCount = 0, no
 
             {/* Dashboard button */}
             <Link
-              to="/dashboard/gamer"
+              to="/gamer/home"
               className="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-500/10 border border-red-500/30 text-red-400 hover:bg-red-500/20 transition-colors text-sm font-medium"
             >
               <LayoutDashboard className="w-4 h-4" />
@@ -222,7 +223,7 @@ export default function GamerLayout({ children, user, profile, cartCount = 0, no
                 ))}
                 <div className="border-t border-zinc-800 pt-2 mt-2">
                   <Link
-                    to="/dashboard/gamer"
+                    to="/gamer/home"
                     onClick={() => setMobileMenuOpen(false)}
                     className="flex items-center gap-3 px-4 py-3 rounded-lg text-red-400 hover:bg-red-500/10"
                   >
@@ -230,7 +231,7 @@ export default function GamerLayout({ children, user, profile, cartCount = 0, no
                     Dashboard
                   </Link>
                   <Link
-                    to={'/my-orders'}
+                    to={'/gamer/orders'}
                     onClick={() => setMobileMenuOpen(false)}
                     className="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-400 hover:text-white hover:bg-white/5"
                   >

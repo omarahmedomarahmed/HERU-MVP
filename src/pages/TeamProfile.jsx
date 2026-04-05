@@ -177,7 +177,7 @@ export default function TeamProfile() {
           </div>
           <div className="flex flex-col gap-2 shrink-0">
             {isLeader && (
-              <Link to="/dashboard/gamer?tab=team">
+              <Link to="/gamer/teams">
                 <GlowButton variant="secondary" size="sm">Edit Team</GlowButton>
               </Link>
             )}
@@ -208,7 +208,7 @@ export default function TeamProfile() {
         </h2>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           {members.map(member => (
-            <Link key={member.id} to={`/GamerProfileView?id=${member.user_id}`}>
+            <Link key={member.id} to={`/gamer/${member.user_id}`}>
               <GameCard className="p-4 text-center">
                 <div className="w-14 h-14 rounded-full bg-zinc-800 overflow-hidden mx-auto mb-2">
                   {member.avatar ? <img src={member.avatar} className="w-full h-full object-cover" /> : <Users className="w-7 h-7 text-red-500 mx-auto mt-3" />}

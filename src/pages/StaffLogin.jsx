@@ -12,6 +12,7 @@ import { isStaffAuthenticated } from '@/lib/staffAuth';
 export default function StaffLogin() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [accessKey, setAccessKey] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -27,8 +28,8 @@ export default function StaffLogin() {
   const handleLogin = async (e) => {
     e.preventDefault();
 
-    if (!email.trim() || !password.trim()) {
-      setError('Please enter your email and password');
+    if (!email.trim() || !password.trim() || !accessKey.trim()) {
+      setError('Please enter your email, password, and access key');
       return;
     }
 
@@ -36,7 +37,7 @@ export default function StaffLogin() {
     setError('');
 
     try {
-      await staffLogin(email.trim(), password);
+      await staffLogin(email.trim(), password, accessKey.trim());
       navigate('/staff/dashboard', { replace: true });
     } catch (err) {
       setError(err.message || 'Access denied. Admin credentials required.');
@@ -109,6 +110,22 @@ export default function StaffLogin() {
                   {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
               </div>
+            </div>
+
+            <div>
+              <label className="text-sm text-gray-400 block mb-2">
+                <Shield className="w-4 h-4 inline mr-1" />
+                Staff Access Key
+              </label>
+              <Input
+                type="password"
+                value={accessKey}
+                onChange={(e) => setAccessKey(e.target.value)}
+                placeholder="HERU-STAFF-XXXX-XXXX"
+                className="bg-zinc-800 border-zinc-700 text-white"
+                autoComplete="off"
+                required
+              />
             </div>
 
             {error && (

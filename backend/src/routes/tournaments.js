@@ -275,6 +275,68 @@ router.put('/:id/join-request/:requestId', requireAuth, async (req, res) => {
   }
 });
 
+// POST /:id/support-chat - support chat (organizer ↔ staff)
+router.post('/:id/support-chat', requireAuth, async (req, res) => {
+  try {
+    const { data: tournament } = await supabaseAdmin.from('tournaments').select('support_chat').eq('id', req.params.id).single();
+    if (!tournament) return res.status(404).json({ error: 'Tournament not found' });
+    const chat = [...(tournament.support_chat || []), { ...req.body, user_id: req.user.id, timestamp: new Date().toISOString() }];
+    const { data, error } = await supabaseAdmin.from('tournaments').update({ support_chat: chat }).eq('id', req.params.id).select().single();
+    if (error) throw error;
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// GET /:id/team-chat/:teamId - get per-team organizer chat
+router.get('/:id/team-chat/:teamId', requireAuth, async (req, res) => {
+  try {
+    const { data: tournament } = await supabaseAdmin.from('tournaments').select('team_chats, organizer_id, teams').eq('id', req.params.id).single();
+    if (!tournament) return res.status(404).json({ error: 'Tournament not found' });
+
+    // Only organizer or team leader can view
+    const { data: team } = await supabaseAdmin.from('teams').select('leader_id').eq('id', req.params.teamId).single();
+    const isOrganizer = tournament.organizer_id === req.user.id;
+    const isTeamLeader = team?.leader_id === req.user.id;
+    if (!isOrganizer && !isTeamLeader) return res.status(403).json({ error: 'Only organizer or team leader can view this chat' });
+
+    const messages = (tournament.team_chats || {})[req.params.teamId] || [];
+    res.json(messages);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// POST /:id/team-chat/:teamId - send message in per-team chat
+router.post('/:id/team-chat/:teamId', requireAuth, async (req, res) => {
+  try {
+    const { data: tournament } = await supabaseAdmin.from('tournaments').select('team_chats, organizer_id').eq('id', req.params.id).single();
+    if (!tournament) return res.status(404).json({ error: 'Tournament not found' });
+
+    const { data: team } = await supabaseAdmin.from('teams').select('leader_id').eq('id', req.params.teamId).single();
+    const isOrganizer = tournament.organizer_id === req.user.id;
+    const isTeamLeader = team?.leader_id === req.user.id;
+    if (!isOrganizer && !isTeamLeader) return res.status(403).json({ error: 'Only organizer or team leader can send messages' });
+
+    const teamChats = tournament.team_chats || {};
+    const messages = teamChats[req.params.teamId] || [];
+    messages.push({
+      ...req.body,
+      user_id: req.user.id,
+      sender_type: isOrganizer ? 'organizer' : 'team_leader',
+      timestamp: new Date().toISOString(),
+    });
+    teamChats[req.params.teamId] = messages;
+
+    const { data, error } = await supabaseAdmin.from('tournaments').update({ team_chats: teamChats }).eq('id', req.params.id).select().single();
+    if (error) throw error;
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // POST /:id/invite-team - invite a team to tournament
 router.post('/:id/invite-team', requireAuth, async (req, res) => {
   try {

@@ -238,10 +238,14 @@ router.post('/login', async (req, res) => {
 // ---------------------------------------------------------------------------
 router.post('/staff/login', async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const { email, password, access_key } = req.body;
 
     if (!email || !password) {
       return res.status(400).json({ error: 'Email and password are required' });
+    }
+
+    if (!access_key) {
+      return res.status(400).json({ error: 'Staff access key is required' });
     }
 
     // 1. Authenticate with Supabase Auth (separate client to avoid contaminating supabaseAdmin)
@@ -272,6 +276,24 @@ router.post('/staff/login', async (req, res) => {
     if (profile?.role !== 'admin') {
       return res.status(403).json({ error: 'Access denied. Admin privileges required.', step: 'role_check' });
     }
+
+    // 2b. Validate StaffAccessKey
+    const { data: keyRecord, error: keyError } = await supabaseAdmin
+      .from('staff_access_keys')
+      .select('*')
+      .eq('access_key', access_key)
+      .eq('is_active', true)
+      .single();
+
+    if (keyError || !keyRecord) {
+      return res.status(403).json({ error: 'Invalid or inactive staff access key', step: 'access_key' });
+    }
+
+    // Update key usage stats
+    await supabaseAdmin.from('staff_access_keys').update({
+      use_count: (keyRecord.use_count || 0) + 1,
+      last_used_at: new Date().toISOString(),
+    }).eq('id', keyRecord.id);
 
     // 3. Create staff session (24h expiry) — uses supabaseAdmin (service role) to bypass RLS
     const sessionToken = crypto.randomBytes(48).toString('hex');

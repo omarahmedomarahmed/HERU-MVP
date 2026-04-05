@@ -104,7 +104,7 @@ export default function Marketplace() {
           </h1>
           <p className="text-gray-400 mt-2">Browse featured items and prizes</p>
         </div>
-        <Link to={'/cart'}>
+        <Link to={'/gamer/cart'}>
           <GlowButton variant="secondary">
             <ShoppingCart className="w-4 h-4" />
             Cart ({cart.length})
