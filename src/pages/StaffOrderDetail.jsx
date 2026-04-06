@@ -1,334 +1,411 @@
-import React, { useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import React, { useState, useMemo } from 'react';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import StaffLayout from '@/components/layouts/StaffLayout';
+import { apiCall } from '@/api/heruClient';
+import {
+  ArrowLeft, Package, Clock, Send, User, MessageSquare,
+  CheckCircle, XCircle, Loader2, ShoppingBag,
+} from 'lucide-react';
 
-import FloatingPanel from '@/components/ui/FloatingPanel';
-import GlowButton from '@/components/ui/GlowButton';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Trophy, Shield, DollarSign, Users, MessageSquare, Send, CheckCircle, ChevronLeft, CreditCard } from 'lucide-react';
-import { TournamentOrder, apiCall } from '@/api/heruClient'
-import { useAuth } from '@/lib/AuthContext'
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
 
+function formatEGP(value) {
+  return `EGP ${(value || 0).toLocaleString('en-EG', { minimumFractionDigits: 0 })}`;
+}
 
-const CATEGORY_COLORS = {
-  branding: 'text-purple-400',
-  production: 'text-blue-400',
-  prizepool: 'text-yellow-400',
-  venue: 'text-orange-400',
-  talent: 'text-pink-400',
-};
+function formatDate(dateStr) {
+  if (!dateStr) return '-';
+  return new Date(dateStr).toLocaleDateString('en-GB', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+}
 
-const ITEM_STATUS_COLORS = {
-  pending: 'text-amber-400 border-amber-500/30 bg-amber-500/10',
-  in_progress: 'text-blue-400 border-blue-500/30 bg-blue-500/10',
-  fulfilled: 'text-green-400 border-green-500/30 bg-green-500/10',
-  cancelled: 'text-red-400 border-red-500/30 bg-red-500/10',
-};
+function StatusBadge({ status }) {
+  const map = {
+    pending: 'bg-amber-50 text-amber-700',
+    processing: 'bg-blue-50 text-blue-700',
+    completed: 'bg-emerald-50 text-emerald-700',
+    cancelled: 'bg-red-50 text-red-600',
+    draft: 'bg-gray-100 text-gray-600',
+    pending_payment: 'bg-amber-50 text-amber-700',
+    in_fulfillment: 'bg-blue-50 text-blue-700',
+    fulfilled: 'bg-emerald-50 text-emerald-700',
+  };
+  return (
+    <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium capitalize ${map[status] || 'bg-gray-100 text-gray-600'}`}>
+      {(status || 'unknown').replace(/_/g, ' ')}
+    </span>
+  );
+}
+
+const GAMER_STATUSES = ['pending', 'processing', 'completed', 'cancelled'];
+const TOURNAMENT_STATUSES = ['draft', 'pending_payment', 'in_fulfillment', 'fulfilled', 'cancelled'];
+
+// ---------------------------------------------------------------------------
+// Main component
+// ---------------------------------------------------------------------------
 
 export default function StaffOrderDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const [user, setUser] = React.useState(null);
-  const [orgChatMsg, setOrgChatMsg] = useState('');
-  const [orderNote, setOrderNote] = useState('');
   const queryClient = useQueryClient();
+  const [chatMessage, setChatMessage] = useState('');
 
+  // Staff guard
   React.useEffect(() => {
-    apiCall('/auth/me').then(setUser).catch(() => navigate('/staff/login'));
-  }, []);
+    const token = localStorage.getItem('heru_staff_token');
+    const expires = localStorage.getItem('heru_staff_expires');
+    if (!token || !expires || new Date(expires) < new Date()) {
+      localStorage.removeItem('heru_staff_token');
+      localStorage.removeItem('heru_staff_expires');
+      navigate('/admin', { replace: true });
+    }
+  }, [navigate]);
 
-  const { data: order, isLoading } = useQuery({
-    queryKey: ['tournament-order', id],
-    queryFn: async () => {
-      const orders = await TournamentOrder.list();
-      return orders.find(o => o.id === id);
-    },
-    enabled: !!id,
+  // Try fetching as gamer order first, then tournament order
+  const { data: gamerOrder, isLoading: loadingGamer, isError: gamerError } = useQuery({
+    queryKey: ['staff-order', id],
+    queryFn: () => apiCall(`/orders/${id}`),
+    staleTime: 30_000,
+    retry: 0,
   });
 
-  const updateItemStatusMutation = useMutation({
-    mutationFn: async ({ itemIndex, newStatus, notes }) => {
-      const items = [...(order.items || [])];
-      items[itemIndex] = { ...items[itemIndex], status: newStatus, ...(notes !== undefined ? { notes } : {}) };
-      return TournamentOrder.update(id, { items });
+  const { data: tournamentOrder, isLoading: loadingTournament } = useQuery({
+    queryKey: ['staff-tournament-order', id],
+    queryFn: () => apiCall(`/tournament-orders/${id}`),
+    staleTime: 30_000,
+    retry: 0,
+    enabled: !!gamerError,
+  });
+
+  // Determine which order we have
+  const order = gamerOrder || tournamentOrder;
+  const isTournamentOrder = !gamerOrder && !!tournamentOrder;
+  const isLoading = loadingGamer || (gamerError && loadingTournament);
+
+  const currentStatus = isTournamentOrder
+    ? (order?.fulfillment_status || order?.status)
+    : order?.status;
+
+  const statusOptions = isTournamentOrder ? TOURNAMENT_STATUSES : GAMER_STATUSES;
+
+  // Update status mutation
+  const updateMutation = useMutation({
+    mutationFn: (newStatus) => {
+      const endpoint = isTournamentOrder ? `/tournament-orders/${id}` : `/orders/${id}`;
+      const body = isTournamentOrder ? { fulfillment_status: newStatus } : { status: newStatus };
+      return apiCall(endpoint, { method: 'PUT', body });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries(['tournament-order', id]);
-    }
+      queryClient.invalidateQueries({ queryKey: ['staff-order', id] });
+      queryClient.invalidateQueries({ queryKey: ['staff-tournament-order', id] });
+    },
   });
 
-  const updateOrderNoteMutation = useMutation({
-    mutationFn: (note) => TournamentOrder.update(id, { staff_notes: note }),
-    onSuccess: () => queryClient.invalidateQueries(['tournament-order', id])
-  });
-
-  const sendOrgChatMutation = useMutation({
-    mutationFn: async (message) => {
-      const chat = [...(order.internal_chat || [])];
-      chat.push({ sender_id: user?.id, sender_name: 'HERU Staff', sender_role: 'staff', message, timestamp: new Date().toISOString() });
-      return TournamentOrder.update(id, { internal_chat: chat });
+  // Send chat message mutation
+  const chatMutation = useMutation({
+    mutationFn: (message) => {
+      const endpoint = isTournamentOrder
+        ? `/tournament-orders/${id}/chat`
+        : `/orders/${id}/chat`;
+      return apiCall(endpoint, {
+        method: 'POST',
+        body: { message, sender_role: 'staff', sender_name: 'Staff' },
+      });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries(['tournament-order', id]);
-      setOrgChatMsg('');
-    }
-  });
-
-  const markCoOrgPaidMutation = useMutation({
-    mutationFn: async (coOrgIndex) => {
-      const coOrgs = [...(order.co_organizers || [])];
-      coOrgs[coOrgIndex] = { ...coOrgs[coOrgIndex], payment_status: 'paid', access_granted: true };
-      return TournamentOrder.update(id, { co_organizers: coOrgs });
+      setChatMessage('');
+      queryClient.invalidateQueries({ queryKey: ['staff-order', id] });
+      queryClient.invalidateQueries({ queryKey: ['staff-tournament-order', id] });
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries(['tournament-order', id]);
-    }
   });
 
+  const items = useMemo(() => {
+    if (!order?.items) return [];
+    return Array.isArray(order.items) ? order.items : [];
+  }, [order]);
+
+  const supportChat = useMemo(() => {
+    const chat = order?.support_chat || order?.internal_chat || [];
+    return Array.isArray(chat) ? chat : [];
+  }, [order]);
+
+  function handleSendChat(e) {
+    e.preventDefault();
+    if (!chatMessage.trim() || chatMutation.isPending) return;
+    chatMutation.mutate(chatMessage.trim());
+  }
+
+  // Loading
   if (isLoading) {
     return (
-      <>
-        <div className="flex items-center justify-center h-64">
-          <div className="w-8 h-8 border-4 border-red-500 border-t-transparent rounded-full animate-spin"></div>
+      <StaffLayout>
+        <div className="flex items-center justify-center py-20">
+          <Loader2 className="w-6 h-6 text-gray-400 animate-spin" />
+          <span className="ml-2 text-sm text-gray-400">Loading order...</span>
         </div>
-      </>
+      </StaffLayout>
     );
   }
 
+  // Not found
   if (!order) {
     return (
-      <>
-        <div className="text-center py-12">
-          <p className="text-gray-400 text-lg">Order not found</p>
-          <GlowButton className="mt-4" onClick={() => navigate('/staff/tournament-orders')}>Back to Orders</GlowButton>
+      <StaffLayout>
+        <div className="text-center py-20">
+          <Package className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+          <p className="text-gray-500 font-medium">Order not found</p>
+          <Link
+            to="/staff/orders"
+            className="inline-flex items-center gap-1 mt-4 text-sm text-blue-600 hover:text-blue-700"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Back to orders
+          </Link>
         </div>
-      </>
+      </StaffLayout>
     );
   }
 
   return (
-    <>
-      <div className="mb-6">
-        <button onClick={() => navigate('/staff/tournament-orders')} className="flex items-center gap-2 text-gray-400 hover:text-white mb-4">
-          <ChevronLeft className="w-4 h-4" />
-          Back to Orders
-        </button>
-        <h1 className="text-3xl font-black text-white">
-          <Trophy className="w-8 h-8 inline text-yellow-500 mr-2" />
-          {order.tournament_name}
-        </h1>
-      </div>
+    <StaffLayout>
+      <div>
+        {/* Header */}
+        <div className="flex items-center gap-3 mb-6">
+          <button
+            onClick={() => navigate('/staff/orders')}
+            className="p-2 rounded-lg hover:bg-gray-100 transition"
+          >
+            <ArrowLeft className="w-5 h-5 text-gray-500" />
+          </button>
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">
+              Order #{(order.id || '').slice(0, 8)}
+            </h1>
+            <p className="text-sm text-gray-500 mt-0.5">
+              {isTournamentOrder ? 'Tournament Order' : 'Gamer Marketplace Order'}
+              {' '} - Created {formatDate(order.created_at)}
+            </p>
+          </div>
+        </div>
 
-      {/* Summary Cards */}
-      <div className="grid md:grid-cols-4 gap-4 mb-6">
-        <FloatingPanel className="p-4">
-          <p className="text-gray-400 text-xs mb-1 uppercase">Grand Total</p>
-          <p className="text-green-400 font-bold text-2xl">EGP {(order.grand_total || 0).toLocaleString()}</p>
-        </FloatingPanel>
-        <FloatingPanel className="p-4">
-          <p className="text-gray-400 text-xs mb-1 uppercase">Main Org Owes</p>
-          <p className="text-red-400 font-bold text-2xl">EGP {(order.main_organizer_owes || 0).toLocaleString()}</p>
-        </FloatingPanel>
-        <FloatingPanel className="p-4">
-          <p className="text-gray-400 text-xs mb-1 uppercase">Status</p>
-          <p className="text-blue-400 font-bold text-sm capitalize">{order.fulfillment_status?.replace('_', ' ')}</p>
-        </FloatingPanel>
-        <FloatingPanel className="p-4">
-          <p className="text-gray-400 text-xs mb-1 uppercase">Items</p>
-          <p className="text-yellow-400 font-bold text-2xl">{order.items?.length || 0}</p>
-        </FloatingPanel>
-      </div>
-
-      {/* Tabs */}
-      <Tabs defaultValue="items" className="w-full">
-        <TabsList className="bg-zinc-800 mb-4">
-          <TabsTrigger value="items" className="data-[state=active]:bg-red-600">Items</TabsTrigger>
-          <TabsTrigger value="billing" className="data-[state=active]:bg-red-600">Billing</TabsTrigger>
-          {order.tournament_type === 'shared' && (
-            <TabsTrigger value="chat" className="data-[state=active]:bg-red-600">Chat</TabsTrigger>
-          )}
-          <TabsTrigger value="notes" className="data-[state=active]:bg-red-600">Notes</TabsTrigger>
-        </TabsList>
-
-        {/* Items Tab */}
-        <TabsContent value="items" className="space-y-4">
-          <FloatingPanel className="p-4">
-            <h3 className="text-white font-bold mb-4 flex items-center gap-2">
-              <DollarSign className="w-5 h-5 text-green-400" />
-              Order Items
-            </h3>
-            {order.items?.length > 0 ? (
-              <div className="space-y-3">
-                {order.items.map((item, i) => (
-                  <div key={i} className="p-3 bg-zinc-800/50 rounded-lg space-y-2">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className={`text-xs font-bold uppercase ${CATEGORY_COLORS[item.category] || 'text-gray-400'}`}>{item.category}</span>
-                        <span className="text-white font-medium text-sm">{item.title}</span>
-                        {item.assigned_to && <span className="text-xs text-gray-500">→ {item.assigned_to}</span>}
-                      </div>
-                      <span className="text-green-400 font-bold">EGP {(item.price || 0).toLocaleString()}</span>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Left column: order info + items */}
+          <div className="lg:col-span-2 space-y-6">
+            {/* Order info */}
+            <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
+              <h2 className="text-sm font-semibold text-gray-900 mb-4">Order Details</h2>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <p className="text-xs text-gray-500 mb-1">Status</p>
+                  <StatusBadge status={currentStatus} />
+                </div>
+                <div>
+                  <p className="text-xs text-gray-500 mb-1">Total</p>
+                  <p className="text-lg font-bold text-gray-900">{formatEGP(order.grand_total || order.total)}</p>
+                </div>
+                {isTournamentOrder ? (
+                  <>
+                    <div>
+                      <p className="text-xs text-gray-500 mb-1">Tournament</p>
+                      <p className="text-sm text-gray-900">{order.tournament_name || '-'}</p>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <Select value={item.status || 'pending'} onValueChange={v => {
-                        updateItemStatusMutation.mutate({ itemIndex: i, newStatus: v });
-                      }}>
-                        <SelectTrigger className="h-7 text-xs w-40 bg-zinc-700 border-zinc-600 text-white">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent className="bg-zinc-900 border-zinc-800">
-                          <SelectItem value="pending">Pending</SelectItem>
-                          <SelectItem value="in_progress">In Progress</SelectItem>
-                          <SelectItem value="fulfilled">Fulfilled</SelectItem>
-                          <SelectItem value="cancelled">Cancelled</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <span className={`text-xs px-2 py-0.5 rounded border ${ITEM_STATUS_COLORS[item.status] || ''}`}>
-                        {item.status || 'pending'}
-                      </span>
+                    <div>
+                      <p className="text-xs text-gray-500 mb-1">Organizer</p>
+                      <p className="text-sm text-gray-900">{order.main_organizer_brand || '-'}</p>
                     </div>
-                    <Input
-                      value={item.notes || ''}
-                      onChange={e => {
-                        // Update locally for immediate feedback
-                      }}
-                      onBlur={e => updateItemStatusMutation.mutate({ itemIndex: i, newStatus: item.status, notes: e.target.value })}
-                      placeholder="Item notes..."
-                      className="h-7 text-xs bg-zinc-700 border-zinc-600 text-white"
-                    />
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className="text-gray-500 text-center py-8">No items</p>
-            )}
-          </FloatingPanel>
-        </TabsContent>
-
-        {/* Billing Tab */}
-        <TabsContent value="billing" className="space-y-4">
-          <FloatingPanel className="p-4">
-            <h3 className="text-white font-bold mb-4">Billing Details</h3>
-            
-            <div className="p-3 bg-zinc-800/50 rounded-lg mb-4">
-              <div className="flex items-center justify-between mb-1">
-                <span className="text-gray-400 text-sm">Main Organizer — {order.main_organizer_brand}</span>
-                <span className="text-red-400 font-bold">EGP {(order.main_organizer_owes || 0).toLocaleString()}</span>
-              </div>
-              <p className="text-gray-600 text-xs">Primary commitment</p>
-            </div>
-
-            {order.co_organizers?.length > 0 ? (
-              order.co_organizers.map((co, i) => {
-                const owes = order.grand_total ? (order.grand_total * (co.commitment_percent || 0) / 100) : (co.commitment_amount || 0);
-                const assignedItems = order.items?.filter(item => item.assigned_to === co.organizer_id || item.assigned_to === co.brand_name) || [];
-                return (
-                  <div key={i} className="p-4 bg-zinc-800/50 rounded-lg space-y-3">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-lg bg-zinc-700 flex items-center justify-center overflow-hidden">
-                          {co.brand_logo ? <img src={co.brand_logo} className="w-full h-full object-cover" alt="" /> : <Shield className="w-4 h-4 text-zinc-500" />}
-                        </div>
-                        <div>
-                          <p className="text-white font-medium text-sm">{co.brand_name}</p>
-                          <p className="text-gray-500 text-xs">{co.commitment_percent}% committed</p>
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-amber-400 font-bold">EGP {owes.toLocaleString()}</p>
-                        <p className="text-gray-500 text-xs">owes</p>
-                      </div>
+                    <div>
+                      <p className="text-xs text-gray-500 mb-1">Type</p>
+                      <p className="text-sm text-gray-900 capitalize">{order.tournament_type || '-'}</p>
                     </div>
-
-                    {assignedItems.length > 0 && (
-                      <div className="text-xs text-gray-400 space-y-1">
-                        <p className="font-medium text-gray-500">Assigned items:</p>
-                        {assignedItems.map((item, j) => (
-                          <div key={j} className="flex justify-between">
-                            <span>{item.title}</span>
-                            <span className="text-green-400">EGP {(item.price || 0).toLocaleString()}</span>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-
-                    <div className="flex items-center justify-between pt-2 border-t border-zinc-700">
-                      <span className={`text-xs px-2 py-0.5 rounded border ${co.payment_status === 'paid' ? 'text-green-400 border-green-500/30 bg-green-500/10' : 'text-amber-400 border-amber-500/30 bg-amber-500/10'}`}>
-                        {co.payment_status || 'pending'}
-                      </span>
-                      {co.payment_status !== 'paid' && (
-                        <GlowButton size="sm" variant="secondary" onClick={() => markCoOrgPaidMutation.mutate(i)}>
-                          <CreditCard className="w-3 h-3" /> Mark as Paid
-                        </GlowButton>
-                      )}
-                      {co.payment_status === 'paid' && <span className="text-xs text-green-400 flex items-center gap-1"><CheckCircle className="w-3 h-3" /> Access granted</span>}
+                    <div>
+                      <p className="text-xs text-gray-500 mb-1">Platform Fee</p>
+                      <p className="text-sm text-gray-900">{formatEGP(order.platform_fee)}</p>
                     </div>
-                  </div>
-                );
-              })
-            ) : (
-              <p className="text-gray-500 text-sm text-center py-4">No co-organizers</p>
-            )}
-          </FloatingPanel>
-        </TabsContent>
-
-        {/* Chat Tab */}
-        {order.tournament_type === 'shared' && (
-          <TabsContent value="chat" className="space-y-4">
-            <FloatingPanel className="p-4">
-              <h3 className="text-white font-bold mb-4 flex items-center gap-2">
-                <Users className="w-4 h-4 text-purple-400" /> Organizer Chat
-              </h3>
-              <div className="h-48 overflow-y-auto bg-zinc-950 rounded-lg p-3 space-y-2 mb-3">
-                {order.internal_chat?.length > 0 ? (
-                  order.internal_chat.map((msg, i) => (
-                    <div key={i} className={`flex ${msg.sender_role === 'staff' ? 'justify-end' : 'justify-start'}`}>
-                      <div className={`max-w-[80%] p-2 rounded-lg text-sm ${msg.sender_role === 'staff' ? 'bg-red-600' : 'bg-zinc-800'}`}>
-                        <p className="text-xs opacity-60 mb-1">{msg.sender_name} · {msg.sender_role}</p>
-                        <p>{msg.message}</p>
-                      </div>
-                    </div>
-                  ))
+                  </>
                 ) : (
-                  <p className="text-gray-500 text-center py-6 text-sm">No messages</p>
+                  <>
+                    <div>
+                      <p className="text-xs text-gray-500 mb-1">Gamer</p>
+                      <p className="text-sm text-gray-900">{order.gamer_name || order.gamer_id?.slice(0, 8) || '-'}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-500 mb-1">Order Type</p>
+                      <p className="text-sm text-gray-900 capitalize">{order.order_type || '-'}</p>
+                    </div>
+                  </>
                 )}
               </div>
-              <div className="flex gap-2">
-                <Input 
-                  value={orgChatMsg} 
-                  onChange={e => setOrgChatMsg(e.target.value)} 
-                  placeholder="Write to organizer chat..." 
-                  className="bg-zinc-800 border-zinc-700 text-white"
-                  onKeyDown={e => { if (e.key === 'Enter' && orgChatMsg.trim()) { sendOrgChatMutation.mutate(orgChatMsg); }}}
-                />
-                <GlowButton size="sm" disabled={!orgChatMsg.trim()} onClick={() => sendOrgChatMutation.mutate(orgChatMsg)}>
-                  <Send className="w-4 h-4" />
-                </GlowButton>
-              </div>
-            </FloatingPanel>
-          </TabsContent>
-        )}
+            </div>
 
-        {/* Notes Tab */}
-        <TabsContent value="notes" className="space-y-4">
-          <FloatingPanel className="p-4">
-            <h3 className="text-white font-bold mb-4">Staff Notes</h3>
-            <label className="text-sm text-gray-400 block mb-2">Internal notes (only visible to staff)</label>
-            <Textarea
-              value={order.staff_notes || ''}
-              onChange={e => setOrderNote(e.target.value)}
-              placeholder="Add internal notes about this order..."
-              className="bg-zinc-800 border-zinc-700 text-white min-h-32"
-            />
-            <GlowButton className="mt-3" size="sm" onClick={() => updateOrderNoteMutation.mutate(orderNote)} disabled={updateOrderNoteMutation.isPending}>
-              <CheckCircle className="w-4 h-4" /> Save Notes
-            </GlowButton>
-          </FloatingPanel>
-        </TabsContent>
-      </Tabs>
-    </>
+            {/* Items */}
+            <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+              <div className="px-6 py-4 border-b border-gray-100">
+                <h2 className="text-sm font-semibold text-gray-900">
+                  Items ({items.length})
+                </h2>
+              </div>
+              {items.length === 0 ? (
+                <div className="px-6 py-8 text-center text-sm text-gray-400">No items</div>
+              ) : (
+                <div className="divide-y divide-gray-100">
+                  {items.map((item, idx) => (
+                    <div key={idx} className="flex items-center justify-between px-6 py-3.5">
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center shrink-0">
+                          {item.image ? (
+                            <img src={item.image} alt="" className="w-8 h-8 rounded-lg object-cover" />
+                          ) : (
+                            <ShoppingBag className="w-4 h-4 text-blue-500" />
+                          )}
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-sm font-medium text-gray-900 truncate">{item.title || item.name || 'Item'}</p>
+                          {item.category && (
+                            <p className="text-xs text-gray-400 capitalize">{item.category}</p>
+                          )}
+                        </div>
+                      </div>
+                      <div className="text-right shrink-0">
+                        <p className="text-sm font-medium text-gray-900">{formatEGP(item.price)}</p>
+                        {item.quantity > 1 && (
+                          <p className="text-xs text-gray-400">x{item.quantity}</p>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Support chat */}
+            <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+              <div className="px-6 py-4 border-b border-gray-100 flex items-center gap-2">
+                <MessageSquare className="w-4 h-4 text-blue-500" />
+                <h2 className="text-sm font-semibold text-gray-900">Support Chat</h2>
+              </div>
+              <div className="max-h-64 overflow-y-auto p-4 space-y-3">
+                {supportChat.length === 0 ? (
+                  <p className="text-sm text-gray-400 text-center py-4">No messages yet</p>
+                ) : (
+                  supportChat.map((msg, idx) => {
+                    const isStaff = msg.sender_role === 'staff' || msg.sender_role === 'admin';
+                    return (
+                      <div key={idx} className={`flex ${isStaff ? 'justify-end' : 'justify-start'}`}>
+                        <div className={`max-w-[75%] rounded-lg px-3 py-2 ${
+                          isStaff ? 'bg-blue-50 text-blue-900' : 'bg-gray-100 text-gray-800'
+                        }`}>
+                          <div className="flex items-center gap-2 mb-0.5">
+                            <User className="w-3 h-3" />
+                            <span className="text-[11px] font-medium">
+                              {msg.sender_name || msg.sender_role || 'Unknown'}
+                            </span>
+                            <span className="text-[10px] text-gray-400">
+                              {msg.timestamp ? formatDate(msg.timestamp) : ''}
+                            </span>
+                          </div>
+                          <p className="text-sm">{msg.message}</p>
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+              <form onSubmit={handleSendChat} className="border-t border-gray-100 p-3 flex gap-2">
+                <input
+                  type="text"
+                  value={chatMessage}
+                  onChange={(e) => setChatMessage(e.target.value)}
+                  placeholder="Type a message..."
+                  className="flex-1 px-3 py-2 text-sm border border-gray-200 rounded-lg bg-gray-50 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+                <button
+                  type="submit"
+                  disabled={!chatMessage.trim() || chatMutation.isPending}
+                  className="p-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <Send className="w-4 h-4" />
+                </button>
+              </form>
+            </div>
+          </div>
+
+          {/* Right column: status update */}
+          <div className="space-y-6">
+            <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
+              <h2 className="text-sm font-semibold text-gray-900 mb-4">Update Status</h2>
+              <div className="space-y-2">
+                {statusOptions.map((s) => {
+                  const isActive = currentStatus === s;
+                  return (
+                    <button
+                      key={s}
+                      onClick={() => {
+                        if (!isActive && !updateMutation.isPending) {
+                          updateMutation.mutate(s);
+                        }
+                      }}
+                      disabled={isActive || updateMutation.isPending}
+                      className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium transition ${
+                        isActive
+                          ? 'bg-blue-50 text-blue-700 border border-blue-200'
+                          : 'bg-gray-50 text-gray-600 hover:bg-gray-100 border border-transparent'
+                      } disabled:cursor-not-allowed`}
+                    >
+                      {isActive ? (
+                        <CheckCircle className="w-4 h-4 text-blue-500" />
+                      ) : (
+                        <Clock className="w-4 h-4 text-gray-400" />
+                      )}
+                      <span className="capitalize">{s.replace(/_/g, ' ')}</span>
+                    </button>
+                  );
+                })}
+              </div>
+              {updateMutation.isError && (
+                <p className="mt-3 text-xs text-red-600">
+                  Failed to update status. Please try again.
+                </p>
+              )}
+              {updateMutation.isSuccess && (
+                <p className="mt-3 text-xs text-emerald-600">
+                  Status updated successfully.
+                </p>
+              )}
+            </div>
+
+            {/* Staff notes (tournament orders) */}
+            {isTournamentOrder && order.staff_notes && (
+              <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
+                <h2 className="text-sm font-semibold text-gray-900 mb-2">Staff Notes</h2>
+                <p className="text-sm text-gray-600">{order.staff_notes}</p>
+              </div>
+            )}
+
+            {/* Co-organizers (tournament orders) */}
+            {isTournamentOrder && Array.isArray(order.co_organizers) && order.co_organizers.length > 0 && (
+              <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
+                <h2 className="text-sm font-semibold text-gray-900 mb-3">Co-Organizers</h2>
+                <div className="space-y-2">
+                  {order.co_organizers.map((co, idx) => (
+                    <div key={idx} className="flex items-center justify-between text-sm">
+                      <span className="text-gray-700">{co.brand_name || co.organizer_id?.slice(0, 8)}</span>
+                      <span className="text-gray-500">{co.commitment_percent || 0}%</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </StaffLayout>
   );
 }

@@ -190,6 +190,7 @@ export const Staff = {
   accessKeys:       ()            => apiCall('/staff/access-keys'),
   createAccessKey:  (data)        => apiCall('/staff/access-keys', { method: 'POST', body: data }),
   deactivateKey:    (id)          => apiCall(`/staff/access-keys/${id}/deactivate`, { method: 'POST' }),
+  audit:            (filters)     => apiCall(`/staff/audit${buildQuery(filters)}`),
 }
 
 export const TournamentReport = {

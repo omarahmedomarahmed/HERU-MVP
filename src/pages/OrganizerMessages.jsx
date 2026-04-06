@@ -1,298 +1,547 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-
-import FloatingPanel from '@/components/ui/FloatingPanel';
-import GlowButton from '@/components/ui/GlowButton';
-import HexBadge from '@/components/ui/HexBadge';
-import { Input } from '@/components/ui/input';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { getOrganizerSession } from '@/lib/auth-guards';
-import { OrganizerProfile, SponsorshipRadar, Tournament } from '@/api/heruClient'
-
+import { Tournament, SponsorshipRadar, apiCall } from '@/api/heruClient';
+import { useAuth } from '@/lib/AuthContext';
 import {
-  MessageSquare, Send, Trophy, Users, Shield, Lock,
-  ChevronRight, Mic, Video, Headphones
+  MessageSquare, Send, Trophy, Search, Circle, ArrowLeft,
+  Users, Clock, ChevronRight,
 } from 'lucide-react';
 
-function ChatWindow({ messages, currentUserId, onSend, senderRole = 'organizer', senderName = 'Organizer', placeholder = 'Type a message...' }) {
-  const [msg, setMsg] = useState('');
-  const endRef = React.useRef(null);
-
-  React.useEffect(() => {
-    endRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
-
-  const handleSend = () => {
-    if (!msg.trim()) return;
-    onSend(msg);
-    setMsg('');
+// ---------------------------------------------------------------------------
+// Role badge component
+// ---------------------------------------------------------------------------
+function RoleBadge({ role }) {
+  const colors = {
+    organizer: 'bg-red-500/20 text-red-400 border-red-500/30',
+    'co-organizer': 'bg-purple-500/20 text-purple-400 border-purple-500/30',
+    sponsor: 'bg-amber-500/20 text-amber-400 border-amber-500/30',
+    staff: 'bg-blue-500/20 text-blue-400 border-blue-500/30',
+    talent: 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30',
   };
-
+  const cls = colors[role] || 'bg-zinc-700/40 text-zinc-400 border-zinc-600/30';
   return (
-    <div className="flex flex-col h-full">
-      <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-zinc-950/50 rounded-lg min-h-[300px] max-h-[420px]">
-        {messages?.length > 0 ? messages.map((m, i) => (
-          <div key={i} className={`flex ${m.sender_id === currentUserId || m.sender_role === senderRole ? 'justify-end' : 'justify-start'}`}>
-            <div className={`max-w-[75%] p-3 rounded-xl text-sm ${
-              m.sender_id === currentUserId || m.sender_role === senderRole
-                ? 'bg-red-600 text-white' 
-                : 'bg-zinc-800 text-gray-200'
-            }`}>
-              <p className="text-xs opacity-60 mb-1">{m.sender_name || m.sender_brand || 'Unknown'}</p>
-              <p>{m.message || m.content}</p>
-              <p className="text-xs opacity-40 mt-1">{new Date(m.timestamp).toLocaleTimeString()}</p>
-            </div>
-          </div>
-        )) : (
-          <div className="text-center py-12">
-            <MessageSquare className="w-10 h-10 text-zinc-700 mx-auto mb-3" />
-            <p className="text-gray-500 text-sm">No messages yet</p>
-          </div>
-        )}
-        <div ref={endRef} />
-      </div>
-      <div className="flex gap-2 mt-3">
-        <Input
-          value={msg}
-          onChange={(e) => setMsg(e.target.value)}
-          placeholder={placeholder}
-          className="bg-zinc-800 border-zinc-700 text-white"
-          onKeyPress={(e) => e.key === 'Enter' && handleSend()}
-        />
-        <GlowButton size="sm" onClick={handleSend}>
-          <Send className="w-4 h-4" />
-        </GlowButton>
-      </div>
-    </div>
+    <span className={`text-[10px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded border ${cls}`}>
+      {role}
+    </span>
   );
 }
 
+// ---------------------------------------------------------------------------
+// Format relative time
+// ---------------------------------------------------------------------------
+function timeAgo(timestamp) {
+  if (!timestamp) return '';
+  const now = Date.now();
+  const then = new Date(timestamp).getTime();
+  const diff = Math.max(0, now - then);
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return 'now';
+  if (mins < 60) return `${mins}m`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs}h`;
+  const days = Math.floor(hrs / 24);
+  if (days < 7) return `${days}d`;
+  return new Date(timestamp).toLocaleDateString();
+}
+
+function formatTime(timestamp) {
+  if (!timestamp) return '';
+  return new Date(timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+}
+
+// ---------------------------------------------------------------------------
+// Main component
+// ---------------------------------------------------------------------------
 export default function OrganizerMessages() {
-  const [session, setSession] = useState(null);
-  const [selectedTournament, setSelectedTournament] = useState(null);
-  const navigate = useNavigate();
+  const { user, userProfile } = useAuth();
   const queryClient = useQueryClient();
 
+  const [selectedId, setSelectedId] = useState(null);
+  const [search, setSearch] = useState('');
+  const [message, setMessage] = useState('');
+  const [showThreads, setShowThreads] = useState(true);
+
+  const messagesEndRef = useRef(null);
+  const inputRef = useRef(null);
+
+  const userId = user?.id;
+
+  // -----------------------------------------------------------------------
+  // Fetch tournaments where user is main organizer
+  // -----------------------------------------------------------------------
+  const { data: myTournaments = [], isLoading: loadingMy } = useQuery({
+    queryKey: ['org-msg-my', userId],
+    queryFn: async () => {
+      const all = await Tournament.list();
+      return all.filter((t) => t.organizer_id === userId || t.main_organizer_id === userId);
+    },
+    enabled: !!userId,
+    refetchInterval: 15000,
+  });
+
+  // -----------------------------------------------------------------------
+  // Fetch tournaments where user is co-organizer (via radar)
+  // -----------------------------------------------------------------------
+  const { data: coOrgTournaments = [], isLoading: loadingCoOrg } = useQuery({
+    queryKey: ['org-msg-coorg', userId],
+    queryFn: async () => {
+      const radars = await SponsorshipRadar.list();
+      const myRadars = radars.filter((r) => {
+        const coOrgs = r.co_organizers || [];
+        return coOrgs.some(
+          (co) =>
+            co.organizer_id === userId ||
+            co.user_id === userId
+        );
+      });
+      if (!myRadars.length) return [];
+      const tournamentIds = myRadars.map((r) => r.tournament_id).filter(Boolean);
+      if (!tournamentIds.length) return [];
+      const all = await Tournament.list();
+      return all.filter((t) => tournamentIds.includes(t.id));
+    },
+    enabled: !!userId,
+    refetchInterval: 15000,
+  });
+
+  // -----------------------------------------------------------------------
+  // Merge and deduplicate
+  // -----------------------------------------------------------------------
+  const allTournaments = useMemo(() => {
+    const map = new Map();
+    [...myTournaments, ...coOrgTournaments].forEach((t) => {
+      if (!map.has(t.id)) map.set(t.id, t);
+    });
+    return Array.from(map.values());
+  }, [myTournaments, coOrgTournaments]);
+
+  // -----------------------------------------------------------------------
+  // Build thread list with last message info and unread tracking
+  // -----------------------------------------------------------------------
+  const threads = useMemo(() => {
+    return allTournaments
+      .map((t) => {
+        const chat = t.organizer_chat || [];
+        const lastMsg = chat.length > 0 ? chat[chat.length - 1] : null;
+
+        // Simple unread: messages from others after last message the user sent
+        let unread = 0;
+        const lastOwnIdx = chat.map((m, i) => (m.sender_id === userId ? i : -1))
+          .filter((i) => i >= 0)
+          .pop();
+        if (lastOwnIdx !== undefined && lastOwnIdx >= 0) {
+          unread = chat.slice(lastOwnIdx + 1).filter((m) => m.sender_id !== userId).length;
+        } else if (chat.length > 0) {
+          // User has never sent a message, all non-own are "unread"
+          unread = chat.filter((m) => m.sender_id !== userId).length;
+        }
+
+        return {
+          id: t.id,
+          name: t.name,
+          game: t.game,
+          status: t.status,
+          lastMessage: lastMsg?.message || lastMsg?.content || null,
+          lastSender: lastMsg?.sender_name || lastMsg?.sender_brand || null,
+          lastTimestamp: lastMsg?.timestamp || t.updated_at || t.created_at,
+          messageCount: chat.length,
+          unread,
+          tournament: t,
+        };
+      })
+      .sort((a, b) => {
+        const ta = a.lastTimestamp ? new Date(a.lastTimestamp).getTime() : 0;
+        const tb = b.lastTimestamp ? new Date(b.lastTimestamp).getTime() : 0;
+        return tb - ta;
+      });
+  }, [allTournaments, userId]);
+
+  // -----------------------------------------------------------------------
+  // Filtered threads
+  // -----------------------------------------------------------------------
+  const filteredThreads = useMemo(() => {
+    if (!search.trim()) return threads;
+    const q = search.toLowerCase();
+    return threads.filter(
+      (t) =>
+        t.name.toLowerCase().includes(q) ||
+        (t.game && t.game.toLowerCase().includes(q))
+    );
+  }, [threads, search]);
+
+  // -----------------------------------------------------------------------
+  // Selected tournament
+  // -----------------------------------------------------------------------
+  const selectedThread = threads.find((t) => t.id === selectedId);
+  const selectedTournament = selectedThread?.tournament || null;
+  const chatMessages = selectedTournament?.organizer_chat || [];
+
+  // -----------------------------------------------------------------------
+  // Auto-scroll on new messages
+  // -----------------------------------------------------------------------
   useEffect(() => {
-    const s = getOrganizerSession();
-    if (!s) { navigate('/auth/organizer/login'); return; }
-    setSession(s);
-  }, []);
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [chatMessages.length, selectedId]);
 
-  const { data: profile } = useQuery({
-    queryKey: ['organizer-profile', session?.profileId],
-    queryFn: async () => {
-      const profiles = await OrganizerProfile.list();
-      return profiles.find(p => p.id === session.profileId) || null;
-    },
-    enabled: !!session?.profileId,
-  });
-
-  // My own tournaments + co-organized tournaments
-  const { data: myTournaments = [] } = useQuery({
-    queryKey: ['org-messages-tournaments', session?.userId],
-    queryFn: async () => {
-      const all = await Tournament.list('-created_date');
-      return all.filter(t => t.organizer_id === session.userId);
-    },
-    enabled: !!session?.userId,
-  });
-
-  const { data: coOrgTournaments = [] } = useQuery({
-    queryKey: ['co-org-radar', session?.userId],
-    queryFn: async () => {
-      const radar = await SponsorshipRadar.list({ co_organizer_id: session.userId });
-      if (!radar.length) return [];
-      const ids = radar.map(r => r.tournament_id);
-      const all = await Tournament.list('-created_date');
-      return all.filter(t => ids.includes(t.id));
-    },
-    enabled: !!session?.userId,
-  });
-
-  const allTournaments = [...myTournaments, ...coOrgTournaments.filter(t => !myTournaments.find(m => m.id === t.id))];
-
-  const user = session ? { id: session.userId, email: session.email } : null;
-
-  // Send internal chat message
-  const sendInternalMutation = useMutation({
-    mutationFn: async (message) => {
-      const updatedChat = [...(selectedTournament.general_chat || []), {
-        sender_id: session.userId,
-        sender_name: session.brandName || profile?.brand_name || 'Organizer',
-        sender_type: 'organizer',
-        message,
-        timestamp: new Date().toISOString()
-      }];
-      await Tournament.update(selectedTournament.id, { general_chat: updatedChat });
-    },
-    onSuccess: () => queryClient.invalidateQueries(['org-messages-tournaments'])
-  });
-
-  // Send support chat (to staff)
-  const sendSupportMutation = useMutation({
-    mutationFn: async (message) => {
-      const updatedChat = [...(selectedTournament.support_chat || []), {
-        sender_id: session.userId,
-        sender_name: session.brandName || profile?.brand_name || 'Organizer',
-        sender_role: 'organizer',
-        message,
-        timestamp: new Date().toISOString()
-      }];
-      await Tournament.update(selectedTournament.id, { support_chat: updatedChat });
-    },
-    onSuccess: () => queryClient.invalidateQueries(['org-messages-tournaments'])
-  });
-
-  // Refresh selected tournament after mutation
+  // Focus input when selecting a thread
   useEffect(() => {
-    if (selectedTournament) {
-      const updated = allTournaments.find(t => t.id === selectedTournament.id);
-      if (updated) setSelectedTournament(updated);
+    if (selectedId) {
+      setTimeout(() => inputRef.current?.focus(), 100);
     }
-  }, [allTournaments]);
+  }, [selectedId]);
 
+  // -----------------------------------------------------------------------
+  // Send message mutation
+  // -----------------------------------------------------------------------
+  const sendMutation = useMutation({
+    mutationFn: async (text) => {
+      await Tournament.sendChat(selectedId, {
+        sender_id: userId,
+        sender_name: userProfile?.brand_name || userProfile?.full_name || user?.email || 'Organizer',
+        sender_role: 'organizer',
+        message: text,
+        timestamp: new Date().toISOString(),
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['org-msg-my'] });
+      queryClient.invalidateQueries({ queryKey: ['org-msg-coorg'] });
+    },
+  });
+
+  const handleSend = () => {
+    const text = message.trim();
+    if (!text || !selectedId) return;
+    setMessage('');
+    sendMutation.mutate(text);
+  };
+
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSend();
+    }
+  };
+
+  const isLoading = loadingMy || loadingCoOrg;
+
+  // -----------------------------------------------------------------------
+  // Empty state
+  // -----------------------------------------------------------------------
+  if (!isLoading && allTournaments.length === 0) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <div className="text-center max-w-md px-6">
+          <div className="w-16 h-16 rounded-2xl bg-zinc-800/60 flex items-center justify-center mx-auto mb-5">
+            <MessageSquare className="w-8 h-8 text-zinc-600" />
+          </div>
+          <h2 className="text-xl font-bold text-white mb-2">No conversations yet</h2>
+          <p className="text-zinc-500 text-sm leading-relaxed">
+            Messages will appear when you create or join a tournament. Start by building a tournament
+            or browsing the Sponsorship Radar to co-organize one.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  // -----------------------------------------------------------------------
+  // Render
+  // -----------------------------------------------------------------------
   return (
-    <>
-      <div className="mb-6">
+    <div className="h-[calc(100vh-8rem)] flex flex-col">
+      {/* Header */}
+      <div className="mb-4 flex-shrink-0">
         <h1 className="text-2xl font-black text-white">
-          TOURNAMENT <span className="text-red-500">MESSAGES</span>
+          <span className="text-red-500">MESSAGES</span>
         </h1>
-        <p className="text-gray-400 text-sm">Internal, general, and support chats for your tournaments</p>
+        <p className="text-zinc-500 text-sm">Tournament conversations with co-organizers, talents, and staff</p>
       </div>
 
-      <div className="grid lg:grid-cols-3 gap-6">
-        {/* Tournament List */}
-        <div className="space-y-3">
-          <p className="text-gray-500 text-xs uppercase tracking-wider mb-3">Your Tournaments</p>
-          {allTournaments.length === 0 ? (
-            <FloatingPanel className="p-8 text-center">
-              <Trophy className="w-8 h-8 text-zinc-700 mx-auto mb-2" />
-              <p className="text-gray-500 text-sm">No tournaments yet</p>
-            </FloatingPanel>
-          ) : allTournaments.map(t => (
-            <button
-              key={t.id}
-              onClick={() => setSelectedTournament(t)}
-              className={`w-full text-left p-3 rounded-xl border transition-all ${
-                selectedTournament?.id === t.id 
-                  ? 'border-red-500/50 bg-red-500/10' 
-                  : 'border-zinc-800/60 bg-zinc-900/80 hover:border-zinc-700'
-              }`}
-            >
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-red-600/30 to-zinc-800 flex items-center justify-center flex-shrink-0">
-                  <Trophy className="w-5 h-5 text-red-500" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-white font-medium text-sm truncate">{t.name}</p>
-                  <p className="text-gray-500 text-xs">{t.game}</p>
-                </div>
-                <div className="flex flex-col items-end gap-1">
-                  <HexBadge className={t.status === 'live' ? 'bg-green-500/20 text-green-400' : 'text-xs'}>
-                    {t.status === 'live' ? '🔴' : t.status.charAt(0).toUpperCase()}
-                  </HexBadge>
-                  {((t.general_chat?.length || 0) + (t.support_chat?.length || 0)) > 0 && (
-                    <span className="w-2 h-2 bg-red-500 rounded-full" />
-                  )}
-                </div>
+      {/* Two-panel layout */}
+      <div className="flex-1 flex rounded-xl border border-zinc-800/60 bg-zinc-900/50 overflow-hidden min-h-0">
+        {/* --------------------------------------------------------------- */}
+        {/* Thread list panel */}
+        {/* --------------------------------------------------------------- */}
+        <div
+          className={`w-full md:w-80 lg:w-96 flex-shrink-0 border-r border-zinc-800/60 flex flex-col ${
+            selectedId && !showThreads ? 'hidden md:flex' : 'flex'
+          }`}
+        >
+          {/* Search */}
+          <div className="p-3 border-b border-zinc-800/40">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
+              <input
+                type="text"
+                placeholder="Search tournaments..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="w-full bg-zinc-800/60 border border-zinc-700/40 rounded-lg pl-9 pr-3 py-2 text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-red-500/50 focus:ring-1 focus:ring-red-500/20 transition-colors"
+              />
+            </div>
+          </div>
+
+          {/* Thread items */}
+          <div className="flex-1 overflow-y-auto">
+            {isLoading ? (
+              <div className="p-8 text-center">
+                <div className="w-6 h-6 border-2 border-red-500 border-t-transparent rounded-full animate-spin mx-auto mb-3" />
+                <p className="text-zinc-500 text-sm">Loading conversations...</p>
               </div>
-            </button>
-          ))}
+            ) : filteredThreads.length === 0 ? (
+              <div className="p-8 text-center">
+                <p className="text-zinc-500 text-sm">
+                  {search ? 'No tournaments match your search' : 'No conversations'}
+                </p>
+              </div>
+            ) : (
+              filteredThreads.map((thread) => {
+                const isActive = thread.id === selectedId;
+                return (
+                  <button
+                    key={thread.id}
+                    onClick={() => {
+                      setSelectedId(thread.id);
+                      setShowThreads(false);
+                    }}
+                    className={`w-full text-left px-4 py-3 border-b border-zinc-800/30 transition-colors ${
+                      isActive
+                        ? 'bg-red-500/10 border-l-2 border-l-red-500'
+                        : 'hover:bg-zinc-800/40 border-l-2 border-l-transparent'
+                    }`}
+                  >
+                    <div className="flex items-start gap-3">
+                      {/* Tournament icon */}
+                      <div
+                        className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${
+                          isActive ? 'bg-red-500/20' : 'bg-zinc-800/60'
+                        }`}
+                      >
+                        <Trophy
+                          className={`w-5 h-5 ${isActive ? 'text-red-400' : 'text-zinc-500'}`}
+                        />
+                      </div>
+
+                      {/* Info */}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between gap-2 mb-0.5">
+                          <span
+                            className={`text-sm truncate ${
+                              thread.unread > 0 ? 'font-bold text-white' : 'font-semibold text-white'
+                            }`}
+                          >
+                            {thread.name}
+                          </span>
+                          <div className="flex items-center gap-1.5 flex-shrink-0">
+                            {thread.lastTimestamp && (
+                              <span className="text-[11px] text-zinc-500">
+                                {timeAgo(thread.lastTimestamp)}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        {thread.game && (
+                          <p className="text-[11px] text-zinc-500 mb-1">{thread.game}</p>
+                        )}
+                        <div className="flex items-center justify-between gap-2">
+                          {thread.lastMessage ? (
+                            <p
+                              className={`text-xs truncate ${
+                                thread.unread > 0 ? 'text-zinc-300 font-medium' : 'text-zinc-400'
+                              }`}
+                            >
+                              {thread.lastSender && (
+                                <span className="text-zinc-500">{thread.lastSender}: </span>
+                              )}
+                              {thread.lastMessage}
+                            </p>
+                          ) : (
+                            <p className="text-xs text-zinc-600 italic">No messages yet</p>
+                          )}
+                          {/* Unread indicator */}
+                          {thread.unread > 0 && (
+                            <span className="flex-shrink-0 min-w-[20px] h-5 rounded-full bg-red-500 text-white text-[11px] font-bold flex items-center justify-center px-1.5">
+                              {thread.unread > 99 ? '99+' : thread.unread}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Live status indicator */}
+                      {thread.status === 'live' && (
+                        <Circle className="w-2.5 h-2.5 fill-green-500 text-green-500 flex-shrink-0 mt-1.5" />
+                      )}
+                    </div>
+                  </button>
+                );
+              })
+            )}
+          </div>
         </div>
 
-        {/* Chat Area */}
-        <div className="lg:col-span-2">
+        {/* --------------------------------------------------------------- */}
+        {/* Chat panel */}
+        {/* --------------------------------------------------------------- */}
+        <div
+          className={`flex-1 flex flex-col min-w-0 ${
+            !selectedId && showThreads ? 'hidden md:flex' : 'flex'
+          }`}
+        >
           {!selectedTournament ? (
-            <FloatingPanel className="p-16 text-center">
-              <MessageSquare className="w-16 h-16 text-zinc-700 mx-auto mb-4" />
-              <p className="text-gray-400 text-lg">Select a tournament to view chats</p>
-            </FloatingPanel>
+            /* No thread selected */
+            <div className="flex-1 flex items-center justify-center">
+              <div className="text-center">
+                <MessageSquare className="w-12 h-12 text-zinc-700 mx-auto mb-4" />
+                <p className="text-zinc-500 text-sm">Select a tournament to view messages</p>
+              </div>
+            </div>
           ) : (
-            <FloatingPanel className="p-6">
-              <div className="flex items-center gap-3 mb-6">
-                <Trophy className="w-5 h-5 text-red-500" />
-                <h2 className="text-white font-bold">{selectedTournament.name}</h2>
-                <HexBadge className={selectedTournament.status === 'live' ? 'bg-green-500/20 text-green-400' : ''}>{selectedTournament.status}</HexBadge>
+            <>
+              {/* Chat header */}
+              <div className="flex items-center gap-3 px-4 py-3 border-b border-zinc-800/60 bg-zinc-900/80 flex-shrink-0">
+                {/* Back button (mobile) */}
+                <button
+                  onClick={() => {
+                    setShowThreads(true);
+                    setSelectedId(null);
+                  }}
+                  className="md:hidden p-1 rounded-lg hover:bg-zinc-800 text-zinc-400 transition-colors"
+                >
+                  <ArrowLeft className="w-5 h-5" />
+                </button>
+
+                <div className="w-9 h-9 rounded-lg bg-red-500/20 flex items-center justify-center flex-shrink-0">
+                  <Trophy className="w-4 h-4 text-red-400" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <h2 className="text-white font-bold text-sm truncate">
+                    {selectedTournament.name}
+                  </h2>
+                  <div className="flex items-center gap-2 text-xs text-zinc-500">
+                    {selectedTournament.game && <span>{selectedTournament.game}</span>}
+                    {selectedTournament.status && (
+                      <>
+                        <span className="text-zinc-700">|</span>
+                        <span
+                          className={
+                            selectedTournament.status === 'live'
+                              ? 'text-green-400'
+                              : selectedTournament.status === 'completed'
+                              ? 'text-zinc-400'
+                              : 'text-amber-400'
+                          }
+                        >
+                          {selectedTournament.status.charAt(0).toUpperCase() +
+                            selectedTournament.status.slice(1)}
+                        </span>
+                      </>
+                    )}
+                    <span className="text-zinc-700">|</span>
+                    <Users className="w-3 h-3 inline" />
+                    <span>{chatMessages.length} messages</span>
+                  </div>
+                </div>
               </div>
 
-              <Tabs defaultValue="general">
-                <TabsList className="bg-zinc-900 border-zinc-800 mb-4">
-                  <TabsTrigger value="general">
-                    <Users className="w-4 h-4 mr-2" />
-                    General Chat
-                  </TabsTrigger>
-                  <TabsTrigger value="internal">
-                    <Lock className="w-4 h-4 mr-2" />
-                    Internal Chat
-                  </TabsTrigger>
-                  <TabsTrigger value="support">
-                    <Shield className="w-4 h-4 mr-2" />
-                    Staff Support
-                  </TabsTrigger>
-                </TabsList>
-
-                {/* General Chat — public with gamers */}
-                <TabsContent value="general">
-                  <div className="mb-2">
-                    <p className="text-xs text-gray-500 mb-3">Public chat — visible to all gamers in this tournament</p>
-                    <ChatWindow
-                      messages={selectedTournament.general_chat}
-                      currentUserId={session?.userId}
-                      onSend={(msg) => sendInternalMutation.mutate(msg)}
-                      senderRole="organizer"
-                      senderName={session?.brandName || 'Organizer'}
-                      placeholder="Message gamers..."
-                    />
+              {/* Messages area */}
+              <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3 min-h-0">
+                {chatMessages.length === 0 ? (
+                  <div className="flex items-center justify-center h-full">
+                    <div className="text-center">
+                      <MessageSquare className="w-10 h-10 text-zinc-700 mx-auto mb-3" />
+                      <p className="text-zinc-500 text-sm">
+                        No messages yet. Start the conversation!
+                      </p>
+                    </div>
                   </div>
-                </TabsContent>
+                ) : (
+                  chatMessages.map((msg, idx) => {
+                    const isOwn = msg.sender_id === userId;
+                    const showDate =
+                      idx === 0 ||
+                      new Date(msg.timestamp).toDateString() !==
+                        new Date(chatMessages[idx - 1]?.timestamp).toDateString();
 
-                {/* Internal Chat — with talents & co-organizers */}
-                <TabsContent value="internal">
-                  <div className="mb-2">
-                    <p className="text-xs text-gray-500 mb-3">Private — visible to talents, co-organizers, and staff only</p>
-                    {selectedTournament.talents?.length > 0 && (
-                      <div className="flex flex-wrap gap-2 mb-3">
-                        <span className="text-xs text-gray-500">Talents:</span>
-                        {selectedTournament.talents.map((t, i) => (
-                          <span key={i} className="text-xs bg-zinc-800 text-gray-400 px-2 py-0.5 rounded flex items-center gap-1">
-                            {t.talent_type === 'commentator' ? <Mic className="w-3 h-3" /> : t.talent_type === 'streamer' ? <Video className="w-3 h-3" /> : <Headphones className="w-3 h-3" />}
-                            {t.talent_type}
-                          </span>
-                        ))}
-                      </div>
-                    )}
-                    <ChatWindow
-                      messages={selectedTournament.support_chat?.filter(m => m.sender_role !== 'staff')}
-                      currentUserId={session?.userId}
-                      onSend={(msg) => sendInternalMutation.mutate(msg)}
-                      senderRole="organizer"
-                      senderName={session?.brandName || 'Organizer'}
-                      placeholder="Message talents & co-organizers..."
-                    />
-                  </div>
-                </TabsContent>
+                    return (
+                      <React.Fragment key={idx}>
+                        {showDate && msg.timestamp && (
+                          <div className="flex justify-center my-4">
+                            <span className="text-[11px] text-zinc-600 bg-zinc-800/60 px-3 py-1 rounded-full">
+                              {new Date(msg.timestamp).toLocaleDateString(undefined, {
+                                weekday: 'short',
+                                month: 'short',
+                                day: 'numeric',
+                              })}
+                            </span>
+                          </div>
+                        )}
+                        <div className={`flex ${isOwn ? 'justify-end' : 'justify-start'}`}>
+                          <div
+                            className={`max-w-[75%] rounded-2xl px-4 py-2.5 ${
+                              isOwn
+                                ? 'bg-red-600 text-white rounded-br-md'
+                                : 'bg-zinc-800 text-zinc-200 rounded-bl-md'
+                            }`}
+                          >
+                            {/* Sender info */}
+                            {!isOwn && (
+                              <div className="flex items-center gap-2 mb-1">
+                                <span className="text-xs font-semibold text-zinc-300">
+                                  {msg.sender_name || msg.sender_brand || 'Unknown'}
+                                </span>
+                                {msg.sender_role && <RoleBadge role={msg.sender_role} />}
+                              </div>
+                            )}
 
-                {/* Support Chat — with staff */}
-                <TabsContent value="support">
-                  <div className="mb-2">
-                    <p className="text-xs text-gray-500 mb-3">Direct line to HERU staff for tournament support</p>
-                    <ChatWindow
-                      messages={selectedTournament.support_chat}
-                      currentUserId={session?.userId}
-                      onSend={(msg) => sendSupportMutation.mutate(msg)}
-                      senderRole="organizer"
-                      senderName={session?.brandName || 'Organizer'}
-                      placeholder="Contact HERU staff..."
-                    />
-                  </div>
-                </TabsContent>
-              </Tabs>
-            </FloatingPanel>
+                            {/* Message text */}
+                            <p className="text-sm leading-relaxed break-words whitespace-pre-wrap">
+                              {msg.message || msg.content}
+                            </p>
+
+                            {/* Timestamp */}
+                            <p
+                              className={`text-[10px] mt-1 ${
+                                isOwn ? 'text-red-200/50 text-right' : 'text-zinc-500'
+                              }`}
+                            >
+                              {formatTime(msg.timestamp)}
+                            </p>
+                          </div>
+                        </div>
+                      </React.Fragment>
+                    );
+                  })
+                )}
+                <div ref={messagesEndRef} />
+              </div>
+
+              {/* Input area */}
+              <div className="px-4 py-3 border-t border-zinc-800/60 bg-zinc-900/80 flex-shrink-0">
+                <div className="flex items-end gap-2">
+                  <input
+                    ref={inputRef}
+                    type="text"
+                    value={message}
+                    onChange={(e) => setMessage(e.target.value)}
+                    onKeyDown={handleKeyDown}
+                    placeholder="Type a message..."
+                    disabled={sendMutation.isPending}
+                    className="flex-1 bg-zinc-800/60 border border-zinc-700/40 rounded-xl px-4 py-2.5 text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-red-500/50 focus:ring-1 focus:ring-red-500/20 transition-colors disabled:opacity-50"
+                  />
+                  <button
+                    onClick={handleSend}
+                    disabled={!message.trim() || sendMutation.isPending}
+                    className="p-2.5 rounded-xl bg-red-600 text-white hover:bg-red-500 disabled:opacity-40 disabled:cursor-not-allowed transition-colors flex-shrink-0"
+                  >
+                    <Send className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            </>
           )}
         </div>
       </div>
-    </>
+    </div>
   );
 }

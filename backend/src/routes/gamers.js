@@ -7,10 +7,12 @@ const router = Router();
 // GET / - list gamer profiles
 router.get('/', async (req, res) => {
   try {
-    const { is_talent, talent_type, limit = 50, offset = 0 } = req.query;
+    const { is_talent, talent_type, user_id, username_slug, limit = 50, offset = 0 } = req.query;
     let query = supabaseAdmin.from('gamer_profiles').select('*');
     if (is_talent) query = query.eq('is_talent', is_talent === 'true');
     if (talent_type) query = query.eq('talent_type', talent_type);
+    if (user_id) query = query.eq('user_id', user_id);
+    if (username_slug) query = query.eq('username_slug', username_slug);
     query = query.order('created_at', { ascending: false }).range(offset, offset + limit - 1);
     const { data, error } = await query;
     if (error) throw error;

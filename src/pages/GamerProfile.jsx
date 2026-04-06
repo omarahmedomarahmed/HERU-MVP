@@ -12,8 +12,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { motion } from 'framer-motion';
-import { GamerProfile as GamerProfileAPI, Order, Team, Achievement, apiCall } from '@/api/heruClient'
+import { GamerProfile as GamerProfileAPI, Order, Team, Achievement, ApprovalRequest, apiCall } from '@/api/heruClient'
 import { useAuth } from '@/lib/AuthContext'
+import { uploadFile } from '@/lib/uploadFile'
 
 import {
   User, Edit2, Save, X, Gamepad2, Users, Star,
@@ -58,6 +59,12 @@ export default function GamerProfile() {
   const [newMessage, setNewMessage] = useState('');
   const [newGame, setNewGame] = useState({ game_name: '', game_id: '', rank: '' });
   const [talentForm, setTalentForm] = useState({ talent_type: '', talent_price: '', talent_video_link: '' });
+  const [slugInput, setSlugInput] = useState('');
+  const [slugError, setSlugError] = useState('');
+  const [slugSuccess, setSlugSuccess] = useState('');
+  const [avatarUploading, setAvatarUploading] = useState(false);
+  const [becomeOrgModal, setBecomeOrgModal] = useState(false);
+  const [orgForm, setOrgForm] = useState({ brand_name: '', full_name: '', contact_number: '', website: '', facebook: '', instagram: '' });
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
@@ -131,6 +138,7 @@ export default function GamerProfile() {
         bio: profile.bio || '',
         avatar: profile.avatar || '',
       });
+      setSlugInput(profile.username_slug || '');
     }
   }, [profile]);
 
@@ -168,6 +176,63 @@ export default function GamerProfile() {
     onSuccess: () => {
       setTalentModal(false);
       setTalentForm({ talent_type: '', talent_price: '', talent_video_link: '' });
+    }
+  });
+
+  const updateSlugMutation = useMutation({
+    mutationFn: async (slug) => {
+      const cleaned = slug.toLowerCase().replace(/[^a-z0-9_-]/g, '');
+      if (cleaned.length < 3) throw new Error('Username must be at least 3 characters');
+      // Check for duplicates via API
+      const existing = await GamerProfileAPI.list({ username_slug: cleaned });
+      if (existing.length > 0 && existing[0].user_id !== user?.id) {
+        throw new Error('This username is already taken');
+      }
+      return GamerProfileAPI.updateMe({ username_slug: cleaned });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries(['gamer-profile', user?.id]);
+      setSlugError('');
+      setSlugSuccess('Profile link updated!');
+      setTimeout(() => setSlugSuccess(''), 3000);
+    },
+    onError: (err) => {
+      setSlugError(err.message);
+      setSlugSuccess('');
+    }
+  });
+
+  const handleAvatarUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setAvatarUploading(true);
+    try {
+      const { file_url } = await uploadFile(file);
+      await GamerProfileAPI.updateMe({ avatar: file_url });
+      queryClient.invalidateQueries(['gamer-profile', user?.id]);
+    } catch (err) {
+      console.error('Avatar upload failed:', err);
+    } finally {
+      setAvatarUploading(false);
+    }
+  };
+
+  const becomeOrganizerMutation = useMutation({
+    mutationFn: async (data) => {
+      return ApprovalRequest.create({
+        approval_type: 'organizer_profile',
+        requester_id: user.id,
+        requester_name: profile?.username || user?.full_name,
+        requester_email: user?.email,
+        reference_id: user.id,
+        reference_name: data.brand_name,
+        details: data,
+        status: 'pending',
+      });
+    },
+    onSuccess: () => {
+      setBecomeOrgModal(false);
+      setOrgForm({ brand_name: '', full_name: '', contact_number: '', website: '', facebook: '', instagram: '' });
     }
   });
 
@@ -247,6 +312,10 @@ export default function GamerProfile() {
                 <User className="w-16 h-16 text-red-500" />
               )}
             </div>
+            <label className="absolute -bottom-2 -left-2 cursor-pointer bg-zinc-800 hover:bg-zinc-700 border border-zinc-600 text-white text-xs font-bold w-8 h-8 rounded-full flex items-center justify-center transition-colors">
+              {avatarUploading ? <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <Edit2 className="w-3.5 h-3.5" />}
+              <input type="file" accept="image/*" className="hidden" onChange={handleAvatarUpload} disabled={avatarUploading} />
+            </label>
             {profile?.is_talent && (
               <div className="absolute -bottom-2 -right-2 bg-yellow-500 text-black text-xs font-bold px-2 py-0.5 rounded-full flex items-center gap-1">
                 <Star className="w-3 h-3" /> TALENT
@@ -271,12 +340,28 @@ export default function GamerProfile() {
                   className="bg-zinc-800 border-zinc-700 text-white"
                   rows={3}
                 />
-                <Input
-                  value={editForm.avatar}
-                  onChange={(e) => setEditForm({ ...editForm, avatar: e.target.value })}
-                  placeholder="Avatar URL"
-                  className="bg-zinc-800 border-zinc-700 text-white"
-                />
+                <div>
+                  <label className="text-xs text-gray-400 block mb-1">Avatar</label>
+                  <div className="flex items-center gap-2">
+                    <label className="cursor-pointer px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white text-xs font-bold rounded-lg transition-colors">
+                      Upload
+                      <input type="file" accept="image/*" className="hidden" onChange={async (e) => {
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+                        try {
+                          const { file_url } = await uploadFile(file);
+                          setEditForm({ ...editForm, avatar: file_url });
+                        } catch (err) { console.error(err); }
+                      }} />
+                    </label>
+                    <Input
+                      value={editForm.avatar}
+                      onChange={(e) => setEditForm({ ...editForm, avatar: e.target.value })}
+                      placeholder="or paste URL"
+                      className="bg-zinc-800 border-zinc-700 text-white flex-1"
+                    />
+                  </div>
+                </div>
                 <div className="flex gap-2">
                   <GlowButton onClick={() => updateProfileMutation.mutate(editForm)}>
                     <Save className="w-4 h-4" /> Save
@@ -290,20 +375,54 @@ export default function GamerProfile() {
               <>
                 <div className="flex items-start justify-between gap-4">
                   <div className="min-w-0">
-                    <h1 className="text-3xl font-black text-white mb-1 truncate">
-                      {profile?.username || user?.full_name}
-                    </h1>
+                    <div className="flex items-center gap-2 mb-1">
+                      <h1 className="text-3xl font-black text-white truncate">
+                        {profile?.username || user?.full_name}
+                      </h1>
+                      <span className="px-2 py-0.5 bg-red-500/20 text-red-400 text-xs font-bold rounded-full uppercase">Gamer</span>
+                    </div>
                     <p className="text-gray-400 text-sm">{user?.email}</p>
+                    {profile?.username_slug && (
+                      <p className="text-gray-500 text-xs mt-1">
+                        Profile: <span className="text-red-400">{window.location.origin}/gamer/profile/{profile.username_slug}</span>
+                      </p>
+                    )}
                   </div>
                   <div className="flex gap-2 flex-shrink-0">
                     <GlowButton variant="secondary" size="sm" onClick={() => setEditing(true)}>
                       <Edit2 className="w-4 h-4" /> Edit
+                    </GlowButton>
+                    <GlowButton variant="ghost" size="sm" onClick={() => setBecomeOrgModal(true)}>
+                      <Briefcase className="w-4 h-4" /> Become Organizer
                     </GlowButton>
                   </div>
                 </div>
                 {profile?.bio && (
                   <p className="text-gray-300 mt-3 line-clamp-3">{profile.bio}</p>
                 )}
+
+                {/* Username Slug / Profile Link Editor */}
+                <div className="mt-4 p-3 bg-zinc-800/60 rounded-lg border border-zinc-700/50">
+                  <p className="text-xs text-gray-500 mb-2 font-medium">Custom Profile Link</p>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-gray-500 whitespace-nowrap">/gamer/profile/</span>
+                    <input
+                      value={slugInput}
+                      onChange={(e) => { setSlugInput(e.target.value.toLowerCase().replace(/[^a-z0-9_-]/g, '')); setSlugError(''); setSlugSuccess(''); }}
+                      placeholder="yourname"
+                      className="flex-1 bg-zinc-900 border border-zinc-700 rounded px-2 py-1 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-red-500"
+                    />
+                    <button
+                      onClick={() => updateSlugMutation.mutate(slugInput)}
+                      disabled={updateSlugMutation.isPending || slugInput === profile?.username_slug}
+                      className="px-3 py-1 bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white text-xs font-bold rounded transition-colors"
+                    >
+                      {updateSlugMutation.isPending ? '...' : 'Save'}
+                    </button>
+                  </div>
+                  {slugError && <p className="text-red-400 text-xs mt-1">{slugError}</p>}
+                  {slugSuccess && <p className="text-green-400 text-xs mt-1">{slugSuccess}</p>}
+                </div>
               </>
             )}
           </div>
@@ -872,6 +991,56 @@ export default function GamerProfile() {
               </div>
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Become Organizer Modal */}
+      <Dialog open={becomeOrgModal} onOpenChange={setBecomeOrgModal}>
+        <DialogContent className="bg-zinc-900 border-zinc-700 text-white max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-white">Become an Organizer</DialogTitle>
+          </DialogHeader>
+          <p className="text-gray-400 text-sm mb-4">
+            Fill in your organizer details. Your request will be reviewed by staff before approval.
+          </p>
+          <div className="space-y-3">
+            <div>
+              <label className="text-xs text-gray-400 block mb-1">Brand / Organization Name *</label>
+              <Input value={orgForm.brand_name} onChange={(e) => setOrgForm({ ...orgForm, brand_name: e.target.value })} placeholder="Your brand name" className="bg-zinc-800 border-zinc-700 text-white" />
+            </div>
+            <div>
+              <label className="text-xs text-gray-400 block mb-1">Full Name *</label>
+              <Input value={orgForm.full_name} onChange={(e) => setOrgForm({ ...orgForm, full_name: e.target.value })} placeholder="Your full name" className="bg-zinc-800 border-zinc-700 text-white" />
+            </div>
+            <div>
+              <label className="text-xs text-gray-400 block mb-1">Contact Number</label>
+              <Input value={orgForm.contact_number} onChange={(e) => setOrgForm({ ...orgForm, contact_number: e.target.value })} placeholder="+20 ..." className="bg-zinc-800 border-zinc-700 text-white" />
+            </div>
+            <div>
+              <label className="text-xs text-gray-400 block mb-1">Website</label>
+              <Input value={orgForm.website} onChange={(e) => setOrgForm({ ...orgForm, website: e.target.value })} placeholder="https://..." className="bg-zinc-800 border-zinc-700 text-white" />
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <label className="text-xs text-gray-400 block mb-1">Facebook</label>
+                <Input value={orgForm.facebook} onChange={(e) => setOrgForm({ ...orgForm, facebook: e.target.value })} placeholder="facebook.com/..." className="bg-zinc-800 border-zinc-700 text-white" />
+              </div>
+              <div>
+                <label className="text-xs text-gray-400 block mb-1">Instagram</label>
+                <Input value={orgForm.instagram} onChange={(e) => setOrgForm({ ...orgForm, instagram: e.target.value })} placeholder="@handle" className="bg-zinc-800 border-zinc-700 text-white" />
+              </div>
+            </div>
+            <GlowButton
+              className="w-full"
+              onClick={() => becomeOrganizerMutation.mutate(orgForm)}
+              disabled={!orgForm.brand_name || !orgForm.full_name || becomeOrganizerMutation.isPending}
+            >
+              {becomeOrganizerMutation.isPending ? 'Submitting...' : 'Submit for Approval'}
+            </GlowButton>
+            {becomeOrganizerMutation.isSuccess && (
+              <p className="text-green-400 text-xs text-center">Request submitted! Staff will review your application.</p>
+            )}
+          </div>
         </DialogContent>
       </Dialog>
     </GamerLayout>

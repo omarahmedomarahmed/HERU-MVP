@@ -13,6 +13,7 @@ import { Switch } from '@/components/ui/switch';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { GamerProfile, MarketplaceItem, OrganizerProfile, Team, Tournament, apiCall } from '@/api/heruClient'
 import { useAuth } from '@/lib/AuthContext'
+import { uploadFile } from '@/lib/uploadFile'
 
 import {
   Trophy, Gamepad2, Users, Star, Palette, MapPin, Award,
@@ -391,12 +392,34 @@ export default function TournamentBuilder() {
             </div>
 
             <div>
-              <label className="text-sm text-gray-400 block mb-2">Tournament Cover Image URL</label>
+              <label className="text-sm text-gray-400 block mb-2">Tournament Cover Image</label>
+              <div className="flex items-center gap-3">
+                <label className="cursor-pointer inline-flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm font-medium transition-colors">
+                  <Image className="w-4 h-4" />
+                  Upload Image
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={async (e) => {
+                      const file = e.target.files?.[0];
+                      if (!file) return;
+                      try {
+                        const { file_url } = await uploadFile(file);
+                        setTournament(prev => ({ ...prev, tournament_image: file_url }));
+                      } catch (err) {
+                        console.error('Upload failed:', err);
+                      }
+                    }}
+                  />
+                </label>
+                <span className="text-xs text-gray-500">or paste URL below</span>
+              </div>
               <Input
                 value={tournament.tournament_image}
                 onChange={(e) => setTournament({ ...tournament, tournament_image: e.target.value })}
                 placeholder="https://... (cover image shown on tournament page)"
-                className="bg-zinc-800 border-zinc-700 text-white"
+                className="bg-zinc-800 border-zinc-700 text-white mt-2"
               />
               {tournament.tournament_image && (
                 <div className="mt-2 h-32 rounded-lg overflow-hidden bg-zinc-800">

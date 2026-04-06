@@ -1,477 +1,412 @@
-import React, { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import React, { useState, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-
-import FloatingPanel from '@/components/ui/FloatingPanel';
-import GlowButton from '@/components/ui/GlowButton';
-import GameCard from '@/components/ui/GameCard';
-import HexBadge from '@/components/ui/HexBadge';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import BracketVisual from '@/components/tournament/BracketVisual';
-import { Team, Tournament, apiCall } from '@/api/heruClient'
-import { useAuth } from '@/lib/AuthContext'
-
+import { Tournament, apiCall } from '@/api/heruClient';
 import {
-  Trophy, Search, Eye, Edit, Users, Calendar, Play, Check, X,
-  MessageSquare, Send, ExternalLink
+  Trophy, Search, Eye, ChevronDown, Trash2, Users, Calendar,
+  Gamepad2, DollarSign, Loader2, AlertTriangle, X,
 } from 'lucide-react';
 
+const STATUS_OPTIONS = ['draft', 'published', 'live', 'completed'];
+
+const STATUS_COLORS = {
+  draft:     'bg-yellow-500/15 text-yellow-400 border border-yellow-500/30',
+  published: 'bg-blue-500/15 text-blue-400 border border-blue-500/30',
+  live:      'bg-green-500/15 text-green-400 border border-green-500/30',
+  completed: 'bg-purple-500/15 text-purple-400 border border-purple-500/30',
+};
+
+const TABS = [
+  { key: 'all',       label: 'All' },
+  { key: 'draft',     label: 'Draft' },
+  { key: 'published', label: 'Published' },
+  { key: 'live',      label: 'Live' },
+  { key: 'completed', label: 'Completed' },
+];
+
+function formatEGP(value) {
+  if (value == null) return 'EGP 0';
+  return `EGP ${Number(value).toLocaleString('en-US')}`;
+}
+
+function formatDate(dateStr) {
+  if (!dateStr) return '-';
+  return new Date(dateStr).toLocaleDateString('en-GB', {
+    day: '2-digit', month: 'short', year: 'numeric',
+  });
+}
+
+// ── Confirmation Dialog ──────────────────────────────────────────────────────
+
+function ConfirmDialog({ open, title, message, confirmLabel, confirmColor, onConfirm, onCancel, loading }) {
+  if (!open) return null;
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+      <div className="bg-zinc-900 border border-zinc-700 rounded-xl p-6 w-full max-w-md shadow-2xl">
+        <div className="flex items-center gap-3 mb-4">
+          <AlertTriangle className="w-5 h-5 text-yellow-400 shrink-0" />
+          <h3 className="text-white font-bold text-lg">{title}</h3>
+        </div>
+        <p className="text-zinc-400 text-sm mb-6">{message}</p>
+        <div className="flex justify-end gap-3">
+          <button
+            onClick={onCancel}
+            disabled={loading}
+            className="px-4 py-2 text-sm rounded-lg bg-zinc-800 text-zinc-300 hover:bg-zinc-700 transition-colors disabled:opacity-50"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={onConfirm}
+            disabled={loading}
+            className={`px-4 py-2 text-sm rounded-lg font-medium text-white transition-colors disabled:opacity-50 flex items-center gap-2 ${confirmColor || 'bg-blue-600 hover:bg-blue-500'}`}
+          >
+            {loading && <Loader2 className="w-4 h-4 animate-spin" />}
+            {confirmLabel || 'Confirm'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Status Dropdown ──────────────────────────────────────────────────────────
+
+function StatusDropdown({ currentStatus, onSelect }) {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <div className="relative">
+      <button
+        onClick={(e) => { e.stopPropagation(); setOpen(!open); }}
+        className="flex items-center gap-1 px-2.5 py-1.5 text-xs rounded-lg bg-zinc-800 text-zinc-300 hover:bg-zinc-700 border border-zinc-700 transition-colors"
+      >
+        Edit Status <ChevronDown className={`w-3 h-3 transition-transform ${open ? 'rotate-180' : ''}`} />
+      </button>
+      {open && (
+        <>
+          <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
+          <div className="absolute right-0 top-full mt-1 z-50 bg-zinc-800 border border-zinc-700 rounded-lg shadow-xl overflow-hidden min-w-[140px]">
+            {STATUS_OPTIONS.map((status) => (
+              <button
+                key={status}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (status !== currentStatus) onSelect(status);
+                  setOpen(false);
+                }}
+                className={`w-full text-left px-3 py-2 text-sm capitalize transition-colors ${
+                  status === currentStatus
+                    ? 'text-blue-400 bg-blue-500/10'
+                    : 'text-zinc-300 hover:bg-zinc-700'
+                }`}
+              >
+                {status}
+                {status === currentStatus && <span className="ml-2 text-xs text-zinc-500">(current)</span>}
+              </button>
+            ))}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+// ── Main Component ───────────────────────────────────────────────────────────
+
 export default function StaffTournaments() {
-  const [user, setUser] = useState(null);
-  const [search, setSearch] = useState('');
-  const [selectedTournament, setSelectedTournament] = useState(null);
-  const [editMode, setEditMode] = useState(false);
-  const [editData, setEditData] = useState({});
-  const [newMessage, setNewMessage] = useState('');
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
-  useEffect(() => {
-    const token = localStorage.getItem('heru_staff_token');
-    const expires = localStorage.getItem('heru_staff_expires');
-    if (!token || !expires || new Date(expires) < new Date()) {
-      localStorage.removeItem('heru_staff_token');
-      localStorage.removeItem('heru_staff_expires');
-      navigate('/admin', { replace: true });
-      return;
-    }
-    loadUser();
-  }, [navigate]);
+  const [search, setSearch] = useState('');
+  const [activeTab, setActiveTab] = useState('all');
 
-  const loadUser = async () => {
-    try {
-      const userData = await apiCall('/auth/me');
-      setUser(userData);
-    } catch (e) {
-      navigate('/admin');
-    }
-  };
+  // Confirmation dialogs
+  const [statusConfirm, setStatusConfirm] = useState(null); // { id, name, newStatus }
+  const [deleteConfirm, setDeleteConfirm] = useState(null); // { id, name }
+
+  // ── Data fetching ────────────────────────────────────────────────────────
 
   const { data: tournaments = [], isLoading } = useQuery({
-    queryKey: ['all-tournaments'],
-    queryFn: () => Tournament.list('-created_date'),
+    queryKey: ['staff-tournaments'],
+    queryFn: () => Tournament.list(),
   });
 
-  const { data: teams = [] } = useQuery({
-    queryKey: ['all-teams'],
-    queryFn: () => Team.list(),
-  });
+  // ── Mutations ────────────────────────────────────────────────────────────
 
-  const updateTournamentMutation = useMutation({
-    mutationFn: async ({ id, data }) => {
-      await Tournament.update(id, data);
-    },
+  const updateStatusMutation = useMutation({
+    mutationFn: ({ id, status }) => Tournament.update(id, { status }),
     onSuccess: () => {
-      queryClient.invalidateQueries(['all-tournaments']);
-      setEditMode(false);
-    }
+      queryClient.invalidateQueries({ queryKey: ['staff-tournaments'] });
+      setStatusConfirm(null);
+    },
   });
 
-  const sendMessageMutation = useMutation({
-    mutationFn: async ({ tournamentId, message, chatType }) => {
-      const tournament = tournaments.find(t => t.id === tournamentId);
-      const chatField = chatType === 'support' ? 'support_chat' : 'general_chat';
-      const chat = tournament[chatField] || [];
-      chat.push({
-        sender_id: user.id,
-        sender_name: user.full_name,
-        sender_role: 'staff',
-        message,
-        timestamp: new Date().toISOString()
-      });
-      await Tournament.update(tournamentId, { [chatField]: chat });
-    },
+  const deleteMutation = useMutation({
+    mutationFn: ({ id }) => Tournament.delete(id),
     onSuccess: () => {
-      queryClient.invalidateQueries(['all-tournaments']);
-      setNewMessage('');
-    }
-  });
-
-  const updateMatchMutation = useMutation({
-    mutationFn: async ({ tournamentId, roundIdx, matchIdx, updates }) => {
-      const tournament = tournaments.find(t => t.id === tournamentId);
-      const updatedBrackets = [...(tournament.brackets || [])];
-      const match = updatedBrackets[roundIdx].matches[matchIdx];
-      updatedBrackets[roundIdx].matches[matchIdx] = { ...match, ...updates };
-
-      // Auto-advance winner
-      if (updates.winner && roundIdx < updatedBrackets.length - 1) {
-        const nextMatchIdx = Math.floor(matchIdx / 2);
-        const position = matchIdx % 2 === 0 ? 'team1' : 'team2';
-        if (updatedBrackets[roundIdx + 1]?.matches[nextMatchIdx]) {
-          updatedBrackets[roundIdx + 1].matches[nextMatchIdx][position] = updates.winner;
-        }
-      }
-
-      const log = [...(tournament.tournament_log || []), {
-        action: 'match_update',
-        description: `Staff updated match result`,
-        timestamp: new Date().toISOString()
-      }];
-
-      await Tournament.update(tournamentId, { brackets: updatedBrackets, tournament_log: log });
+      queryClient.invalidateQueries({ queryKey: ['staff-tournaments'] });
+      setDeleteConfirm(null);
     },
-    onSuccess: () => queryClient.invalidateQueries(['all-tournaments'])
   });
 
-  const filteredTournaments = tournaments.filter(t =>
-    t.name?.toLowerCase().includes(search.toLowerCase()) ||
-    t.game?.toLowerCase().includes(search.toLowerCase())
-  );
+  // ── Filtering ────────────────────────────────────────────────────────────
 
-  const draftTournaments = filteredTournaments.filter(t => t.status === 'draft');
-  const publishedTournaments = filteredTournaments.filter(t => t.status === 'published');
-  const liveTournaments = filteredTournaments.filter(t => t.status === 'live');
-  const completedTournaments = filteredTournaments.filter(t => t.status === 'completed');
+  const filtered = useMemo(() => {
+    let list = tournaments;
 
-  const getTeamName = (teamId) => {
-    const team = teams.find(t => t.id === teamId);
-    return team?.name || 'TBD';
-  };
+    // search by name
+    if (search.trim()) {
+      const q = search.toLowerCase();
+      list = list.filter((t) => t.name?.toLowerCase().includes(q));
+    }
 
-  const TournamentCard = ({ tournament }) => (
-    <GameCard className="p-4 cursor-pointer" onClick={() => navigate(`/staff/tournaments/${tournament.id}`)}>
-      <div className="flex items-start gap-4">
-        <div className="w-16 h-16 rounded-xl bg-zinc-800 flex items-center justify-center overflow-hidden">
-          {tournament.tournament_image ? <img src={tournament.tournament_image} className="w-full h-full object-cover" /> : <Trophy className="w-8 h-8 text-red-500" />}
-        </div>
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-1">
-            <h3 className="text-white font-bold truncate">{tournament.name}</h3>
-            <HexBadge className={
-              tournament.status === 'live' ? 'bg-green-500/20 text-green-400 border-green-500/50' :
-              tournament.status === 'published' ? 'bg-blue-500/20 text-blue-400 border-blue-500/50' :
-              tournament.status === 'draft' ? 'bg-yellow-500/20 text-yellow-400 border-yellow-500/50' :
-              'bg-gray-500/20 text-gray-400 border-gray-500/50'
-            }>{tournament.status === 'live' ? '🔴 LIVE' : tournament.status.toUpperCase()}</HexBadge>
-          </div>
-          <p className="text-gray-500 text-sm">{tournament.game}</p>
-          <div className="flex items-center gap-3 mt-2 text-xs text-gray-400">
-            <span className="flex items-center gap-1"><Users className="w-3 h-3" />{tournament.teams?.length || 0}/{tournament.max_teams || '∞'}</span>
-            {tournament.schedule && <span className="flex items-center gap-1"><Calendar className="w-3 h-3" />{new Date(tournament.schedule).toLocaleDateString()}</span>}
-          </div>
-        </div>
-      </div>
-    </GameCard>
-  );
+    // tab filter
+    if (activeTab !== 'all') {
+      list = list.filter((t) => t.status === activeTab);
+    }
+
+    // newest first
+    return [...list].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+  }, [tournaments, search, activeTab]);
+
+  // Tab counts
+  const counts = useMemo(() => {
+    const base = search.trim()
+      ? tournaments.filter((t) => t.name?.toLowerCase().includes(search.toLowerCase()))
+      : tournaments;
+    return {
+      all:       base.length,
+      draft:     base.filter((t) => t.status === 'draft').length,
+      published: base.filter((t) => t.status === 'published').length,
+      live:      base.filter((t) => t.status === 'live').length,
+      completed: base.filter((t) => t.status === 'completed').length,
+    };
+  }, [tournaments, search]);
+
+  // ── Render ───────────────────────────────────────────────────────────────
 
   return (
-    <>
-      <div className="flex items-start justify-between mb-6">
+    <div className="min-h-screen bg-zinc-950 p-6 lg:p-8">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8">
         <div>
-          <h1 className="text-2xl font-black text-white">MANAGE <span className="text-red-500">TOURNAMENTS</span></h1>
-          <p className="text-gray-400">{tournaments.length} total tournaments</p>
+          <div className="flex items-center gap-3">
+            <Trophy className="w-7 h-7 text-blue-500" />
+            <h1 className="text-2xl font-black text-white tracking-tight">
+              All Tournaments
+            </h1>
+            <span className="ml-1 px-2.5 py-0.5 rounded-full bg-blue-500/15 text-blue-400 text-sm font-semibold border border-blue-500/30">
+              {tournaments.length}
+            </span>
+          </div>
+          <p className="text-zinc-500 text-sm mt-1 ml-10">
+            God mode — view and manage every tournament on the platform
+          </p>
         </div>
       </div>
 
+      {/* Search */}
       <div className="mb-6">
         <div className="relative max-w-md">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
-          <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search tournaments..." className="pl-10 bg-zinc-800 border-zinc-700 text-white" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
+          <input
+            type="text"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search by tournament name..."
+            className="w-full pl-10 pr-4 py-2.5 rounded-lg bg-zinc-900 border border-zinc-800 text-white text-sm placeholder:text-zinc-600 focus:outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/30 transition-colors"
+          />
+          {search && (
+            <button
+              onClick={() => setSearch('')}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-300"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          )}
         </div>
       </div>
 
-      <Tabs defaultValue="all" className="w-full">
-        <TabsList className="bg-zinc-900 border-zinc-800 mb-6">
-          <TabsTrigger value="all">All ({filteredTournaments.length})</TabsTrigger>
-          <TabsTrigger value="live">Live ({liveTournaments.length})</TabsTrigger>
-          <TabsTrigger value="published">Published ({publishedTournaments.length})</TabsTrigger>
-          <TabsTrigger value="draft">Draft ({draftTournaments.length})</TabsTrigger>
-          <TabsTrigger value="completed">Completed ({completedTournaments.length})</TabsTrigger>
-        </TabsList>
+      {/* Filter Tabs */}
+      <div className="flex gap-1 mb-6 overflow-x-auto pb-1">
+        {TABS.map(({ key, label }) => (
+          <button
+            key={key}
+            onClick={() => setActiveTab(key)}
+            className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors whitespace-nowrap ${
+              activeTab === key
+                ? 'bg-blue-600 text-white'
+                : 'bg-zinc-900 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200'
+            }`}
+          >
+            {label}
+            <span className={`ml-1.5 text-xs ${activeTab === key ? 'text-blue-200' : 'text-zinc-600'}`}>
+              {counts[key]}
+            </span>
+          </button>
+        ))}
+      </div>
 
-        <TabsContent value="all">
-          <div className="grid md:grid-cols-2 gap-4">
-            {filteredTournaments.map(t => <TournamentCard key={t.id} tournament={t} />)}
-          </div>
-        </TabsContent>
-        <TabsContent value="live">
-          <div className="grid md:grid-cols-2 gap-4">
-            {liveTournaments.map(t => <TournamentCard key={t.id} tournament={t} />)}
-          </div>
-        </TabsContent>
-        <TabsContent value="published">
-          <div className="grid md:grid-cols-2 gap-4">
-            {publishedTournaments.map(t => <TournamentCard key={t.id} tournament={t} />)}
-          </div>
-        </TabsContent>
-        <TabsContent value="draft">
-          <div className="grid md:grid-cols-2 gap-4">
-            {draftTournaments.map(t => <TournamentCard key={t.id} tournament={t} />)}
-          </div>
-        </TabsContent>
-        <TabsContent value="completed">
-          <div className="grid md:grid-cols-2 gap-4">
-            {completedTournaments.map(t => <TournamentCard key={t.id} tournament={t} />)}
-          </div>
-        </TabsContent>
-      </Tabs>
-
-      {/* Tournament Detail Modal */}
-      <Dialog open={!!selectedTournament} onOpenChange={() => { setSelectedTournament(null); setEditMode(false); }}>
-        <DialogContent className="bg-zinc-900 border-zinc-800 text-white max-w-4xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="flex items-center justify-between">
-              <span>{selectedTournament?.name}</span>
-              {selectedTournament?.status !== 'completed' && (
-                <GlowButton variant="secondary" size="sm" onClick={() => setEditMode(!editMode)}>
-                  <Edit className="w-4 h-4" /> {editMode ? 'Cancel' : 'Edit'}
-                </GlowButton>
-              )}
-            </DialogTitle>
-          </DialogHeader>
-          {selectedTournament && (
-            <Tabs defaultValue="details" className="w-full">
-              <TabsList className="bg-zinc-800 mb-4">
-                <TabsTrigger value="details">Details</TabsTrigger>
-                <TabsTrigger value="brackets">Brackets</TabsTrigger>
-                <TabsTrigger value="chat">Chats</TabsTrigger>
-                <TabsTrigger value="log">Log</TabsTrigger>
-              </TabsList>
-
-              <TabsContent value="details">
-                {editMode ? (
-                  <div className="space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <label className="text-sm text-gray-400 block mb-1">Name</label>
-                        <Input value={editData.name || ''} onChange={(e) => setEditData({ ...editData, name: e.target.value })} className="bg-zinc-800 border-zinc-700 text-white" />
-                      </div>
-                      <div>
-                        <label className="text-sm text-gray-400 block mb-1">Status</label>
-                        <Select value={editData.status} onValueChange={(v) => setEditData({ ...editData, status: v })}>
-                          <SelectTrigger className="bg-zinc-800 border-zinc-700 text-white">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent className="bg-zinc-900 border-zinc-800">
-                            <SelectItem value="draft">Draft</SelectItem>
-                            <SelectItem value="published">Published</SelectItem>
-                            <SelectItem value="live">Live</SelectItem>
-                            <SelectItem value="completed">Completed</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <label className="text-sm text-gray-400 block mb-1">Game</label>
-                        <Input value={editData.game || ''} onChange={(e) => setEditData({ ...editData, game: e.target.value })} className="bg-zinc-800 border-zinc-700 text-white" />
-                      </div>
-                      <div>
-                        <label className="text-sm text-gray-400 block mb-1">Format</label>
-                        <Input value={editData.format || ''} onChange={(e) => setEditData({ ...editData, format: e.target.value })} className="bg-zinc-800 border-zinc-700 text-white" />
-                      </div>
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <label className="text-sm text-gray-400 block mb-1">Max Teams</label>
-                        <Input type="number" value={editData.max_teams || ''} onChange={(e) => setEditData({ ...editData, max_teams: parseInt(e.target.value) })} className="bg-zinc-800 border-zinc-700 text-white" />
-                      </div>
-                      <div>
-                        <label className="text-sm text-gray-400 block mb-1">Prize Pool ($)</label>
-                        <Input type="number" value={editData.prizepool_total || ''} onChange={(e) => setEditData({ ...editData, prizepool_total: parseFloat(e.target.value) })} className="bg-zinc-800 border-zinc-700 text-white" />
-                      </div>
-                    </div>
-                    <div>
-                      <label className="text-sm text-gray-400 block mb-1">Stream Link</label>
-                      <Input value={editData.stream_link || ''} onChange={(e) => setEditData({ ...editData, stream_link: e.target.value })} placeholder="https://twitch.tv/..." className="bg-zinc-800 border-zinc-700 text-white" />
-                    </div>
-                    <div>
-                      <label className="text-sm text-gray-400 block mb-1">Description</label>
-                      <Textarea value={editData.description || ''} onChange={(e) => setEditData({ ...editData, description: e.target.value })} className="bg-zinc-800 border-zinc-700 text-white" rows={3} />
-                    </div>
-                    <GlowButton onClick={() => updateTournamentMutation.mutate({ id: selectedTournament.id, data: editData })}>
-                      <Check className="w-4 h-4" /> Save Changes
-                    </GlowButton>
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    <div className="grid grid-cols-2 gap-4 text-sm">
-                      <div><span className="text-gray-400">Game:</span> <span className="text-white ml-2">{selectedTournament.game}</span></div>
-                      <div><span className="text-gray-400">Format:</span> <span className="text-white ml-2">{selectedTournament.format}</span></div>
-                      <div><span className="text-gray-400">Teams:</span> <span className="text-white ml-2">{selectedTournament.teams?.length || 0}/{selectedTournament.max_teams}</span></div>
-                      <div><span className="text-gray-400">Prize Pool:</span> <span className="text-yellow-400 ml-2">${selectedTournament.prizepool_total || 0}</span></div>
-                    </div>
-                    {selectedTournament.stream_link && (
-                      <a href={selectedTournament.stream_link} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-red-400 hover:underline">
-                        <ExternalLink className="w-4 h-4" /> Watch Stream
-                      </a>
-                    )}
-                  </div>
-                )}
-              </TabsContent>
-
-              <TabsContent value="brackets">
-                {selectedTournament.brackets?.length > 0 ? (
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between mb-4">
-                      <h4 className="text-white font-medium">Bracket Management</h4>
-                      <GlowButton 
-                        variant="ghost" 
-                        size="sm"
-                        onClick={async () => {
-                          await Tournament.update(selectedTournament.id, { brackets: [] });
-                          queryClient.invalidateQueries(['all-tournaments']);
-                        }}
-                      >
-                        <X className="w-4 h-4" /> Clear Brackets
-                      </GlowButton>
-                    </div>
-                    <BracketVisual
-                      brackets={selectedTournament.brackets}
-                      teams={teams.filter(t => selectedTournament.teams?.includes(t.id))}
-                      onSelectWinner={(roundIdx, matchIdx, winnerId) => {
-                        updateMatchMutation.mutate({
-                          tournamentId: selectedTournament.id,
-                          roundIdx,
-                          matchIdx,
-                          updates: { winner: winnerId }
-                        });
-                      }}
-                      onInviteClick={() => {}}
-                    />
-                    {/* Manual Score Entry */}
-                    <div className="p-4 bg-zinc-800/50 rounded-lg">
-                      <h5 className="text-white text-sm mb-3">Update Match Scores</h5>
-                      <div className="grid grid-cols-2 gap-4">
-                        {selectedTournament.brackets.map((round, rIdx) => 
-                          round.matches.map((match, mIdx) => (
-                            <div key={`${rIdx}-${mIdx}`} className="p-3 bg-zinc-900 rounded-lg">
-                              <p className="text-gray-400 text-xs mb-2">Round {round.round} - Match {mIdx + 1}</p>
-                              <div className="flex items-center gap-2">
-                                <Input
-                                  type="number"
-                                  placeholder="Score 1"
-                                  defaultValue={match.score1 || ''}
-                                  className="w-20 bg-zinc-800 border-zinc-700 text-white text-sm"
-                                  onChange={(e) => {
-                                    updateMatchMutation.mutate({
-                                      tournamentId: selectedTournament.id,
-                                      roundIdx: rIdx,
-                                      matchIdx: mIdx,
-                                      updates: { score1: parseInt(e.target.value) || 0 }
-                                    });
-                                  }}
-                                />
-                                <span className="text-gray-500">vs</span>
-                                <Input
-                                  type="number"
-                                  placeholder="Score 2"
-                                  defaultValue={match.score2 || ''}
-                                  className="w-20 bg-zinc-800 border-zinc-700 text-white text-sm"
-                                  onChange={(e) => {
-                                    updateMatchMutation.mutate({
-                                      tournamentId: selectedTournament.id,
-                                      roundIdx: rIdx,
-                                      matchIdx: mIdx,
-                                      updates: { score2: parseInt(e.target.value) || 0 }
-                                    });
-                                  }}
-                                />
-                              </div>
-                            </div>
-                          ))
+      {/* Table */}
+      {isLoading ? (
+        <div className="flex items-center justify-center py-20">
+          <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
+        </div>
+      ) : filtered.length === 0 ? (
+        <div className="text-center py-20">
+          <Trophy className="w-12 h-12 text-zinc-700 mx-auto mb-3" />
+          <p className="text-zinc-500 text-sm">No tournaments found</p>
+        </div>
+      ) : (
+        <div className="overflow-x-auto rounded-xl border border-zinc-800">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="bg-zinc-900/80 border-b border-zinc-800">
+                <th className="text-left px-4 py-3 text-zinc-400 font-medium">Name</th>
+                <th className="text-left px-4 py-3 text-zinc-400 font-medium">Game</th>
+                <th className="text-left px-4 py-3 text-zinc-400 font-medium">Status</th>
+                <th className="text-left px-4 py-3 text-zinc-400 font-medium">Type</th>
+                <th className="text-center px-4 py-3 text-zinc-400 font-medium">Teams</th>
+                <th className="text-left px-4 py-3 text-zinc-400 font-medium">Organizer</th>
+                <th className="text-right px-4 py-3 text-zinc-400 font-medium">Cost</th>
+                <th className="text-left px-4 py-3 text-zinc-400 font-medium">Created</th>
+                <th className="text-right px-4 py-3 text-zinc-400 font-medium">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-zinc-800/60">
+              {filtered.map((t) => (
+                <tr
+                  key={t.id}
+                  className="bg-zinc-900/40 hover:bg-zinc-800/50 transition-colors"
+                >
+                  {/* Name */}
+                  <td className="px-4 py-3">
+                    <div className="flex items-center gap-3">
+                      <div className="w-9 h-9 rounded-lg bg-zinc-800 flex items-center justify-center overflow-hidden shrink-0">
+                        {t.tournament_image ? (
+                          <img src={t.tournament_image} alt="" className="w-full h-full object-cover" />
+                        ) : (
+                          <Gamepad2 className="w-4 h-4 text-zinc-600" />
                         )}
                       </div>
+                      <span className="text-white font-medium truncate max-w-[200px]">{t.name}</span>
                     </div>
-                  </div>
-                ) : (
-                  <div className="text-center py-8">
-                    <p className="text-gray-500 mb-4">No brackets generated yet</p>
-                    <GlowButton onClick={async () => {
-                      const numTeams = selectedTournament.max_teams || 8;
-                      const rounds = Math.ceil(Math.log2(numTeams));
-                      const brackets = [];
-                      let matchesInRound = Math.ceil(numTeams / 2);
-                      
-                      for (let r = 1; r <= rounds; r++) {
-                        const roundMatches = [];
-                        for (let m = 0; m < matchesInRound; m++) {
-                          roundMatches.push({
-                            match_id: `r${r}-m${m}`,
-                            team1: null,
-                            team2: null,
-                            winner: null,
-                            score1: null,
-                            score2: null
-                          });
+                  </td>
+
+                  {/* Game */}
+                  <td className="px-4 py-3 text-zinc-400">{t.game || '-'}</td>
+
+                  {/* Status */}
+                  <td className="px-4 py-3">
+                    <span className={`inline-block px-2.5 py-1 rounded-full text-xs font-semibold capitalize ${STATUS_COLORS[t.status] || STATUS_COLORS.draft}`}>
+                      {t.status === 'live' && <span className="inline-block w-1.5 h-1.5 rounded-full bg-green-400 mr-1.5 animate-pulse" />}
+                      {t.status}
+                    </span>
+                  </td>
+
+                  {/* Type */}
+                  <td className="px-4 py-3">
+                    <span className={`text-xs font-medium uppercase tracking-wide ${
+                      t.tournament_type === 'shared' ? 'text-cyan-400' : 'text-zinc-500'
+                    }`}>
+                      {t.tournament_type || 'solo'}
+                    </span>
+                  </td>
+
+                  {/* Teams */}
+                  <td className="px-4 py-3 text-center">
+                    <div className="flex items-center justify-center gap-1 text-zinc-400">
+                      <Users className="w-3.5 h-3.5" />
+                      <span>{t.teams?.length || 0}/{t.max_teams || '-'}</span>
+                    </div>
+                  </td>
+
+                  {/* Organizer */}
+                  <td className="px-4 py-3 text-zinc-400 truncate max-w-[150px]">
+                    {t.organizer_brand?.brand_name || t.organizer_brand?.name || '-'}
+                  </td>
+
+                  {/* Cost */}
+                  <td className="px-4 py-3 text-right">
+                    <span className="text-emerald-400 font-medium">{formatEGP(t.total_cost)}</span>
+                  </td>
+
+                  {/* Created */}
+                  <td className="px-4 py-3 text-zinc-500 whitespace-nowrap">
+                    {formatDate(t.created_at)}
+                  </td>
+
+                  {/* Actions */}
+                  <td className="px-4 py-3">
+                    <div className="flex items-center justify-end gap-2">
+                      <button
+                        onClick={() => navigate(`/staff/tournaments/${t.id}`)}
+                        className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs rounded-lg bg-blue-600/15 text-blue-400 hover:bg-blue-600/25 border border-blue-500/20 transition-colors"
+                      >
+                        <Eye className="w-3.5 h-3.5" /> View
+                      </button>
+                      <StatusDropdown
+                        currentStatus={t.status}
+                        onSelect={(newStatus) =>
+                          setStatusConfirm({ id: t.id, name: t.name, newStatus })
                         }
-                        brackets.push({ round: r, matches: roundMatches });
-                        matchesInRound = Math.ceil(matchesInRound / 2);
-                      }
-                      
-                      await Tournament.update(selectedTournament.id, { brackets });
-                      queryClient.invalidateQueries(['all-tournaments']);
-                    }}>
-                      Generate Brackets
-                    </GlowButton>
-                  </div>
-                )}
-              </TabsContent>
+                      />
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setDeleteConfirm({ id: t.id, name: t.name });
+                        }}
+                        className="p-1.5 rounded-lg text-zinc-500 hover:text-red-400 hover:bg-red-500/10 transition-colors"
+                        title="Delete tournament"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
 
-              <TabsContent value="chat">
-                <div className="space-y-6">
-                  <div>
-                    <h4 className="text-white font-medium mb-3">Organizer Chat (Internal)</h4>
-                    <div className="h-48 overflow-y-auto bg-zinc-950 rounded-lg p-3 space-y-2 mb-3">
-                      {selectedTournament.support_chat?.map((msg, i) => (
-                        <div key={i} className={`flex ${msg.sender_role === 'staff' ? 'justify-end' : 'justify-start'}`}>
-                          <div className={`max-w-[70%] p-2 rounded-lg text-sm ${msg.sender_role === 'staff' ? 'bg-blue-600' : 'bg-zinc-800'}`}>
-                            <p className="text-xs opacity-70">{msg.sender_name} ({msg.sender_role})</p>
-                            <p>{msg.message}</p>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                    <div className="flex gap-2">
-                      <Input value={newMessage} onChange={(e) => setNewMessage(e.target.value)} placeholder="Message organizer..." className="bg-zinc-800 border-zinc-700 text-white" />
-                      <GlowButton onClick={() => newMessage && sendMessageMutation.mutate({ tournamentId: selectedTournament.id, message: newMessage, chatType: 'support' })}>
-                        <Send className="w-4 h-4" />
-                      </GlowButton>
-                    </div>
-                  </div>
+      {/* Status Change Confirmation */}
+      <ConfirmDialog
+        open={!!statusConfirm}
+        title="Change Tournament Status"
+        message={
+          statusConfirm
+            ? `Change "${statusConfirm.name}" status to "${statusConfirm.newStatus}"? This will be visible to organizers and gamers immediately.`
+            : ''
+        }
+        confirmLabel={`Set to ${statusConfirm?.newStatus || ''}`}
+        confirmColor="bg-blue-600 hover:bg-blue-500"
+        loading={updateStatusMutation.isPending}
+        onConfirm={() =>
+          updateStatusMutation.mutate({
+            id: statusConfirm.id,
+            status: statusConfirm.newStatus,
+          })
+        }
+        onCancel={() => setStatusConfirm(null)}
+      />
 
-                  <div>
-                    <h4 className="text-white font-medium mb-3">General Chat (Public)</h4>
-                    <div className="h-48 overflow-y-auto bg-zinc-950 rounded-lg p-3 space-y-2">
-                      {selectedTournament.general_chat?.map((msg, i) => (
-                        <div key={i} className="p-2 bg-zinc-800 rounded-lg text-sm">
-                          <p className="text-xs text-gray-500">{msg.sender_name} ({msg.sender_type})</p>
-                          <p className="text-white">{msg.message}</p>
-                        </div>
-                      ))}
-                      {(!selectedTournament.general_chat || selectedTournament.general_chat.length === 0) && (
-                        <p className="text-gray-500 text-center">No messages</p>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              </TabsContent>
-
-              <TabsContent value="log">
-                <div className="space-y-2">
-                  {selectedTournament.tournament_log?.slice().reverse().map((log, i) => (
-                    <div key={i} className="flex gap-3 p-3 bg-zinc-800/50 rounded-lg">
-                      <div className="w-2 h-2 rounded-full bg-red-500 mt-2" />
-                      <div>
-                        <p className="text-white text-sm">{log.description}</p>
-                        <p className="text-gray-500 text-xs">{new Date(log.timestamp).toLocaleString()}</p>
-                      </div>
-                    </div>
-                  ))}
-                  {(!selectedTournament.tournament_log || selectedTournament.tournament_log.length === 0) && (
-                    <p className="text-gray-500 text-center py-8">No activity logged</p>
-                  )}
-                </div>
-              </TabsContent>
-            </Tabs>
-          )}
-        </DialogContent>
-      </Dialog>
-    </>
+      {/* Delete Confirmation */}
+      <ConfirmDialog
+        open={!!deleteConfirm}
+        title="Delete Tournament"
+        message={
+          deleteConfirm
+            ? `Are you sure you want to permanently delete "${deleteConfirm.name}"? This action cannot be undone. All associated brackets, chats, and data will be lost.`
+            : ''
+        }
+        confirmLabel="Delete Forever"
+        confirmColor="bg-red-600 hover:bg-red-500"
+        loading={deleteMutation.isPending}
+        onConfirm={() => deleteMutation.mutate({ id: deleteConfirm.id })}
+        onCancel={() => setDeleteConfirm(null)}
+      />
+    </div>
   );
 }

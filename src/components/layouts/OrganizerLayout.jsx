@@ -4,7 +4,7 @@ import { useAuth } from '@/lib/AuthContext'
 import {
   LayoutDashboard, Trophy, Plus, Radar, CreditCard, Share2,
   MessageSquare, User, Menu, X, LogOut, ChevronLeft, ChevronRight,
-  ShoppingBag, Zap, Bell, Search, Settings,
+  Zap, Bell, Search, Settings,
 } from 'lucide-react'
 
 const NAV_SECTIONS = [
@@ -27,7 +27,6 @@ const NAV_SECTIONS = [
     items: [
       { to: '/organizer/billing', icon: CreditCard, text: 'Billing' },
       { to: '/organizer/sponsored', icon: Share2, text: 'Co-Organized' },
-      { to: '/organizer/marketplace', icon: ShoppingBag, text: 'Marketplace' },
     ],
   },
   {
