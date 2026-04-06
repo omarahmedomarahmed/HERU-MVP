@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import AnimatedBackground from '@/components/shared/AnimatedBackground';
 import HeruLogo from '@/components/shared/HeruLogo';
@@ -20,16 +20,19 @@ export default function GamerLayout({ children, user, profile, cartCount = 0, no
   const location = useLocation();
   
   const navItems = [
-    { icon: Home, label: 'Home', path: 'GamerHome' },
-    { icon: Trophy, label: 'Tournaments', path: 'Tournaments' },
-    { icon: Users, label: 'Teams', path: 'Teams' },
-    { icon: ShoppingBag, label: 'Shop', path: 'Marketplace' },
+    { icon: Home, label: 'Home', path: '/gamer/home' },
+    { icon: Trophy, label: 'Tournaments', path: '/gamer/tournaments' },
+    { icon: Users, label: 'Teams', path: '/gamer/teams' },
+    { icon: ShoppingBag, label: 'Shop', path: '/gamer/marketplace' },
   ];
 
-  const isActive = (path) => location.pathname.includes(path.toLowerCase());
+  const isActive = (path) => location.pathname === path || location.pathname.startsWith(path + '/');
 
+  const navigate = useNavigate();
+  const { logout } = useAuth();
   const handleLogout = async () => {
     await logout();
+    navigate('/auth/gamer/login');
   };
 
   // Fetch orders
@@ -96,17 +99,17 @@ export default function GamerLayout({ children, user, profile, cartCount = 0, no
             </div>
 
             {/* Cart */}
-            {cartCount > 0 && (
-              <Link
-                to={'/cart'}
-                className="relative p-2 text-gray-400 hover:text-white transition-colors"
-              >
-                <ShoppingCart className="w-5 h-5" />
+            <Link
+              to={'/gamer/cart'}
+              className="relative p-2 text-gray-400 hover:text-white transition-colors"
+            >
+              <ShoppingCart className="w-5 h-5" />
+              {cartCount > 0 && (
                 <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full text-white text-xs flex items-center justify-center font-bold">
                   {cartCount}
                 </span>
-              </Link>
-            )}
+              )}
+            </Link>
 
             {/* Notifications */}
             <div className="relative">
@@ -162,7 +165,7 @@ export default function GamerLayout({ children, user, profile, cartCount = 0, no
 
             {/* Dashboard button */}
             <Link
-              to="/dashboard/gamer"
+              to="/gamer/home"
               className="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-500/10 border border-red-500/30 text-red-400 hover:bg-red-500/20 transition-colors text-sm font-medium"
             >
               <LayoutDashboard className="w-4 h-4" />
@@ -222,7 +225,7 @@ export default function GamerLayout({ children, user, profile, cartCount = 0, no
                 ))}
                 <div className="border-t border-zinc-800 pt-2 mt-2">
                   <Link
-                    to="/dashboard/gamer"
+                    to="/gamer/home"
                     onClick={() => setMobileMenuOpen(false)}
                     className="flex items-center gap-3 px-4 py-3 rounded-lg text-red-400 hover:bg-red-500/10"
                   >
@@ -230,7 +233,7 @@ export default function GamerLayout({ children, user, profile, cartCount = 0, no
                     Dashboard
                   </Link>
                   <Link
-                    to={'/my-orders'}
+                    to={'/gamer/orders'}
                     onClick={() => setMobileMenuOpen(false)}
                     className="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-400 hover:text-white hover:bg-white/5"
                   >

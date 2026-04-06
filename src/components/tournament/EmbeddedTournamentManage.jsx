@@ -23,7 +23,7 @@ import { uploadFile } from '@/lib/uploadFile'
 function StatusBadge({ status }) {
   const map = {
     draft: 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30',
-    published: 'bg-blue-500/20 text-blue-400 border-blue-500/30',
+    published: 'bg-red-500/20 text-red-400 border-red-500/30',
     live: 'bg-green-500/20 text-green-400 border-green-500/30 animate-pulse',
     completed: 'bg-zinc-500/20 text-zinc-400 border-zinc-500/30',
     cancelled: 'bg-red-500/20 text-red-400 border-red-500/30',
@@ -282,7 +282,7 @@ export default function EmbeddedTournamentManage({ id, onBack, user, profile }) 
                           <div className="flex items-center gap-2 mb-0.5 flex-wrap">
                             <span className="text-white text-xs font-bold">{msg.sender_name}</span>
                             <span className={`text-[9px] px-1.5 py-0.5 rounded font-bold ${
-                              msg.sender_role === 'main_organizer' ? 'bg-red-500/20 text-red-400' : 'bg-blue-500/20 text-blue-400'
+                              msg.sender_role === 'main_organizer' ? 'bg-red-500/20 text-red-400' : 'bg-red-500/20 text-red-400'
                             }`}>
                               {msg.sender_role === 'main_organizer' ? 'Main' : 'Co-Org'}
                             </span>

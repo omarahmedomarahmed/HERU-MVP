@@ -26,7 +26,7 @@ export default function OrdersDropdown({ isOpen, onClose, orders = [] }) {
               {orders.slice(0, 5).map((order) => (
                 <Link
                   key={order.id}
-                  to={`/gamer/orders/$\{order.id}`}
+                  to={`/gamer/orders/${order.id}`}
                   onClick={onClose}
                   className="block p-4 border-b border-zinc-800/50 hover:bg-zinc-800/50 transition-colors"
                 >
@@ -36,7 +36,7 @@ export default function OrdersDropdown({ isOpen, onClose, orders = [] }) {
                     </span>
                     <HexBadge className={`text-xs ${
                       order.status === 'completed' ? 'bg-green-500/20 text-green-400 border-green-500/50' :
-                      order.status === 'processing' ? 'bg-blue-500/20 text-blue-400 border-blue-500/50' :
+                      order.status === 'processing' ? 'bg-red-500/20 text-red-400 border-red-500/50' :
                       order.status === 'cancelled' ? 'bg-red-500/20 text-red-400 border-red-500/50' :
                       'bg-yellow-500/20 text-yellow-400 border-yellow-500/50'
                     }`}>
@@ -45,7 +45,7 @@ export default function OrdersDropdown({ isOpen, onClose, orders = [] }) {
                   </div>
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-gray-400">{order.items?.length || 0} items</span>
-                    <span className="text-white font-bold">${order.total?.toFixed(2)}</span>
+                    <span className="text-white font-bold">EGP {(order.total || 0).toLocaleString()}</span>
                   </div>
                 </Link>
               ))}
@@ -58,7 +58,7 @@ export default function OrdersDropdown({ isOpen, onClose, orders = [] }) {
             </div>
             {orders.length > 0 && (
               <Link
-                to={'/my-orders'}
+                to={'/gamer/orders'}
                 onClick={onClose}
                 className="block p-3 text-center text-red-400 hover:text-red-300 text-sm font-medium border-t border-zinc-800"
               >

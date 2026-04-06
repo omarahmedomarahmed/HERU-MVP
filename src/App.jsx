@@ -14,6 +14,8 @@ import GamerAuthRegister from './pages/auth/GamerAuthRegister'
 import OrganizerAuthLogin from './pages/auth/OrganizerAuthLogin'
 import OrganizerAuthRegister from './pages/auth/OrganizerAuthRegister'
 import StaffLogin from './pages/StaffLogin'
+import ForgotPassword from './pages/auth/ForgotPassword'
+import ResetPassword from './pages/auth/ResetPassword'
 
 // Public pages
 import Home from './pages/Home'
@@ -24,7 +26,6 @@ import TeamProfile from './pages/TeamProfile'
 import OrganizerPublicProfile from './pages/OrganizerPublicProfile'
 import GamerDetail from './pages/GamerDetail'
 import BecomeTalent from './pages/BecomeTalent'
-import SponsorshipRadar from './pages/SponsorshipRadar'
 import RadarDetailPage from './pages/RadarDetailPage'
 import SharedBillPage from './pages/SharedBillPage'
 
@@ -37,12 +38,15 @@ import TeamDetails from './pages/TeamDetails'
 import GigRequests from './pages/GigRequests'
 import GigDetailPage from './pages/GigDetailPage'
 import MyOrders from './pages/MyOrders'
+import GamerOrderDetail from './pages/GamerOrderDetail'
+import GamerNotifications from './pages/GamerNotifications'
 import Marketplace from './pages/Marketplace'
 import Cart from './pages/Cart'
 import TournamentDetails from './pages/TournamentDetails'
 
 // Organizer pages
 import OrganizerLayout from '@/components/layouts/OrganizerLayout'
+import OrganizerDashboard from './pages/OrganizerDashboard'
 import OrganizerTournaments from './pages/OrganizerTournaments'
 import TournamentBuilder from './pages/TournamentBuilder'
 import TournamentManage from './pages/TournamentManage'
@@ -52,7 +56,11 @@ import CoOrganizerView from './pages/CoOrganizerView'
 import OrganizerSettings from './pages/OrganizerSettings'
 import OrganizerTeams from './pages/OrganizerTeams'
 import OrganizerMessages from './pages/OrganizerMessages'
+import SponsorshipRadar from './pages/SponsorshipRadar'
 import BillDetail from './pages/BillDetail'
+import OrganizerBilling from './pages/organizer/OrganizerBilling'
+import CoOrganizedTournaments from './pages/organizer/CoOrganizedTournaments'
+import PaymentMethod from './pages/organizer/PaymentMethod'
 
 // Staff pages
 import StaffLayout from '@/components/layouts/StaffLayout'
@@ -70,7 +78,9 @@ import StaffRadarPanel from './pages/StaffRadarPanel'
 import StaffBilling from './pages/StaffBilling'
 import StaffTournamentOrders from './pages/StaffTournamentOrders'
 import StaffOrganizers from './pages/StaffOrganizers'
+import StaffRevenue from './pages/staff/StaffRevenue'
 import StaffSettings from './pages/StaffSettings'
+import StaffAuditTrail from './pages/StaffAuditTrail'
 
 function App() {
   return (
@@ -86,7 +96,6 @@ function App() {
             <Route path="/teams" element={<Teams />} />
             <Route path="/teams/:id" element={<TeamProfile />} />
             <Route path="/organizer/:id" element={<OrganizerPublicProfile />} />
-            <Route path="/gamer/:id" element={<GamerDetail />} />
             <Route path="/talents" element={<BecomeTalent />} />
             <Route path="/radar" element={<SponsorshipRadar />} />
             <Route path="/radar/:radar_id" element={<RadarDetailPage />} />
@@ -97,6 +106,8 @@ function App() {
             <Route path="/auth/gamer/register" element={<GamerAuthRegister />} />
             <Route path="/auth/organizer/login" element={<OrganizerAuthLogin />} />
             <Route path="/auth/organizer/register" element={<OrganizerAuthRegister />} />
+            <Route path="/auth/forgot-password" element={<ForgotPassword />} />
+            <Route path="/auth/reset-password" element={<ResetPassword />} />
             <Route path="/admin" element={<StaffLogin />} />
 
             {/* ============ GAMER ZONE ============ */}
@@ -105,27 +116,36 @@ function App() {
             <Route path="/gamer/tournaments/:id" element={<RequireGamer><TournamentDetails /></RequireGamer>} />
             <Route path="/gamer/profile" element={<RequireGamer><GamerProfile /></RequireGamer>} />
             <Route path="/gamer/profile/talent" element={<RequireGamer><BecomeTalent /></RequireGamer>} />
+            <Route path="/gamer/profile/:slug" element={<GamerProfileView />} />
             <Route path="/gamer/teams" element={<RequireGamer><Teams /></RequireGamer>} />
             <Route path="/gamer/teams/create" element={<RequireGamer><CreateTeam /></RequireGamer>} />
             <Route path="/gamer/teams/:id" element={<RequireGamer><TeamDetails /></RequireGamer>} />
             <Route path="/gamer/gigs" element={<RequireGamer><GigRequests /></RequireGamer>} />
             <Route path="/gamer/gigs/:gig_id" element={<RequireGamer><GigDetailPage /></RequireGamer>} />
             <Route path="/gamer/orders" element={<RequireGamer><MyOrders /></RequireGamer>} />
+            <Route path="/gamer/orders/:id" element={<RequireGamer><GamerOrderDetail /></RequireGamer>} />
+            <Route path="/gamer/notifications" element={<RequireGamer><GamerNotifications /></RequireGamer>} />
             <Route path="/gamer/marketplace" element={<RequireGamer><Marketplace /></RequireGamer>} />
             <Route path="/gamer/cart" element={<RequireGamer><Cart /></RequireGamer>} />
             <Route path="/gamer/:id" element={<GamerProfileView />} />
 
             {/* ============ ORGANIZER ZONE ============ */}
-            <Route path="/organizer/dashboard" element={<RequireOrganizer><OrganizerLayout isDashboard={true} /></RequireOrganizer>} />
+            <Route path="/organizer/dashboard" element={<RequireOrganizer><OrganizerLayout><OrganizerDashboard /></OrganizerLayout></RequireOrganizer>} />
             <Route path="/organizer/tournaments" element={<RequireOrganizer><OrganizerLayout><OrganizerTournaments /></OrganizerLayout></RequireOrganizer>} />
             <Route path="/organizer/tournaments/new" element={<RequireOrganizer><OrganizerLayout><TournamentBuilder /></OrganizerLayout></RequireOrganizer>} />
+            <Route path="/organizer/tournaments/new/:id" element={<RequireOrganizer><OrganizerLayout><TournamentBuilder /></OrganizerLayout></RequireOrganizer>} />
             <Route path="/organizer/tournaments/:id/manage" element={<RequireOrganizer><OrganizerLayout><OrganizerTournamentManage /></OrganizerLayout></RequireOrganizer>} />
             <Route path="/organizer/tournaments/:id/manage/teams" element={<RequireOrganizer><OrganizerLayout><TournamentManage /></OrganizerLayout></RequireOrganizer>} />
+            <Route path="/organizer/tournaments/:id/manage/brackets" element={<RequireOrganizer><OrganizerLayout><OrganizerTournamentManage /></OrganizerLayout></RequireOrganizer>} />
+            <Route path="/organizer/tournaments/:id/manage/chat" element={<RequireOrganizer><OrganizerLayout><OrganizerTournamentManage /></OrganizerLayout></RequireOrganizer>} />
+            <Route path="/organizer/tournaments/:id/manage/settings" element={<RequireOrganizer><OrganizerLayout><OrganizerTournamentManage /></OrganizerLayout></RequireOrganizer>} />
             <Route path="/organizer/tournaments/:id/view" element={<RequireOrganizer><OrganizerLayout><CoOrganizerView /></OrganizerLayout></RequireOrganizer>} />
             <Route path="/organizer/radar" element={<RequireOrganizer><OrganizerLayout><SponsorshipRadar /></OrganizerLayout></RequireOrganizer>} />
             <Route path="/organizer/radar/:radar_id" element={<RequireOrganizer><OrganizerLayout><RadarDetailPage /></OrganizerLayout></RequireOrganizer>} />
-            <Route path="/organizer/billing" element={<RequireOrganizer><OrganizerLayout><BillDetail /></OrganizerLayout></RequireOrganizer>} />
+            <Route path="/organizer/billing" element={<RequireOrganizer><OrganizerLayout><OrganizerBilling /></OrganizerLayout></RequireOrganizer>} />
+            <Route path="/organizer/billing/payment-method" element={<RequireOrganizer><OrganizerLayout><PaymentMethod /></OrganizerLayout></RequireOrganizer>} />
             <Route path="/organizer/billing/:bill_number" element={<RequireOrganizer><OrganizerLayout><BillDetail /></OrganizerLayout></RequireOrganizer>} />
+            <Route path="/organizer/sponsored" element={<RequireOrganizer><OrganizerLayout><CoOrganizedTournaments /></OrganizerLayout></RequireOrganizer>} />
             <Route path="/organizer/teams" element={<RequireOrganizer><OrganizerLayout><OrganizerTeams /></OrganizerLayout></RequireOrganizer>} />
             <Route path="/organizer/messages" element={<RequireOrganizer><OrganizerLayout><OrganizerMessages /></OrganizerLayout></RequireOrganizer>} />
             <Route path="/organizer/profile" element={<RequireOrganizer><OrganizerLayout><OrganizerSettings /></OrganizerLayout></RequireOrganizer>} />
@@ -141,12 +161,18 @@ function App() {
             <Route path="/staff/orders" element={<RequireStaff><StaffLayout><StaffOrders /></StaffLayout></RequireStaff>} />
             <Route path="/staff/orders/:id" element={<RequireStaff><StaffLayout><StaffOrderDetail /></StaffLayout></RequireStaff>} />
             <Route path="/staff/marketplace" element={<RequireStaff><StaffLayout><StaffMarketplace /></StaffLayout></RequireStaff>} />
+            <Route path="/staff/marketplace/new" element={<RequireStaff><StaffLayout><StaffMarketplace /></StaffLayout></RequireStaff>} />
+            <Route path="/staff/marketplace/:id" element={<RequireStaff><StaffLayout><StaffMarketplace /></StaffLayout></RequireStaff>} />
+            <Route path="/staff/orders/gamer/:id" element={<RequireStaff><StaffLayout><StaffOrderDetail /></StaffLayout></RequireStaff>} />
+            <Route path="/staff/orders/tournament/:id" element={<RequireStaff><StaffLayout><StaffOrderDetail /></StaffLayout></RequireStaff>} />
             <Route path="/staff/radar" element={<RequireStaff><StaffLayout><StaffRadarPanel /></StaffLayout></RequireStaff>} />
             <Route path="/staff/billing" element={<RequireStaff><StaffLayout><StaffBilling /></StaffLayout></RequireStaff>} />
             <Route path="/staff/billing/:bill_number" element={<RequireStaff><StaffLayout><BillDetail /></StaffLayout></RequireStaff>} />
             <Route path="/staff/tournament-orders" element={<RequireStaff><StaffLayout><StaffTournamentOrders /></StaffLayout></RequireStaff>} />
             <Route path="/staff/organizers" element={<RequireStaff><StaffLayout><StaffOrganizers /></StaffLayout></RequireStaff>} />
+            <Route path="/staff/revenue" element={<RequireStaff><StaffLayout><StaffRevenue /></StaffLayout></RequireStaff>} />
             <Route path="/staff/settings" element={<RequireStaff><StaffLayout><StaffSettings /></StaffLayout></RequireStaff>} />
+            <Route path="/staff/audit" element={<RequireStaff><StaffLayout><StaffAuditTrail /></StaffLayout></RequireStaff>} />
 
             {/* ============ SHARED PAGES ============ */}
             <Route path="/bill/:bill_number" element={<SharedBillPage />} />
@@ -160,6 +186,7 @@ function App() {
             <Route path="/GamerSignup" element={<Navigate to="/auth/gamer/register" replace />} />
             <Route path="/OrganizerLogin" element={<Navigate to="/auth/organizer/login" replace />} />
             <Route path="/StaffLogin" element={<Navigate to="/admin" replace />} />
+            <Route path="/marketplace" element={<Navigate to="/gamer/marketplace" replace />} />
 
             {/* 404 */}
             <Route path="*" element={<PageNotFound />} />

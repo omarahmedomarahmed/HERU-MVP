@@ -21,7 +21,7 @@ import {
 const statusBadgeStyle = (status) => {
   const map = {
     draft: 'bg-zinc-700 text-gray-300',
-    published: 'bg-blue-500/20 text-blue-400',
+    published: 'bg-red-500/20 text-red-400',
     live: 'bg-green-500/20 text-green-400 animate-pulse',
     completed: 'bg-gray-600/20 text-gray-400'
   };
@@ -256,7 +256,7 @@ export default function TournamentPublic() {
                       {co.brand_logo ? (
                         <img src={co.brand_logo} alt="" className="w-full h-full object-cover" />
                       ) : (
-                        <Users className="w-8 h-8 text-blue-500" />
+                        <Users className="w-8 h-8 text-red-500" />
                       )}
                     </div>
                     <p className="text-white font-bold text-sm">{co.brand_name}</p>

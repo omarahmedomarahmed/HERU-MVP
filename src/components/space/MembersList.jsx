@@ -31,7 +31,7 @@ export default function MembersList({ space, userId }) {
           const isCreator = member.user_id === space?.creator_id;
           
           return (
-            <Link key={member.id} to={`/gamer/$\{member.user_id}`}>
+            <Link key={member.id} to={`/gamer/${member.user_id}`}>
               <div className="flex items-center gap-3 p-2 bg-zinc-800/50 rounded-lg hover:bg-zinc-800 transition-colors">
                 <div className="w-10 h-10 rounded-full bg-zinc-700 flex items-center justify-center overflow-hidden">
                   {member.avatar ? (
@@ -47,7 +47,7 @@ export default function MembersList({ space, userId }) {
                       <Crown className="w-3 h-3 text-yellow-500 flex-shrink-0" title="Creator" />
                     )}
                     {isAdmin && !isCreator && (
-                      <Crown className="w-3 h-3 text-blue-400 flex-shrink-0" title="Admin" />
+                      <Crown className="w-3 h-3 text-red-400 flex-shrink-0" title="Admin" />
                     )}
                   </div>
                   {member.games?.[0] && (
@@ -61,7 +61,7 @@ export default function MembersList({ space, userId }) {
         {memberProfiles.length === 0 && space?.members?.length > 0 && (
           <div className="space-y-2">
             {space.members.slice(0, 10).map((memberId) => (
-              <Link key={memberId} to={`/gamer/$\{memberId}`}>
+              <Link key={memberId} to={`/gamer/${memberId}`}>
                 <div className="flex items-center gap-3 p-2 bg-zinc-800/50 rounded-lg hover:bg-zinc-800 transition-colors">
                   <div className="w-10 h-10 rounded-full bg-zinc-700 flex items-center justify-center">
                     <User className="w-5 h-5 text-gray-400" />

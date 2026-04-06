@@ -193,11 +193,11 @@ export default function TeamManagementPanel({ tournament, canEdit }) {
       {invitedTeams.length > 0 && (
         <FloatingPanel className="p-5">
           <h3 className="text-white font-bold mb-4 flex items-center gap-2">
-            <Clock className="w-4 h-4 text-blue-400" /> Invited (Pending Response) ({invitedTeams.length})
+            <Clock className="w-4 h-4 text-red-400" /> Invited (Pending Response) ({invitedTeams.length})
           </h3>
           <div className="space-y-2">
             {invitedTeams.map(team => team && (
-              <div key={team.id} className="flex items-center gap-3 p-3 bg-blue-500/5 border border-blue-500/20 rounded-lg">
+              <div key={team.id} className="flex items-center gap-3 p-3 bg-red-500/5 border border-red-500/20 rounded-lg">
                 <div className="w-9 h-9 rounded-lg bg-zinc-800 overflow-hidden flex items-center justify-center">
                   {team.logo ? <img src={team.logo} alt="" className="w-full h-full object-cover" /> : <Users className="w-4 h-4 text-gray-500" />}
                 </div>
@@ -205,7 +205,7 @@ export default function TeamManagementPanel({ tournament, canEdit }) {
                   <p className="text-white font-medium text-sm truncate">{team.name}</p>
                   <p className="text-gray-500 text-xs">{team.members?.length || 0} members</p>
                 </div>
-                <span className="text-xs text-blue-400 bg-blue-500/10 px-2 py-0.5 rounded-full">Invited</span>
+                <span className="text-xs text-red-400 bg-red-500/10 px-2 py-0.5 rounded-full">Invited</span>
               </div>
             ))}
           </div>

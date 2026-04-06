@@ -25,7 +25,7 @@ function MatchCard({ match, roundIdx, matchIdx, teams, canEdit, onUpdate, onRese
 
   const statusBadge = {
     completed: { label: 'Completed', color: 'text-green-400', Icon: CheckCircle },
-    upcoming: { label: 'Upcoming', color: 'text-blue-400', Icon: Clock },
+    upcoming: { label: 'Upcoming', color: 'text-red-400', Icon: Clock },
     pending: { label: 'Pending', color: 'text-gray-500', Icon: Circle },
   }[status];
 
@@ -33,7 +33,7 @@ function MatchCard({ match, roundIdx, matchIdx, teams, canEdit, onUpdate, onRese
     <div className={cn(
       "rounded-xl border p-4 space-y-3",
       status === 'completed' ? 'bg-green-500/5 border-green-500/20' :
-      status === 'upcoming' ? 'bg-blue-500/5 border-blue-500/20' :
+      status === 'upcoming' ? 'bg-red-500/5 border-red-500/20' :
       'bg-zinc-800/40 border-zinc-700/50'
     )}>
       {/* Header */}

@@ -1,0 +1,87 @@
+name: Deploy HERU.gg to VPS
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+env:
+  VPS_HOST: ${{ secrets.VPS_HOST }}
+  VPS_USER: ${{ secrets.VPS_USER }}
+  DEPLOY_PATH: /var/www/heru.gg
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install frontend dependencies
+        run: npm ci
+
+      - name: Build frontend
+        run: npm run build
+
+      - name: Install backend dependencies
+        run: cd backend && npm ci --production
+
+      - name: Upload frontend build
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-dist
+          path: dist/
+
+      - name: Upload backend
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend
+          path: |
+            backend/
+            !backend/node_modules/
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: frontend-dist
+          path: dist/
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: backend
+          path: backend/
+
+      - name: Deploy to VPS via SSH
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            set -e
+            cd ${{ env.DEPLOY_PATH }}
+
+            # Pull latest code
+            git pull origin main
+
+            # Install backend deps
+            cd backend && npm ci --production && cd ..
+
+            # Build frontend
+            npm ci && npm run build
+
+            # Restart backend
+            pm2 restart heru-backend || pm2 start backend/index.js --name heru-backend
+
+            # Copy Nginx config if changed
+            sudo cp nginx/heru.gg.conf /etc/nginx/sites-available/heru.gg
+            sudo nginx -t && sudo systemctl reload nginx
+
+            echo "Deploy complete"

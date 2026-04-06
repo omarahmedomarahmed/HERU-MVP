@@ -12,7 +12,7 @@ const PLACEMENTS = [
   { place: 1, label: '1st Place 🥇', color: 'text-yellow-400', bg: 'bg-yellow-500/20 border-yellow-500/40' },
   { place: 2, label: '2nd Place 🥈', color: 'text-gray-300', bg: 'bg-gray-500/20 border-gray-500/40' },
   { place: 3, label: '3rd Place 🥉', color: 'text-orange-400', bg: 'bg-orange-500/20 border-orange-500/40' },
-  { place: 4, label: '4th Place', color: 'text-blue-400', bg: 'bg-blue-500/20 border-blue-500/40' },
+  { place: 4, label: '4th Place', color: 'text-red-400', bg: 'bg-red-500/20 border-red-500/40' },
 ];
 
 export default function RewardAssignment({ tournament, teams, queryClient, tournamentId }) {
@@ -101,9 +101,9 @@ export default function RewardAssignment({ tournament, teams, queryClient, tourn
           </div>
         )}
         {tournament.prizepool_items?.length > 0 && (
-          <div className="p-3 bg-purple-500/10 border border-purple-500/20 rounded-lg text-center">
-            <Package className="w-5 h-5 text-purple-400 mx-auto mb-1" />
-            <p className="text-purple-400 font-bold">{tournament.prizepool_items.length}</p>
+          <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-center">
+            <Package className="w-5 h-5 text-red-400 mx-auto mb-1" />
+            <p className="text-red-400 font-bold">{tournament.prizepool_items.length}</p>
             <p className="text-gray-500 text-xs">Prize Items</p>
           </div>
         )}

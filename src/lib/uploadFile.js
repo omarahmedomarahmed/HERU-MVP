@@ -5,15 +5,20 @@ import { supabase } from '@/lib/supabase';
  * Returns { file_url } matching the old Base44 UploadFile API shape.
  */
 export async function uploadFile(file) {
+  if (!file) throw new Error('No file provided');
+
   const fileExt = file.name.split('.').pop();
   const fileName = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}.${fileExt}`;
   const filePath = `uploads/${fileName}`;
 
   const { error: uploadError } = await supabase.storage
     .from('heru-uploads')
-    .upload(filePath, file, { cacheControl: '3600', upsert: false });
+    .upload(filePath, file, { cacheControl: '3600', upsert: true });
 
-  if (uploadError) throw uploadError;
+  if (uploadError) {
+    console.error('Upload error:', uploadError);
+    throw new Error(uploadError.message || 'File upload failed');
+  }
 
   const { data: { publicUrl } } = supabase.storage
     .from('heru-uploads')

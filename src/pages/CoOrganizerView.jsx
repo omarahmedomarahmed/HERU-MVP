@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getOrganizerSession } from '@/lib/auth-guards';
-import OrganizerLayout from '@/components/layouts/OrganizerLayout.jsx';
+
 import FloatingPanel from '@/components/ui/FloatingPanel';
 import GlowButton from '@/components/ui/GlowButton';
 import { Input } from '@/components/ui/input';
@@ -23,7 +23,7 @@ const FOLDERS = ['Tournament Branding', 'Organizer Branding', 'Co-Organizer Bran
 
 const itemStatusConfig = {
   pending:     { label: 'Pending',     cls: 'bg-yellow-500/20 text-yellow-400', Icon: Clock },
-  in_progress: { label: 'In Progress', cls: 'bg-blue-500/20 text-blue-400',    Icon: Clock },
+  in_progress: { label: 'In Progress', cls: 'bg-red-500/20 text-red-400',    Icon: Clock },
   fulfilled:   { label: 'Fulfilled',   cls: 'bg-green-500/20 text-green-400',   Icon: CheckCircle },
   cancelled:   { label: 'Cancelled',   cls: 'bg-red-500/20 text-red-400',       Icon: AlertCircle },
 };
@@ -98,12 +98,12 @@ export default function CoOrganizerView() {
 
   if (!tournament) {
     return (
-      <OrganizerLayout user={user} profile={profile}>
+      <>
         <FloatingPanel className="p-12 text-center max-w-lg mx-auto mt-16">
           <Trophy className="w-16 h-16 text-zinc-700 mx-auto mb-4" />
           <p className="text-white font-bold">Tournament not found</p>
         </FloatingPanel>
-      </OrganizerLayout>
+      </>
     );
   }
 
@@ -114,20 +114,20 @@ export default function CoOrganizerView() {
 
   if (profile && !isMainOrganizer && !myCoEntry) {
     return (
-      <OrganizerLayout user={user} profile={profile}>
+      <>
         <FloatingPanel className="p-16 text-center max-w-lg mx-auto mt-16">
           <Lock className="w-16 h-16 text-red-500 mx-auto mb-4" />
           <h2 className="text-xl font-black text-white mb-2">Access Denied</h2>
           <p className="text-gray-400">You are not a co-organizer of this tournament.</p>
           <GlowButton className="mt-6" onClick={() => navigate('/dashboard/organizer')}>Back to Dashboard</GlowButton>
         </FloatingPanel>
-      </OrganizerLayout>
+      </>
     );
   }
 
   if (profile && !hasAccess) {
     return (
-      <OrganizerLayout user={user} profile={profile}>
+      <>
         <FloatingPanel className="p-16 text-center max-w-lg mx-auto mt-16" glowBorder>
           <Lock className="w-16 h-16 text-amber-400 mx-auto mb-4" />
           <h2 className="text-xl font-black text-white mb-2">Complete Your Payment to Unlock Access</h2>
@@ -137,7 +137,7 @@ export default function CoOrganizerView() {
           <p className="text-gray-500 text-sm">Complete your payment in Billing to unlock co-organizer access.</p>
           <GlowButton className="mt-6" onClick={() => navigate('/dashboard/organizer')}>Go to Billing</GlowButton>
         </FloatingPanel>
-      </OrganizerLayout>
+      </>
     );
   }
 
@@ -147,7 +147,7 @@ export default function CoOrganizerView() {
   };
 
   return (
-    <OrganizerLayout user={user} profile={profile}>
+    <>
       <div className="max-w-7xl mx-auto p-4 md:p-6">
         {/* Header */}
         <div className="flex items-start justify-between gap-4 mb-8 flex-wrap">
@@ -156,12 +156,12 @@ export default function CoOrganizerView() {
               <h1 className="text-3xl font-black text-white">{tournament.name}</h1>
               <span className={`text-xs font-bold px-3 py-1 rounded-full border ${
                 tournament.status === 'live' ? 'bg-green-500/20 text-green-400 border-green-500/30 animate-pulse' :
-                tournament.status === 'published' ? 'bg-blue-500/20 text-blue-400 border-blue-500/30' :
+                tournament.status === 'published' ? 'bg-red-500/20 text-red-400 border-red-500/30' :
                 'bg-zinc-500/20 text-zinc-400 border-zinc-500/30'
               }`}>
                 {tournament.status === 'live' ? '🔴 LIVE' : tournament.status?.toUpperCase()}
               </span>
-              <span className="text-xs bg-blue-500/20 text-blue-400 border border-blue-500/30 px-3 py-1 rounded-full font-bold">CO-ORGANIZER VIEW</span>
+              <span className="text-xs bg-red-500/20 text-red-400 border border-red-500/30 px-3 py-1 rounded-full font-bold">CO-ORGANIZER VIEW</span>
             </div>
             <p className="text-gray-400">{tournament.game} • {tournament.format}</p>
             {tournament.schedule && (
@@ -330,7 +330,7 @@ export default function CoOrganizerView() {
                         <div className="flex items-center gap-2 mb-0.5 flex-wrap">
                           <span className="text-white text-sm font-bold">{msg.sender_name}</span>
                           <span className={`text-[10px] px-2 py-0.5 rounded font-bold ${
-                            msg.sender_role === 'main_organizer' ? 'bg-red-500/20 text-red-400' : 'bg-blue-500/20 text-blue-400'
+                            msg.sender_role === 'main_organizer' ? 'bg-red-500/20 text-red-400' : 'bg-red-500/20 text-red-400'
                           }`}>
                             {msg.sender_role === 'main_organizer' ? 'Main Organizer' : 'Co-Organizer'}
                           </span>
@@ -378,7 +378,7 @@ export default function CoOrganizerView() {
           </TabsContent>
         </Tabs>
       </div>
-    </OrganizerLayout>
+    </>
   );
 }
 

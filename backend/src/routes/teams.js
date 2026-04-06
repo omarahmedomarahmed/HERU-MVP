@@ -56,7 +56,9 @@ router.put('/:id', requireAuth, async (req, res) => {
     const { data: existing } = await supabaseAdmin.from('teams').select('leader_id').eq('id', req.params.id).single();
     if (!existing) return res.status(404).json({ error: 'Team not found' });
     if (existing.leader_id !== req.user.id) return res.status(403).json({ error: 'Only team leader can update' });
-    const { data, error } = await supabaseAdmin.from('teams').update({ ...req.body, updated_at: new Date().toISOString() }).eq('id', req.params.id).select().single();
+    // Blacklist sensitive fields that shouldn't be changed via generic update
+    const { leader_id: _l, members: _m, join_requests: _j, tournament_invites: _t, ...safeUpdates } = req.body;
+    const { data, error } = await supabaseAdmin.from('teams').update({ ...safeUpdates, updated_at: new Date().toISOString() }).eq('id', req.params.id).select().single();
     if (error) throw error;
     res.json(data);
   } catch (err) {
@@ -132,6 +134,52 @@ router.delete('/:id/members/:memberId', requireAuth, async (req, res) => {
     if (team.leader_id !== req.user.id) return res.status(403).json({ error: 'Only leader can remove members' });
     const members = (team.members || []).filter(m => m !== req.params.memberId);
     const { data, error } = await supabaseAdmin.from('teams').update({ members, updated_at: new Date().toISOString() }).eq('id', req.params.id).select().single();
+    if (error) throw error;
+    // Also remove from team_members table
+    await supabaseAdmin.from('team_members').delete().eq('team_id', req.params.id).eq('user_id', req.params.memberId);
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// GET /:id/members - list team members with roles
+router.get('/:id/members', async (req, res) => {
+  try {
+    const { data, error } = await supabaseAdmin
+      .from('team_members')
+      .select('*')
+      .eq('team_id', req.params.id)
+      .order('joined_at');
+    if (error) throw error;
+    res.json(data || []);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// PUT /:id/members/:userId/role - update member role (leader only)
+router.put('/:id/members/:userId/role', requireAuth, async (req, res) => {
+  try {
+    const { data: team } = await supabaseAdmin.from('teams').select('leader_id').eq('id', req.params.id).single();
+    if (!team) return res.status(404).json({ error: 'Team not found' });
+    if (team.leader_id !== req.user.id) return res.status(403).json({ error: 'Only team leader can change roles' });
+
+    const { role, custom_role } = req.body;
+    const validRoles = ['player', 'coach', 'manager', 'analyst', 'substitute', 'custom'];
+    if (!validRoles.includes(role)) return res.status(400).json({ error: `Invalid role. Must be one of: ${validRoles.join(', ')}` });
+
+    // Upsert the team_members record
+    const { data, error } = await supabaseAdmin
+      .from('team_members')
+      .upsert({
+        team_id: req.params.id,
+        user_id: req.params.userId,
+        role,
+        custom_role: role === 'custom' ? custom_role : null,
+      }, { onConflict: 'team_id,user_id' })
+      .select()
+      .single();
     if (error) throw error;
     res.json(data);
   } catch (err) {

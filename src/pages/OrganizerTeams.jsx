@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import OrganizerLayout from '@/components/layouts/OrganizerLayout.jsx';
+
 import FloatingPanel from '@/components/ui/FloatingPanel';
 import GlowButton from '@/components/ui/GlowButton';
 import GameCard from '@/components/ui/GameCard';
@@ -55,7 +55,7 @@ export default function OrganizerTeams() {
   });
 
   return (
-    <OrganizerLayout user={user} profile={profile}>
+    <>
       <div className="mb-8">
         <h1 className="text-3xl font-black text-white mb-2">
           BROWSE <span className="text-red-500">TEAMS</span>
@@ -66,7 +66,7 @@ export default function OrganizerTeams() {
       {/* Stats */}
       <div className="grid grid-cols-3 gap-4 mb-6">
         <FloatingPanel className="p-4">
-          <Users className="w-8 h-8 text-blue-500 mb-2" />
+          <Users className="w-8 h-8 text-red-500 mb-2" />
           <p className="text-2xl font-bold text-white">{teams.length}</p>
           <p className="text-gray-500 text-xs">Total Teams</p>
         </FloatingPanel>
@@ -76,7 +76,7 @@ export default function OrganizerTeams() {
           <p className="text-gray-500 text-xs">Recruiting</p>
         </FloatingPanel>
         <FloatingPanel className="p-4">
-          <Gamepad2 className="w-8 h-8 text-purple-500 mb-2" />
+          <Gamepad2 className="w-8 h-8 text-red-500 mb-2" />
           <p className="text-2xl font-bold text-white">{allGames.length}</p>
           <p className="text-gray-500 text-xs">Games Covered</p>
         </FloatingPanel>
@@ -165,7 +165,7 @@ export default function OrganizerTeams() {
                 </div>
               )}
 
-              <Link to={`/teams/$\{team.id}`}>
+              <Link to={`/teams/${team.id}`}>
                 <GlowButton variant="secondary" size="sm" className="w-full">
                   <Eye className="w-4 h-4" /> View Team
                 </GlowButton>
@@ -174,6 +174,6 @@ export default function OrganizerTeams() {
           ))}
         </div>
       )}
-    </OrganizerLayout>
+    </>
   );
 }

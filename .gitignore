@@ -1,7 +1,8 @@
-#env
+# env
 .env
 .env.local
 .env.production
+backend/.env
 
 # Logs
 logs

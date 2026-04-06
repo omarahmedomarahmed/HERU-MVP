@@ -1,420 +1,436 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
-import FloatingPanel from '@/components/ui/FloatingPanel';
-import GlowButton from '@/components/ui/GlowButton';
-import StaffLayout from '@/components/layouts/StaffLayout';
-import { BillingSnapshot, MarketplaceItem, OrganizerProfile, SponsorshipRadar, Tournament, TournamentOrder, apiCall } from '@/api/heruClient'
-import { useAuth } from '@/lib/AuthContext'
-
+import React from 'react'
+import { useNavigate, Link } from 'react-router-dom'
+import { useQuery } from '@tanstack/react-query'
 import {
-  Trophy, Radar, CreditCard, Users, ShoppingCart, Plus, Lock, Check,
-  DollarSign, TrendingUp
-} from 'lucide-react';
+  Tournament, Bill, SponsorshipRadar, Staff, ApprovalRequest, apiCall,
+} from '@/api/heruClient'
+import { useAuth } from '@/lib/AuthContext'
+import {
+  DollarSign, Trophy, Users, Radar, ArrowRight, UserPlus, CreditCard,
+  ClipboardCheck, Shield, AlertCircle, FileText, Clock, Activity,
+  TrendingUp, ChevronRight, Zap, Eye,
+} from 'lucide-react'
 
-const TABS = [
-  { id: 'tournaments', label: 'All Tournaments', icon: Trophy },
-  { id: 'radar', label: 'Sponsorship Radar', icon: Radar },
-  { id: 'orders', label: 'Tournament Orders', icon: CreditCard },
-  { id: 'organizers', label: 'All Organizers', icon: Users },
-  { id: 'marketplace', label: 'Marketplace Items', icon: ShoppingCart },
-  { id: 'billing', label: 'Master Billing', icon: CreditCard },
-];
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+function formatEGP(amount) {
+  return `EGP ${(amount || 0).toLocaleString('en-EG', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`
+}
+
+function timeAgo(dateStr) {
+  if (!dateStr) return ''
+  const diff = Date.now() - new Date(dateStr).getTime()
+  const mins = Math.floor(diff / 60000)
+  if (mins < 1) return 'just now'
+  if (mins < 60) return `${mins}m ago`
+  const hrs = Math.floor(mins / 60)
+  if (hrs < 24) return `${hrs}h ago`
+  const days = Math.floor(hrs / 24)
+  if (days < 7) return `${days}d ago`
+  return new Date(dateStr).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })
+}
+
+// ---------------------------------------------------------------------------
+// Stat Card
+// ---------------------------------------------------------------------------
+
+function StatCard({ icon: Icon, label, value, subtext, color = 'blue' }) {
+  const colorMap = {
+    blue:   'from-red-500/20 to-red-600/5 border-red-500/20 text-red-400',
+    green:  'from-emerald-500/20 to-emerald-600/5 border-emerald-500/20 text-emerald-400',
+    purple: 'from-violet-500/20 to-violet-600/5 border-violet-500/20 text-violet-400',
+    amber:  'from-amber-500/20 to-amber-600/5 border-amber-500/20 text-amber-400',
+  }
+  const iconColor = {
+    blue: 'text-red-400', green: 'text-emerald-400', purple: 'text-violet-400', amber: 'text-amber-400',
+  }
+
+  return (
+    <div className={`relative overflow-hidden rounded-xl border bg-gradient-to-br ${colorMap[color]} p-5`}>
+      <div className="flex items-start justify-between">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-wider text-zinc-400">{label}</p>
+          <p className="mt-2 text-3xl font-black text-white">{value}</p>
+          {subtext && <p className="mt-1 text-xs text-zinc-500">{subtext}</p>}
+        </div>
+        <div className={`rounded-lg bg-zinc-800/60 p-2.5 ${iconColor[color]}`}>
+          <Icon className="h-5 w-5" />
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ---------------------------------------------------------------------------
+// Quick Action Button
+// ---------------------------------------------------------------------------
+
+function QuickAction({ icon: Icon, label, to }) {
+  return (
+    <Link
+      to={to}
+      className="group flex items-center gap-3 rounded-xl border border-zinc-800 bg-zinc-900/80 px-5 py-3.5 transition-all hover:border-red-500/30 hover:bg-zinc-800/80"
+    >
+      <div className="rounded-lg bg-red-500/10 p-2 text-red-400 transition-colors group-hover:bg-red-500/20">
+        <Icon className="h-4 w-4" />
+      </div>
+      <span className="text-sm font-semibold text-zinc-300 group-hover:text-white">{label}</span>
+      <ArrowRight className="ml-auto h-4 w-4 text-zinc-600 transition-transform group-hover:translate-x-0.5 group-hover:text-red-400" />
+    </Link>
+  )
+}
+
+// ---------------------------------------------------------------------------
+// Activity Item
+// ---------------------------------------------------------------------------
+
+function ActivityItem({ icon: Icon, iconColor, description, timestamp, linkTo }) {
+  const Wrapper = linkTo ? Link : 'div'
+  const wrapperProps = linkTo ? { to: linkTo } : {}
+
+  return (
+    <Wrapper
+      {...wrapperProps}
+      className={`flex items-start gap-3 rounded-lg px-3 py-3 transition-colors ${
+        linkTo ? 'cursor-pointer hover:bg-zinc-800/50' : ''
+      }`}
+    >
+      <div className={`mt-0.5 rounded-md bg-zinc-800 p-1.5 ${iconColor || 'text-red-400'}`}>
+        <Icon className="h-3.5 w-3.5" />
+      </div>
+      <div className="min-w-0 flex-1">
+        <p className="text-sm text-zinc-300">{description}</p>
+        <p className="mt-0.5 text-xs text-zinc-600">{timeAgo(timestamp)}</p>
+      </div>
+      {linkTo && <ChevronRight className="mt-1 h-4 w-4 flex-shrink-0 text-zinc-700" />}
+    </Wrapper>
+  )
+}
+
+// ---------------------------------------------------------------------------
+// Health Indicator
+// ---------------------------------------------------------------------------
+
+function HealthItem({ label, count, to, urgent }) {
+  return (
+    <Link
+      to={to}
+      className="flex items-center justify-between rounded-lg border border-zinc-800 bg-zinc-900/60 px-4 py-3 transition-all hover:border-red-500/20 hover:bg-zinc-800/60"
+    >
+      <span className="text-sm text-zinc-400">{label}</span>
+      <span className={`rounded-full px-3 py-0.5 text-sm font-bold ${
+        urgent && count > 0
+          ? 'bg-amber-500/20 text-amber-400'
+          : count > 0
+            ? 'bg-red-500/15 text-red-400'
+            : 'bg-zinc-800 text-zinc-500'
+      }`}>
+        {count}
+      </span>
+    </Link>
+  )
+}
+
+// ---------------------------------------------------------------------------
+// Main Component
+// ---------------------------------------------------------------------------
 
 export default function StaffDashboard() {
-  const [activeTab, setActiveTab] = useState('tournaments');
-  const [user, setUser] = React.useState(null);
-  const navigate = useNavigate();
+  const navigate = useNavigate()
 
+  // --- Auth check ---
   React.useEffect(() => {
-    const token = localStorage.getItem('heru_staff_token');
-    const expires = localStorage.getItem('heru_staff_expires');
+    const token = localStorage.getItem('heru_staff_token')
+    const expires = localStorage.getItem('heru_staff_expires')
     if (!token || !expires || new Date(expires) < new Date()) {
-      localStorage.removeItem('heru_staff_token');
-      localStorage.removeItem('heru_staff_expires');
-      navigate('/admin', { replace: true });
-      return;
+      localStorage.removeItem('heru_staff_token')
+      localStorage.removeItem('heru_staff_expires')
+      navigate('/admin', { replace: true })
     }
-    apiCall('/auth/me').then(u => setUser(u)).catch(() => setUser(null));
-  }, [navigate]);
+  }, [navigate])
 
-  return (
-    <StaffLayout user={user}>
-      <div>
-        {/* Tabs Navigation */}
-        <div className="flex gap-2 mb-6 overflow-x-auto pb-2">
-          {TABS.map(tab => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={`flex items-center gap-2 px-4 py-2.5 rounded-lg font-medium text-sm whitespace-nowrap transition-all ${
-                activeTab === tab.id 
-                  ? 'bg-red-500/20 text-red-400 border border-red-500/30' 
-                  : 'text-gray-400 hover:text-white hover:bg-white/5'
-              }`}
-            >
-              <tab.icon className="w-4 h-4" />
-              {tab.label}
-            </button>
-          ))}
-        </div>
+  // --- Data queries ---
+  const { data: dashboardData, isLoading: dashLoading } = useQuery({
+    queryKey: ['staff-dashboard'],
+    queryFn: () => Staff.dashboard(),
+    staleTime: 30_000,
+  })
 
-        {/* Tab Content */}
-        {activeTab === 'tournaments' && <TournamentsTab />}
-        {activeTab === 'radar' && <RadarTab />}
-        {activeTab === 'orders' && <OrdersTab navigate={navigate} />}
-        {activeTab === 'organizers' && <OrganizersTab />}
-        {activeTab === 'marketplace' && <MarketplaceTab />}
-        {activeTab === 'billing' && <BillingTab />}
-      </div>
-    </StaffLayout>
-  );
-}
-
-function TournamentsTab() {
   const { data: tournaments = [] } = useQuery({
-    queryKey: ['staff-all-tournaments'],
-    queryFn: () => Tournament.list('-created_date'),
-  });
+    queryKey: ['staff-tournaments-overview'],
+    queryFn: () => Tournament.list(),
+    staleTime: 60_000,
+  })
 
+  const { data: bills = [] } = useQuery({
+    queryKey: ['staff-bills-overview'],
+    queryFn: () => Bill.list(),
+    staleTime: 60_000,
+  })
+
+  const { data: radarListings = [] } = useQuery({
+    queryKey: ['staff-radar-overview'],
+    queryFn: () => SponsorshipRadar.list(),
+    staleTime: 60_000,
+  })
+
+  const { data: approvals = [] } = useQuery({
+    queryKey: ['staff-approvals-overview'],
+    queryFn: () => ApprovalRequest.list(),
+    staleTime: 60_000,
+  })
+
+  // --- Derived stats ---
+  const totalRevenue = bills.reduce((sum, b) => sum + (b.platform_fee || 0), 0)
+  const totalTournaments = tournaments.length
+  const totalUsers = dashboardData?.total_users ?? '--'
+  const activeRadar = radarListings.filter(r => r.status === 'open' || r.status === 'in_progress').length
+
+  const pendingApprovals = approvals.filter(a => a.status === 'pending').length
+  const unpaidBills = bills.filter(b => b.payment_status === 'unpaid' || b.payment_status === 'overdue').length
+  const draftTournaments = tournaments.filter(t => t.status === 'draft').length
+  const activeSessions = dashboardData?.active_staff_sessions ?? '--'
+
+  // --- Build activity feed from real data ---
+  const activityFeed = React.useMemo(() => {
+    const entries = []
+
+    // Recent tournaments
+    tournaments.slice(0, 5).forEach(t => {
+      if (t.status === 'live') {
+        entries.push({
+          icon: Zap,
+          iconColor: 'text-green-400',
+          description: `Tournament "${t.name}" is now LIVE`,
+          timestamp: t.updated_at || t.created_at,
+          linkTo: `/staff/tournaments/${t.id}`,
+        })
+      } else if (t.status === 'draft') {
+        entries.push({
+          icon: FileText,
+          iconColor: 'text-zinc-400',
+          description: `Draft tournament "${t.name}" created`,
+          timestamp: t.created_at,
+          linkTo: `/staff/tournaments/${t.id}`,
+        })
+      } else if (t.status === 'published') {
+        entries.push({
+          icon: Trophy,
+          iconColor: 'text-red-400',
+          description: `Tournament "${t.name}" published`,
+          timestamp: t.updated_at || t.created_at,
+          linkTo: `/staff/tournaments/${t.id}`,
+        })
+      } else if (t.status === 'completed') {
+        entries.push({
+          icon: ClipboardCheck,
+          iconColor: 'text-emerald-400',
+          description: `Tournament "${t.name}" completed`,
+          timestamp: t.updated_at || t.created_at,
+          linkTo: `/staff/tournaments/${t.id}`,
+        })
+      }
+    })
+
+    // Recent bill payments
+    bills.filter(b => b.payment_status === 'paid').slice(0, 3).forEach(b => {
+      entries.push({
+        icon: CreditCard,
+        iconColor: 'text-emerald-400',
+        description: `Bill ${b.bill_number} paid - ${formatEGP(b.grand_total)}`,
+        timestamp: b.paid_date || b.updated_at,
+        linkTo: `/staff/billing`,
+      })
+    })
+
+    // Pending approvals
+    approvals.filter(a => a.status === 'pending').slice(0, 3).forEach(a => {
+      entries.push({
+        icon: AlertCircle,
+        iconColor: 'text-amber-400',
+        description: `Pending ${a.approval_type?.replace(/_/g, ' ')} from ${a.requester_name || 'unknown'}`,
+        timestamp: a.created_at,
+        linkTo: '/staff/approvals',
+      })
+    })
+
+    // Radar activity
+    radarListings.slice(0, 2).forEach(r => {
+      entries.push({
+        icon: Radar,
+        iconColor: 'text-violet-400',
+        description: `Radar listing "${r.tournament_name}" - ${r.funding_percent || 0}% funded`,
+        timestamp: r.updated_at || r.created_at,
+        linkTo: '/staff/radar',
+      })
+    })
+
+    // Sort by timestamp desc, take 10
+    return entries
+      .sort((a, b) => new Date(b.timestamp || 0) - new Date(a.timestamp || 0))
+      .slice(0, 10)
+  }, [tournaments, bills, approvals, radarListings])
+
+  // --- Render ---
   return (
-    <div>
-      <h1 className="text-3xl font-black text-white mb-6">ALL <span className="text-red-500">TOURNAMENTS</span></h1>
-      <FloatingPanel className="overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-zinc-700">
-                <th className="px-6 py-3 text-left text-xs font-bold text-gray-400">Tournament</th>
-                <th className="px-6 py-3 text-left text-xs font-bold text-gray-400">Game</th>
-                <th className="px-6 py-3 text-left text-xs font-bold text-gray-400">Status</th>
-                <th className="px-6 py-3 text-left text-xs font-bold text-gray-400">Teams</th>
-                <th className="px-6 py-3 text-left text-xs font-bold text-gray-400">Type</th>
-                <th className="px-6 py-3 text-left text-xs font-bold text-gray-400"></th>
-              </tr>
-            </thead>
-            <tbody>
-              {tournaments.map(t => (
-                <tr key={t.id} className="border-b border-zinc-800 hover:bg-zinc-800/30 transition">
-                  <td className="px-6 py-4 text-white font-bold">{t.name}</td>
-                  <td className="px-6 py-4 text-gray-400 text-sm">{t.game}</td>
-                  <td className="px-6 py-4">
-                    <span className={`text-xs px-2 py-1 rounded ${
-                      t.status === 'live' ? 'bg-green-500/20 text-green-400' :
-                      t.status === 'published' ? 'bg-blue-500/20 text-blue-400' :
-                      t.status === 'draft' ? 'bg-zinc-700 text-gray-300' :
-                      'bg-gray-600/20 text-gray-400'
-                    }`}>
-                      {t.status?.toUpperCase()}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 text-gray-400 text-sm">{t.teams?.length || 0}/{t.max_teams || '∞'}</td>
-                  <td className="px-6 py-4 text-sm">
-                    <span className={`px-2 py-1 rounded text-xs ${
-                      t.tournament_type === 'shared' ? 'bg-blue-500/20 text-blue-400' : 'bg-zinc-700 text-gray-300'
-                    }`}>
-                      {t.tournament_type?.toUpperCase()}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 text-right">
-                    <a href={`/tournament/${t.id}`} className="text-red-400 hover:text-red-300 text-sm font-bold">View</a>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </FloatingPanel>
-    </div>
-  );
-}
-
-function RadarTab() {
-  const { data: radars = [] } = useQuery({
-    queryKey: ['staff-all-radar'],
-    queryFn: () => SponsorshipRadar.list('-created_date'),
-  });
-
-  return (
-    <div>
-      <h1 className="text-3xl font-black text-white mb-6">SPONSORSHIP <span className="text-red-500">RADAR</span></h1>
-      <FloatingPanel className="overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-zinc-700">
-                <th className="px-6 py-3 text-left text-xs font-bold text-gray-400">Tournament</th>
-                <th className="px-6 py-3 text-left text-xs font-bold text-gray-400">Game</th>
-                <th className="px-6 py-3 text-left text-xs font-bold text-gray-400">Total Cost</th>
-                <th className="px-6 py-3 text-left text-xs font-bold text-gray-400">Funding %</th>
-                <th className="px-6 py-3 text-left text-xs font-bold text-gray-400">Status</th>
-                <th className="px-6 py-3 text-left text-xs font-bold text-gray-400"></th>
-              </tr>
-            </thead>
-            <tbody>
-              {radars.map(r => (
-                <tr key={r.id} className="border-b border-zinc-800 hover:bg-zinc-800/30 transition">
-                  <td className="px-6 py-4 text-white font-bold">{r.tournament_name}</td>
-                  <td className="px-6 py-4 text-gray-400 text-sm">{r.game}</td>
-                  <td className="px-6 py-4 text-white font-bold">EGP {r.total_cost?.toLocaleString()}</td>
-                  <td className="px-6 py-4 text-white font-bold">{r.funding_percent}%</td>
-                  <td className="px-6 py-4">
-                    <span className={`text-xs px-2 py-1 rounded ${
-                      r.status === 'fully_funded' ? 'bg-green-500/20 text-green-400' :
-                      r.status === 'open' ? 'bg-blue-500/20 text-blue-400' :
-                      'bg-zinc-700 text-gray-300'
-                    }`}>
-                      {r.status?.toUpperCase()}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 text-right">
-                    <a href={`/radar/tournament/${r.id}`} className="text-red-400 hover:text-red-300 text-sm font-bold">View</a>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </FloatingPanel>
-    </div>
-  );
-}
-
-function OrdersTab({ navigate }) {
-  const { data: orders = [] } = useQuery({
-    queryKey: ['staff-all-orders'],
-    queryFn: () => TournamentOrder.list('-created_date'),
-  });
-
-  return (
-    <div>
-      <h1 className="text-3xl font-black text-white mb-6">TOURNAMENT <span className="text-red-500">ORDERS</span></h1>
-      <FloatingPanel className="overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-zinc-700">
-                <th className="px-6 py-3 text-left text-xs font-bold text-gray-400">Tournament</th>
-                <th className="px-6 py-3 text-left text-xs font-bold text-gray-400">Type</th>
-                <th className="px-6 py-3 text-left text-xs font-bold text-gray-400">Main Organizer</th>
-                <th className="px-6 py-3 text-left text-xs font-bold text-gray-400">Total (EGP)</th>
-                <th className="px-6 py-3 text-left text-xs font-bold text-gray-400">Status</th>
-                <th className="px-6 py-3 text-left text-xs font-bold text-gray-400"></th>
-              </tr>
-            </thead>
-            <tbody>
-              {orders.map(o => (
-                <tr key={o.id} className="border-b border-zinc-800 hover:bg-zinc-800/30 transition">
-                  <td className="px-6 py-4 text-white font-bold">{o.tournament_name}</td>
-                  <td className="px-6 py-4 text-sm">
-                    <span className={`px-2 py-1 rounded text-xs ${
-                      o.tournament_type === 'shared' ? 'bg-blue-500/20 text-blue-400' : 'bg-zinc-700 text-gray-300'
-                    }`}>
-                      {o.tournament_type?.toUpperCase()}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 text-gray-400 text-sm">{o.main_organizer_brand}</td>
-                  <td className="px-6 py-4 text-white font-bold">EGP {o.grand_total?.toLocaleString()}</td>
-                  <td className="px-6 py-4">
-                    <span className={`text-xs px-2 py-1 rounded ${
-                      o.fulfillment_status === 'fulfilled' ? 'bg-green-500/20 text-green-400' :
-                      o.fulfillment_status === 'in_fulfillment' ? 'bg-blue-500/20 text-blue-400' :
-                      'bg-yellow-500/20 text-yellow-400'
-                    }`}>
-                      {o.fulfillment_status?.replace(/_/g, ' ').toUpperCase()}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 text-right">
-                    <button onClick={() => navigate(`/staff/tournament-orders/${o.id}`)} className="text-red-400 hover:text-red-300 text-sm font-bold">Manage</button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </FloatingPanel>
-    </div>
-  );
-}
-
-function OrganizersTab() {
-  const { data: organizers = [] } = useQuery({
-    queryKey: ['staff-all-organizers'],
-    queryFn: () => OrganizerProfile.list('-created_date'),
-  });
-
-  return (
-    <div>
-      <h1 className="text-3xl font-black text-white mb-6">ALL <span className="text-red-500">ORGANIZERS</span></h1>
-      <FloatingPanel className="overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-zinc-700">
-                <th className="px-6 py-3 text-left text-xs font-bold text-gray-400">Brand Name</th>
-                <th className="px-6 py-3 text-left text-xs font-bold text-gray-400">Email</th>
-                <th className="px-6 py-3 text-left text-xs font-bold text-gray-400">Location</th>
-                <th className="px-6 py-3 text-left text-xs font-bold text-gray-400">Tournaments</th>
-                <th className="px-6 py-3 text-left text-xs font-bold text-gray-400">Verified</th>
-                <th className="px-6 py-3 text-left text-xs font-bold text-gray-400"></th>
-              </tr>
-            </thead>
-            <tbody>
-              {organizers.map(o => (
-                <tr key={o.id} className="border-b border-zinc-800 hover:bg-zinc-800/30 transition">
-                  <td className="px-6 py-4 text-white font-bold">{o.brand_name}</td>
-                  <td className="px-6 py-4 text-gray-400 text-sm">{o.organizer_email}</td>
-                  <td className="px-6 py-4 text-gray-400 text-sm">{o.location || '—'}</td>
-                  <td className="px-6 py-4 text-white font-bold">{o.total_tournaments_organized || 0}</td>
-                  <td className="px-6 py-4">
-                    <span className={`text-xs px-2 py-1 rounded ${
-                      o.is_verified ? 'bg-blue-500/20 text-blue-400' : 'bg-zinc-700 text-gray-400'
-                    }`}>
-                      {o.is_verified ? '✓ Verified' : 'Unverified'}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 text-right">
-                    <a href={`/organizer/${o.id}`} className="text-red-400 hover:text-red-300 text-sm font-bold">View</a>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </FloatingPanel>
-    </div>
-  );
-}
-
-function MarketplaceTab() {
-  const { data: items = [] } = useQuery({
-    queryKey: ['staff-marketplace-items'],
-    queryFn: () => MarketplaceItem.list('-created_date'),
-  });
-
-  return (
-    <div>
-      <h1 className="text-3xl font-black text-white mb-6">MARKETPLACE <span className="text-red-500">ITEMS</span></h1>
-      <FloatingPanel className="overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-zinc-700">
-                <th className="px-6 py-3 text-left text-xs font-bold text-gray-400">Title</th>
-                <th className="px-6 py-3 text-left text-xs font-bold text-gray-400">Category</th>
-                <th className="px-6 py-3 text-left text-xs font-bold text-gray-400">Price (EGP)</th>
-                <th className="px-6 py-3 text-left text-xs font-bold text-gray-400">Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {items.map(item => (
-                <tr key={item.id} className="border-b border-zinc-800 hover:bg-zinc-800/30 transition">
-                  <td className="px-6 py-4 text-white font-bold">{item.title}</td>
-                  <td className="px-6 py-4 text-gray-400 text-sm">{item.category}</td>
-                  <td className="px-6 py-4 text-white font-bold">EGP {item.price?.toLocaleString()}</td>
-                  <td className="px-6 py-4">
-                    <span className={`text-xs px-2 py-1 rounded ${
-                      item.is_active ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'
-                    }`}>
-                      {item.is_active ? 'Active' : 'Inactive'}
-                    </span>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </FloatingPanel>
-    </div>
-  );
-}
-
-function BillingTab() {
-  const { data: snapshots = [] } = useQuery({
-    queryKey: ['staff-billing-snapshots'],
-    queryFn: () => BillingSnapshot.list('-created_at'),
-  });
-
-  const stats = {
-    total: snapshots.reduce((sum, s) => sum + s.amount_due, 0),
-    paid: snapshots.filter(s => s.payment_status === 'paid').reduce((sum, s) => sum + s.amount_paid, 0),
-    pending: snapshots.filter(s => s.payment_status !== 'paid').length,
-  };
-
-  const handleStatusUpdate = async (snapshot, newStatus) => {
-    await BillingSnapshot.update(snapshot.id, { payment_status: newStatus });
-  };
-
-  return (
-    <div className="space-y-6">
+    <div className="space-y-8">
+      {/* Header */}
       <div>
-        <h1 className="text-3xl font-black text-white mb-6">MASTER <span className="text-red-500">BILLING</span></h1>
-        
-        {/* Summary Stats */}
-        <div className="grid md:grid-cols-3 gap-4 mb-6">
-          <FloatingPanel className="p-5">
-            <p className="text-gray-400 text-xs mb-1 uppercase">Total Due</p>
-            <p className="text-white font-black text-2xl">EGP {stats.total.toLocaleString()}</p>
-          </FloatingPanel>
-          <FloatingPanel className="p-5">
-            <p className="text-gray-400 text-xs mb-1 uppercase">Paid</p>
-            <p className="text-green-400 font-black text-2xl">EGP {stats.paid.toLocaleString()}</p>
-          </FloatingPanel>
-          <FloatingPanel className="p-5">
-            <p className="text-gray-400 text-xs mb-1 uppercase">Pending</p>
-            <p className="text-yellow-400 font-black text-2xl">{stats.pending}</p>
-          </FloatingPanel>
+        <h1 className="text-3xl font-black text-white">
+          Staff <span className="text-red-400">Dashboard</span>
+        </h1>
+        <p className="mt-1 text-sm text-zinc-500">Platform control center. All data in real time.</p>
+      </div>
+
+      {/* 1. Platform Overview Stats */}
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <StatCard
+          icon={DollarSign}
+          label="Total Revenue"
+          value={formatEGP(totalRevenue)}
+          subtext="Platform fees collected"
+          color="green"
+        />
+        <StatCard
+          icon={Trophy}
+          label="Total Tournaments"
+          value={totalTournaments}
+          subtext={`${draftTournaments} drafts`}
+          color="blue"
+        />
+        <StatCard
+          icon={Users}
+          label="Total Users"
+          value={totalUsers}
+          subtext="All roles combined"
+          color="purple"
+        />
+        <StatCard
+          icon={Radar}
+          label="Active Radar"
+          value={activeRadar}
+          subtext="Open listings"
+          color="amber"
+        />
+      </div>
+
+      {/* 2. Quick Actions */}
+      <div>
+        <h2 className="mb-3 text-sm font-bold uppercase tracking-wider text-zinc-500">Quick Actions</h2>
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <QuickAction icon={Users} label="View All Users" to="/staff/users" />
+          <QuickAction icon={Trophy} label="Manage Tournaments" to="/staff/tournaments" />
+          <QuickAction icon={ClipboardCheck} label="Review Approvals" to="/staff/approvals" />
+          <QuickAction icon={Eye} label="Audit Trail" to="/staff/audit" />
         </div>
       </div>
 
-      <FloatingPanel className="overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-zinc-700">
-                <th className="px-6 py-3 text-left text-xs font-bold text-gray-400">Tournament</th>
-                <th className="px-6 py-3 text-left text-xs font-bold text-gray-400">Organizer</th>
-                <th className="px-6 py-3 text-left text-xs font-bold text-gray-400">Type</th>
-                <th className="px-6 py-3 text-left text-xs font-bold text-gray-400">Amount Due</th>
-                <th className="px-6 py-3 text-left text-xs font-bold text-gray-400">Paid</th>
-                <th className="px-6 py-3 text-left text-xs font-bold text-gray-400">Status</th>
-                <th className="px-6 py-3 text-left text-xs font-bold text-gray-400">Action</th>
-              </tr>
-            </thead>
-            <tbody>
-              {snapshots.map(s => (
-                <tr key={s.id} className="border-b border-zinc-800 hover:bg-zinc-800/30 transition">
-                  <td className="px-6 py-4 text-white font-bold">{s.tournament_name}</td>
-                  <td className="px-6 py-4 text-gray-400 text-sm">{s.organizer_brand_name}</td>
-                  <td className="px-6 py-4">
-                    <span className={`text-xs px-2 py-1 rounded ${s.billing_type === 'main_organizer' ? 'bg-red-500/20 text-red-400' : 'bg-blue-500/20 text-blue-400'}`}>
-                      {s.billing_type?.replace(/_/g, ' ').toUpperCase()}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 text-white font-bold">EGP {s.amount_due?.toLocaleString()}</td>
-                  <td className="px-6 py-4 text-green-400 font-bold">EGP {s.amount_paid?.toLocaleString()}</td>
-                  <td className="px-6 py-4">
-                    <span className={`text-xs px-2 py-1 rounded ${
-                      s.payment_status === 'paid' ? 'bg-green-500/20 text-green-400' :
-                      s.payment_status === 'partial' ? 'bg-yellow-500/20 text-yellow-400' :
-                      'bg-zinc-700 text-gray-400'
-                    }`}>
-                      {s.payment_status?.toUpperCase()}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 text-right">
-                    {s.payment_status !== 'paid' && (
-                      <button onClick={() => handleStatusUpdate(s, 'paid')} className="text-red-400 hover:text-red-300 text-sm font-bold">
-                        Mark Paid
-                      </button>
-                    )}
-                  </td>
-                </tr>
+      {/* 3 + 4 + 5: Two-column layout */}
+      <div className="grid gap-6 lg:grid-cols-3">
+
+        {/* Left: Activity Feed */}
+        <div className="lg:col-span-2 space-y-6">
+          {/* Recent Activity */}
+          <div className="rounded-xl border border-zinc-800 bg-zinc-900/70">
+            <div className="flex items-center justify-between border-b border-zinc-800 px-5 py-4">
+              <div className="flex items-center gap-2">
+                <Activity className="h-4 w-4 text-red-400" />
+                <h2 className="text-sm font-bold uppercase tracking-wider text-zinc-300">Recent Activity</h2>
+              </div>
+              <span className="rounded-full bg-zinc-800 px-2.5 py-0.5 text-xs text-zinc-500">
+                Last {activityFeed.length} events
+              </span>
+            </div>
+            <div className="divide-y divide-zinc-800/50 px-2 py-1">
+              {activityFeed.length === 0 && (
+                <p className="px-3 py-8 text-center text-sm text-zinc-600">No recent activity</p>
+              )}
+              {activityFeed.map((item, i) => (
+                <ActivityItem key={i} {...item} />
               ))}
-            </tbody>
-          </table>
+            </div>
+          </div>
+
+          {/* Revenue Chart placeholder */}
+          <div className="rounded-xl border border-zinc-800 bg-zinc-900/70 p-6">
+            <div className="flex items-center gap-2 mb-4">
+              <TrendingUp className="h-4 w-4 text-red-400" />
+              <h2 className="text-sm font-bold uppercase tracking-wider text-zinc-300">Revenue Trend</h2>
+            </div>
+            <div className="flex h-40 flex-col items-center justify-center rounded-lg border border-dashed border-zinc-700 bg-zinc-800/30">
+              <DollarSign className="h-8 w-8 text-red-500/40" />
+              <p className="mt-2 text-lg font-bold text-white">{formatEGP(totalRevenue)}</p>
+              <p className="text-xs text-zinc-500">Total platform fees collected</p>
+              <Link
+                to="/staff/revenue"
+                className="mt-3 text-xs font-semibold text-red-400 hover:text-red-300 transition-colors"
+              >
+                View full revenue breakdown &rarr;
+              </Link>
+            </div>
+          </div>
         </div>
-      </FloatingPanel>
+
+        {/* Right: System Health */}
+        <div>
+          <div className="rounded-xl border border-zinc-800 bg-zinc-900/70">
+            <div className="flex items-center gap-2 border-b border-zinc-800 px-5 py-4">
+              <Shield className="h-4 w-4 text-red-400" />
+              <h2 className="text-sm font-bold uppercase tracking-wider text-zinc-300">System Health</h2>
+            </div>
+            <div className="space-y-2 p-4">
+              <HealthItem
+                label="Pending Approvals"
+                count={pendingApprovals}
+                to="/staff/approvals"
+                urgent
+              />
+              <HealthItem
+                label="Unpaid Bills"
+                count={unpaidBills}
+                to="/staff/billing"
+                urgent
+              />
+              <HealthItem
+                label="Draft Tournaments"
+                count={draftTournaments}
+                to="/staff/tournaments"
+              />
+              <HealthItem
+                label="Active Staff Sessions"
+                count={activeSessions}
+                to="/staff/settings"
+              />
+            </div>
+          </div>
+
+          {/* Quick links */}
+          <div className="mt-4 rounded-xl border border-zinc-800 bg-zinc-900/70 p-4">
+            <h3 className="mb-3 text-xs font-bold uppercase tracking-wider text-zinc-500">Staff Pages</h3>
+            <div className="space-y-1">
+              {[
+                { label: 'Marketplace', to: '/staff/marketplace' },
+                { label: 'Orders', to: '/staff/orders' },
+                { label: 'Radar Panel', to: '/staff/radar' },
+                { label: 'Organizers', to: '/staff/organizers' },
+                { label: 'Messages', to: '/staff/messages' },
+                { label: 'Settings', to: '/staff/settings' },
+              ].map(link => (
+                <Link
+                  key={link.to}
+                  to={link.to}
+                  className="flex items-center justify-between rounded-md px-3 py-2 text-sm text-zinc-400 transition-colors hover:bg-zinc-800/50 hover:text-white"
+                >
+                  {link.label}
+                  <ChevronRight className="h-3.5 w-3.5 text-zinc-700" />
+                </Link>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
-  );
+  )
 }

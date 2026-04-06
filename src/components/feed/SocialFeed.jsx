@@ -122,13 +122,13 @@ export default function SocialFeed({
           </button>
           <button 
             onClick={() => { setNewPost({ ...newPost, media_type: 'video' }); setShowPostModal(true); }}
-            className="flex items-center gap-2 text-blue-400 hover:bg-blue-500/10 px-3 py-1.5 rounded-lg transition-colors"
+            className="flex items-center gap-2 text-red-400 hover:bg-red-500/10 px-3 py-1.5 rounded-lg transition-colors"
           >
             <Video className="w-5 h-5" /> Video
           </button>
           <button 
             onClick={() => { setNewPost({ ...newPost, media_type: 'link' }); setShowPostModal(true); }}
-            className="flex items-center gap-2 text-purple-400 hover:bg-purple-500/10 px-3 py-1.5 rounded-lg transition-colors"
+            className="flex items-center gap-2 text-red-400 hover:bg-red-500/10 px-3 py-1.5 rounded-lg transition-colors"
           >
             <LinkIcon className="w-5 h-5" /> Link
           </button>
@@ -175,7 +175,7 @@ export default function SocialFeed({
             <FloatingPanel className="overflow-hidden">
               {/* Post Header */}
               <div className="flex items-center gap-3 p-4">
-                <Link to={`/gamer/$\{post.author_id}`}>
+                <Link to={`/gamer/${post.author_id}`}>
                   <div className="w-12 h-12 rounded-full bg-gradient-to-br from-red-600/30 to-zinc-800 flex items-center justify-center overflow-hidden">
                     {post.author_avatar ? (
                       <img src={post.author_avatar} className="w-full h-full object-cover" alt="" />
@@ -186,11 +186,11 @@ export default function SocialFeed({
                 </Link>
                 <div className="flex-1">
                   <div className="flex items-center gap-2">
-                    <Link to={`/gamer/$\{post.author_id}`}>
+                    <Link to={`/gamer/${post.author_id}`}>
                       <p className="text-white font-bold hover:text-red-400">{post.author_name}</p>
                     </Link>
                     <span className="text-gray-600">•</span>
-                    <Link to={`/teams/$\{post.spaceId}`}>
+                    <Link to={`/teams/${post.spaceId}`}>
                       <span className="text-red-400 text-sm hover:underline">{post.spaceName}</span>
                     </Link>
                   </div>
@@ -219,7 +219,7 @@ export default function SocialFeed({
                       href={post.media_url} 
                       target="_blank" 
                       rel="noopener noreferrer"
-                      className="block p-4 text-blue-400 hover:text-blue-300"
+                      className="block p-4 text-red-400 hover:text-red-300"
                     >
                       <LinkIcon className="w-4 h-4 inline mr-2" />
                       {post.media_url}
@@ -262,7 +262,7 @@ export default function SocialFeed({
                         <User className="w-4 h-4 text-gray-500" />
                       </div>
                       <div className="flex-1 bg-zinc-800/50 rounded-xl p-3">
-                        <Link to={`/gamer/$\{comment.author_id}`}>
+                        <Link to={`/gamer/${comment.author_id}`}>
                           <p className="text-white text-sm font-medium hover:text-red-400">{comment.author_name}</p>
                         </Link>
                         <p className="text-gray-400 text-sm">{comment.content}</p>

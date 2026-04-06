@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import OrganizerLayout from '@/components/layouts/OrganizerLayout.jsx';
+
 import FloatingPanel from '@/components/ui/FloatingPanel';
 import GameCard from '@/components/ui/GameCard';
 import HexBadge from '@/components/ui/HexBadge';
@@ -73,7 +73,7 @@ export default function OrganizerTournamentView() {
 
   const { data: tournament, isLoading } = useQuery({
     queryKey: ['tournament', tournamentId],
-    queryFn: () => Tournament.list({ id: tournamentId }).then(t => t[0]),
+    queryFn: () => Tournament.get(tournamentId),
     enabled: !!tournamentId,
   });
 
@@ -165,16 +165,16 @@ export default function OrganizerTournamentView() {
 
   if (isLoading || !tournament) {
     return (
-      <OrganizerLayout user={user} profile={profile}>
+      <>
         <div className="flex items-center justify-center h-96">
           <Trophy className="w-12 h-12 text-gray-600 animate-pulse" />
         </div>
-      </OrganizerLayout>
+      </>
     );
   }
 
   return (
-    <OrganizerLayout user={user} profile={profile}>
+    <>
       <div className="max-w-7xl mx-auto p-6">
         {/* Header */}
         <div className="flex items-start justify-between mb-8">
@@ -183,7 +183,7 @@ export default function OrganizerTournamentView() {
               <h1 className="text-3xl font-black text-white">{tournament.name}</h1>
               <HexBadge className={
                 tournament.status === 'live' ? 'bg-green-500/20 text-green-400 border-green-500/50' :
-                tournament.status === 'published' ? 'bg-blue-500/20 text-blue-400 border-blue-500/50' :
+                tournament.status === 'published' ? 'bg-red-500/20 text-red-400 border-red-500/50' :
                 'bg-yellow-500/20 text-yellow-400 border-yellow-500/50'
               }>
                 {tournament.status === 'live' ? '🔴 LIVE' : tournament.status.toUpperCase()}
@@ -209,7 +209,7 @@ export default function OrganizerTournamentView() {
           </div>
           <div className="flex gap-3">
             {canEdit && (
-              <Link to={`/organizer/tournaments/new/$\{tournamentId}`}>
+              <Link to={`/organizer/tournaments/new/${tournamentId}`}>
                 <GlowButton variant="secondary" size="sm">
                   <Edit className="w-4 h-4" /> Edit in Builder
                 </GlowButton>
@@ -230,7 +230,7 @@ export default function OrganizerTournamentView() {
               <TabsTrigger value="org-chat" className="relative">
                 Organizer Chat
                 {canViewOrgChat && (tournament.organizer_chat?.length || 0) > 0 && (
-                  <span className="ml-1.5 text-[10px] bg-blue-500 text-white rounded-full px-1.5 py-0.5">
+                  <span className="ml-1.5 text-[10px] bg-red-500 text-white rounded-full px-1.5 py-0.5">
                     {tournament.organizer_chat.length}
                   </span>
                 )}
@@ -508,6 +508,6 @@ export default function OrganizerTournamentView() {
 
 
       </div>
-    </OrganizerLayout>
+    </>
   );
 }

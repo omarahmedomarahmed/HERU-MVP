@@ -43,10 +43,7 @@ export default function TeamProfile() {
 
   const { data: team, isLoading } = useQuery({
     queryKey: ['team', id],
-    queryFn: async () => {
-      const teams = await Team.list();
-      return teams.find(t => t.id === id) || null;
-    },
+    queryFn: () => Team.get(id),
     enabled: !!id,
   });
 
@@ -154,7 +151,7 @@ export default function TeamProfile() {
             {/* Social Links */}
             <div className="flex items-center gap-3">
               {team.social_links?.twitter && (
-                <a href={team.social_links.twitter} target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-blue-400 transition-colors">
+                <a href={team.social_links.twitter} target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-red-400 transition-colors">
                   <Twitter className="w-5 h-5" />
                 </a>
               )}
@@ -164,7 +161,7 @@ export default function TeamProfile() {
                 </a>
               )}
               {team.social_links?.discord && (
-                <a href={team.social_links.discord} target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-indigo-400 transition-colors">
+                <a href={team.social_links.discord} target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-red-400 transition-colors">
                   <MessageSquare className="w-5 h-5" />
                 </a>
               )}
@@ -177,8 +174,8 @@ export default function TeamProfile() {
           </div>
           <div className="flex flex-col gap-2 shrink-0">
             {isLeader && (
-              <Link to="/dashboard/gamer?tab=team">
-                <GlowButton variant="secondary" size="sm">Edit Team</GlowButton>
+              <Link to={`/gamer/teams/${id}`}>
+                <GlowButton variant="secondary" size="sm">Manage Team</GlowButton>
               </Link>
             )}
             {!isLeader && !isMember && !hasPendingRequest && team.is_recruiting && user && (
@@ -208,7 +205,7 @@ export default function TeamProfile() {
         </h2>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           {members.map(member => (
-            <Link key={member.id} to={`/GamerProfileView?id=${member.user_id}`}>
+            <Link key={member.id} to={`/gamer/${member.user_id}`}>
               <GameCard className="p-4 text-center">
                 <div className="w-14 h-14 rounded-full bg-zinc-800 overflow-hidden mx-auto mb-2">
                   {member.avatar ? <img src={member.avatar} className="w-full h-full object-cover" /> : <Users className="w-7 h-7 text-red-500 mx-auto mt-3" />}

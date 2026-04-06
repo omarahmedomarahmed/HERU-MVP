@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getOrganizerSession } from '@/lib/auth-guards';
-import OrganizerLayout from '@/components/layouts/OrganizerLayout.jsx';
 import FloatingPanel from '@/components/ui/FloatingPanel';
 import GlowButton from '@/components/ui/GlowButton';
 import { Input } from '@/components/ui/input';
@@ -29,7 +28,7 @@ import { uploadFile } from '@/lib/uploadFile'
 function StatusBadge({ status }) {
   const map = {
     draft:     'bg-yellow-500/20 text-yellow-400 border-yellow-500/30',
-    published: 'bg-blue-500/20 text-blue-400 border-blue-500/30',
+    published: 'bg-red-500/20 text-red-400 border-red-500/30',
     live:      'bg-green-500/20 text-green-400 border-green-500/30 animate-pulse',
     completed: 'bg-zinc-500/20 text-zinc-400 border-zinc-500/30',
     cancelled: 'bg-red-500/20 text-red-400 border-red-500/30',
@@ -206,7 +205,7 @@ export default function TournamentManage() {
   const isShared = tournament.tournament_type === 'shared';
 
   return (
-    <OrganizerLayout user={user} profile={profile}>
+    <>
       <div className="max-w-7xl mx-auto p-4 md:p-6">
         {/* ── Header ── */}
         <div className="flex items-start justify-between gap-4 mb-8 flex-wrap">
@@ -363,7 +362,7 @@ export default function TournamentManage() {
                             <div className="flex items-center gap-2 mb-0.5 flex-wrap">
                               <span className="text-white text-xs font-bold">{msg.sender_name}</span>
                               <span className={`text-[9px] px-1.5 py-0.5 rounded font-bold ${
-                                msg.sender_role === 'main_organizer' ? 'bg-red-500/20 text-red-400' : 'bg-blue-500/20 text-blue-400'
+                                msg.sender_role === 'main_organizer' ? 'bg-red-500/20 text-red-400' : 'bg-red-500/20 text-red-400'
                               }`}>
                                 {msg.sender_role === 'main_organizer' ? 'Main' : 'Co-Org'}
                               </span>
@@ -513,6 +512,6 @@ export default function TournamentManage() {
           </TabsContent>
         </Tabs>
       </div>
-    </OrganizerLayout>
+    </>
   );
 }

@@ -34,7 +34,7 @@ export default function OrganizerProfileTab({ session, profile }) {
               <p className="text-white font-bold text-2xl">{profile.brand_name}</p>
               <p className="text-gray-400">{session?.email}</p>
               {profile.is_verified && (
-                <span className="text-xs bg-blue-500/20 text-blue-400 px-2 py-0.5 rounded inline-block mt-2">Verified</span>
+                <span className="text-xs bg-red-500/20 text-red-400 px-2 py-0.5 rounded inline-block mt-2">Verified</span>
               )}
             </div>
           </div>
@@ -73,7 +73,7 @@ export default function OrganizerProfileTab({ session, profile }) {
               <p className="text-gray-400 text-xs font-bold uppercase tracking-wider mb-3">Social</p>
               <div className="flex gap-3">
                 {profile.social_links.twitter && (
-                  <a href={profile.social_links.twitter} target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:text-blue-300 text-sm">
+                  <a href={profile.social_links.twitter} target="_blank" rel="noopener noreferrer" className="text-red-400 hover:text-red-300 text-sm">
                     Twitter
                   </a>
                 )}

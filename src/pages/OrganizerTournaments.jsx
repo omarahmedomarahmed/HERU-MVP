@@ -1,171 +1,347 @@
-import React, { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
-import OrganizerLayout from '@/components/layouts/OrganizerLayout.jsx';
-import FloatingPanel from '@/components/ui/FloatingPanel';
-import GameCard from '@/components/ui/GameCard';
-import HexBadge from '@/components/ui/HexBadge';
-import GlowButton from '@/components/ui/GlowButton';
-import { Trophy, Plus, Users, Calendar, Eye, Settings } from 'lucide-react';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { OrganizerProfile, Tournament, apiCall } from '@/api/heruClient'
+import React, { useState, useMemo } from 'react'
+import { Link } from 'react-router-dom'
+import { useQuery } from '@tanstack/react-query'
+import {
+  Trophy,
+  Plus,
+  Users,
+  Calendar,
+  Search,
+  Settings,
+  Pencil,
+  Gamepad2,
+  Swords,
+  DollarSign,
+  Loader2,
+  Share2,
+  User,
+} from 'lucide-react'
+import { Tournament } from '@/api/heruClient'
 import { useAuth } from '@/lib/AuthContext'
 
+const STATUS_TABS = [
+  { key: 'all', label: 'All' },
+  { key: 'draft', label: 'Draft' },
+  { key: 'published', label: 'Published' },
+  { key: 'live', label: 'Live' },
+  { key: 'completed', label: 'Completed' },
+]
 
-export default function OrganizerTournaments() {
-  const [user, setUser] = useState(null);
-  const [profile, setProfile] = useState(null);
-  const navigate = useNavigate();
+const STATUS_STYLES = {
+  draft: {
+    bg: 'bg-yellow-500/15',
+    text: 'text-yellow-400',
+    border: 'border-yellow-500/40',
+    dot: 'bg-yellow-400',
+    label: 'Draft',
+  },
+  published: {
+    bg: 'bg-red-500/15',
+    text: 'text-red-400',
+    border: 'border-red-500/40',
+    dot: 'bg-red-400',
+    label: 'Published',
+  },
+  live: {
+    bg: 'bg-green-500/15',
+    text: 'text-green-400',
+    border: 'border-green-500/40',
+    dot: 'bg-green-400',
+    label: 'Live',
+  },
+  completed: {
+    bg: 'bg-red-500/15',
+    text: 'text-red-400',
+    border: 'border-red-500/40',
+    dot: 'bg-red-400',
+    label: 'Completed',
+  },
+}
 
-  useEffect(() => {
-    loadUser();
-  }, []);
+function formatEGP(amount) {
+  if (amount == null) return 'EGP 0'
+  return `EGP ${Number(amount).toLocaleString('en-EG')}`
+}
 
-  const loadUser = async () => {
-    try {
-      const userData = await apiCall('/auth/me');
-      setUser(userData);
-      
-      const profiles = await OrganizerProfile.list({ user_id: userData.id });
-      if (profiles.length > 0) {
-        setProfile(profiles[0]);
-      }
-    } catch (e) {
-      navigate('/organizer/dashboard');
-    }
-  };
+function StatusBadge({ status }) {
+  const style = STATUS_STYLES[status] || STATUS_STYLES.draft
+  return (
+    <span
+      className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold border ${style.bg} ${style.text} ${style.border}`}
+    >
+      <span className={`w-1.5 h-1.5 rounded-full ${style.dot} ${status === 'live' ? 'animate-pulse' : ''}`} />
+      {style.label}
+    </span>
+  )
+}
 
-  const { data: tournaments = [], isLoading } = useQuery({
-    queryKey: ['organizer-tournaments', user?.id],
-    queryFn: () => Tournament.list({ organizer_id: user?.id }, '-created_date'),
-    enabled: !!user?.id,
-  });
+function TypeBadge({ type }) {
+  if (type === 'shared') {
+    return (
+      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-orange-500/15 text-orange-400 border border-orange-500/30">
+        <Share2 className="w-3 h-3" />
+        Shared
+      </span>
+    )
+  }
+  return (
+    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-zinc-700/50 text-zinc-400 border border-zinc-600/40">
+      <User className="w-3 h-3" />
+      Solo
+    </span>
+  )
+}
 
-  const draftTournaments = tournaments.filter(t => t.status === 'draft');
-  const publishedTournaments = tournaments.filter(t => t.status === 'published');
-  const liveTournaments = tournaments.filter(t => t.status === 'live');
-  const completedTournaments = tournaments.filter(t => t.status === 'completed');
+function TournamentCard({ tournament }) {
+  const status = tournament.status || 'draft'
+  const teamsCount = tournament.teams?.length || 0
+  const maxTeams = tournament.max_teams || 0
+  const isDraft = status === 'draft'
 
-  const TournamentCard = ({ tournament }) => (
-    <GameCard className="p-6">
-      <div className="flex items-start gap-4">
-        <div className="w-20 h-20 rounded-xl bg-gradient-to-br from-red-600/30 to-zinc-800 flex items-center justify-center flex-shrink-0">
-          <Trophy className="w-10 h-10 text-red-500" />
-        </div>
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-2">
-            <h3 className="text-lg font-bold text-white truncate">{tournament.name}</h3>
-            <HexBadge className={
-              tournament.status === 'live' ? 'bg-green-500/20 text-green-400 border-green-500/50' :
-              tournament.status === 'published' ? 'bg-blue-500/20 text-blue-400 border-blue-500/50' :
-              tournament.status === 'draft' ? 'bg-yellow-500/20 text-yellow-400 border-yellow-500/50' :
-              'bg-gray-500/20 text-gray-400 border-gray-500/50'
-            }>
-              {tournament.status === 'live' ? '🔴 LIVE' : tournament.status.toUpperCase()}
-            </HexBadge>
+  return (
+    <div className="group relative bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden hover:border-zinc-700 transition-all duration-200">
+      {/* Image / Placeholder */}
+      <div className="relative h-36 overflow-hidden">
+        {tournament.tournament_image ? (
+          <img
+            src={tournament.tournament_image}
+            alt={tournament.name}
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+          />
+        ) : (
+          <div className="w-full h-full bg-gradient-to-br from-red-900/40 via-zinc-900 to-zinc-800 flex items-center justify-center">
+            <Trophy className="w-12 h-12 text-red-500/30" />
           </div>
-          <p className="text-gray-400 text-sm mb-3">{tournament.game}</p>
-          <div className="flex items-center gap-4 text-sm text-gray-500">
-            <span className="flex items-center gap-1">
-              <Users className="w-4 h-4" />
-              {tournament.teams?.length || 0}/{tournament.max_teams || '∞'}
-            </span>
-            {tournament.schedule && (
+        )}
+        {/* Overlay gradient */}
+        <div className="absolute inset-0 bg-gradient-to-t from-zinc-900 via-zinc-900/40 to-transparent" />
+
+        {/* Badges floating on image */}
+        <div className="absolute top-3 left-3 flex items-center gap-2">
+          <StatusBadge status={status} />
+          <TypeBadge type={tournament.tournament_type} />
+        </div>
+      </div>
+
+      {/* Content */}
+      <div className="p-4 space-y-3">
+        {/* Title + Game */}
+        <div>
+          <h3 className="text-base font-bold text-white truncate leading-tight">
+            {tournament.name}
+          </h3>
+          <div className="flex items-center gap-3 mt-1.5 text-sm text-zinc-400">
+            {tournament.game && (
               <span className="flex items-center gap-1">
-                <Calendar className="w-4 h-4" />
-                {new Date(tournament.schedule).toLocaleDateString()}
+                <Gamepad2 className="w-3.5 h-3.5" />
+                {tournament.game}
+              </span>
+            )}
+            {tournament.format && (
+              <span className="flex items-center gap-1">
+                <Swords className="w-3.5 h-3.5" />
+                {tournament.format}
               </span>
             )}
           </div>
         </div>
-        <div className="flex gap-2">
-          <Link to={`/organizer/tournaments/$\{tournament.id}`}>
-            <GlowButton variant="secondary" size="sm">
-              <Settings className="w-4 h-4" /> Manage
-            </GlowButton>
+
+        {/* Meta row */}
+        <div className="flex items-center gap-4 text-sm text-zinc-500">
+          <span className="flex items-center gap-1">
+            <Users className="w-3.5 h-3.5" />
+            {teamsCount}/{maxTeams || '--'}
+          </span>
+          {tournament.schedule && (
+            <span className="flex items-center gap-1">
+              <Calendar className="w-3.5 h-3.5" />
+              {new Date(tournament.schedule).toLocaleDateString('en-GB', {
+                day: 'numeric',
+                month: 'short',
+                year: 'numeric',
+              })}
+            </span>
+          )}
+        </div>
+
+        {/* Cost */}
+        {tournament.total_cost != null && tournament.total_cost > 0 && (
+          <div className="flex items-center gap-1 text-sm font-semibold text-red-400">
+            <DollarSign className="w-3.5 h-3.5" />
+            {formatEGP(tournament.total_cost)}
+          </div>
+        )}
+
+        {/* Actions */}
+        <div className="flex items-center gap-2 pt-1">
+          <Link
+            to={`/organizer/tournaments/${tournament.id}/manage`}
+            className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg bg-red-600 hover:bg-red-500 text-white text-sm font-semibold transition-colors"
+          >
+            <Settings className="w-3.5 h-3.5" />
+            Manage
           </Link>
-          <Link to={`/organizer/tournaments/$\{tournament.id}`}>
-            <GlowButton variant="ghost" size="sm">
-              <Eye className="w-4 h-4" />
-            </GlowButton>
-          </Link>
+          {isDraft && (
+            <Link
+              to={`/organizer/tournaments/new/${tournament.id}`}
+              className="inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-sm font-medium border border-zinc-700 transition-colors"
+            >
+              <Pencil className="w-3.5 h-3.5" />
+              Edit
+            </Link>
+          )}
         </div>
       </div>
-    </GameCard>
-  );
+    </div>
+  )
+}
+
+export default function OrganizerTournaments() {
+  const { user } = useAuth()
+  const [activeTab, setActiveTab] = useState('all')
+  const [search, setSearch] = useState('')
+
+  const {
+    data: tournaments = [],
+    isLoading,
+    isError,
+  } = useQuery({
+    queryKey: ['organizer-tournaments', user?.id],
+    queryFn: () => Tournament.list({ organizer_id: user?.id, include_drafts: 'true' }),
+    enabled: !!user?.id,
+  })
+
+  // Filter by status tab
+  const statusFiltered = useMemo(() => {
+    if (activeTab === 'all') return tournaments
+    return tournaments.filter((t) => t.status === activeTab)
+  }, [tournaments, activeTab])
+
+  // Filter by search
+  const filtered = useMemo(() => {
+    if (!search.trim()) return statusFiltered
+    const q = search.toLowerCase()
+    return statusFiltered.filter(
+      (t) =>
+        t.name?.toLowerCase().includes(q) ||
+        t.game?.toLowerCase().includes(q)
+    )
+  }, [statusFiltered, search])
+
+  // Counts per status
+  const counts = useMemo(() => {
+    const c = { all: tournaments.length, draft: 0, published: 0, live: 0, completed: 0 }
+    tournaments.forEach((t) => {
+      if (c[t.status] !== undefined) c[t.status]++
+    })
+    return c
+  }, [tournaments])
 
   return (
-    <OrganizerLayout user={user} profile={profile}>
-      <div className="flex items-start justify-between mb-8">
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-black text-white mb-2">MY TOURNAMENTS</h1>
-          <p className="text-gray-400">Manage all your tournaments</p>
+          <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
+            My Tournaments
+          </h1>
+          <p className="text-zinc-400 text-sm mt-1">
+            Create, manage, and track all your tournaments
+          </p>
         </div>
-        <Link to={'/organizer/tournaments/new'}>
-          <GlowButton>
-            <Plus className="w-4 h-4" />
-            Create Tournament
-          </GlowButton>
+        <Link
+          to="/organizer/tournaments/new"
+          className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-lg bg-red-600 hover:bg-red-500 text-white font-bold text-sm transition-colors shadow-lg shadow-red-600/20 shrink-0"
+        >
+          <Plus className="w-4 h-4" />
+          Build New Tournament
         </Link>
       </div>
 
-      <Tabs defaultValue="all" className="w-full">
-        <TabsList className="bg-zinc-900 border-zinc-800 mb-6">
-          <TabsTrigger value="all">All ({tournaments.length})</TabsTrigger>
-          <TabsTrigger value="draft">Draft ({draftTournaments.length})</TabsTrigger>
-          <TabsTrigger value="published">Published ({publishedTournaments.length})</TabsTrigger>
-          <TabsTrigger value="live">Live ({liveTournaments.length})</TabsTrigger>
-          <TabsTrigger value="completed">Completed ({completedTournaments.length})</TabsTrigger>
-        </TabsList>
+      {/* Filter tabs */}
+      <div className="flex items-center gap-1 overflow-x-auto pb-1 scrollbar-none">
+        {STATUS_TABS.map((tab) => {
+          const isActive = activeTab === tab.key
+          return (
+            <button
+              key={tab.key}
+              onClick={() => setActiveTab(tab.key)}
+              className={`px-4 py-2 rounded-lg text-sm font-semibold whitespace-nowrap transition-colors ${
+                isActive
+                  ? 'bg-red-600/20 text-red-400 border border-red-500/40'
+                  : 'bg-zinc-900 text-zinc-400 border border-zinc-800 hover:text-zinc-300 hover:border-zinc-700'
+              }`}
+            >
+              {tab.label}
+              <span
+                className={`ml-1.5 text-xs ${
+                  isActive ? 'text-red-400/80' : 'text-zinc-600'
+                }`}
+              >
+                {counts[tab.key]}
+              </span>
+            </button>
+          )
+        })}
+      </div>
 
-        <TabsContent value="all">
-          {isLoading ? (
-            <div className="text-center py-12">
-              <Trophy className="w-12 h-12 text-gray-600 mx-auto mb-3 animate-pulse" />
-              <p className="text-gray-400">Loading tournaments...</p>
-            </div>
-          ) : tournaments.length === 0 ? (
-            <FloatingPanel className="p-12 text-center">
-              <Trophy className="w-16 h-16 text-gray-600 mx-auto mb-4" />
-              <h3 className="text-xl font-bold text-white mb-2">No tournaments yet</h3>
-              <p className="text-gray-400 mb-6">Create your first tournament to get started</p>
-              <Link to={'/organizer/tournaments/new'}>
-                <GlowButton>
-                  <Plus className="w-4 h-4" /> Create Tournament
-                </GlowButton>
-              </Link>
-            </FloatingPanel>
-          ) : (
-            <div className="grid gap-4">
-              {tournaments.map(t => <TournamentCard key={t.id} tournament={t} />)}
-            </div>
-          )}
-        </TabsContent>
+      {/* Search bar */}
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
+        <input
+          type="text"
+          placeholder="Search by name or game..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="w-full pl-10 pr-4 py-2.5 rounded-lg bg-zinc-900 border border-zinc-800 text-white text-sm placeholder:text-zinc-500 focus:outline-none focus:border-red-500/50 focus:ring-1 focus:ring-red-500/30 transition-colors"
+        />
+      </div>
 
-        <TabsContent value="draft">
-          <div className="grid gap-4">
-            {draftTournaments.map(t => <TournamentCard key={t.id} tournament={t} />)}
+      {/* Content */}
+      {isLoading ? (
+        <div className="flex flex-col items-center justify-center py-20">
+          <Loader2 className="w-8 h-8 text-red-500 animate-spin mb-3" />
+          <p className="text-zinc-400 text-sm">Loading tournaments...</p>
+        </div>
+      ) : isError ? (
+        <div className="flex flex-col items-center justify-center py-20">
+          <Trophy className="w-12 h-12 text-red-500/40 mb-3" />
+          <p className="text-zinc-400 text-sm">Failed to load tournaments. Please try again.</p>
+        </div>
+      ) : filtered.length === 0 && tournaments.length === 0 ? (
+        /* Empty state - no tournaments at all */
+        <div className="flex flex-col items-center justify-center py-20 px-4 bg-zinc-900/50 border border-zinc-800 border-dashed rounded-xl">
+          <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-red-600/20 to-zinc-800 flex items-center justify-center mb-5">
+            <Trophy className="w-10 h-10 text-red-500/60" />
           </div>
-        </TabsContent>
-
-        <TabsContent value="published">
-          <div className="grid gap-4">
-            {publishedTournaments.map(t => <TournamentCard key={t.id} tournament={t} />)}
-          </div>
-        </TabsContent>
-
-        <TabsContent value="live">
-          <div className="grid gap-4">
-            {liveTournaments.map(t => <TournamentCard key={t.id} tournament={t} />)}
-          </div>
-        </TabsContent>
-
-        <TabsContent value="completed">
-          <div className="grid gap-4">
-            {completedTournaments.map(t => <TournamentCard key={t.id} tournament={t} />)}
-          </div>
-        </TabsContent>
-      </Tabs>
-    </OrganizerLayout>
-  );
+          <h3 className="text-xl font-bold text-white mb-2">No tournaments yet</h3>
+          <p className="text-zinc-400 text-sm text-center max-w-sm mb-6">
+            Build your first tournament and start competing. Set up brackets, add prizes, and invite teams.
+          </p>
+          <Link
+            to="/organizer/tournaments/new"
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-red-600 hover:bg-red-500 text-white font-bold text-sm transition-colors shadow-lg shadow-red-600/20"
+          >
+            <Plus className="w-4 h-4" />
+            Build Your First Tournament
+          </Link>
+        </div>
+      ) : filtered.length === 0 ? (
+        /* Empty state - no results for current filter/search */
+        <div className="flex flex-col items-center justify-center py-16">
+          <Search className="w-10 h-10 text-zinc-600 mb-3" />
+          <p className="text-zinc-400 text-sm">
+            No tournaments match your filters.
+          </p>
+        </div>
+      ) : (
+        /* Tournament grid */
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {filtered.map((t) => (
+            <TournamentCard key={t.id} tournament={t} />
+          ))}
+        </div>
+      )}
+    </div>
+  )
 }

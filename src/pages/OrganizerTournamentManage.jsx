@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import OrganizerLayout from '@/components/layouts/OrganizerLayout.jsx';
+
 import FloatingPanel from '@/components/ui/FloatingPanel';
 import GlowButton from '@/components/ui/GlowButton';
 import GameCard from '@/components/ui/GameCard';
@@ -59,10 +59,7 @@ export default function OrganizerTournamentManage() {
 
   const { data: tournament, isLoading } = useQuery({
     queryKey: ['tournament', tournamentId],
-    queryFn: async () => {
-      const tournaments = await Tournament.list({ id: tournamentId });
-      return tournaments[0];
-    },
+    queryFn: () => Tournament.get(tournamentId),
     enabled: !!tournamentId,
   });
 
@@ -209,16 +206,16 @@ export default function OrganizerTournamentManage() {
 
   if (isLoading || !tournament) {
     return (
-      <OrganizerLayout user={user} profile={profile}>
+      <>
         <div className="flex items-center justify-center min-h-[50vh]">
           <Trophy className="w-12 h-12 text-gray-600 animate-pulse" />
         </div>
-      </OrganizerLayout>
+      </>
     );
   }
 
   return (
-    <OrganizerLayout user={user} profile={profile}>
+    <>
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-4">
           <Link to={'/organizer-tournaments'} className="text-gray-400 hover:text-white">
@@ -230,14 +227,14 @@ export default function OrganizerTournamentManage() {
           </div>
         </div>
         <div className="flex gap-2">
-          <Link to={`/organizer/tournaments/new/$\{tournamentId}`}>
+          <Link to={`/organizer/tournaments/new/${tournamentId}`}>
             <GlowButton variant="secondary" size="sm">
               <Edit2 className="w-4 h-4" /> Edit in Builder
             </GlowButton>
           </Link>
           <HexBadge className={
             tournament.status === 'live' ? 'bg-green-500/20 text-green-400' :
-            tournament.status === 'published' ? 'bg-blue-500/20 text-blue-400' :
+            tournament.status === 'published' ? 'bg-red-500/20 text-red-400' :
             tournament.status === 'completed' ? 'bg-gray-500/20 text-gray-400' : ''
           }>
             {tournament.status}
@@ -263,7 +260,7 @@ export default function OrganizerTournamentManage() {
           <p className="text-gray-500 text-xs">Prize Pool</p>
         </FloatingPanel>
         <FloatingPanel className="p-4 text-center">
-          <MessageSquare className="w-6 h-6 text-blue-500 mx-auto mb-2" />
+          <MessageSquare className="w-6 h-6 text-red-500 mx-auto mb-2" />
           <p className="text-2xl font-bold text-white">{tournament.general_chat?.length || 0}</p>
           <p className="text-gray-500 text-xs">Messages</p>
         </FloatingPanel>
@@ -482,6 +479,6 @@ export default function OrganizerTournamentManage() {
           </div>
         </DialogContent>
       </Dialog>
-    </OrganizerLayout>
+    </>
   );
 }

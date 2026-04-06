@@ -111,4 +111,23 @@ router.get('/billing', requireAuth, requireStaff, async (req, res) => {
   }
 });
 
+// GET /audit - audit trail
+router.get('/audit', requireAuth, requireStaff, async (req, res) => {
+  try {
+    const { action, user_id, search, from_date, to_date, limit = 100, offset = 0 } = req.query;
+    let query = supabaseAdmin.from('audit_log').select('*');
+    if (action) query = query.eq('action', action);
+    if (user_id) query = query.eq('user_id', user_id);
+    if (from_date) query = query.gte('created_at', from_date);
+    if (to_date) query = query.lte('created_at', to_date);
+    if (search) query = query.or(`user_email.ilike.%${search}%,user_name.ilike.%${search}%,action.ilike.%${search}%`);
+    query = query.order('created_at', { ascending: false }).range(offset, Number(offset) + Number(limit) - 1);
+    const { data, error } = await query;
+    if (error) throw error;
+    res.json(data || []);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 export default router;

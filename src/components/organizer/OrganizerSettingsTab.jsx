@@ -192,7 +192,7 @@ export default function OrganizerSettingsTab({ session, profile }) {
       {/* Authentication Settings */}
       <FloatingPanel className="p-6">
         <h2 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
-          <Settings className="w-5 h-5 text-blue-500" /> Authentication Settings
+          <Settings className="w-5 h-5 text-red-500" /> Authentication Settings
         </h2>
         <div className="space-y-5">
           <div>

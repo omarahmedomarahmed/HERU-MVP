@@ -79,7 +79,7 @@ export default function CommitModal({ radar, profile, onClose, onConfirm, isLoad
               min={1}
             />
             <div className="mt-2 flex items-start gap-2 text-xs text-gray-500">
-              <TrendingUp className="w-3 h-3 mt-0.5 text-blue-400 flex-shrink-0" />
+              <TrendingUp className="w-3 h-3 mt-0.5 text-red-400 flex-shrink-0" />
               <span>No minimum — but a higher % gives your brand more visibility on the shared tournament page.</span>
             </div>
           </div>

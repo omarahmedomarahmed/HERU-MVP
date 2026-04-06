@@ -159,6 +159,37 @@ export async function commitCoOrganizer({
 }
 
 /**
+ * Get the label for a commitment percentage.
+ * 33% = co-organizer, 66% = sponsor
+ */
+export function getCommitmentLabel(percent) {
+  return percent >= 66 ? 'sponsor' : 'co-organizer';
+}
+
+/**
+ * Validate a commitment before processing.
+ * Returns { valid: boolean, error?: string }
+ */
+export function validateCommitment(radar, commitmentPercent) {
+  if (radar.status === 'fully_funded' || radar.status === 'closed') {
+    return { valid: false, error: 'This radar entry is no longer accepting commitments' };
+  }
+  if (commitmentPercent < 33) {
+    return { valid: false, error: 'Minimum commitment is 33%' };
+  }
+  const existingCoOrgs = radar.co_organizers || [];
+  const totalParties = 1 + existingCoOrgs.length;
+  if (totalParties >= 3) {
+    return { valid: false, error: 'Maximum 3 parties already reached' };
+  }
+  const currentFunding = radar.main_organizer_percent + existingCoOrgs.reduce((sum, co) => sum + co.percent, 0);
+  if (currentFunding + commitmentPercent > 100) {
+    return { valid: false, error: `Cannot commit ${commitmentPercent}%. Only ${100 - currentFunding}% remaining.` };
+  }
+  return { valid: true };
+}
+
+/**
  * Calculate funding status for a radar entry.
  */
 export function calculateFunding(radar) {

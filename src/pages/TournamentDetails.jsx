@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import GamerLayout from '@/components/layouts/GamerLayout.jsx';
 import FloatingPanel from '@/components/ui/FloatingPanel';
@@ -14,19 +14,20 @@ import { GamerProfile, MarketplaceItem, Order, Team, Tournament, apiCall } from 
 import { useAuth } from '@/lib/AuthContext'
 
 import {
-  Trophy, Users, Calendar, MapPin, Gamepad2, Play, Star, 
-  ArrowLeft, Clock, Award, ExternalLink, MessageSquare, Send
+  Trophy, Users, Calendar, MapPin, Gamepad2, Play, Star,
+  ArrowLeft, Clock, Award, ExternalLink, MessageSquare, Send,
+  Share2, Copy, Check, Radio
 } from 'lucide-react';
 
 export default function TournamentDetails() {
   const [user, setUser] = useState(null);
   const [joinModal, setJoinModal] = useState(false);
   const [newMessage, setNewMessage] = useState('');
+  const [copied, setCopied] = useState(false);
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
-  const urlParams = new URLSearchParams(window.location.search);
-  const tournamentId = urlParams.get('id');
+  const { id: tournamentId } = useParams();
 
   useEffect(() => {
     loadUser();
@@ -51,10 +52,7 @@ export default function TournamentDetails() {
 
   const { data: tournament, isLoading } = useQuery({
     queryKey: ['tournament', tournamentId],
-    queryFn: async () => {
-      const tournaments = await Tournament.list({ id: tournamentId });
-      return tournaments[0];
-    },
+    queryFn: () => Tournament.get(tournamentId),
     enabled: !!tournamentId,
   });
 
@@ -193,6 +191,15 @@ export default function TournamentDetails() {
   const myTeamPendingRequest = myTeams.some(t =>
     (tournament.join_requests || []).some(r => r.team_id === t.id && r.status === 'pending')
   );
+  const myTeamIds = new Set(myTeams.map(t => t.id));
+
+  const shareUrl = window.location.href;
+  const handleCopyLink = () => {
+    navigator.clipboard.writeText(shareUrl).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  };
 
   return (
     <GamerLayout user={user} profile={profile} cartCount={cart.length}>
@@ -247,11 +254,17 @@ export default function TournamentDetails() {
             )}
           </div>
           
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
+            {/* Share */}
+            <GlowButton variant="ghost" size="sm" onClick={handleCopyLink}>
+              {copied ? <Check className="w-4 h-4" /> : <Share2 className="w-4 h-4" />}
+              {copied ? 'Copied!' : 'Share'}
+            </GlowButton>
+
             {tournament.stream_link && (
               <a href={tournament.stream_link} target="_blank" rel="noopener noreferrer">
                 <GlowButton variant="secondary" size="lg">
-                  <ExternalLink className="w-5 h-5" />
+                  <Radio className="w-5 h-5" />
                   Watch Stream
                 </GlowButton>
               </a>
@@ -263,26 +276,58 @@ export default function TournamentDetails() {
               </GlowButton>
             )}
             {myTeamPendingRequest && (
-              <HexBadge className="bg-amber-500/20 text-amber-400 border-amber-500/50">
-                ⏳ Request Pending
-              </HexBadge>
+              <HexBadge className="bg-amber-500/20 text-amber-400 border-amber-500/50">Request Pending</HexBadge>
             )}
             {myTeamInTournament && (
-              <HexBadge className="bg-green-500/20 text-green-400 border-green-500/50">
-                ✓ Joined
-              </HexBadge>
+              <HexBadge className="bg-green-500/20 text-green-400 border-green-500/50">Joined</HexBadge>
             )}
           </div>
         </div>
       </div>
 
+      {/* Stream Embed */}
+      {tournament.status === 'live' && tournament.stream_embed_url ? (
+        <FloatingPanel className="mb-6 overflow-hidden" glowBorder>
+          <div className="flex items-center gap-2 px-4 py-2 bg-red-600/10 border-b border-red-500/20">
+            <span className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
+            <span className="text-red-400 text-sm font-bold uppercase tracking-wider">Live Stream</span>
+          </div>
+          <div className="aspect-video">
+            <iframe
+              src={tournament.stream_embed_url}
+              className="w-full h-full"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowFullScreen
+              title="Tournament Stream"
+            />
+          </div>
+        </FloatingPanel>
+      ) : tournament.status === 'live' && tournament.stream_link ? (
+        <FloatingPanel className="p-6 mb-6 text-center" glowBorder>
+          <Radio className="w-8 h-8 text-red-500 mx-auto mb-2" />
+          <p className="text-white font-bold mb-2">This tournament is live!</p>
+          <a href={tournament.stream_link} target="_blank" rel="noopener noreferrer">
+            <GlowButton>
+              <ExternalLink className="w-4 h-4" /> Watch on Stream
+            </GlowButton>
+          </a>
+        </FloatingPanel>
+      ) : tournament.status !== 'live' && (
+        <FloatingPanel className="p-4 mb-6 text-center bg-zinc-900/50">
+          <p className="text-gray-500 text-sm flex items-center justify-center gap-2">
+            <Radio className="w-4 h-4" />
+            Stream will appear here when the tournament goes live
+          </p>
+        </FloatingPanel>
+      )}
+
       <Tabs defaultValue="overview" className="w-full">
-        <TabsList className="bg-zinc-900 border-zinc-800 mb-6">
-          <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="brackets">Brackets</TabsTrigger>
-          <TabsTrigger value="prizes">Prizes</TabsTrigger>
-          <TabsTrigger value="chat">Chat</TabsTrigger>
-          <TabsTrigger value="log">Updates</TabsTrigger>
+        <TabsList className="bg-zinc-900 border border-zinc-800 mb-6 p-1">
+          <TabsTrigger value="overview" className="data-[state=active]:bg-red-600 data-[state=active]:text-white text-gray-400">Overview</TabsTrigger>
+          <TabsTrigger value="brackets" className="data-[state=active]:bg-red-600 data-[state=active]:text-white text-gray-400">Brackets</TabsTrigger>
+          <TabsTrigger value="prizes" className="data-[state=active]:bg-red-600 data-[state=active]:text-white text-gray-400">Prizes</TabsTrigger>
+          <TabsTrigger value="chat" className="data-[state=active]:bg-red-600 data-[state=active]:text-white text-gray-400">Chat</TabsTrigger>
+          <TabsTrigger value="log" className="data-[state=active]:bg-red-600 data-[state=active]:text-white text-gray-400">Updates</TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview">
@@ -313,7 +358,7 @@ export default function TournamentDetails() {
                   </div>
                   {tournament.schedule && (
                     <div className="flex items-center gap-3 p-3 bg-zinc-800/50 rounded-lg">
-                      <Calendar className="w-5 h-5 text-blue-500" />
+                      <Calendar className="w-5 h-5 text-red-500" />
                       <div>
                         <p className="text-gray-500 text-xs">Date</p>
                         <p className="text-white font-medium">{new Date(tournament.schedule).toLocaleDateString()}</p>
@@ -347,25 +392,33 @@ export default function TournamentDetails() {
 
                 {teams.length > 0 ? (
                   <div className="grid md:grid-cols-2 gap-4">
-                    {teams.map((team) => (
-                      <Link key={team.id} to={`/teams/$\{team.id}`}>
-                        <GameCard className="p-4">
-                          <div className="flex items-center gap-3">
-                            <div className="w-12 h-12 rounded-lg bg-zinc-800 flex items-center justify-center overflow-hidden">
-                              {team.logo ? (
-                                <img src={team.logo} alt="" className="w-full h-full object-cover" />
-                              ) : (
-                                <Users className="w-6 h-6 text-red-500" />
-                              )}
+                    {teams.map((team) => {
+                      const isMyTeam = myTeamIds.has(team.id);
+                      return (
+                        <Link key={team.id} to={`/teams/${team.id}`}>
+                          <GameCard className={`p-4 transition-colors ${isMyTeam ? 'border-red-500/50 bg-red-500/5' : ''}`}>
+                            <div className="flex items-center gap-3">
+                              <div className={`w-12 h-12 rounded-lg flex items-center justify-center overflow-hidden ${isMyTeam ? 'bg-red-500/20 ring-2 ring-red-500/30' : 'bg-zinc-800'}`}>
+                                {team.logo ? (
+                                  <img src={team.logo} alt="" className="w-full h-full object-cover" />
+                                ) : (
+                                  <Users className="w-6 h-6 text-red-500" />
+                                )}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2">
+                                  <p className="text-white font-medium truncate">{team.name}</p>
+                                  {isMyTeam && (
+                                    <span className="text-xs bg-red-500/20 text-red-400 px-1.5 py-0.5 rounded font-bold flex-shrink-0">YOU</span>
+                                  )}
+                                </div>
+                                <p className="text-gray-500 text-sm">{team.members?.length || 0} members</p>
+                              </div>
                             </div>
-                            <div>
-                              <p className="text-white font-medium">{team.name}</p>
-                              <p className="text-gray-500 text-sm">{team.members?.length || 0} members</p>
-                            </div>
-                          </div>
-                        </GameCard>
-                      </Link>
-                    ))}
+                          </GameCard>
+                        </Link>
+                      );
+                    })}
                   </div>
                 ) : (
                   <div className="text-center py-8">
@@ -385,7 +438,7 @@ export default function TournamentDetails() {
                   </h2>
                   <div className="space-y-3">
                     {talents.map((talent) => (
-                      <Link key={talent.id} to={`/gamer/$\{talent.user_id}`}>
+                      <Link key={talent.id} to={`/gamer/${talent.user_id}`}>
                         <div className="flex items-center gap-3 p-3 bg-zinc-800/50 rounded-lg hover:bg-zinc-800 transition-colors">
                           <div className="w-10 h-10 rounded-full bg-gradient-to-br from-red-600/30 to-zinc-800 flex items-center justify-center overflow-hidden">
                             {talent.avatar ? (

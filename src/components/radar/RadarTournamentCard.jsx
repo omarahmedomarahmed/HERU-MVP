@@ -9,7 +9,7 @@ import { format } from 'date-fns';
 function StatusBadge({ status }) {
   const map = {
     open:         { label: 'Open',         cls: 'bg-green-500/20 text-green-400 border-green-500/30' },
-    in_progress:  { label: 'In Progress',  cls: 'bg-blue-500/20 text-blue-400 border-blue-500/30' },
+    in_progress:  { label: 'In Progress',  cls: 'bg-red-500/20 text-red-400 border-red-500/30' },
     fully_funded: { label: 'Fully Funded', cls: 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30' },
     closed:       { label: 'Closed',       cls: 'bg-zinc-500/20 text-zinc-400 border-zinc-500/30' },
   };

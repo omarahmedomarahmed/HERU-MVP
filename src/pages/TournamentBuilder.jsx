@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import OrganizerLayout from '@/components/layouts/OrganizerLayout.jsx';
+
 import FloatingPanel from '@/components/ui/FloatingPanel';
 import GlowButton from '@/components/ui/GlowButton';
 import GameCard from '@/components/ui/GameCard';
@@ -11,8 +11,10 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { GamerProfile, MarketplaceItem, OrganizerProfile, SponsorshipRadar, Team, Tournament, TournamentOrder, apiCall } from '@/api/heruClient'
+import { GamerProfile, MarketplaceItem, OrganizerProfile, Team, Tournament, apiCall } from '@/api/heruClient'
 import { useAuth } from '@/lib/AuthContext'
+import { uploadFile } from '@/lib/uploadFile'
+import { useToast } from '@/components/ui/use-toast'
 
 import {
   Trophy, Gamepad2, Users, Star, Palette, MapPin, Award,
@@ -52,8 +54,13 @@ export default function TournamentBuilder() {
     branding_items: [],
     production_items: [],
     prizepool_items: [],
+    tournament_image: '',
+    stream_embed_url: '',
+    signup_rules: '',
     total_cost: 0,
     prizepool_total: 0,
+    platform_fee: 0,
+    platform_fee_percent: 15,
     status: 'draft',
     tournament_type: 'solo',
     main_organizer_id: null,
@@ -64,11 +71,11 @@ export default function TournamentBuilder() {
   // Shared tournament commitment state
   const [commitmentPercent, setCommitmentPercent] = useState(33);
   const [commitmentConfirmed, setCommitmentConfirmed] = useState(false);
+  const { id: tournamentId } = useParams();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-
-  const urlParams = new URLSearchParams(window.location.search);
-  const tournamentId = urlParams.get('id');
+  const [lastSaved, setLastSaved] = useState(null);
+  const { toast } = useToast();
 
   useEffect(() => {
     loadUser();
@@ -95,10 +102,7 @@ export default function TournamentBuilder() {
 
   const { data: existingTournament } = useQuery({
     queryKey: ['tournament', tournamentId],
-    queryFn: async () => {
-      const tournaments = await Tournament.list({ id: tournamentId });
-      return tournaments[0];
-    },
+    queryFn: () => Tournament.get(tournamentId),
     enabled: !!tournamentId,
   });
 
@@ -117,6 +121,24 @@ export default function TournamentBuilder() {
       }));
     }
   }, [existingTournament, profile]);
+
+  // Autosave every 30 seconds when tournament has a name
+  useEffect(() => {
+    if (!tournament.name || !user?.id) return;
+    const interval = setInterval(() => {
+      const data = { ...tournament, organizer_id: user?.id, total_cost: calculateTotalCost(), platform_fee: calculatePlatformFee() };
+      const save = tournamentId
+        ? Tournament.update(tournamentId, data)
+        : Tournament.create(data);
+      save.then((result) => {
+        setLastSaved(new Date());
+        if (!tournamentId && result?.id) {
+          navigate(`/organizer/tournaments/new/${result.id}`, { replace: true });
+        }
+      }).catch(() => {});
+    }, 30000);
+    return () => clearInterval(interval);
+  }, [tournament.name, user?.id, tournamentId]);
 
   const { data: allTeams = [] } = useQuery({
     queryKey: ['all-teams'],
@@ -143,7 +165,7 @@ export default function TournamentBuilder() {
 
   const saveTournamentMutation = useMutation({
     mutationFn: async () => {
-      const data = { ...tournament, organizer_id: user?.id, total_cost: calculateTotalCost() };
+      const data = { ...tournament, organizer_id: user?.id, total_cost: calculateTotalCost(), platform_fee: calculatePlatformFee() };
       if (tournamentId) {
         return Tournament.update(tournamentId, data);
       } else {
@@ -152,27 +174,26 @@ export default function TournamentBuilder() {
     },
     onSuccess: (result) => {
       if (!tournamentId && result?.id) {
-        navigate(`/organizer/tournaments/new/$\{result.id}`);
+        navigate(`/organizer/tournaments/new/${result.id}`, { replace: true });
       }
+      setLastSaved(new Date());
       queryClient.invalidateQueries(['organizer-tournaments']);
+      toast({ title: 'Draft saved', description: 'Your tournament has been saved as a draft.' });
+    },
+    onError: (err) => {
+      console.error('[save tournament]', err);
+      toast({ title: 'Save failed', description: err.message || 'Could not save tournament.', variant: 'destructive' });
     }
   });
 
   const publishTournamentMutation = useMutation({
     mutationFn: async () => {
-      const totalCost = calculateTotalCost();
-      const itemsSubtotal = calculateItemsSubtotal();
-      const mainContribution = Math.round(totalCost * (commitmentPercent / 100));
-
-      // Save with updated cost fields
+      // Step 1: Save tournament with all fields (including radar funding percent for shared)
       const dataToSave = {
         ...tournament,
         organizer_id: user?.id,
         main_organizer_id: user?.id,
-        total_cost: totalCost,
-        organizer_contribution: mainContribution,
-        main_organizer_percent: commitmentPercent,
-        status: tournament.tournament_type === 'shared' ? 'draft' : 'published',
+        radar_funding_percent: tournament.tournament_type === 'shared' ? commitmentPercent : 100,
       };
 
       let tId = tournamentId;
@@ -183,85 +204,19 @@ export default function TournamentBuilder() {
         tId = created.id;
       }
 
-      // Build order items list
-      const orderItems = [];
-      tournament.branding_items?.forEach(id => {
-        const item = marketplaceItems.find(i => i.id === id);
-        if (item) orderItems.push({ item_id: id, title: item.title, price: item.price, quantity: 1, category: 'branding', status: 'pending', assigned_to: 'main_organizer' });
-      });
-      tournament.production_items?.forEach(id => {
-        const item = marketplaceItems.find(i => i.id === id);
-        if (item) orderItems.push({ item_id: id, title: item.title, price: item.price, quantity: 1, category: 'production', status: 'pending', assigned_to: 'main_organizer' });
-      });
-      tournament.talents?.forEach(t => {
-        orderItems.push({ item_id: t.user_id, title: `Talent: ${t.talent_type}`, price: t.price, quantity: 1, category: 'talent', status: 'pending', assigned_to: 'main_organizer' });
-      });
-      tournament.prizepool_items?.forEach(id => {
-        const item = marketplaceItems.find(i => i.id === id);
-        if (item) orderItems.push({ item_id: id, title: item.title, price: item.price, quantity: 1, category: 'prizepool', status: 'pending', assigned_to: 'main_organizer' });
-      });
-      tournament.venue_items?.forEach(id => {
-        const item = marketplaceItems.find(i => i.id === id);
-        if (item) orderItems.push({ item_id: id, title: item.title, price: item.price, quantity: 1, category: 'venue', status: 'pending', assigned_to: 'main_organizer' });
-      });
-
-      // Auto-create TournamentOrder
-      await TournamentOrder.create({
-        tournament_id: tId,
-        tournament_name: tournament.name,
-        tournament_type: tournament.tournament_type,
-        main_organizer_id: user?.id,
-        main_organizer_brand: profile?.brand_name || '',
-        items: orderItems,
-        subtotal_items: itemsSubtotal,
-        prizepool_amount: tournament.prizepool_total || 0,
-        grand_total: totalCost,
-        main_organizer_owes: mainContribution,
-        fulfillment_status: 'pending_payment',
-      });
-
-      // If shared: auto-create SponsorshipRadar
-      if (tournament.tournament_type === 'shared') {
-        const orderBreakdown = orderItems.map(i => ({
-          item_id: i.item_id,
-          title: i.title,
-          price: i.price,
-          category: i.category,
-          paid_by: 'organizer',
-        }));
-
-        const radarRecord = await SponsorshipRadar.create({
-          tournament_id: tId,
-          tournament_name: tournament.name,
-          main_organizer_id: user?.id,
-          main_organizer_brand: { name: profile?.brand_name, logo: profile?.brand_logo, primary_color: profile?.primary_color },
-          game: tournament.game,
-          schedule: tournament.schedule,
-          description: tournament.description,
-          total_cost: totalCost,
-          prizepool_amount: tournament.prizepool_total || 0,
-          main_organizer_contribution: mainContribution,
-          main_organizer_percent: commitmentPercent,
-          amount_still_needed: totalCost - mainContribution,
-          funding_percent: commitmentPercent,
-          status: 'open',
-          co_organizers: [],
-          order_breakdown: orderBreakdown,
-          chat: [],
-        });
-
-        // Link radar record back to tournament
-        await Tournament.update(tId, {
-          sponsorship_radar_id: radarRecord.id,
-          on_radar: true,
-          radar_funding_percent: commitmentPercent,
-        });
-      }
+      // Step 2: Call backend publish endpoint — handles TournamentOrder, Bill, SponsorshipRadar atomically
+      await Tournament.publish(tId);
 
       queryClient.invalidateQueries(['organizer-tournaments']);
+      return tId;
     },
     onSuccess: () => {
-      navigate('/organizer-tournaments');
+      toast({ title: 'Tournament published!', description: 'Your tournament is now live.' });
+      navigate('/organizer/tournaments');
+    },
+    onError: (err) => {
+      console.error('[publish tournament]', err);
+      toast({ title: 'Publish failed', description: err.message || 'Could not publish tournament.', variant: 'destructive' });
     }
   });
 
@@ -287,8 +242,16 @@ export default function TournamentBuilder() {
     return cost;
   };
 
-  const calculateTotalCost = () => {
+  const calculateSubtotal = () => {
     return calculateItemsSubtotal() + (tournament.prizepool_total || 0);
+  };
+
+  const calculatePlatformFee = () => {
+    return Math.round(calculateSubtotal() * 0.15);
+  };
+
+  const calculateTotalCost = () => {
+    return calculateSubtotal() + calculatePlatformFee();
   };
 
   // Required items for shared tournaments: live_talent + production categories
@@ -437,6 +400,65 @@ export default function TournamentBuilder() {
                 placeholder="Describe your tournament..."
                 className="bg-zinc-800 border-zinc-700 text-white"
                 rows={4}
+              />
+            </div>
+
+            <div>
+              <label className="text-sm text-gray-400 block mb-2">Tournament Cover Image</label>
+              <div className="flex items-center gap-3">
+                <label className="cursor-pointer inline-flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm font-medium transition-colors">
+                  <Image className="w-4 h-4" />
+                  Upload Image
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={async (e) => {
+                      const file = e.target.files?.[0];
+                      if (!file) return;
+                      try {
+                        const { file_url } = await uploadFile(file);
+                        setTournament(prev => ({ ...prev, tournament_image: file_url }));
+                      } catch (err) {
+                        console.error('Upload failed:', err);
+                      }
+                    }}
+                  />
+                </label>
+                <span className="text-xs text-gray-500">or paste URL below</span>
+              </div>
+              <Input
+                value={tournament.tournament_image}
+                onChange={(e) => setTournament({ ...tournament, tournament_image: e.target.value })}
+                placeholder="https://... (cover image shown on tournament page)"
+                className="bg-zinc-800 border-zinc-700 text-white mt-2"
+              />
+              {tournament.tournament_image && (
+                <div className="mt-2 h-32 rounded-lg overflow-hidden bg-zinc-800">
+                  <img src={tournament.tournament_image} alt="Preview" className="w-full h-full object-cover opacity-80" />
+                </div>
+              )}
+            </div>
+
+            <div>
+              <label className="text-sm text-gray-400 block mb-2">Stream Embed URL (optional)</label>
+              <Input
+                value={tournament.stream_embed_url}
+                onChange={(e) => setTournament({ ...tournament, stream_embed_url: e.target.value })}
+                placeholder="https://player.twitch.tv/?channel=... or YouTube embed URL"
+                className="bg-zinc-800 border-zinc-700 text-white"
+              />
+              <p className="text-xs text-gray-500 mt-1">Stream will appear on the tournament page when live</p>
+            </div>
+
+            <div>
+              <label className="text-sm text-gray-400 block mb-2">Signup Rules</label>
+              <Textarea
+                value={tournament.signup_rules}
+                onChange={(e) => setTournament({ ...tournament, signup_rules: e.target.value })}
+                placeholder="Rules for teams joining this tournament..."
+                className="bg-zinc-800 border-zinc-700 text-white"
+                rows={3}
               />
             </div>
           </div>
@@ -964,27 +986,51 @@ export default function TournamentBuilder() {
   };
 
   return (
-    <OrganizerLayout user={user} profile={profile}>
+    <>
       {/* Header */}
       <div className="flex items-start justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-black text-white">
-            {tournamentId ? 'Edit Tournament' : 'Create Tournament'}
-          </h1>
-          <p className="text-gray-400">{tournament.name || 'Untitled Tournament'}</p>
+          <div className="flex items-center gap-3 mb-1">
+            <h1 className="text-2xl font-black text-white">
+              {tournamentId ? 'Edit Tournament' : 'Build Tournament'}
+            </h1>
+            <span className="text-xs bg-red-500/20 text-red-400 border border-red-500/30 px-2 py-0.5 rounded-full font-medium">
+              Stage {currentStage + 1}/{STAGES.length}
+            </span>
+          </div>
+          <div className="flex items-center gap-3">
+            <p className="text-gray-400">{tournament.name || 'Untitled Tournament'}</p>
+            {lastSaved && (
+              <span className="text-xs text-gray-500 flex items-center gap-1">
+                <Check className="w-3 h-3 text-green-500" />
+                Saved {lastSaved.toLocaleTimeString()}
+              </span>
+            )}
+            {saveTournamentMutation.isPending && (
+              <span className="text-xs text-red-400 animate-pulse">Saving...</span>
+            )}
+          </div>
         </div>
         <div className="flex gap-2">
-          <GlowButton 
-            variant="ghost" 
-            onClick={() => saveTournamentMutation.mutate()}
+          <GlowButton
+            variant="ghost"
+            onClick={() => {
+              saveTournamentMutation.mutate();
+              setLastSaved(new Date());
+            }}
           >
             <Save className="w-4 h-4" /> Save Draft
           </GlowButton>
-          <GlowButton 
+          <GlowButton
             onClick={() => publishTournamentMutation.mutate()}
-            disabled={!tournament.name || !tournament.game}
+            disabled={!tournament.name || !tournament.game || publishTournamentMutation.isPending}
+            className="bg-gradient-to-r from-red-600 to-red-500 hover:from-red-500 hover:to-red-400"
           >
-            <Send className="w-4 h-4" /> Publish
+            {publishTournamentMutation.isPending ? (
+              <><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin inline-block" /> Publishing...</>
+            ) : (
+              <><Send className="w-4 h-4" /> {tournament.tournament_type === 'shared' ? 'Publish to Radar' : 'Publish'}</>
+            )}
           </GlowButton>
         </div>
       </div>
@@ -997,10 +1043,10 @@ export default function TournamentBuilder() {
             onClick={() => setCurrentStage(i)}
             className={`flex items-center gap-2 px-4 py-2 rounded-lg whitespace-nowrap transition-all ${
               i === currentStage
-                ? 'bg-red-500/20 text-red-400 border border-red-500/50'
+                ? 'bg-red-500/20 text-red-400 border border-red-500/50 shadow-lg shadow-red-500/10'
                 : i < currentStage
-                ? 'bg-green-500/10 text-green-400'
-                : 'bg-zinc-800/50 text-gray-500 hover:bg-zinc-800'
+                ? 'bg-green-500/10 text-green-400 border border-green-500/20'
+                : 'bg-zinc-800/50 text-gray-500 hover:bg-zinc-800 hover:text-gray-300'
             }`}
           >
             <stage.icon className="w-4 h-4" />
@@ -1044,9 +1090,9 @@ export default function TournamentBuilder() {
 
         {/* Sidebar - Cost Summary */}
         <div>
-          <FloatingPanel className="p-5 sticky top-4" glowBorder>
+          <FloatingPanel className="p-5 sticky top-4 border border-red-500/20" glowBorder>
             <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
-              <DollarSign className="w-5 h-5 text-green-500" />
+              <DollarSign className="w-5 h-5 text-red-400" />
               Cost Summary
             </h3>
             
@@ -1110,15 +1156,36 @@ export default function TournamentBuilder() {
               </div>
               {(tournament.prizepool_total || 0) > 0 && (
                 <div className="flex justify-between text-sm">
-                  <span className="text-yellow-400">Prize Pool (included in total)</span>
+                  <span className="text-yellow-400">Prize Pool</span>
                   <span className="text-yellow-400 font-bold">EGP {(tournament.prizepool_total || 0).toLocaleString()}</span>
                 </div>
               )}
-              <div className="flex justify-between text-lg font-bold border-t border-zinc-700 pt-2">
-                <span className="text-gray-400">Total</span>
-                <span className="text-green-400">EGP {calculateTotalCost().toLocaleString()}</span>
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-400">Subtotal</span>
+                <span className="text-white">EGP {calculateSubtotal().toLocaleString()}</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-red-400">Platform Fee (15%)</span>
+                <span className="text-red-400 font-medium">EGP {calculatePlatformFee().toLocaleString()}</span>
+              </div>
+              <div className="flex justify-between text-lg font-bold border-t border-red-500/30 pt-2">
+                <span className="text-gray-300">Grand Total</span>
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-red-400 to-red-300">EGP {calculateTotalCost().toLocaleString()}</span>
               </div>
             </div>
+
+            {tournament.tournament_type === 'shared' && commitmentPercent > 0 && (
+              <div className="mt-3 p-3 bg-red-500/10 border border-red-500/20 rounded-lg space-y-1">
+                <div className="flex justify-between text-xs">
+                  <span className="text-red-300">Your Share ({commitmentPercent}%)</span>
+                  <span className="text-red-400 font-bold">EGP {Math.round(calculateTotalCost() * (commitmentPercent / 100)).toLocaleString()}</span>
+                </div>
+                <div className="flex justify-between text-xs">
+                  <span className="text-gray-500">Needed from co-orgs</span>
+                  <span className="text-gray-400">EGP {Math.round(calculateTotalCost() * ((100 - commitmentPercent) / 100)).toLocaleString()}</span>
+                </div>
+              </div>
+            )}
 
             <div className="mt-4 pt-4 border-t border-zinc-800">
               <p className="text-xs text-gray-500 mb-2">Summary</p>
@@ -1126,11 +1193,12 @@ export default function TournamentBuilder() {
                 <li>• {tournament.invited_teams?.length || 0} teams invited</li>
                 <li>• {tournament.talents?.length || 0} talents hired</li>
                 <li>• {tournament.prizepool_items?.length || 0} prizes</li>
+                <li>• Type: {tournament.tournament_type === 'shared' ? 'Shared (Radar)' : 'Solo'}</li>
               </ul>
             </div>
           </FloatingPanel>
         </div>
       </div>
-    </OrganizerLayout>
+    </>
   );
 }
