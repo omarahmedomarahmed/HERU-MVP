@@ -49,7 +49,7 @@ export default function CoOrganizedTournaments() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="w-8 h-8 border-2 border-purple-500 border-t-transparent rounded-full animate-spin" />
+        <div className="w-8 h-8 border-2 border-red-500 border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
@@ -60,7 +60,7 @@ export default function CoOrganizedTournaments() {
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-black text-white flex items-center gap-3">
-            <Share2 className="w-7 h-7 text-purple-400" />
+            <Share2 className="w-7 h-7 text-red-400" />
             Co-Organized Tournaments
           </h1>
           <p className="text-gray-400 mt-1">Tournaments you've joined as a co-organizer or sponsor</p>
@@ -99,7 +99,7 @@ export default function CoOrganizedTournaments() {
           <h3 className="text-xl font-bold text-white mb-2">No Co-Organized Tournaments Yet</h3>
           <p className="text-gray-400 mb-6">Browse the Sponsorship Radar to find tournaments looking for co-organizers</p>
           <Link to="/organizer/radar">
-            <GlowButton className="bg-gradient-to-r from-purple-600 to-blue-600">
+            <GlowButton className="bg-gradient-to-r from-red-600 to-red-600">
               Explore Radar
             </GlowButton>
           </Link>
@@ -118,14 +118,14 @@ export default function CoOrganizedTournaments() {
                   : `/organizer/billing/${bill?.bill_number}`
                 }
               >
-                <FloatingPanel className="p-5 hover:border-purple-500/40 transition-all cursor-pointer group">
+                <FloatingPanel className="p-5 hover:border-red-500/40 transition-all cursor-pointer group">
                   <div className="flex items-start justify-between mb-3">
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-purple-600/30 to-blue-600/30 flex items-center justify-center">
-                        <Trophy className="w-5 h-5 text-purple-400" />
+                      <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-red-600/30 to-red-600/30 flex items-center justify-center">
+                        <Trophy className="w-5 h-5 text-red-400" />
                       </div>
                       <div>
-                        <h3 className="text-white font-bold group-hover:text-purple-300 transition-colors">
+                        <h3 className="text-white font-bold group-hover:text-red-300 transition-colors">
                           {t.tournament_name || 'Untitled Tournament'}
                         </h3>
                         {bill?.tournament_name && (
@@ -153,7 +153,7 @@ export default function CoOrganizedTournaments() {
                         </span>
                       )}
                     </div>
-                    <ChevronRight className="w-4 h-4 text-gray-500 group-hover:text-purple-400 transition-colors" />
+                    <ChevronRight className="w-4 h-4 text-gray-500 group-hover:text-red-400 transition-colors" />
                   </div>
                 </FloatingPanel>
               </Link>

@@ -32,7 +32,7 @@ export default function TournamentReportPublic() {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center">
-        <div className="w-8 h-8 border-2 border-purple-500 border-t-transparent rounded-full animate-spin" />
+        <div className="w-8 h-8 border-2 border-red-500 border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
@@ -49,7 +49,7 @@ export default function TournamentReportPublic() {
     return (
       <div className="min-h-screen bg-[#0a0a0a] text-white">
         <div className="max-w-4xl mx-auto px-4 py-8">
-          <Link to={`/tournaments/${id}`} className="inline-flex items-center gap-2 text-gray-400 hover:text-purple-400 mb-6 text-sm">
+          <Link to={`/tournaments/${id}`} className="inline-flex items-center gap-2 text-gray-400 hover:text-red-400 mb-6 text-sm">
             <ArrowLeft className="w-4 h-4" /> Back to Tournament
           </Link>
           <div className="bg-[#1a1a2e] rounded-xl p-8 text-center border border-gray-800">
@@ -62,10 +62,10 @@ export default function TournamentReportPublic() {
   }
 
   const kpis = [
-    { label: 'Total Viewers', value: fmtNum(report.total_viewers), icon: Eye, color: 'text-blue-400' },
-    { label: 'Peak Viewers', value: fmtNum(report.peak_viewers), icon: TrendingUp, color: 'text-purple-400' },
+    { label: 'Total Viewers', value: fmtNum(report.total_viewers), icon: Eye, color: 'text-red-400' },
+    { label: 'Peak Viewers', value: fmtNum(report.peak_viewers), icon: TrendingUp, color: 'text-red-400' },
     { label: 'Social Reach', value: fmtNum(report.social_reach), icon: Users, color: 'text-cyan-400' },
-    { label: 'Discord Members', value: fmtNum(report.discord_members), icon: MessageSquare, color: 'text-indigo-400' },
+    { label: 'Discord Members', value: fmtNum(report.discord_members), icon: MessageSquare, color: 'text-red-400' },
     { label: 'HERU Signups', value: fmtNum(report.heru_signups), icon: Trophy, color: 'text-green-400' },
     { label: 'Stream Hours', value: report.stream_hours || 0, icon: Monitor, color: 'text-red-400' },
   ];
@@ -76,13 +76,13 @@ export default function TournamentReportPublic() {
   return (
     <div className="min-h-screen bg-[#0a0a0a] text-white">
       <div className="max-w-4xl mx-auto px-4 py-8">
-        <Link to={`/tournaments/${id}`} className="inline-flex items-center gap-2 text-gray-400 hover:text-purple-400 mb-6 text-sm">
+        <Link to={`/tournaments/${id}`} className="inline-flex items-center gap-2 text-gray-400 hover:text-red-400 mb-6 text-sm">
           <ArrowLeft className="w-4 h-4" /> Back to Tournament
         </Link>
 
         {/* Header */}
         <div className="bg-[#1a1a2e] rounded-2xl p-6 md:p-8 border border-gray-800 mb-6">
-          <div className="flex items-center gap-2 text-purple-400 text-sm font-medium mb-2">
+          <div className="flex items-center gap-2 text-red-400 text-sm font-medium mb-2">
             <BarChart3 className="w-4 h-4" /> TOURNAMENT REPORT
           </div>
           <h1 className="text-2xl md:text-3xl font-bold mb-2">{tournament.name}</h1>
@@ -127,14 +127,14 @@ export default function TournamentReportPublic() {
         {screenshots.length > 0 && (
           <div className="bg-[#1a1a2e] rounded-xl p-6 border border-gray-800 mb-6">
             <h2 className="font-semibold text-lg mb-4 flex items-center gap-2">
-              <Camera className="w-5 h-5 text-purple-400" /> KPI Screenshots
+              <Camera className="w-5 h-5 text-red-400" /> KPI Screenshots
             </h2>
             <div className="grid md:grid-cols-2 gap-4">
               {screenshots.map((ss, i) => (
                 <div key={i} className="border border-gray-700 rounded-lg overflow-hidden">
                   {ss.url && <img src={ss.url} alt={ss.caption || ''} className="w-full h-48 object-cover" />}
                   <div className="p-3">
-                    {ss.category && <span className="text-xs text-purple-400 font-medium">{ss.category}</span>}
+                    {ss.category && <span className="text-xs text-red-400 font-medium">{ss.category}</span>}
                     {ss.caption && <p className="text-sm text-gray-300 mt-1">{ss.caption}</p>}
                   </div>
                 </div>
@@ -147,13 +147,13 @@ export default function TournamentReportPublic() {
         {socialPosts.length > 0 && (
           <div className="bg-[#1a1a2e] rounded-xl p-6 border border-gray-800">
             <h2 className="font-semibold text-lg mb-4 flex items-center gap-2">
-              <ExternalLink className="w-5 h-5 text-blue-400" /> Social Media Coverage
+              <ExternalLink className="w-5 h-5 text-red-400" /> Social Media Coverage
             </h2>
             <div className="space-y-3">
               {socialPosts.map((post, i) => (
                 <a key={i} href={post.url} target="_blank" rel="noopener noreferrer"
-                  className="flex items-center gap-3 p-3 bg-[#0f0f1a] rounded-lg hover:bg-purple-900/20 transition-colors">
-                  <span className="px-2 py-1 bg-purple-500/20 text-purple-400 rounded text-xs font-medium">{post.platform}</span>
+                  className="flex items-center gap-3 p-3 bg-[#0f0f1a] rounded-lg hover:bg-red-900/20 transition-colors">
+                  <span className="px-2 py-1 bg-red-500/20 text-red-400 rounded text-xs font-medium">{post.platform}</span>
                   <span className="text-gray-300 text-sm truncate flex-1">{post.url}</span>
                   <ExternalLink className="w-4 h-4 text-gray-500" />
                 </a>

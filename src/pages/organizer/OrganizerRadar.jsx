@@ -18,7 +18,7 @@ function FundingBar({ percent }) {
   return (
     <div className="w-full h-2 rounded-full bg-white/10 overflow-hidden">
       <div
-        className="h-full rounded-full bg-gradient-to-r from-violet-500 to-blue-500 transition-all duration-500"
+        className="h-full rounded-full bg-gradient-to-r from-violet-500 to-red-500 transition-all duration-500"
         style={{ width: `${Math.min(percent || 0, 100)}%` }}
       />
     </div>
@@ -106,7 +106,7 @@ function RadarCard({ listing, onClick }) {
       <FundingBar percent={percentFunded} />
       <div className="flex items-center justify-between mt-2 text-xs">
         <span className="text-gray-500">{Math.round(percentFunded)}% funded</span>
-        <span className="text-blue-400 font-medium">{formatEGP(amountNeeded)} needed</span>
+        <span className="text-red-400 font-medium">{formatEGP(amountNeeded)} needed</span>
       </div>
 
       {/* Description preview */}

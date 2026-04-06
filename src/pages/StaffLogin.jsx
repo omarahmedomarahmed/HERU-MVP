@@ -57,17 +57,17 @@ export default function StaffLogin() {
 
         <FloatingPanel className="p-8" glowBorder>
           <div className="text-center mb-8">
-            <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-purple-600/30 to-zinc-800 flex items-center justify-center mx-auto mb-4">
-              <Shield className="w-8 h-8 text-purple-400" />
+            <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-red-600/30 to-zinc-800 flex items-center justify-center mx-auto mb-4">
+              <Shield className="w-8 h-8 text-red-400" />
             </div>
             <HeruLogo className="h-10 mx-auto mb-3" />
             <h1 className="text-2xl font-black text-white">STAFF ACCESS</h1>
             <p className="text-gray-400 mt-1 text-sm">Restricted area — authorized personnel only</p>
           </div>
 
-          <div className="flex items-center gap-2 p-3 bg-purple-500/10 border border-purple-500/30 rounded-lg mb-6">
-            <Lock className="w-4 h-4 text-purple-400 flex-shrink-0" />
-            <p className="text-purple-300 text-xs">This area is restricted to HERU staff with admin privileges.</p>
+          <div className="flex items-center gap-2 p-3 bg-red-500/10 border border-red-500/30 rounded-lg mb-6">
+            <Lock className="w-4 h-4 text-red-400 flex-shrink-0" />
+            <p className="text-red-300 text-xs">This area is restricted to HERU staff with admin privileges.</p>
           </div>
 
           <form onSubmit={handleLogin} className="space-y-4">

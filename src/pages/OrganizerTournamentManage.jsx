@@ -237,7 +237,7 @@ export default function OrganizerTournamentManage() {
           </Link>
           <HexBadge className={
             tournament.status === 'live' ? 'bg-green-500/20 text-green-400' :
-            tournament.status === 'published' ? 'bg-blue-500/20 text-blue-400' :
+            tournament.status === 'published' ? 'bg-red-500/20 text-red-400' :
             tournament.status === 'completed' ? 'bg-gray-500/20 text-gray-400' : ''
           }>
             {tournament.status}
@@ -263,7 +263,7 @@ export default function OrganizerTournamentManage() {
           <p className="text-gray-500 text-xs">Prize Pool</p>
         </FloatingPanel>
         <FloatingPanel className="p-4 text-center">
-          <MessageSquare className="w-6 h-6 text-blue-500 mx-auto mb-2" />
+          <MessageSquare className="w-6 h-6 text-red-500 mx-auto mb-2" />
           <p className="text-2xl font-bold text-white">{tournament.general_chat?.length || 0}</p>
           <p className="text-gray-500 text-xs">Messages</p>
         </FloatingPanel>

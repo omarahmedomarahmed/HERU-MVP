@@ -163,7 +163,7 @@ export default function TournamentBuilder() {
 
   const saveTournamentMutation = useMutation({
     mutationFn: async () => {
-      const data = { ...tournament, organizer_id: user?.id, total_cost: calculateTotalCost() };
+      const data = { ...tournament, organizer_id: user?.id, total_cost: calculateTotalCost(), platform_fee: calculatePlatformFee() };
       if (tournamentId) {
         return Tournament.update(tournamentId, data);
       } else {
@@ -204,7 +204,7 @@ export default function TournamentBuilder() {
       return tId;
     },
     onSuccess: () => {
-      navigate('/organizer/billing');
+      navigate('/organizer/tournaments');
     }
   });
 
@@ -982,7 +982,7 @@ export default function TournamentBuilder() {
             <h1 className="text-2xl font-black text-white">
               {tournamentId ? 'Edit Tournament' : 'Build Tournament'}
             </h1>
-            <span className="text-xs bg-purple-500/20 text-purple-400 border border-purple-500/30 px-2 py-0.5 rounded-full font-medium">
+            <span className="text-xs bg-red-500/20 text-red-400 border border-red-500/30 px-2 py-0.5 rounded-full font-medium">
               Stage {currentStage + 1}/{STAGES.length}
             </span>
           </div>
@@ -995,7 +995,7 @@ export default function TournamentBuilder() {
               </span>
             )}
             {saveTournamentMutation.isPending && (
-              <span className="text-xs text-purple-400 animate-pulse">Saving...</span>
+              <span className="text-xs text-red-400 animate-pulse">Saving...</span>
             )}
           </div>
         </div>
@@ -1011,10 +1011,14 @@ export default function TournamentBuilder() {
           </GlowButton>
           <GlowButton
             onClick={() => publishTournamentMutation.mutate()}
-            disabled={!tournament.name || !tournament.game}
-            className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500"
+            disabled={!tournament.name || !tournament.game || publishTournamentMutation.isPending}
+            className="bg-gradient-to-r from-red-600 to-red-500 hover:from-red-500 hover:to-red-400"
           >
-            <Send className="w-4 h-4" /> {tournament.tournament_type === 'shared' ? 'Publish to Radar' : 'Publish'}
+            {publishTournamentMutation.isPending ? (
+              <><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin inline-block" /> Publishing...</>
+            ) : (
+              <><Send className="w-4 h-4" /> {tournament.tournament_type === 'shared' ? 'Publish to Radar' : 'Publish'}</>
+            )}
           </GlowButton>
         </div>
       </div>
@@ -1027,7 +1031,7 @@ export default function TournamentBuilder() {
             onClick={() => setCurrentStage(i)}
             className={`flex items-center gap-2 px-4 py-2 rounded-lg whitespace-nowrap transition-all ${
               i === currentStage
-                ? 'bg-purple-500/20 text-purple-400 border border-purple-500/50 shadow-lg shadow-purple-500/10'
+                ? 'bg-red-500/20 text-red-400 border border-red-500/50 shadow-lg shadow-red-500/10'
                 : i < currentStage
                 ? 'bg-green-500/10 text-green-400 border border-green-500/20'
                 : 'bg-zinc-800/50 text-gray-500 hover:bg-zinc-800 hover:text-gray-300'
@@ -1074,9 +1078,9 @@ export default function TournamentBuilder() {
 
         {/* Sidebar - Cost Summary */}
         <div>
-          <FloatingPanel className="p-5 sticky top-4 border border-purple-500/20" glowBorder>
+          <FloatingPanel className="p-5 sticky top-4 border border-red-500/20" glowBorder>
             <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
-              <DollarSign className="w-5 h-5 text-purple-400" />
+              <DollarSign className="w-5 h-5 text-red-400" />
               Cost Summary
             </h3>
             
@@ -1149,20 +1153,20 @@ export default function TournamentBuilder() {
                 <span className="text-white">EGP {calculateSubtotal().toLocaleString()}</span>
               </div>
               <div className="flex justify-between text-sm">
-                <span className="text-blue-400">Platform Fee (15%)</span>
-                <span className="text-blue-400 font-medium">EGP {calculatePlatformFee().toLocaleString()}</span>
+                <span className="text-red-400">Platform Fee (15%)</span>
+                <span className="text-red-400 font-medium">EGP {calculatePlatformFee().toLocaleString()}</span>
               </div>
-              <div className="flex justify-between text-lg font-bold border-t border-purple-500/30 pt-2">
+              <div className="flex justify-between text-lg font-bold border-t border-red-500/30 pt-2">
                 <span className="text-gray-300">Grand Total</span>
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-cyan-400">EGP {calculateTotalCost().toLocaleString()}</span>
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-red-400 to-red-300">EGP {calculateTotalCost().toLocaleString()}</span>
               </div>
             </div>
 
             {tournament.tournament_type === 'shared' && commitmentPercent > 0 && (
-              <div className="mt-3 p-3 bg-purple-500/10 border border-purple-500/20 rounded-lg space-y-1">
+              <div className="mt-3 p-3 bg-red-500/10 border border-red-500/20 rounded-lg space-y-1">
                 <div className="flex justify-between text-xs">
-                  <span className="text-purple-300">Your Share ({commitmentPercent}%)</span>
-                  <span className="text-purple-400 font-bold">EGP {Math.round(calculateTotalCost() * (commitmentPercent / 100)).toLocaleString()}</span>
+                  <span className="text-red-300">Your Share ({commitmentPercent}%)</span>
+                  <span className="text-red-400 font-bold">EGP {Math.round(calculateTotalCost() * (commitmentPercent / 100)).toLocaleString()}</span>
                 </div>
                 <div className="flex justify-between text-xs">
                   <span className="text-gray-500">Needed from co-orgs</span>

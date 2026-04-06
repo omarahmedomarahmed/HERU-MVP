@@ -8,14 +8,14 @@ import { useAuth } from '@/lib/AuthContext';
 
 const STATUS_COLORS = {
   open:         'bg-green-500/20 text-green-400 border border-green-500/30',
-  in_progress:  'bg-blue-500/20 text-blue-400 border border-blue-500/30',
+  in_progress:  'bg-red-500/20 text-red-400 border border-red-500/30',
   fully_funded: 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/30',
   closed:       'bg-zinc-700 text-zinc-400 border border-zinc-600',
 };
 
 function FundingBar({ percent }) {
   const pct = Math.min(100, percent || 0);
-  const color = pct >= 100 ? 'bg-yellow-400' : pct >= 60 ? 'bg-green-400' : pct >= 30 ? 'bg-blue-400' : 'bg-red-400';
+  const color = pct >= 100 ? 'bg-yellow-400' : pct >= 60 ? 'bg-green-400' : pct >= 30 ? 'bg-red-400' : 'bg-red-400';
   return (
     <div className="w-full">
       <div className="flex items-center justify-between text-xs mb-1">
@@ -67,7 +67,7 @@ export default function StaffRadarPanel() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-white">
-          Sponsorship <span className="text-blue-400">Radar</span>
+          Sponsorship <span className="text-red-400">Radar</span>
         </h1>
         <p className="text-gray-500 text-sm mt-1">{radarListings.length} total listings</p>
       </div>
@@ -91,7 +91,7 @@ export default function StaffRadarPanel() {
               value={search}
               onChange={e => setSearch(e.target.value)}
               placeholder="Search by tournament or organizer..."
-              className="w-full pl-10 pr-4 py-2.5 bg-zinc-800 border border-zinc-700 rounded-lg text-white text-sm placeholder-gray-500 focus:outline-none focus:border-blue-500"
+              className="w-full pl-10 pr-4 py-2.5 bg-zinc-800 border border-zinc-700 rounded-lg text-white text-sm placeholder-gray-500 focus:outline-none focus:border-red-500"
             />
           </div>
           <div className="flex items-center gap-2 flex-wrap">
@@ -101,7 +101,7 @@ export default function StaffRadarPanel() {
                 key={s}
                 onClick={() => setStatusFilter(s)}
                 className={`px-3 py-2 rounded-lg text-xs font-medium capitalize transition-colors whitespace-nowrap ${
-                  statusFilter === s ? 'bg-blue-600 text-white' : 'bg-zinc-800 text-gray-400 hover:text-white'
+                  statusFilter === s ? 'bg-red-600 text-white' : 'bg-zinc-800 text-gray-400 hover:text-white'
                 }`}
               >
                 {s === 'all' ? 'All' : s.replace(/_/g, ' ')}
@@ -183,7 +183,7 @@ export default function StaffRadarPanel() {
                     e.stopPropagation();
                     updateStatusMutation.mutate({ id: r.id, status: e.target.value });
                   }}
-                  className="text-xs bg-zinc-800 border border-zinc-700 text-white rounded px-2 py-1 focus:outline-none focus:border-blue-500"
+                  className="text-xs bg-zinc-800 border border-zinc-700 text-white rounded px-2 py-1 focus:outline-none focus:border-red-500"
                 >
                   <option value="open">Open</option>
                   <option value="in_progress">In Progress</option>
@@ -202,7 +202,7 @@ export default function StaffRadarPanel() {
           <div onClick={e => e.stopPropagation()} className="bg-zinc-900 border border-zinc-800 rounded-xl w-full max-w-lg max-h-[80vh] overflow-y-auto p-6 space-y-5">
             <div className="flex items-center justify-between">
               <h2 className="text-lg font-bold text-white flex items-center gap-2">
-                <Radar className="w-5 h-5 text-blue-400" />
+                <Radar className="w-5 h-5 text-red-400" />
                 {selected.tournament_name}
               </h2>
               <button onClick={() => setSelected(null)} className="text-gray-500 hover:text-white text-xl">&times;</button>

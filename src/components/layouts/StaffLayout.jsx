@@ -1,10 +1,11 @@
 import React, { useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { clearStaffSession } from '@/lib/staffAuth'
+import HeruLogo from '@/components/shared/HeruLogo'
 import {
   LayoutDashboard, Trophy, Users, Building2, MessageSquare, CheckCircle,
   CreditCard, Receipt, ShoppingBag, Radar, Settings, Menu, X, LogOut,
-  TrendingUp, ChevronLeft, ChevronRight, Shield, Bell, Search,
+  TrendingUp, ChevronLeft, ChevronRight, Shield, Bell, Search, ScrollText,
 } from 'lucide-react'
 
 const NAV_SECTIONS = [
@@ -38,6 +39,7 @@ const NAV_SECTIONS = [
   {
     label: 'System',
     items: [
+      { to: '/staff/audit', icon: ScrollText, text: 'Audit Trail' },
       { to: '/staff/settings', icon: Settings, text: 'Settings' },
     ],
   },
@@ -64,7 +66,7 @@ export default function StaffLayout({ children }) {
         {NAV_SECTIONS.map((section) => (
           <div key={section.label}>
             {!(collapsed && !isMobile) && (
-              <p className="px-3 mb-2 text-[10px] font-bold uppercase tracking-[0.15em] text-blue-400/50">
+              <p className="px-3 mb-2 text-[10px] font-bold uppercase tracking-[0.15em] text-red-400/50">
                 {section.label}
               </p>
             )}
@@ -78,15 +80,15 @@ export default function StaffLayout({ children }) {
                     onClick={isMobile ? () => setDrawerOpen(false) : undefined}
                     className={`flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-medium transition-all ${
                       active
-                        ? 'bg-blue-500/10 text-blue-400 shadow-sm shadow-blue-500/5'
+                        ? 'bg-red-500/10 text-red-400 shadow-sm shadow-red-500/5'
                         : 'text-gray-400 hover:bg-white/[0.04] hover:text-gray-200'
                     }`}
                     title={collapsed && !isMobile ? item.text : undefined}
                   >
-                    <item.icon size={18} className={`shrink-0 ${active ? 'text-blue-400' : ''}`} />
+                    <item.icon size={18} className={`shrink-0 ${active ? 'text-red-400' : ''}`} />
                     {!(collapsed && !isMobile) && <span className="truncate">{item.text}</span>}
                     {active && !(collapsed && !isMobile) && (
-                      <div className="ml-auto w-1.5 h-1.5 rounded-full bg-blue-400" />
+                      <div className="ml-auto w-1.5 h-1.5 rounded-full bg-red-400" />
                     )}
                   </Link>
                 )
@@ -99,12 +101,12 @@ export default function StaffLayout({ children }) {
       <div className="border-t border-white/[0.06] p-3">
         {!(collapsed && !isMobile) && (
           <div className="flex items-center gap-3 px-3 py-2 mb-2">
-            <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-blue-600 to-blue-800 flex items-center justify-center">
+            <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-red-600 to-red-800 flex items-center justify-center">
               <Shield size={14} className="text-white" />
             </div>
             <div className="min-w-0">
               <p className="text-sm font-semibold text-white truncate">Staff Admin</p>
-              <p className="text-[10px] text-blue-400/50 uppercase tracking-wider font-medium">Panel</p>
+              <p className="text-[10px] text-red-400/50 uppercase tracking-wider font-medium">Panel</p>
             </div>
           </div>
         )}
@@ -121,10 +123,10 @@ export default function StaffLayout({ children }) {
   )
 
   return (
-    <div className="flex h-screen bg-[#080810] overflow-hidden">
+    <div className="flex h-screen bg-[#0a0a0a] overflow-hidden">
       {/* ── Desktop sidebar ── */}
       <aside
-        className={`hidden md:flex md:flex-col border-r border-white/[0.06] bg-[#0a0a14] transition-[width] duration-300 ease-out z-10 ${
+        className={`hidden md:flex md:flex-col border-r border-white/[0.06] bg-[#0e0e0e] transition-[width] duration-300 ease-out z-10 ${
           collapsed ? 'w-[72px]' : 'w-[260px]'
         }`}
       >
@@ -132,13 +134,8 @@ export default function StaffLayout({ children }) {
         <div className="flex items-center justify-between h-16 px-4 border-b border-white/[0.06]">
           {!collapsed && (
             <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-blue-600 to-blue-800 flex items-center justify-center">
-                <Shield size={14} className="text-white" />
-              </div>
-              <div>
-                <span className="text-sm font-black tracking-wide text-white">HERU</span>
-                <span className="text-[10px] text-blue-400 ml-0.5 font-bold">STAFF</span>
-              </div>
+              <HeruLogo className="h-7" />
+              <span className="text-[10px] text-red-400 font-bold uppercase tracking-wider">Staff</span>
             </div>
           )}
           <button
@@ -155,7 +152,7 @@ export default function StaffLayout({ children }) {
       {/* ── Main column ── */}
       <div className="flex flex-col flex-1 min-w-0">
         {/* Top header */}
-        <header className="flex items-center justify-between h-14 px-4 md:px-6 bg-[#0a0a14]/80 backdrop-blur-sm border-b border-white/[0.06] z-20">
+        <header className="flex items-center justify-between h-14 px-4 md:px-6 bg-[#0e0e0e]/80 backdrop-blur-sm border-b border-white/[0.06] z-20">
           <div className="flex items-center gap-3">
             <button
               onClick={() => setDrawerOpen(true)}
@@ -165,10 +162,7 @@ export default function StaffLayout({ children }) {
             </button>
             {/* Mobile logo */}
             <div className="md:hidden flex items-center gap-2">
-              <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-blue-600 to-blue-800 flex items-center justify-center">
-                <Shield size={12} className="text-white" />
-              </div>
-              <span className="text-sm font-black text-white">HERU</span>
+              <HeruLogo className="h-6" />
             </div>
             {/* Page title */}
             <div className="hidden md:block">
@@ -181,10 +175,10 @@ export default function StaffLayout({ children }) {
             </button>
             <button className="p-2 text-gray-500 hover:text-gray-300 rounded-lg hover:bg-white/[0.04] transition-colors relative">
               <Bell size={18} />
-              <div className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-blue-500" />
+              <div className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-red-500" />
             </button>
             <div className="hidden sm:flex items-center gap-2 ml-2 px-3 py-1.5 rounded-xl bg-white/[0.04] border border-white/[0.06]">
-              <div className="w-6 h-6 rounded-lg bg-gradient-to-br from-blue-600 to-blue-800 flex items-center justify-center">
+              <div className="w-6 h-6 rounded-lg bg-gradient-to-br from-red-600 to-red-800 flex items-center justify-center">
                 <Shield size={10} className="text-white" />
               </div>
               <span className="text-sm text-gray-300 font-semibold">Admin</span>
@@ -199,13 +193,11 @@ export default function StaffLayout({ children }) {
               className="absolute inset-0 bg-black/60 backdrop-blur-sm"
               onClick={() => setDrawerOpen(false)}
             />
-            <div className="relative w-[280px] max-w-[85vw] bg-[#0a0a14] flex flex-col shadow-2xl">
+            <div className="relative w-[280px] max-w-[85vw] bg-[#0e0e0e] flex flex-col shadow-2xl">
               <div className="flex items-center justify-between px-4 h-14 border-b border-white/[0.06]">
                 <div className="flex items-center gap-2">
-                  <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-blue-600 to-blue-800 flex items-center justify-center">
-                    <Shield size={12} className="text-white" />
-                  </div>
-                  <span className="text-sm font-black text-white">HERU <span className="text-blue-400 text-[10px]">STAFF</span></span>
+                  <HeruLogo className="h-6" />
+                  <span className="text-red-400 text-[10px] font-bold uppercase">Staff</span>
                 </div>
                 <button
                   onClick={() => setDrawerOpen(false)}

@@ -20,7 +20,7 @@ import { uploadFile } from '@/lib/uploadFile'
 function StatusBadge({ status }) {
   const map = {
     open:         { label: 'Open',         cls: 'bg-green-500/20 text-green-400 border-green-500/30' },
-    in_progress:  { label: 'In Progress',  cls: 'bg-blue-500/20 text-blue-400 border-blue-500/30' },
+    in_progress:  { label: 'In Progress',  cls: 'bg-red-500/20 text-red-400 border-red-500/30' },
     fully_funded: { label: 'Fully Funded', cls: 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30' },
     closed:       { label: 'Closed',       cls: 'bg-zinc-500/20 text-zinc-400 border-zinc-500/30' },
   };
@@ -231,7 +231,7 @@ export default function RadarDetailPage() {
             <div className="flex items-start justify-between gap-4 flex-wrap">
               <div>
                 <div className="flex items-center gap-3 mb-2 flex-wrap">
-                  <span className="text-xs font-bold px-2 py-0.5 rounded border bg-blue-500/20 text-blue-400 border-blue-500/30">SHARED TOURNAMENT</span>
+                  <span className="text-xs font-bold px-2 py-0.5 rounded border bg-red-500/20 text-red-400 border-red-500/30">SHARED TOURNAMENT</span>
                   <StatusBadge status={radar.status} />
                 </div>
                 <h1 className="text-3xl font-black text-white mb-1">{radar.tournament_name}</h1>
@@ -374,7 +374,7 @@ export default function RadarDetailPage() {
             {radar.order_breakdown?.length > 0 && (
               <FloatingPanel className="p-6">
                 <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
-                  <Shield className="w-5 h-5 text-blue-400" /> Branding & Production Items
+                  <Shield className="w-5 h-5 text-red-400" /> Branding & Production Items
                 </h2>
                 <div className="space-y-2">
                   {radar.order_breakdown.map((item, i) => (
@@ -447,7 +447,7 @@ export default function RadarDetailPage() {
                             <span className={`text-[10px] px-2 py-0.5 rounded font-bold ${
                               msg.sender_role === 'main_organizer' ? 'bg-red-500/20 text-red-400' :
                               msg.sender_role === 'staff' ? 'bg-yellow-500/20 text-yellow-400' :
-                              'bg-blue-500/20 text-blue-400'
+                              'bg-red-500/20 text-red-400'
                             }`}>
                               {msg.sender_role === 'main_organizer' ? 'Main Organizer' : msg.sender_role === 'staff' ? 'HERU Staff' : 'Co-Organizer'}
                             </span>
@@ -481,7 +481,7 @@ export default function RadarDetailPage() {
             {/* Co-Organizers */}
             <FloatingPanel className="p-5">
               <h2 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
-                <Users className="w-5 h-5 text-blue-400" /> Co-Organizers
+                <Users className="w-5 h-5 text-red-400" /> Co-Organizers
               </h2>
               {!radar.co_organizers?.length ? (
                 <p className="text-gray-500 text-sm text-center py-4">No co-organizers yet. Be the first!</p>
@@ -530,7 +530,7 @@ export default function RadarDetailPage() {
                       className="bg-zinc-800 border-zinc-700 text-white text-lg"
                       min={1}
                     />
-                    <div className="mt-1.5 flex items-center gap-1 text-xs text-blue-400">
+                    <div className="mt-1.5 flex items-center gap-1 text-xs text-red-400">
                       <TrendingUp className="w-3 h-3" />
                       Recommended: 30%+ of total (EGP {Math.round(totalCost * 0.3).toLocaleString()})
                     </div>

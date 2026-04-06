@@ -47,7 +47,7 @@ export default function MembersList({ space, userId }) {
                       <Crown className="w-3 h-3 text-yellow-500 flex-shrink-0" title="Creator" />
                     )}
                     {isAdmin && !isCreator && (
-                      <Crown className="w-3 h-3 text-blue-400 flex-shrink-0" title="Admin" />
+                      <Crown className="w-3 h-3 text-red-400 flex-shrink-0" title="Admin" />
                     )}
                   </div>
                   {member.games?.[0] && (

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '@/lib/AuthContext'
+import HeruLogo from '@/components/shared/HeruLogo'
 import {
   LayoutDashboard, Trophy, Plus, Radar, CreditCard, Share2,
   MessageSquare, User, Menu, X, LogOut, ChevronLeft, ChevronRight,
@@ -187,13 +188,7 @@ export default function OrganizerLayout({ children, isDashboard }) {
         <div className="flex items-center justify-between h-16 px-4 border-b border-white/[0.06]">
           {!collapsed && (
             <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-red-600 to-orange-600 flex items-center justify-center">
-                <Zap size={16} className="text-white" />
-              </div>
-              <div>
-                <span className="text-sm font-black tracking-wide text-white">HERU</span>
-                <span className="text-[10px] text-red-400 ml-1 font-medium">.gg</span>
-              </div>
+              <HeruLogo className="h-7" />
             </div>
           )}
           <button
@@ -226,10 +221,7 @@ export default function OrganizerLayout({ children, isDashboard }) {
             </div>
             {/* Mobile logo */}
             <div className="md:hidden flex items-center gap-2">
-              <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-red-600 to-orange-600 flex items-center justify-center">
-                <Zap size={14} className="text-white" />
-              </div>
-              <span className="text-sm font-black text-white">HERU</span>
+              <HeruLogo className="h-6" />
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -261,12 +253,7 @@ export default function OrganizerLayout({ children, isDashboard }) {
               style={{ background: 'linear-gradient(180deg, rgba(15,15,30,0.98) 0%, rgba(10,10,20,1) 100%)' }}
             >
               <div className="flex items-center justify-between h-14 px-4 border-b border-white/[0.06]">
-                <div className="flex items-center gap-2.5">
-                  <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-red-600 to-orange-600 flex items-center justify-center">
-                    <Zap size={14} className="text-white" />
-                  </div>
-                  <span className="text-sm font-black text-white">HERU<span className="text-red-400">.gg</span></span>
-                </div>
+                <HeruLogo className="h-6" />
                 <button
                   onClick={() => setMobileOpen(false)}
                   className="p-1.5 text-gray-400 hover:text-white"

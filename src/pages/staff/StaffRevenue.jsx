@@ -13,10 +13,10 @@ function formatEGP(value) {
 
 function StatCard({ icon: Icon, label, value, sub, color = 'blue' }) {
   const colors = {
-    blue:   'bg-blue-500/20 text-blue-400',
+    blue:   'bg-red-500/20 text-red-400',
     green:  'bg-green-500/20 text-green-400',
     amber:  'bg-amber-500/20 text-amber-400',
-    violet: 'bg-purple-500/20 text-purple-400',
+    violet: 'bg-red-500/20 text-red-400',
   };
   return (
     <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-5">
@@ -52,7 +52,7 @@ function MonthlyChart({ months }) {
             <span className="w-24 text-xs font-medium text-gray-500 shrink-0">{m.label}</span>
             <div className="flex-1 h-7 bg-zinc-800 rounded-full overflow-hidden">
               <div
-                className="h-full bg-blue-500 rounded-full transition-all flex items-center justify-end pr-2"
+                className="h-full bg-red-500 rounded-full transition-all flex items-center justify-end pr-2"
                 style={{ width: `${Math.max((m.amount / max) * 100, 4)}%` }}
               >
                 {(m.amount / max) * 100 > 20 && (
@@ -154,7 +154,7 @@ export default function StaffRevenue() {
       {/* Header */}
       <div>
         <h1 className="text-2xl font-bold text-white">
-          Platform <span className="text-blue-400">Revenue</span>
+          Platform <span className="text-red-400">Revenue</span>
         </h1>
         <p className="text-sm text-gray-500 mt-0.5">HERU 15% platform fee earnings</p>
       </div>
@@ -197,7 +197,7 @@ export default function StaffRevenue() {
         <div className="lg:col-span-2 bg-zinc-900 border border-zinc-800 rounded-xl">
           <div className="flex items-center justify-between px-6 py-4 border-b border-zinc-800">
             <div className="flex items-center gap-2">
-              <TrendingUp className="w-4 h-4 text-blue-400" />
+              <TrendingUp className="w-4 h-4 text-red-400" />
               <h2 className="text-sm font-semibold text-white">Monthly Revenue</h2>
             </div>
           </div>
@@ -210,7 +210,7 @@ export default function StaffRevenue() {
         <div className="bg-zinc-900 border border-zinc-800 rounded-xl">
           <div className="flex items-center justify-between px-5 py-4 border-b border-zinc-800">
             <div className="flex items-center gap-2">
-              <Trophy className="w-4 h-4 text-purple-400" />
+              <Trophy className="w-4 h-4 text-red-400" />
               <h2 className="text-sm font-semibold text-white">By Tournament</h2>
             </div>
             <span className="text-xs text-gray-500">{tournamentBreakdown.length} tournaments</span>

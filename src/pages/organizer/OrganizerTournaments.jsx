@@ -19,9 +19,9 @@ const TABS = [
 
 const STATUS_STYLES = {
   draft: 'bg-gray-600/30 text-gray-300 border border-gray-500/40',
-  published: 'bg-blue-600/20 text-blue-400 border border-blue-500/40',
+  published: 'bg-red-600/20 text-red-400 border border-red-500/40',
   live: 'bg-green-600/20 text-green-400 border border-green-500/40',
-  completed: 'bg-purple-600/20 text-purple-400 border border-purple-500/40',
+  completed: 'bg-red-600/20 text-red-400 border border-red-500/40',
 }
 
 // ---------------------------------------------------------------------------
@@ -72,8 +72,8 @@ function TournamentCard({ tournament, onClick }) {
       type="button"
       onClick={onClick}
       className="group relative flex flex-col overflow-hidden rounded-xl border border-white/10
-                 bg-[#1a1a2e] hover:border-purple-500/50 transition-all duration-200
-                 text-left w-full focus:outline-none focus:ring-2 focus:ring-purple-500/50"
+                 bg-[#1a1a2e] hover:border-red-500/50 transition-all duration-200
+                 text-left w-full focus:outline-none focus:ring-2 focus:ring-red-500/50"
     >
       {/* Image / placeholder */}
       <div className="relative h-40 w-full overflow-hidden">
@@ -84,8 +84,8 @@ function TournamentCard({ tournament, onClick }) {
             className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
           />
         ) : (
-          <div className="h-full w-full bg-gradient-to-br from-purple-700/40 via-blue-800/30 to-indigo-900/40 flex items-center justify-center">
-            <Trophy className="h-10 w-10 text-purple-400/50" />
+          <div className="h-full w-full bg-gradient-to-br from-red-700/40 via-red-800/30 to-red-900/40 flex items-center justify-center">
+            <Trophy className="h-10 w-10 text-red-400/50" />
           </div>
         )}
         {/* Status badge overlay */}
@@ -96,12 +96,12 @@ function TournamentCard({ tournament, onClick }) {
 
       {/* Body */}
       <div className="flex flex-1 flex-col gap-2 p-4">
-        <h3 className="text-base font-semibold text-white truncate group-hover:text-purple-300 transition-colors">
+        <h3 className="text-base font-semibold text-white truncate group-hover:text-red-300 transition-colors">
           {tournament.name || 'Untitled Tournament'}
         </h3>
 
         {tournament.game && (
-          <span className="text-xs text-purple-400 font-medium uppercase tracking-wide">
+          <span className="text-xs text-red-400 font-medium uppercase tracking-wide">
             {tournament.game}
           </span>
         )}
@@ -119,14 +119,14 @@ function TournamentCard({ tournament, onClick }) {
         </div>
 
         {/* Cost */}
-        <div className="mt-1 text-sm font-medium text-blue-400">
+        <div className="mt-1 text-sm font-medium text-red-400">
           {formatEGP(tournament.total_cost)}
         </div>
       </div>
 
       {/* Hover arrow indicator */}
       <div className="absolute bottom-4 right-4 opacity-0 translate-x-1 group-hover:opacity-100 group-hover:translate-x-0 transition-all">
-        <ChevronRight className="h-5 w-5 text-purple-400" />
+        <ChevronRight className="h-5 w-5 text-red-400" />
       </div>
     </button>
   )
@@ -140,8 +140,8 @@ function EmptyState({ activeTab, onCreateClick }) {
   const isFiltered = activeTab !== 'all'
   return (
     <div className="flex flex-col items-center justify-center py-24 text-center">
-      <div className="mb-4 rounded-full bg-purple-600/10 p-4">
-        <Trophy className="h-10 w-10 text-purple-500" />
+      <div className="mb-4 rounded-full bg-red-600/10 p-4">
+        <Trophy className="h-10 w-10 text-red-500" />
       </div>
       <h3 className="text-lg font-semibold text-white mb-1">
         {isFiltered ? `No ${activeTab} tournaments` : 'No tournaments yet'}
@@ -154,8 +154,8 @@ function EmptyState({ activeTab, onCreateClick }) {
       {!isFiltered && (
         <button
           onClick={onCreateClick}
-          className="inline-flex items-center gap-2 rounded-lg bg-purple-600 px-5 py-2.5 text-sm font-medium text-white
-                     hover:bg-purple-500 transition-colors"
+          className="inline-flex items-center gap-2 rounded-lg bg-red-600 px-5 py-2.5 text-sm font-medium text-white
+                     hover:bg-red-500 transition-colors"
         >
           <Plus className="h-4 w-4" />
           Create Tournament
@@ -225,8 +225,8 @@ export default function OrganizerTournaments() {
         </div>
         <button
           onClick={goToCreate}
-          className="inline-flex items-center gap-2 rounded-lg bg-purple-600 px-5 py-2.5 text-sm font-medium text-white
-                     hover:bg-purple-500 transition-colors shrink-0"
+          className="inline-flex items-center gap-2 rounded-lg bg-red-600 px-5 py-2.5 text-sm font-medium text-white
+                     hover:bg-red-500 transition-colors shrink-0"
         >
           <Plus className="h-4 w-4" />
           Create New
@@ -245,7 +245,7 @@ export default function OrganizerTournaments() {
                 inline-flex items-center gap-1.5 rounded-full px-4 py-1.5 text-sm font-medium transition-colors
                 ${
                   isActive
-                    ? 'bg-purple-600 text-white'
+                    ? 'bg-red-600 text-white'
                     : 'bg-white/5 text-gray-400 hover:bg-white/10 hover:text-gray-200'
                 }
               `}
@@ -253,7 +253,7 @@ export default function OrganizerTournaments() {
               {tab.label}
               <span
                 className={`text-xs ml-0.5 ${
-                  isActive ? 'text-purple-200' : 'text-gray-500'
+                  isActive ? 'text-red-200' : 'text-gray-500'
                 }`}
               >
                 ({counts[tab.key]})
@@ -266,7 +266,7 @@ export default function OrganizerTournaments() {
       {/* Loading state */}
       {isLoading && (
         <div className="flex items-center justify-center py-24">
-          <div className="h-8 w-8 animate-spin rounded-full border-2 border-purple-500 border-t-transparent" />
+          <div className="h-8 w-8 animate-spin rounded-full border-2 border-red-500 border-t-transparent" />
         </div>
       )}
 

@@ -176,7 +176,7 @@ export default function GamerAuthRegister() {
             </p>
             <p className="text-gray-600 text-xs">
               Are you an organizer?{' '}
-              <Link to="/auth/organizer/register" className="text-blue-400 hover:text-blue-300 transition-colors">Register here</Link>
+              <Link to="/auth/organizer/register" className="text-red-400 hover:text-red-300 transition-colors">Register here</Link>
             </p>
           </div>
         </FloatingPanel>

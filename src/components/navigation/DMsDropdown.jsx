@@ -11,7 +11,7 @@ export default function DMsDropdown({ isOpen, onClose, conversations = [], profi
 
   const getChatIcon = (chatType) => {
     switch (chatType) {
-      case 'team': return <Users className="w-5 h-5 text-blue-400" />;
+      case 'team': return <Users className="w-5 h-5 text-red-400" />;
       case 'tournament': return <Trophy className="w-5 h-5 text-yellow-400" />;
       case 'order_support': return <Package className="w-5 h-5 text-green-400" />;
       default: return null;

@@ -151,7 +151,7 @@ export default function TeamProfile() {
             {/* Social Links */}
             <div className="flex items-center gap-3">
               {team.social_links?.twitter && (
-                <a href={team.social_links.twitter} target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-blue-400 transition-colors">
+                <a href={team.social_links.twitter} target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-red-400 transition-colors">
                   <Twitter className="w-5 h-5" />
                 </a>
               )}
@@ -161,7 +161,7 @@ export default function TeamProfile() {
                 </a>
               )}
               {team.social_links?.discord && (
-                <a href={team.social_links.discord} target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-indigo-400 transition-colors">
+                <a href={team.social_links.discord} target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-red-400 transition-colors">
                   <MessageSquare className="w-5 h-5" />
                 </a>
               )}

@@ -40,7 +40,7 @@ function SettingRow({ setting, onSave, saving }) {
           <select
             value={value}
             onChange={(e) => setValue(e.target.value)}
-            className="flex-1 px-3 py-2 text-sm border border-gray-300 rounded-lg bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="flex-1 px-3 py-2 text-sm border border-gray-300 rounded-lg bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
           >
             <option value="true">true</option>
             <option value="false">false</option>
@@ -50,7 +50,7 @@ function SettingRow({ setting, onSave, saving }) {
             type="text"
             value={value}
             onChange={(e) => setValue(e.target.value)}
-            className="flex-1 px-3 py-2 text-sm border border-gray-300 rounded-lg bg-white text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent font-mono"
+            className="flex-1 px-3 py-2 text-sm border border-gray-300 rounded-lg bg-white text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent font-mono"
           />
         )}
         {isDirty && (
@@ -65,7 +65,7 @@ function SettingRow({ setting, onSave, saving }) {
         <button
           onClick={handleSave}
           disabled={!isDirty || saving}
-          className="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-lg transition disabled:opacity-40 disabled:cursor-not-allowed bg-blue-600 text-white hover:bg-blue-700"
+          className="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-lg transition disabled:opacity-40 disabled:cursor-not-allowed bg-red-600 text-white hover:bg-red-700"
         >
           {saved ? (
             <>
@@ -155,8 +155,8 @@ export default function StaffSettings() {
         {/* Header */}
         <div className="mb-8">
           <div className="flex items-center gap-3">
-            <div className="rounded-lg bg-blue-50 p-2.5">
-              <Settings className="w-5 h-5 text-blue-600" />
+            <div className="rounded-lg bg-red-50 p-2.5">
+              <Settings className="w-5 h-5 text-red-600" />
             </div>
             <div>
               <h1 className="text-2xl font-bold text-gray-900">App Settings</h1>
@@ -204,8 +204,8 @@ export default function StaffSettings() {
         </div>
 
         {/* Info note */}
-        <div className="mt-4 rounded-lg bg-blue-50 border border-blue-100 px-4 py-3">
-          <p className="text-xs text-blue-700">
+        <div className="mt-4 rounded-lg bg-red-50 border border-red-100 px-4 py-3">
+          <p className="text-xs text-red-700">
             Changes take effect immediately. Some settings (like maintenance mode) may require a page refresh for users to see the update.
           </p>
         </div>

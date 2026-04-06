@@ -27,12 +27,12 @@ function formatDate(dateStr) {
 function StatusBadge({ status }) {
   const map = {
     pending: 'bg-amber-50 text-amber-700',
-    processing: 'bg-blue-50 text-blue-700',
+    processing: 'bg-red-50 text-red-700',
     completed: 'bg-emerald-50 text-emerald-700',
     cancelled: 'bg-red-50 text-red-600',
     draft: 'bg-gray-100 text-gray-600',
     pending_payment: 'bg-amber-50 text-amber-700',
-    in_fulfillment: 'bg-blue-50 text-blue-700',
+    in_fulfillment: 'bg-red-50 text-red-700',
     fulfilled: 'bg-emerald-50 text-emerald-700',
   };
   return (
@@ -141,7 +141,7 @@ export default function StaffOrders() {
             onClick={() => setActiveTab('gamer')}
             className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
               activeTab === 'gamer'
-                ? 'bg-blue-600 text-white'
+                ? 'bg-red-600 text-white'
                 : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50'
             }`}
           >
@@ -157,7 +157,7 @@ export default function StaffOrders() {
             onClick={() => setActiveTab('tournament')}
             className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
               activeTab === 'tournament'
-                ? 'bg-blue-600 text-white'
+                ? 'bg-red-600 text-white'
                 : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50'
             }`}
           >
@@ -179,7 +179,7 @@ export default function StaffOrders() {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder={activeTab === 'gamer' ? 'Search by Order ID or gamer...' : 'Search by Order ID, tournament, or organizer...'}
-            className="w-full pl-10 pr-4 py-2 text-sm border border-gray-300 rounded-lg bg-white text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="w-full pl-10 pr-4 py-2 text-sm border border-gray-300 rounded-lg bg-white text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
           />
         </div>
 

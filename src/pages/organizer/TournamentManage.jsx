@@ -20,9 +20,9 @@ const formatEGP = (n) => 'EGP ' + (n || 0).toLocaleString()
 
 const statusConfig = {
   draft:     { bg: 'bg-yellow-500/20', text: 'text-yellow-400', border: 'border-yellow-500/30', label: 'DRAFT' },
-  published: { bg: 'bg-blue-500/20',   text: 'text-blue-400',   border: 'border-blue-500/30',   label: 'PUBLISHED' },
+  published: { bg: 'bg-red-500/20',   text: 'text-red-400',   border: 'border-red-500/30',   label: 'PUBLISHED' },
   live:      { bg: 'bg-green-500/20',  text: 'text-green-400',  border: 'border-green-500/30',  label: 'LIVE' },
-  completed: { bg: 'bg-purple-500/20', text: 'text-purple-400', border: 'border-purple-500/30', label: 'COMPLETED' },
+  completed: { bg: 'bg-red-500/20', text: 'text-red-400', border: 'border-red-500/30', label: 'COMPLETED' },
 }
 
 function StatusBadge({ status }) {
@@ -38,7 +38,7 @@ function StatusBadge({ status }) {
 function SectionLoader() {
   return (
     <div className="flex items-center justify-center py-16">
-      <Loader2 className="w-6 h-6 animate-spin text-violet-400" />
+      <Loader2 className="w-6 h-6 animate-spin text-red-400" />
     </div>
   )
 }
@@ -93,7 +93,7 @@ function OverviewTab({ tournament }) {
             <div className="flex justify-between">
               <span className="text-gray-400">Game</span>
               <span className="text-white font-medium flex items-center gap-1.5">
-                <Gamepad2 className="w-3.5 h-3.5 text-violet-400" />
+                <Gamepad2 className="w-3.5 h-3.5 text-red-400" />
                 {tournament.game || 'Not set'}
               </span>
             </div>
@@ -104,7 +104,7 @@ function OverviewTab({ tournament }) {
             <div className="flex justify-between">
               <span className="text-gray-400">Date</span>
               <span className="text-white font-medium flex items-center gap-1.5">
-                <Calendar className="w-3.5 h-3.5 text-violet-400" />
+                <Calendar className="w-3.5 h-3.5 text-red-400" />
                 {scheduledDate}
               </span>
             </div>
@@ -153,7 +153,7 @@ function OverviewTab({ tournament }) {
             href={tournament.stream_link}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-sm text-violet-400 hover:text-violet-300 underline"
+            className="text-sm text-red-400 hover:text-red-300 underline"
           >
             {tournament.stream_link}
           </a>
@@ -249,14 +249,14 @@ function TeamsTab({ tournament, queryClient }) {
             {teams.map((team, idx) => (
               <div
                 key={team.id}
-                className="flex items-center gap-3 rounded-lg border border-white/5 bg-[#1a1a2e] p-3 hover:border-violet-500/30 transition"
+                className="flex items-center gap-3 rounded-lg border border-white/5 bg-[#1a1a2e] p-3 hover:border-red-500/30 transition"
               >
                 <span className="text-xs text-gray-600 font-mono w-6 text-center">{idx + 1}</span>
                 {team.logo ? (
                   <img src={team.logo} alt="" className="w-8 h-8 rounded-lg object-cover bg-white/5" />
                 ) : (
-                  <div className="w-8 h-8 rounded-lg bg-violet-500/20 flex items-center justify-center">
-                    <Users className="w-4 h-4 text-violet-400" />
+                  <div className="w-8 h-8 rounded-lg bg-red-500/20 flex items-center justify-center">
+                    <Users className="w-4 h-4 text-red-400" />
                   </div>
                 )}
                 <div className="flex-1 min-w-0">
@@ -353,12 +353,12 @@ function ChatTab({ tournament, queryClient }) {
                 <div
                   className={`max-w-[75%] rounded-xl px-4 py-2.5 text-sm ${
                     isMe
-                      ? 'bg-gradient-to-r from-violet-600 to-blue-600 text-white'
+                      ? 'bg-gradient-to-r from-red-600 to-red-600 text-white'
                       : 'bg-white/5 text-gray-300'
                   }`}
                 >
                   {!isMe && (
-                    <p className="text-xs font-medium text-violet-400 mb-1">
+                    <p className="text-xs font-medium text-red-400 mb-1">
                       {msg.sender_name || 'Unknown'}
                     </p>
                   )}
@@ -383,12 +383,12 @@ function ChatTab({ tournament, queryClient }) {
           value={message}
           onChange={(e) => setMessage(e.target.value)}
           placeholder="Type a message..."
-          className="flex-1 bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-violet-500/50 transition"
+          className="flex-1 bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-red-500/50 transition"
         />
         <button
           type="submit"
           disabled={!message.trim() || sendMessage.isPending}
-          className="px-4 py-2 rounded-lg bg-gradient-to-r from-violet-600 to-blue-600 text-white text-sm font-medium disabled:opacity-40 hover:brightness-110 transition flex items-center gap-1.5"
+          className="px-4 py-2 rounded-lg bg-gradient-to-r from-red-600 to-red-600 text-white text-sm font-medium disabled:opacity-40 hover:brightness-110 transition flex items-center gap-1.5"
         >
           <Send className="w-4 h-4" />
           Send
@@ -414,14 +414,14 @@ function ReportTab({ tournament, navigate }) {
 
   return (
     <div className="rounded-xl border border-white/10 bg-[#1a1a2e] p-6 text-center">
-      <FileText className="w-12 h-12 text-violet-400 mx-auto mb-4" />
+      <FileText className="w-12 h-12 text-red-400 mx-auto mb-4" />
       <h3 className="text-white font-semibold text-lg mb-2">Tournament Report</h3>
       <p className="text-gray-400 text-sm mb-6">
         View the full tournament report including results, statistics, and financial summary.
       </p>
       <button
         onClick={() => navigate(`/organizer/tournaments/${tournament.id}/report`)}
-        className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-gradient-to-r from-violet-600 to-blue-600 text-white font-medium text-sm hover:brightness-110 transition"
+        className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-gradient-to-r from-red-600 to-red-600 text-white font-medium text-sm hover:brightness-110 transition"
       >
         View Report
         <ChevronRight className="w-4 h-4" />
@@ -470,7 +470,7 @@ export default function TournamentManage() {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-[#0f0f1a] flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-violet-400" />
+        <Loader2 className="w-8 h-8 animate-spin text-red-400" />
       </div>
     )
   }
@@ -482,7 +482,7 @@ export default function TournamentManage() {
         <p className="text-sm">{error?.message || 'Tournament not found.'}</p>
         <button
           onClick={() => navigate('/organizer/tournaments')}
-          className="text-sm text-violet-400 hover:text-violet-300 flex items-center gap-1"
+          className="text-sm text-red-400 hover:text-red-300 flex items-center gap-1"
         >
           <ArrowLeft className="w-4 h-4" /> Back to tournaments
         </button>
@@ -544,7 +544,7 @@ export default function TournamentManage() {
               <button
                 onClick={() => completeTournament.mutate()}
                 disabled={completeTournament.isPending}
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-purple-600 text-white text-sm font-medium hover:bg-purple-500 disabled:opacity-50 transition"
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-red-600 text-white text-sm font-medium hover:bg-red-500 disabled:opacity-50 transition"
               >
                 {completeTournament.isPending ? (
                   <Loader2 className="w-4 h-4 animate-spin" />
@@ -556,7 +556,7 @@ export default function TournamentManage() {
             )}
             <button
               onClick={() => navigate(`/organizer/tournaments/${id}/manage/settings`)}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-white/10 text-gray-300 text-sm font-medium hover:border-violet-500/40 hover:text-white transition"
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-white/10 text-gray-300 text-sm font-medium hover:border-red-500/40 hover:text-white transition"
             >
               <Shield className="w-4 h-4" />
               Settings
@@ -576,7 +576,7 @@ export default function TournamentManage() {
                 onClick={() => setActiveTab(tab.id)}
                 className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium whitespace-nowrap border-b-2 transition ${
                   isActive
-                    ? 'border-violet-500 text-white'
+                    ? 'border-red-500 text-white'
                     : 'border-transparent text-gray-500 hover:text-gray-300'
                 }`}
               >

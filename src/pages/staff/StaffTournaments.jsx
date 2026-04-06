@@ -17,7 +17,7 @@ function formatEGP(value) {
 function StatusBadge({ status }) {
   const map = {
     draft: 'bg-gray-100 text-gray-600',
-    published: 'bg-blue-50 text-blue-700',
+    published: 'bg-red-50 text-red-700',
     live: 'bg-emerald-50 text-emerald-700',
     completed: 'bg-gray-100 text-gray-500',
   };
@@ -114,7 +114,7 @@ export default function StaffTournaments() {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search by name, game, or organizer..."
-              className="w-full pl-10 pr-4 py-2 text-sm border border-gray-300 rounded-lg bg-white text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full pl-10 pr-4 py-2 text-sm border border-gray-300 rounded-lg bg-white text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
             />
           </div>
           <div className="relative">
@@ -122,7 +122,7 @@ export default function StaffTournaments() {
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
-              className="appearance-none pl-10 pr-8 py-2 text-sm border border-gray-300 rounded-lg bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="appearance-none pl-10 pr-8 py-2 text-sm border border-gray-300 rounded-lg bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
             >
               {STATUS_OPTIONS.map((o) => (
                 <option key={o.value} value={o.value}>{o.label}</option>
@@ -162,11 +162,11 @@ export default function StaffTournaments() {
                     >
                       <td className="px-6 py-3.5">
                         <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center shrink-0">
+                          <div className="w-8 h-8 rounded-lg bg-red-50 flex items-center justify-center shrink-0">
                             {t.tournament_image ? (
                               <img src={t.tournament_image} alt="" className="w-8 h-8 rounded-lg object-cover" />
                             ) : (
-                              <Trophy className="w-4 h-4 text-blue-500" />
+                              <Trophy className="w-4 h-4 text-red-500" />
                             )}
                           </div>
                           <span className="text-sm font-medium text-gray-900 truncate max-w-[220px]">{t.name}</span>

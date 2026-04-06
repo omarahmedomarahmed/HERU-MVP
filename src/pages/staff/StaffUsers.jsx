@@ -13,7 +13,7 @@ import { apiCall } from '@/api/heruClient';
 
 function RoleBadge({ role }) {
   const map = {
-    gamer: 'bg-blue-50 text-blue-700',
+    gamer: 'bg-red-50 text-red-700',
     organizer: 'bg-violet-50 text-violet-700',
     admin: 'bg-red-50 text-red-700',
   };
@@ -121,7 +121,7 @@ export default function StaffUsers() {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search by name or email..."
-              className="w-full pl-10 pr-4 py-2 text-sm border border-gray-300 rounded-lg bg-white text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full pl-10 pr-4 py-2 text-sm border border-gray-300 rounded-lg bg-white text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
             />
           </div>
           <div className="relative">
@@ -129,7 +129,7 @@ export default function StaffUsers() {
             <select
               value={roleFilter}
               onChange={(e) => setRoleFilter(e.target.value)}
-              className="appearance-none pl-10 pr-8 py-2 text-sm border border-gray-300 rounded-lg bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="appearance-none pl-10 pr-8 py-2 text-sm border border-gray-300 rounded-lg bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
             >
               {ROLE_OPTIONS.map((o) => (
                 <option key={o.value} value={o.value}>{o.label}</option>
@@ -168,7 +168,7 @@ export default function StaffUsers() {
                     >
                       <td className="px-6 py-3.5">
                         <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-xs font-bold shrink-0">
+                          <div className="w-8 h-8 rounded-full bg-red-100 text-red-600 flex items-center justify-center text-xs font-bold shrink-0">
                             {(u.full_name || u.email || '?').charAt(0).toUpperCase()}
                           </div>
                           <span className="text-sm font-medium text-gray-900 truncate max-w-[180px]">

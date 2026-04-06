@@ -19,7 +19,7 @@ function StatusBadge({ status }) {
   const map = {
     draft: 'bg-gray-100 text-gray-600',
     pending_payment: 'bg-amber-50 text-amber-700',
-    in_fulfillment: 'bg-blue-50 text-blue-700',
+    in_fulfillment: 'bg-red-50 text-red-700',
     fulfilled: 'bg-emerald-50 text-emerald-700',
     cancelled: 'bg-red-50 text-red-600',
   };
@@ -77,7 +77,7 @@ function OrderDetail({ order, onClose }) {
           </div>
           <div className="bg-white rounded-lg border border-gray-200 p-3">
             <p className="text-xs text-gray-500">Grand Total</p>
-            <p className="text-base font-bold text-blue-600">{formatEGP(order.grand_total)}</p>
+            <p className="text-base font-bold text-red-600">{formatEGP(order.grand_total)}</p>
           </div>
         </div>
 
@@ -217,7 +217,7 @@ export default function StaffTournamentOrders() {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search by tournament, organizer, or order ID..."
-              className="w-full pl-10 pr-4 py-2 text-sm border border-gray-300 rounded-lg bg-white text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full pl-10 pr-4 py-2 text-sm border border-gray-300 rounded-lg bg-white text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
             />
           </div>
           <div className="relative">
@@ -225,7 +225,7 @@ export default function StaffTournamentOrders() {
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
-              className="appearance-none pl-10 pr-8 py-2 text-sm border border-gray-300 rounded-lg bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="appearance-none pl-10 pr-8 py-2 text-sm border border-gray-300 rounded-lg bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
             >
               {STATUS_OPTIONS.map((o) => (
                 <option key={o.value} value={o.value}>{o.label}</option>
@@ -269,8 +269,8 @@ export default function StaffTournamentOrders() {
                         </td>
                         <td className="px-6 py-3.5">
                           <div className="flex items-center gap-3">
-                            <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center shrink-0">
-                              <Package className="w-4 h-4 text-blue-500" />
+                            <div className="w-8 h-8 rounded-lg bg-red-50 flex items-center justify-center shrink-0">
+                              <Package className="w-4 h-4 text-red-500" />
                             </div>
                             <span className="text-sm font-medium text-gray-900 truncate max-w-[200px]">
                               {o.tournament_name || 'Untitled'}

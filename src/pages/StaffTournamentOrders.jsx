@@ -10,7 +10,7 @@ import { useAuth } from '@/lib/AuthContext';
 const FULFILLMENT_BADGE = {
   draft:           'bg-zinc-700 text-zinc-300',
   pending_payment: 'bg-amber-500/20 text-amber-400 border border-amber-500/30',
-  in_fulfillment:  'bg-blue-500/20 text-blue-400 border border-blue-500/30',
+  in_fulfillment:  'bg-red-500/20 text-red-400 border border-red-500/30',
   fulfilled:       'bg-green-500/20 text-green-400 border border-green-500/30',
   cancelled:       'bg-red-500/20 text-red-400 border border-red-500/30',
 };
@@ -49,7 +49,7 @@ export default function StaffTournamentOrders() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-white">
-          Tournament <span className="text-blue-400">Orders</span>
+          Tournament <span className="text-red-400">Orders</span>
         </h1>
         <p className="text-gray-500 text-sm mt-1">{tournamentOrders.length} total orders</p>
       </div>
@@ -73,7 +73,7 @@ export default function StaffTournamentOrders() {
               value={search}
               onChange={e => setSearch(e.target.value)}
               placeholder="Search by tournament or organizer..."
-              className="w-full pl-10 pr-4 py-2.5 bg-zinc-800 border border-zinc-700 rounded-lg text-white text-sm placeholder-gray-500 focus:outline-none focus:border-blue-500"
+              className="w-full pl-10 pr-4 py-2.5 bg-zinc-800 border border-zinc-700 rounded-lg text-white text-sm placeholder-gray-500 focus:outline-none focus:border-red-500"
             />
           </div>
           <div className="flex items-center gap-2 flex-wrap">
@@ -83,7 +83,7 @@ export default function StaffTournamentOrders() {
                 key={s}
                 onClick={() => setStatusFilter(s)}
                 className={`px-3 py-2 rounded-lg text-xs font-medium capitalize transition-colors whitespace-nowrap ${
-                  statusFilter === s ? 'bg-blue-600 text-white' : 'bg-zinc-800 text-gray-400 hover:text-white'
+                  statusFilter === s ? 'bg-red-600 text-white' : 'bg-zinc-800 text-gray-400 hover:text-white'
                 }`}
               >
                 {s === 'all' ? 'All' : s.replace(/_/g, ' ')}
@@ -121,14 +121,14 @@ export default function StaffTournamentOrders() {
                   <td className="px-5 py-3 text-gray-300 truncate max-w-40">{order.tournament_name || '--'}</td>
                   <td className="px-5 py-3">
                     <span className={`text-xs px-2 py-1 rounded ${
-                      order.tournament_type === 'shared' ? 'bg-purple-500/20 text-purple-400' : 'bg-blue-500/20 text-blue-400'
+                      order.tournament_type === 'shared' ? 'bg-red-500/20 text-red-400' : 'bg-red-500/20 text-red-400'
                     }`}>
                       {order.tournament_type || 'solo'}
                     </span>
                   </td>
                   <td className="px-5 py-3 text-gray-400 truncate max-w-32">{order.main_organizer_brand || '--'}</td>
                   <td className="px-5 py-3 text-right text-gray-300">EGP {(order.subtotal_items || 0).toLocaleString()}</td>
-                  <td className="px-5 py-3 text-right text-blue-400">EGP {(order.platform_fee || 0).toLocaleString()}</td>
+                  <td className="px-5 py-3 text-right text-red-400">EGP {(order.platform_fee || 0).toLocaleString()}</td>
                   <td className="px-5 py-3 text-right text-white font-bold">EGP {(order.grand_total || 0).toLocaleString()}</td>
                   <td className="px-5 py-3 text-center">
                     <span className={`text-xs px-2 py-1 rounded font-medium ${FULFILLMENT_BADGE[order.fulfillment_status] || 'bg-zinc-700 text-gray-300'}`}>
@@ -138,7 +138,7 @@ export default function StaffTournamentOrders() {
                   <td className="px-5 py-3 text-center">
                     <button
                       onClick={() => navigate(`/staff/orders/tournament/${order.id}`)}
-                      className="text-blue-400 hover:text-blue-300"
+                      className="text-red-400 hover:text-red-300"
                     >
                       <Eye className="w-4 h-4 inline" />
                     </button>

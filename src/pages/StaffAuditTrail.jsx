@@ -14,7 +14,7 @@ import { useAuth } from '@/lib/AuthContext'
 // ---------------------------------------------------------------------------
 
 const ACTION_TYPES = [
-  { key: 'login', label: 'Login', icon: LogIn, color: 'bg-blue-500/15 text-blue-400 border-blue-500/25' },
+  { key: 'login', label: 'Login', icon: LogIn, color: 'bg-red-500/15 text-red-400 border-red-500/25' },
   { key: 'registration', label: 'Registration', icon: UserPlus, color: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/25' },
   { key: 'tournament_created', label: 'Tournament Created', icon: Trophy, color: 'bg-violet-500/15 text-violet-400 border-violet-500/25' },
   { key: 'tournament_edited', label: 'Tournament Edited', icon: Pencil, color: 'bg-amber-500/15 text-amber-400 border-amber-500/25' },
@@ -24,8 +24,8 @@ const ACTION_TYPES = [
   { key: 'gig_accepted', label: 'Gig Accepted', icon: Briefcase, color: 'bg-orange-500/15 text-orange-400 border-orange-500/25' },
   { key: 'bill_created', label: 'Bill Created', icon: CreditCard, color: 'bg-pink-500/15 text-pink-400 border-pink-500/25' },
   { key: 'bill_paid', label: 'Bill Paid', icon: CheckCircle, color: 'bg-green-500/15 text-green-400 border-green-500/25' },
-  { key: 'profile_updated', label: 'Profile Updated', icon: User, color: 'bg-indigo-500/15 text-indigo-400 border-indigo-500/25' },
-  { key: 'co_organizer_committed', label: 'Co-Organizer Committed', icon: Shield, color: 'bg-purple-500/15 text-purple-400 border-purple-500/25' },
+  { key: 'profile_updated', label: 'Profile Updated', icon: User, color: 'bg-red-500/15 text-red-400 border-red-500/25' },
+  { key: 'co_organizer_committed', label: 'Co-Organizer Committed', icon: Shield, color: 'bg-red-500/15 text-red-400 border-red-500/25' },
   { key: 'brackets_updated', label: 'Brackets Updated', icon: BarChart3, color: 'bg-sky-500/15 text-sky-400 border-sky-500/25' },
   { key: 'score_updated', label: 'Score Updated', icon: Target, color: 'bg-yellow-500/15 text-yellow-400 border-yellow-500/25' },
 ]
@@ -306,7 +306,7 @@ function ConsoleLogViewer() {
         className="w-full flex items-center justify-between px-5 py-3.5 hover:bg-zinc-800/20 transition-colors"
       >
         <span className="flex items-center gap-2 text-sm font-semibold text-zinc-300">
-          <Terminal className="w-4 h-4 text-blue-400" />
+          <Terminal className="w-4 h-4 text-red-400" />
           Console Logs
         </span>
         <ChevronDown className={`w-4 h-4 text-zinc-600 transition-transform ${open ? 'rotate-180' : ''}`} />
@@ -322,10 +322,10 @@ function ConsoleLogViewer() {
               <span className="ml-3 text-zinc-600 text-[10px]">heru-platform-logs</span>
             </div>
             <div className="space-y-1.5 text-zinc-600">
-              <p><span className="text-zinc-500">[INFO]</span> <span className="text-blue-400/60">2026-04-06 00:00:00</span> Platform audit logging initialized</p>
-              <p><span className="text-zinc-500">[INFO]</span> <span className="text-blue-400/60">2026-04-06 00:00:01</span> Connected to Supabase realtime channel</p>
-              <p><span className="text-yellow-500/60">[WARN]</span> <span className="text-blue-400/60">2026-04-06 00:00:02</span> Console logging will be implemented with backend integration</p>
-              <p><span className="text-zinc-500">[INFO]</span> <span className="text-blue-400/60">2026-04-06 00:00:03</span> Awaiting structured log events from API server...</p>
+              <p><span className="text-zinc-500">[INFO]</span> <span className="text-red-400/60">2026-04-06 00:00:00</span> Platform audit logging initialized</p>
+              <p><span className="text-zinc-500">[INFO]</span> <span className="text-red-400/60">2026-04-06 00:00:01</span> Connected to Supabase realtime channel</p>
+              <p><span className="text-yellow-500/60">[WARN]</span> <span className="text-red-400/60">2026-04-06 00:00:02</span> Console logging will be implemented with backend integration</p>
+              <p><span className="text-zinc-500">[INFO]</span> <span className="text-red-400/60">2026-04-06 00:00:03</span> Awaiting structured log events from API server...</p>
               <p className="mt-4 text-zinc-700 animate-pulse">_ waiting for events...</p>
             </div>
           </div>
@@ -429,7 +429,7 @@ export default function StaffAuditTrail() {
       {/* Header */}
       <div>
         <h1 className="text-2xl font-bold text-white">
-          Audit <span className="text-blue-400">Trail</span>
+          Audit <span className="text-red-400">Trail</span>
         </h1>
         <p className="text-zinc-500 text-sm mt-1">Track all platform activity and system events</p>
       </div>
@@ -443,7 +443,7 @@ export default function StaffAuditTrail() {
             placeholder="Search by name, email, or action..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-10 pr-4 py-2.5 bg-[#0f0f1a] border border-zinc-800/60 rounded-xl text-sm text-white placeholder-zinc-600 focus:outline-none focus:border-blue-500/40 transition-colors"
+            className="w-full pl-10 pr-4 py-2.5 bg-[#0f0f1a] border border-zinc-800/60 rounded-xl text-sm text-white placeholder-zinc-600 focus:outline-none focus:border-red-500/40 transition-colors"
           />
           {search && (
             <button
@@ -459,14 +459,14 @@ export default function StaffAuditTrail() {
           onClick={() => setShowFilters(!showFilters)}
           className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border text-sm font-medium transition-colors ${
             showFilters || hasActiveFilters
-              ? 'bg-blue-500/10 border-blue-500/30 text-blue-400'
+              ? 'bg-red-500/10 border-red-500/30 text-red-400'
               : 'bg-[#0f0f1a] border-zinc-800/60 text-zinc-400 hover:text-white hover:border-zinc-700'
           }`}
         >
           <Filter className="w-4 h-4" />
           Filters
           {activeFilters.length > 0 && (
-            <span className="ml-1 text-[10px] font-bold px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-400">
+            <span className="ml-1 text-[10px] font-bold px-1.5 py-0.5 rounded bg-red-500/20 text-red-400">
               {activeFilters.length}
             </span>
           )}
@@ -518,7 +518,7 @@ export default function StaffAuditTrail() {
                 type="date"
                 value={dateFrom}
                 onChange={(e) => setDateFrom(e.target.value)}
-                className="px-3 py-2 bg-[#0c0c18] border border-zinc-800/60 rounded-lg text-sm text-white focus:outline-none focus:border-blue-500/40 [color-scheme:dark]"
+                className="px-3 py-2 bg-[#0c0c18] border border-zinc-800/60 rounded-lg text-sm text-white focus:outline-none focus:border-red-500/40 [color-scheme:dark]"
               />
             </div>
             <div>
@@ -527,7 +527,7 @@ export default function StaffAuditTrail() {
                 type="date"
                 value={dateTo}
                 onChange={(e) => setDateTo(e.target.value)}
-                className="px-3 py-2 bg-[#0c0c18] border border-zinc-800/60 rounded-lg text-sm text-white focus:outline-none focus:border-blue-500/40 [color-scheme:dark]"
+                className="px-3 py-2 bg-[#0c0c18] border border-zinc-800/60 rounded-lg text-sm text-white focus:outline-none focus:border-red-500/40 [color-scheme:dark]"
               />
             </div>
           </div>
@@ -569,7 +569,7 @@ export default function StaffAuditTrail() {
                     {hasActiveFilters && (
                       <button
                         onClick={clearFilters}
-                        className="mt-2 text-xs text-blue-400 hover:text-blue-300"
+                        className="mt-2 text-xs text-red-400 hover:text-red-300"
                       >
                         Clear filters
                       </button>

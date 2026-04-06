@@ -17,7 +17,7 @@ const STATUS_BADGE = {
 
 const TYPE_BADGE = {
   gamer:        'bg-zinc-700 text-gray-300',
-  organizer:    'bg-blue-500/20 text-blue-400',
+  organizer:    'bg-red-500/20 text-red-400',
   co_organizer: 'bg-cyan-500/20 text-cyan-400',
 };
 
@@ -77,14 +77,14 @@ export default function StaffBilling() {
   return (
     <div className="space-y-6">
       <h1 className="text-2xl font-bold text-white">
-        Master <span className="text-blue-400">Billing</span>
+        Master <span className="text-red-400">Billing</span>
       </h1>
 
       {/* Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-5">
           <div className="flex items-center gap-3 mb-2">
-            <DollarSign className="w-5 h-5 text-blue-400" />
+            <DollarSign className="w-5 h-5 text-red-400" />
             <span className="text-sm text-gray-400">Total Billed</span>
           </div>
           <p className="text-xl font-bold text-white">EGP {stats.total.toLocaleString()}</p>
@@ -121,7 +121,7 @@ export default function StaffBilling() {
               value={search}
               onChange={e => setSearch(e.target.value)}
               placeholder="Search by bill number or payer name..."
-              className="w-full pl-10 pr-4 py-2.5 bg-zinc-800 border border-zinc-700 rounded-lg text-white text-sm placeholder-gray-500 focus:outline-none focus:border-blue-500"
+              className="w-full pl-10 pr-4 py-2.5 bg-zinc-800 border border-zinc-700 rounded-lg text-white text-sm placeholder-gray-500 focus:outline-none focus:border-red-500"
             />
           </div>
           <div className="flex items-center gap-2">
@@ -132,7 +132,7 @@ export default function StaffBilling() {
                 onClick={() => setStatusFilter(s)}
                 className={`px-3 py-2 rounded-lg text-xs font-medium capitalize transition-colors ${
                   statusFilter === s
-                    ? 'bg-blue-600 text-white'
+                    ? 'bg-red-600 text-white'
                     : 'bg-zinc-800 text-gray-400 hover:text-white'
                 }`}
               >
@@ -191,7 +191,7 @@ export default function StaffBilling() {
                     <td className="px-5 py-3 text-center">
                       <button
                         onClick={() => navigate(`/staff/billing/${bill.bill_number}`)}
-                        className="text-blue-400 hover:text-blue-300 transition-colors"
+                        className="text-red-400 hover:text-red-300 transition-colors"
                         title="View bill"
                       >
                         <Eye className="w-4 h-4 inline" />

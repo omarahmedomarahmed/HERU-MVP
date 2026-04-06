@@ -24,7 +24,7 @@ function formatDate(dateStr) {
 const TYPE_CONFIG = {
   team_join: {
     label: 'Team Join',
-    color: 'bg-blue-50 text-blue-700',
+    color: 'bg-red-50 text-red-700',
     icon: Users,
   },
   tournament_publish: {
@@ -182,7 +182,7 @@ export default function StaffApprovals() {
                 onClick={() => setActiveTab(tab.key)}
                 className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                   active
-                    ? 'bg-blue-600 text-white'
+                    ? 'bg-red-600 text-white'
                     : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50'
                 }`}
               >
@@ -210,7 +210,7 @@ export default function StaffApprovals() {
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search by name, email, or reference..."
-            className="w-full pl-10 pr-4 py-2 text-sm border border-gray-300 rounded-lg bg-white text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="w-full pl-10 pr-4 py-2 text-sm border border-gray-300 rounded-lg bg-white text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
           />
         </div>
 

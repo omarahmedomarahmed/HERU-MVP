@@ -176,7 +176,7 @@ export default function GamerHome() {
                   <p className="text-xs text-gray-500 uppercase tracking-wider">Win Rate</p>
                 </FloatingPanel>
                 <FloatingPanel className="p-4 text-center">
-                  <Medal className="w-5 h-5 text-purple-500 mx-auto mb-1" />
+                  <Medal className="w-5 h-5 text-red-500 mx-auto mb-1" />
                   <p className="text-2xl font-black text-white">{earnedAchievements.length}</p>
                   <p className="text-xs text-gray-500 uppercase tracking-wider">Badges</p>
                 </FloatingPanel>

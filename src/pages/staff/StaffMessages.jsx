@@ -147,8 +147,8 @@ export default function StaffMessages() {
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
           <div className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-blue-50 flex items-center justify-center">
-                <MessageSquare className="w-5 h-5 text-blue-600" />
+              <div className="w-10 h-10 rounded-lg bg-red-50 flex items-center justify-center">
+                <MessageSquare className="w-5 h-5 text-red-600" />
               </div>
               <div>
                 <p className="text-2xl font-bold text-gray-900">{threads.length}</p>
@@ -190,7 +190,7 @@ export default function StaffMessages() {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search threads by name, message, or sender..."
-                className="w-full pl-10 pr-4 py-2 text-sm border border-gray-200 rounded-lg bg-gray-50 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full pl-10 pr-4 py-2 text-sm border border-gray-200 rounded-lg bg-gray-50 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
               />
             </div>
             <div className="flex gap-2">
@@ -204,7 +204,7 @@ export default function StaffMessages() {
                   onClick={() => setSourceFilter(opt.value)}
                   className={`px-3 py-2 rounded-lg text-xs font-medium transition-colors ${
                     sourceFilter === opt.value
-                      ? 'bg-blue-600 text-white'
+                      ? 'bg-red-600 text-white'
                       : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                   }`}
                 >
@@ -244,7 +244,7 @@ export default function StaffMessages() {
               <button
                 key={thread.id}
                 onClick={() => navigate(thread.link)}
-                className="w-full bg-white rounded-xl border border-gray-200 p-4 shadow-sm hover:shadow-md hover:border-blue-200 transition-all text-left group"
+                className="w-full bg-white rounded-xl border border-gray-200 p-4 shadow-sm hover:shadow-md hover:border-red-200 transition-all text-left group"
               >
                 <div className="flex items-center gap-4">
                   <div
@@ -290,7 +290,7 @@ export default function StaffMessages() {
                         {thread.messageCount} message{thread.messageCount !== 1 ? 's' : ''}
                       </p>
                     </div>
-                    <ChevronRight className="w-4 h-4 text-gray-300 group-hover:text-blue-500 transition-colors" />
+                    <ChevronRight className="w-4 h-4 text-gray-300 group-hover:text-red-500 transition-colors" />
                   </div>
                 </div>
               </button>

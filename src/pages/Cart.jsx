@@ -85,6 +85,18 @@ export default function Cart() {
     queryClient.invalidateQueries(['cart', user?.id]);
   };
 
+  const updateQuantity = (cartId, delta) => {
+    const newCart = cart.map(item => {
+      if (item.cartId === cartId) {
+        const newQty = Math.max(1, (item.quantity || 1) + delta);
+        return { ...item, quantity: newQty };
+      }
+      return item;
+    });
+    localStorage.setItem(`cart_${user?.id}`, JSON.stringify(newCart));
+    queryClient.invalidateQueries(['cart', user?.id]);
+  };
+
   const clearCart = () => {
     localStorage.setItem(`cart_${user?.id}`, JSON.stringify([]));
     queryClient.invalidateQueries(['cart', user?.id]);
@@ -104,7 +116,7 @@ export default function Cart() {
   };
 
   const COIN_VALUE = 0.01;
-  const subtotal = cart.reduce((sum, item) => sum + (item.price || 0), 0);
+  const subtotal = cart.reduce((sum, item) => sum + (item.price || 0) * (item.quantity || 1), 0);
   const discount = promoApplied ? (subtotal * promoApplied.discount_percent / 100) : 0;
   const afterDiscount = subtotal - discount;
   
@@ -122,7 +134,7 @@ export default function Cart() {
           item_id: item.id,
           title: item.title,
           price: item.price,
-          quantity: 1,
+          quantity: item.quantity || 1,
           gameTag: item.gameTag
         })),
         total,
@@ -220,7 +232,24 @@ export default function Cart() {
                       {item.gameTag && (
                         <p className="text-yellow-400 text-xs mt-1">Game ID: {item.gameTag}</p>
                       )}
-                      <p className="text-red-400 font-bold mt-2">EGP {item.price}</p>
+                      <div className="flex items-center gap-3 mt-2">
+                        <p className="text-red-400 font-bold">EGP {((item.price || 0) * (item.quantity || 1)).toLocaleString()}</p>
+                        <div className="flex items-center gap-1 ml-auto mr-2">
+                          <button
+                            onClick={() => updateQuantity(item.cartId, -1)}
+                            className="w-7 h-7 flex items-center justify-center rounded-md bg-zinc-700 text-white hover:bg-zinc-600 text-sm font-bold"
+                          >
+                            -
+                          </button>
+                          <span className="w-8 text-center text-white font-medium text-sm">{item.quantity || 1}</span>
+                          <button
+                            onClick={() => updateQuantity(item.cartId, 1)}
+                            className="w-7 h-7 flex items-center justify-center rounded-md bg-zinc-700 text-white hover:bg-zinc-600 text-sm font-bold"
+                          >
+                            +
+                          </button>
+                        </div>
+                      </div>
                     </div>
                     <button
                       onClick={() => removeFromCart(item.cartId)}

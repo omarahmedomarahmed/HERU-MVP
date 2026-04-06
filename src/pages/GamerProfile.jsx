@@ -36,16 +36,16 @@ const ACHIEVEMENT_ICONS = {
 const RARITY_COLORS = {
   common: 'from-zinc-500/20 to-zinc-700/20 border-zinc-600/30',
   uncommon: 'from-green-500/20 to-green-700/20 border-green-600/30',
-  rare: 'from-blue-500/20 to-blue-700/20 border-blue-600/30',
-  epic: 'from-purple-500/20 to-purple-700/20 border-purple-600/30',
+  rare: 'from-red-500/20 to-red-700/20 border-red-600/30',
+  epic: 'from-red-500/20 to-red-700/20 border-red-600/30',
   legendary: 'from-yellow-500/20 to-red-500/20 border-yellow-500/30',
 };
 
 const RARITY_GLOW = {
   common: '',
   uncommon: 'text-green-400',
-  rare: 'text-blue-400',
-  epic: 'text-purple-400',
+  rare: 'text-red-400',
+  epic: 'text-red-400',
   legendary: 'text-yellow-400',
 };
 
@@ -58,7 +58,7 @@ export default function GamerProfile() {
   const [orderChatModal, setOrderChatModal] = useState(null);
   const [newMessage, setNewMessage] = useState('');
   const [newGame, setNewGame] = useState({ game_name: '', game_id: '', rank: '' });
-  const [talentForm, setTalentForm] = useState({ talent_type: '', talent_price: '', talent_video_link: '' });
+  const [talentForm, setTalentForm] = useState({ talent_type: '', talent_price: '', talent_video_link: '', contact_number: '' });
   const [slugInput, setSlugInput] = useState('');
   const [slugError, setSlugError] = useState('');
   const [slugSuccess, setSlugSuccess] = useState('');
@@ -172,10 +172,10 @@ export default function GamerProfile() {
   });
 
   const applyTalentMutation = useMutation({
-    mutationFn: async (data) => GamerProfileAPI.applyTalent(data),
+    mutationFn: async (data) => GamerProfileAPI.applyTalent({ ...data, email: user?.email }),
     onSuccess: () => {
       setTalentModal(false);
-      setTalentForm({ talent_type: '', talent_price: '', talent_video_link: '' });
+      setTalentForm({ talent_type: '', talent_price: '', talent_video_link: '', contact_number: '' });
     }
   });
 
@@ -252,6 +252,12 @@ export default function GamerProfile() {
       if (!user?.id) return [];
       return Order.list({ gamer_id: user.id }, '-created_date');
     },
+    enabled: !!user?.id,
+  });
+
+  const { data: talentApplications = [] } = useQuery({
+    queryKey: ['talent-applications', user?.id],
+    queryFn: () => ApprovalRequest.list({ requester_id: user?.id, approval_type: 'talent_application' }),
     enabled: !!user?.id,
   });
 
@@ -447,12 +453,12 @@ export default function GamerProfile() {
               <p className="text-xs text-gray-500 uppercase">Win Rate</p>
             </div>
             <div className="text-center p-3 bg-zinc-800/40 rounded-lg">
-              <Users className="w-4 h-4 text-blue-500 mx-auto mb-1" />
+              <Users className="w-4 h-4 text-red-500 mx-auto mb-1" />
               <p className="text-xl font-black text-white">{stats?.teams_count || teams.length}</p>
               <p className="text-xs text-gray-500 uppercase">Teams</p>
             </div>
             <div className="text-center p-3 bg-zinc-800/40 rounded-lg col-span-2 sm:col-span-1">
-              <Medal className="w-4 h-4 text-purple-500 mx-auto mb-1" />
+              <Medal className="w-4 h-4 text-red-500 mx-auto mb-1" />
               <p className="text-xl font-black text-white">{earnedAchievements.length}</p>
               <p className="text-xs text-gray-500 uppercase">Badges</p>
             </div>
@@ -720,7 +726,7 @@ export default function GamerProfile() {
                     <p className="text-white font-medium">Order #{order.id.slice(0, 8)}</p>
                     <HexBadge className={
                       order.status === 'completed' ? 'bg-green-500/20 text-green-400' :
-                      order.status === 'processing' ? 'bg-blue-500/20 text-blue-400' :
+                      order.status === 'processing' ? 'bg-red-500/20 text-red-400' :
                       order.status === 'cancelled' ? 'bg-red-500/20 text-red-400' :
                       'bg-yellow-500/20 text-yellow-400'
                     }>
@@ -916,6 +922,25 @@ export default function GamerProfile() {
                 className="bg-zinc-800 border-zinc-700 text-white"
               />
             </div>
+            <div>
+              <label className="text-sm text-gray-400 block mb-1">Contact Number</label>
+              <Input
+                type="tel"
+                value={talentForm.contact_number}
+                onChange={(e) => setTalentForm({ ...talentForm, contact_number: e.target.value })}
+                placeholder="+20 ..."
+                className="bg-zinc-800 border-zinc-700 text-white"
+              />
+            </div>
+            <div>
+              <label className="text-sm text-gray-400 block mb-1">Email</label>
+              <Input
+                type="email"
+                value={user?.email || ''}
+                readOnly
+                className="bg-zinc-800/60 border-zinc-700 text-gray-400 cursor-not-allowed"
+              />
+            </div>
             <GlowButton
               className="w-full"
               onClick={() => applyTalentMutation.mutate(talentForm)}
@@ -930,6 +955,47 @@ export default function GamerProfile() {
             )}
             {applyTalentMutation.isError && (
               <p className="text-red-400 text-sm text-center">Failed to submit. Please try again.</p>
+            )}
+
+            {/* Talent Application History */}
+            {talentApplications.length > 0 && (
+              <div className="mt-6 pt-4 border-t border-zinc-700">
+                <p className="text-sm font-bold text-gray-300 mb-3">Application History</p>
+                <div className="space-y-2 max-h-48 overflow-y-auto">
+                  {talentApplications.map((app) => (
+                    <div key={app.id} className="flex items-center justify-between p-3 bg-zinc-800/50 rounded-lg border border-zinc-700/30">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm text-white font-medium capitalize">{app.details?.talent_type || app.reference_name || 'Talent'}</p>
+                        <p className="text-xs text-gray-500">{new Date(app.created_at).toLocaleDateString()}</p>
+                      </div>
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${
+                          app.status === 'approved' ? 'bg-green-500/20 text-green-400' :
+                          app.status === 'rejected' ? 'bg-red-500/20 text-red-400' :
+                          'bg-yellow-500/20 text-yellow-400'
+                        }`}>
+                          {app.status?.toUpperCase()}
+                        </span>
+                        {app.status === 'pending' && (
+                          <button
+                            onClick={() => {
+                              setTalentForm({
+                                talent_type: app.details?.talent_type || '',
+                                talent_price: app.details?.talent_price || '',
+                                talent_video_link: app.details?.talent_video_link || '',
+                                contact_number: app.details?.contact_number || '',
+                              });
+                            }}
+                            className="text-xs text-red-400 hover:text-red-300 font-medium"
+                          >
+                            Edit
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
             )}
           </div>
         </DialogContent>

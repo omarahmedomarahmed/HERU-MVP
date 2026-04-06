@@ -38,13 +38,13 @@ function timeAgo(dateStr) {
 
 function StatCard({ icon: Icon, label, value, subtext, color = 'blue' }) {
   const colorMap = {
-    blue:   'from-blue-500/20 to-blue-600/5 border-blue-500/20 text-blue-400',
+    blue:   'from-red-500/20 to-red-600/5 border-red-500/20 text-red-400',
     green:  'from-emerald-500/20 to-emerald-600/5 border-emerald-500/20 text-emerald-400',
     purple: 'from-violet-500/20 to-violet-600/5 border-violet-500/20 text-violet-400',
     amber:  'from-amber-500/20 to-amber-600/5 border-amber-500/20 text-amber-400',
   }
   const iconColor = {
-    blue: 'text-blue-400', green: 'text-emerald-400', purple: 'text-violet-400', amber: 'text-amber-400',
+    blue: 'text-red-400', green: 'text-emerald-400', purple: 'text-violet-400', amber: 'text-amber-400',
   }
 
   return (
@@ -71,13 +71,13 @@ function QuickAction({ icon: Icon, label, to }) {
   return (
     <Link
       to={to}
-      className="group flex items-center gap-3 rounded-xl border border-zinc-800 bg-zinc-900/80 px-5 py-3.5 transition-all hover:border-blue-500/30 hover:bg-zinc-800/80"
+      className="group flex items-center gap-3 rounded-xl border border-zinc-800 bg-zinc-900/80 px-5 py-3.5 transition-all hover:border-red-500/30 hover:bg-zinc-800/80"
     >
-      <div className="rounded-lg bg-blue-500/10 p-2 text-blue-400 transition-colors group-hover:bg-blue-500/20">
+      <div className="rounded-lg bg-red-500/10 p-2 text-red-400 transition-colors group-hover:bg-red-500/20">
         <Icon className="h-4 w-4" />
       </div>
       <span className="text-sm font-semibold text-zinc-300 group-hover:text-white">{label}</span>
-      <ArrowRight className="ml-auto h-4 w-4 text-zinc-600 transition-transform group-hover:translate-x-0.5 group-hover:text-blue-400" />
+      <ArrowRight className="ml-auto h-4 w-4 text-zinc-600 transition-transform group-hover:translate-x-0.5 group-hover:text-red-400" />
     </Link>
   )
 }
@@ -97,7 +97,7 @@ function ActivityItem({ icon: Icon, iconColor, description, timestamp, linkTo })
         linkTo ? 'cursor-pointer hover:bg-zinc-800/50' : ''
       }`}
     >
-      <div className={`mt-0.5 rounded-md bg-zinc-800 p-1.5 ${iconColor || 'text-blue-400'}`}>
+      <div className={`mt-0.5 rounded-md bg-zinc-800 p-1.5 ${iconColor || 'text-red-400'}`}>
         <Icon className="h-3.5 w-3.5" />
       </div>
       <div className="min-w-0 flex-1">
@@ -117,14 +117,14 @@ function HealthItem({ label, count, to, urgent }) {
   return (
     <Link
       to={to}
-      className="flex items-center justify-between rounded-lg border border-zinc-800 bg-zinc-900/60 px-4 py-3 transition-all hover:border-blue-500/20 hover:bg-zinc-800/60"
+      className="flex items-center justify-between rounded-lg border border-zinc-800 bg-zinc-900/60 px-4 py-3 transition-all hover:border-red-500/20 hover:bg-zinc-800/60"
     >
       <span className="text-sm text-zinc-400">{label}</span>
       <span className={`rounded-full px-3 py-0.5 text-sm font-bold ${
         urgent && count > 0
           ? 'bg-amber-500/20 text-amber-400'
           : count > 0
-            ? 'bg-blue-500/15 text-blue-400'
+            ? 'bg-red-500/15 text-red-400'
             : 'bg-zinc-800 text-zinc-500'
       }`}>
         {count}
@@ -218,7 +218,7 @@ export default function StaffDashboard() {
       } else if (t.status === 'published') {
         entries.push({
           icon: Trophy,
-          iconColor: 'text-blue-400',
+          iconColor: 'text-red-400',
           description: `Tournament "${t.name}" published`,
           timestamp: t.updated_at || t.created_at,
           linkTo: `/staff/tournaments/${t.id}`,
@@ -279,7 +279,7 @@ export default function StaffDashboard() {
       {/* Header */}
       <div>
         <h1 className="text-3xl font-black text-white">
-          Staff <span className="text-blue-400">Dashboard</span>
+          Staff <span className="text-red-400">Dashboard</span>
         </h1>
         <p className="mt-1 text-sm text-zinc-500">Platform control center. All data in real time.</p>
       </div>
@@ -336,7 +336,7 @@ export default function StaffDashboard() {
           <div className="rounded-xl border border-zinc-800 bg-zinc-900/70">
             <div className="flex items-center justify-between border-b border-zinc-800 px-5 py-4">
               <div className="flex items-center gap-2">
-                <Activity className="h-4 w-4 text-blue-400" />
+                <Activity className="h-4 w-4 text-red-400" />
                 <h2 className="text-sm font-bold uppercase tracking-wider text-zinc-300">Recent Activity</h2>
               </div>
               <span className="rounded-full bg-zinc-800 px-2.5 py-0.5 text-xs text-zinc-500">
@@ -356,16 +356,16 @@ export default function StaffDashboard() {
           {/* Revenue Chart placeholder */}
           <div className="rounded-xl border border-zinc-800 bg-zinc-900/70 p-6">
             <div className="flex items-center gap-2 mb-4">
-              <TrendingUp className="h-4 w-4 text-blue-400" />
+              <TrendingUp className="h-4 w-4 text-red-400" />
               <h2 className="text-sm font-bold uppercase tracking-wider text-zinc-300">Revenue Trend</h2>
             </div>
             <div className="flex h-40 flex-col items-center justify-center rounded-lg border border-dashed border-zinc-700 bg-zinc-800/30">
-              <DollarSign className="h-8 w-8 text-blue-500/40" />
+              <DollarSign className="h-8 w-8 text-red-500/40" />
               <p className="mt-2 text-lg font-bold text-white">{formatEGP(totalRevenue)}</p>
               <p className="text-xs text-zinc-500">Total platform fees collected</p>
               <Link
                 to="/staff/revenue"
-                className="mt-3 text-xs font-semibold text-blue-400 hover:text-blue-300 transition-colors"
+                className="mt-3 text-xs font-semibold text-red-400 hover:text-red-300 transition-colors"
               >
                 View full revenue breakdown &rarr;
               </Link>
@@ -377,7 +377,7 @@ export default function StaffDashboard() {
         <div>
           <div className="rounded-xl border border-zinc-800 bg-zinc-900/70">
             <div className="flex items-center gap-2 border-b border-zinc-800 px-5 py-4">
-              <Shield className="h-4 w-4 text-blue-400" />
+              <Shield className="h-4 w-4 text-red-400" />
               <h2 className="text-sm font-bold uppercase tracking-wider text-zinc-300">System Health</h2>
             </div>
             <div className="space-y-2 p-4">

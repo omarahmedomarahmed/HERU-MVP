@@ -18,14 +18,14 @@ function formatEGP(amount) {
 
 function fundingColor(percent) {
   if (percent >= 100) return 'bg-green-500'
-  if (percent >= 66) return 'bg-blue-500'
+  if (percent >= 66) return 'bg-red-500'
   if (percent >= 33) return 'bg-yellow-500'
   return 'bg-red-500'
 }
 
 function fundingTextColor(percent) {
   if (percent >= 100) return 'text-green-400'
-  if (percent >= 66) return 'text-blue-400'
+  if (percent >= 66) return 'text-red-400'
   if (percent >= 33) return 'text-yellow-400'
   return 'text-red-400'
 }
@@ -113,7 +113,7 @@ function CommitModal({ radar, onClose, onConfirm, isLoading }) {
             </div>
             <div className="flex items-center justify-between text-sm">
               <span className="text-gray-400">Your Role</span>
-              <span className={`font-bold ${commitPercent >= 66 ? 'text-purple-400' : 'text-blue-400'}`}>
+              <span className={`font-bold ${commitPercent >= 66 ? 'text-red-400' : 'text-red-400'}`}>
                 {commitLabel(commitPercent)}
               </span>
             </div>
@@ -209,7 +209,7 @@ function RadarCard({ radar, onCommit, isMyCommitment, myEntry }) {
             radar.status === 'fully_funded'
               ? 'bg-green-500/10 text-green-400 border border-green-500/20'
               : radar.status === 'in_progress'
-                ? 'bg-blue-500/10 text-blue-400 border border-blue-500/20'
+                ? 'bg-red-500/10 text-red-400 border border-red-500/20'
                 : 'bg-amber-500/10 text-amber-400 border border-amber-500/20'
           }`}>
             {radar.status === 'fully_funded' ? 'Funded' : radar.status === 'in_progress' ? 'In Progress' : 'Open'}
@@ -298,7 +298,7 @@ function RadarCard({ radar, onCommit, isMyCommitment, myEntry }) {
             </div>
             <div className="flex items-center justify-between text-sm">
               <span className="text-gray-400">Role</span>
-              <span className={`font-bold ${myEntry.committed_percent >= 66 ? 'text-purple-400' : 'text-blue-400'}`}>
+              <span className={`font-bold ${myEntry.committed_percent >= 66 ? 'text-red-400' : 'text-red-400'}`}>
                 {commitLabel(myEntry.committed_percent)}
               </span>
             </div>

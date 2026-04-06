@@ -21,7 +21,7 @@ export default function OrganizerChat({ tournament, currentUser, senderBrand, on
   return (
     <FloatingPanel className="p-5">
       <h3 className="text-white font-bold mb-4 flex items-center gap-2">
-        <MessageSquare className="w-4 h-4 text-blue-400" />
+        <MessageSquare className="w-4 h-4 text-red-400" />
         Organizer Chat
         <span className="text-xs text-gray-500 font-normal ml-1">— visible to main organizer &amp; co-organizers only</span>
       </h3>
@@ -34,7 +34,7 @@ export default function OrganizerChat({ tournament, currentUser, senderBrand, on
           const isMe = m.sender_id === currentUser?.id;
           return (
             <div key={i} className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}>
-              <div className={`max-w-[75%] rounded-xl px-4 py-2.5 ${isMe ? 'bg-blue-600 text-white' : 'bg-zinc-800 text-gray-200'}`}>
+              <div className={`max-w-[75%] rounded-xl px-4 py-2.5 ${isMe ? 'bg-red-600 text-white' : 'bg-zinc-800 text-gray-200'}`}>
                 <p className="text-[10px] opacity-60 mb-1">
                   {m.sender_name}{m.sender_brand ? ` · ${m.sender_brand}` : ''} · {m.sender_role}
                 </p>

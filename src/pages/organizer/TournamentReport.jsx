@@ -564,7 +564,7 @@ export default function TournamentReport() {
             <button
               type="button"
               onClick={addSocialPost}
-              className="inline-flex items-center gap-2 rounded-lg border border-dashed border-blue-500/30 bg-blue-600/10 px-4 py-2.5 text-sm text-blue-300 hover:bg-blue-600/20 transition-colors w-full justify-center"
+              className="inline-flex items-center gap-2 rounded-lg border border-dashed border-red-500/30 bg-red-600/10 px-4 py-2.5 text-sm text-red-300 hover:bg-red-600/20 transition-colors w-full justify-center"
             >
               <Plus className="w-4 h-4" />
               Add Social Post
@@ -624,7 +624,7 @@ export default function TournamentReport() {
           <button
             type="submit"
             disabled={saveMutation.isPending}
-            className="inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-violet-600 to-blue-600 px-6 py-2.5 text-sm font-medium text-white hover:brightness-110 transition disabled:opacity-50 disabled:cursor-not-allowed"
+            className="inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-violet-600 to-red-600 px-6 py-2.5 text-sm font-medium text-white hover:brightness-110 transition disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {saveMutation.isPending ? (
               <Loader2 className="w-4 h-4 animate-spin" />

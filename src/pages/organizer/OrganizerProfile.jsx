@@ -58,7 +58,7 @@ function VerificationBadge({ status }) {
 function SectionHeading({ icon: Icon, children }) {
   return (
     <div className="flex items-center gap-2 mb-4">
-      <Icon className="w-5 h-5 text-violet-400" />
+      <Icon className="w-5 h-5 text-red-400" />
       <h2 className="text-lg font-semibold text-white">{children}</h2>
     </div>
   )
@@ -189,7 +189,7 @@ export default function OrganizerProfilePage() {
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-violet-400" />
+        <Loader2 className="w-8 h-8 animate-spin text-red-400" />
       </div>
     )
   }
@@ -204,7 +204,7 @@ export default function OrganizerProfilePage() {
           </p>
           <button
             onClick={() => navigate('/organizer/dashboard')}
-            className="mt-4 text-sm text-violet-400 hover:text-violet-300 transition-colors"
+            className="mt-4 text-sm text-red-400 hover:text-red-300 transition-colors"
           >
             Back to Dashboard
           </button>
@@ -242,7 +242,7 @@ export default function OrganizerProfilePage() {
                 value={brandName}
                 onChange={(e) => setBrandName(e.target.value)}
                 placeholder="e.g. Nexus Esports"
-                className="bg-white/5 border-white/10 text-white placeholder:text-gray-500 focus-visible:ring-violet-500"
+                className="bg-white/5 border-white/10 text-white placeholder:text-gray-500 focus-visible:ring-red-500"
               />
             </div>
 
@@ -256,7 +256,7 @@ export default function OrganizerProfilePage() {
                   value={location}
                   onChange={(e) => setLocation(e.target.value)}
                   placeholder="e.g. Cairo, Egypt"
-                  className="pl-9 bg-white/5 border-white/10 text-white placeholder:text-gray-500 focus-visible:ring-violet-500"
+                  className="pl-9 bg-white/5 border-white/10 text-white placeholder:text-gray-500 focus-visible:ring-red-500"
                 />
               </div>
             </div>
@@ -272,7 +272,7 @@ export default function OrganizerProfilePage() {
                     value={brandLogo}
                     onChange={(e) => setBrandLogo(e.target.value)}
                     placeholder="https://example.com/logo.png"
-                    className="pl-9 bg-white/5 border-white/10 text-white placeholder:text-gray-500 focus-visible:ring-violet-500"
+                    className="pl-9 bg-white/5 border-white/10 text-white placeholder:text-gray-500 focus-visible:ring-red-500"
                   />
                 </div>
                 {brandLogo && (
@@ -301,7 +301,7 @@ export default function OrganizerProfilePage() {
                 <Input
                   value={primaryColor}
                   onChange={(e) => setPrimaryColor(e.target.value)}
-                  className="flex-1 bg-white/5 border-white/10 text-white font-mono text-sm focus-visible:ring-violet-500"
+                  className="flex-1 bg-white/5 border-white/10 text-white font-mono text-sm focus-visible:ring-red-500"
                   maxLength={7}
                 />
               </div>
@@ -322,7 +322,7 @@ export default function OrganizerProfilePage() {
                 <Input
                   value={secondaryColor}
                   onChange={(e) => setSecondaryColor(e.target.value)}
-                  className="flex-1 bg-white/5 border-white/10 text-white font-mono text-sm focus-visible:ring-violet-500"
+                  className="flex-1 bg-white/5 border-white/10 text-white font-mono text-sm focus-visible:ring-red-500"
                   maxLength={7}
                 />
               </div>
@@ -345,7 +345,7 @@ export default function OrganizerProfilePage() {
                 onChange={(e) => setDescription(e.target.value)}
                 placeholder="Tell the community about your organization..."
                 rows={4}
-                className="bg-white/5 border-white/10 text-white placeholder:text-gray-500 focus-visible:ring-violet-500"
+                className="bg-white/5 border-white/10 text-white placeholder:text-gray-500 focus-visible:ring-red-500"
               />
             </div>
 
@@ -357,7 +357,7 @@ export default function OrganizerProfilePage() {
                 onChange={(e) => setBio(e.target.value)}
                 placeholder="Short bio for your public profile..."
                 rows={3}
-                className="bg-white/5 border-white/10 text-white placeholder:text-gray-500 focus-visible:ring-violet-500"
+                className="bg-white/5 border-white/10 text-white placeholder:text-gray-500 focus-visible:ring-red-500"
               />
             </div>
           </div>
@@ -374,7 +374,7 @@ export default function OrganizerProfilePage() {
             {featuredGames.map((game) => (
               <span
                 key={game}
-                className="inline-flex items-center gap-1.5 rounded-full bg-violet-600/20 border border-violet-500/30 px-3 py-1 text-sm text-violet-300"
+                className="inline-flex items-center gap-1.5 rounded-full bg-red-600/20 border border-red-500/30 px-3 py-1 text-sm text-red-300"
               >
                 {game}
                 <button
@@ -398,12 +398,12 @@ export default function OrganizerProfilePage() {
               onChange={(e) => setGameInput(e.target.value)}
               onKeyDown={handleGameKeyDown}
               placeholder="Type a game name and press Enter"
-              className="flex-1 bg-white/5 border-white/10 text-white placeholder:text-gray-500 focus-visible:ring-violet-500"
+              className="flex-1 bg-white/5 border-white/10 text-white placeholder:text-gray-500 focus-visible:ring-red-500"
             />
             <button
               type="button"
               onClick={() => addGame(gameInput)}
-              className="inline-flex items-center gap-1 rounded-lg bg-violet-600/20 border border-violet-500/30 px-3 py-2 text-sm text-violet-300 hover:bg-violet-600/30 transition-colors"
+              className="inline-flex items-center gap-1 rounded-lg bg-red-600/20 border border-red-500/30 px-3 py-2 text-sm text-red-300 hover:bg-red-600/30 transition-colors"
             >
               <Plus className="w-4 h-4" />
               Add
@@ -445,7 +445,7 @@ export default function OrganizerProfilePage() {
                     setSocialLinks((prev) => ({ ...prev, [key]: e.target.value }))
                   }
                   placeholder={placeholder}
-                  className="bg-white/5 border-white/10 text-white placeholder:text-gray-500 focus-visible:ring-violet-500"
+                  className="bg-white/5 border-white/10 text-white placeholder:text-gray-500 focus-visible:ring-red-500"
                 />
               </div>
             ))}
@@ -496,7 +496,7 @@ export default function OrganizerProfilePage() {
                     <p className="text-sm text-gray-400 mt-0.5 leading-relaxed">
                       Complete 3 solo tournaments and share on social media to get verified.
                       Then reach out to staff via the support chat or contact us at{' '}
-                      <span className="text-violet-400">support@heru.gg</span>.
+                      <span className="text-red-400">support@heru.gg</span>.
                     </p>
                     <div className="mt-3 flex items-center gap-2 text-xs text-gray-500">
                       <div className="w-2 h-2 rounded-full bg-gray-600" />
@@ -525,7 +525,7 @@ export default function OrganizerProfilePage() {
           <button
             type="submit"
             disabled={saveMutation.isPending}
-            className="inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-violet-600 to-blue-600 px-6 py-2.5 text-sm font-medium text-white hover:brightness-110 transition disabled:opacity-50 disabled:cursor-not-allowed"
+            className="inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-red-600 to-red-600 px-6 py-2.5 text-sm font-medium text-white hover:brightness-110 transition disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {saveMutation.isPending ? (
               <Loader2 className="w-4 h-4 animate-spin" />

@@ -134,7 +134,7 @@ function OrganizerDetail({ org, onClose, onVerify, verifying }) {
                         href={url}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1 text-xs text-blue-600 hover:text-blue-700"
+                        className="inline-flex items-center gap-1 text-xs text-red-600 hover:text-red-700"
                       >
                         <Globe className="w-3 h-3" />
                         {key}
@@ -181,7 +181,7 @@ function OrganizerDetail({ org, onClose, onVerify, verifying }) {
                   onClick={() => onVerify(org.user_id, s)}
                   className={`px-3 py-1.5 text-xs font-medium rounded-lg border transition disabled:opacity-40 disabled:cursor-not-allowed ${
                     verificationStatus === s
-                      ? 'bg-blue-50 border-blue-300 text-blue-700'
+                      ? 'bg-red-50 border-red-300 text-red-700'
                       : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
                   }`}
                 >
@@ -192,7 +192,7 @@ function OrganizerDetail({ org, onClose, onVerify, verifying }) {
             </div>
 
             {verifying && (
-              <p className="text-xs text-blue-500 mt-3 animate-pulse">Updating verification...</p>
+              <p className="text-xs text-red-500 mt-3 animate-pulse">Updating verification...</p>
             )}
           </div>
         </div>
@@ -299,7 +299,7 @@ export default function StaffOrganizers() {
                 onClick={() => setFilter(f.value)}
                 className={`px-4 py-2.5 text-sm font-medium border-b-2 transition ${
                   filter === f.value
-                    ? 'border-blue-500 text-blue-600'
+                    ? 'border-red-500 text-red-600'
                     : 'border-transparent text-gray-500 hover:text-gray-700'
                 }`}
               >
@@ -319,7 +319,7 @@ export default function StaffOrganizers() {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search by brand name or location..."
-              className="w-full pl-10 pr-4 py-2 text-sm border border-gray-300 rounded-lg bg-white text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full pl-10 pr-4 py-2 text-sm border border-gray-300 rounded-lg bg-white text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
             />
           </div>
         </div>

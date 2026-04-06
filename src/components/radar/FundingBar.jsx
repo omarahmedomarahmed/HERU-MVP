@@ -7,13 +7,13 @@ export default function FundingBar({ percent = 0, totalCost = 0, className, larg
 
   const barColor =
     pct >= 100 ? 'bg-green-500' :
-    pct >= 70  ? 'bg-blue-500' :
+    pct >= 70  ? 'bg-red-500' :
     pct >= 30  ? 'bg-amber-500' :
                  'bg-red-500';
 
   const labelColor =
     pct >= 100 ? 'text-green-400' :
-    pct >= 70  ? 'text-blue-400' :
+    pct >= 70  ? 'text-red-400' :
     pct >= 30  ? 'text-amber-400' :
                  'text-red-400';
 

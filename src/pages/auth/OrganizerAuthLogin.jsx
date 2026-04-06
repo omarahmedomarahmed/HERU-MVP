@@ -58,13 +58,13 @@ export default function OrganizerAuthLogin() {
     <div className="min-h-screen flex items-center justify-center p-4">
       <AnimatedBackground />
       <div className="w-full max-w-md relative z-10">
-        <Link to="/" className="inline-flex items-center gap-2 text-gray-400 hover:text-indigo-400 mb-6 transition-colors">
+        <Link to="/" className="inline-flex items-center gap-2 text-gray-400 hover:text-red-400 mb-6 transition-colors">
           <ArrowLeft className="w-4 h-4" /> Back to Home
         </Link>
         <FloatingPanel className="p-8">
           <div className="text-center mb-8">
-            <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-indigo-600/30 to-zinc-800 border border-indigo-500/20 flex items-center justify-center mx-auto mb-4 shadow-lg shadow-indigo-500/10">
-              <Building2 className="w-8 h-8 text-indigo-400" />
+            <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-red-600/30 to-zinc-800 border border-red-500/20 flex items-center justify-center mx-auto mb-4 shadow-lg shadow-red-500/10">
+              <Building2 className="w-8 h-8 text-red-400" />
             </div>
             <HeruLogo className="h-10 mx-auto mb-3" />
             <h1 className="text-2xl font-black text-white tracking-wide">ORGANIZER LOGIN</h1>
@@ -79,7 +79,7 @@ export default function OrganizerAuthLogin() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="brand@email.com"
-                className="bg-zinc-800 border-zinc-700 text-white focus:border-indigo-500 focus:ring-indigo-500/20"
+                className="bg-zinc-800 border-zinc-700 text-white focus:border-red-500 focus:ring-red-500/20"
                 required
               />
             </div>
@@ -91,7 +91,7 @@ export default function OrganizerAuthLogin() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="Enter your password"
-                  className="bg-zinc-800 border-zinc-700 text-white pr-10 focus:border-indigo-500 focus:ring-indigo-500/20"
+                  className="bg-zinc-800 border-zinc-700 text-white pr-10 focus:border-red-500 focus:ring-red-500/20"
                   required
                 />
                 <button
@@ -105,7 +105,7 @@ export default function OrganizerAuthLogin() {
             </div>
 
             <div className="text-right">
-              <Link to="/auth/forgot-password?role=organizer" className="text-xs text-indigo-400 hover:text-indigo-300 transition-colors">
+              <Link to="/auth/forgot-password?role=organizer" className="text-xs text-red-400 hover:text-red-300 transition-colors">
                 Forgot password?
               </Link>
             </div>
@@ -120,12 +120,12 @@ export default function OrganizerAuthLogin() {
             <GlowButton
               type="submit"
               variant="secondary"
-              className="w-full !border-indigo-500 !text-indigo-400 hover:!bg-indigo-500/10"
+              className="w-full !border-red-500 !text-red-400 hover:!bg-red-500/10"
               disabled={loading}
             >
               {loading ? (
                 <>
-                  <div className="w-4 h-4 border-2 border-indigo-300/30 border-t-indigo-300 rounded-full animate-spin" />
+                  <div className="w-4 h-4 border-2 border-red-300/30 border-t-red-300 rounded-full animate-spin" />
                   Signing in...
                 </>
               ) : (
@@ -140,7 +140,7 @@ export default function OrganizerAuthLogin() {
           <div className="border-t border-zinc-700/50 pt-5 mt-6 space-y-3 text-center">
             <p className="text-gray-500 text-sm">
               Don't have an account?{' '}
-              <Link to="/auth/organizer/register" className="text-indigo-400 hover:text-indigo-300 font-semibold transition-colors">
+              <Link to="/auth/organizer/register" className="text-red-400 hover:text-red-300 font-semibold transition-colors">
                 Create Account
               </Link>
             </p>

@@ -49,7 +49,7 @@ export default function StaffOrganizers() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-white">
-            All <span className="text-blue-400">Organizers</span>
+            All <span className="text-red-400">Organizers</span>
           </h1>
           <p className="text-gray-500 text-sm mt-1">{organizers.length} total organizers</p>
         </div>
@@ -59,7 +59,7 @@ export default function StaffOrganizers() {
       <div className="grid grid-cols-3 gap-4">
         <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-5">
           <div className="flex items-center gap-3 mb-2">
-            <Users className="w-5 h-5 text-blue-400" />
+            <Users className="w-5 h-5 text-red-400" />
             <span className="text-sm text-gray-400">Total</span>
           </div>
           <p className="text-xl font-bold text-white">{organizers.length}</p>
@@ -89,7 +89,7 @@ export default function StaffOrganizers() {
               value={search}
               onChange={e => setSearch(e.target.value)}
               placeholder="Search by brand name or email..."
-              className="w-full pl-10 pr-4 py-2.5 bg-zinc-800 border border-zinc-700 rounded-lg text-white text-sm placeholder-gray-500 focus:outline-none focus:border-blue-500"
+              className="w-full pl-10 pr-4 py-2.5 bg-zinc-800 border border-zinc-700 rounded-lg text-white text-sm placeholder-gray-500 focus:outline-none focus:border-red-500"
             />
           </div>
           <div className="flex gap-2">
@@ -98,7 +98,7 @@ export default function StaffOrganizers() {
                 key={v}
                 onClick={() => setVerifiedFilter(v)}
                 className={`px-3 py-2 rounded-lg text-xs font-medium capitalize transition-colors ${
-                  verifiedFilter === v ? 'bg-blue-600 text-white' : 'bg-zinc-800 text-gray-400 hover:text-white'
+                  verifiedFilter === v ? 'bg-red-600 text-white' : 'bg-zinc-800 text-gray-400 hover:text-white'
                 }`}
               >
                 {v}
@@ -169,7 +169,7 @@ export default function StaffOrganizers() {
                     <div className="flex items-center justify-center gap-2">
                       <button
                         onClick={() => setSelected(org)}
-                        className="text-blue-400 hover:text-blue-300"
+                        className="text-red-400 hover:text-red-300"
                         title="View details"
                       >
                         <Eye className="w-4 h-4" />
@@ -250,7 +250,7 @@ export default function StaffOrganizers() {
                 className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                   selected.is_verified
                     ? 'bg-zinc-800 text-gray-300 hover:bg-zinc-700'
-                    : 'bg-blue-600 text-white hover:bg-blue-700'
+                    : 'bg-red-600 text-white hover:bg-red-700'
                 }`}
               >
                 {selected.is_verified ? 'Remove Verification' : 'Verify Organizer'}

@@ -32,7 +32,7 @@ function timeAgo(dateStr) {
 
 function StatCard({ icon: Icon, label, value, sub, color = 'blue' }) {
   const colors = {
-    blue: 'bg-blue-50 text-blue-600',
+    blue: 'bg-red-50 text-red-600',
     green: 'bg-emerald-50 text-emerald-600',
     amber: 'bg-amber-50 text-amber-600',
     violet: 'bg-violet-50 text-violet-600',
@@ -61,7 +61,7 @@ function StatCard({ icon: Icon, label, value, sub, color = 'blue' }) {
 function StatusBadge({ status }) {
   const map = {
     draft: 'bg-gray-100 text-gray-600',
-    published: 'bg-blue-50 text-blue-700',
+    published: 'bg-red-50 text-red-700',
     live: 'bg-emerald-50 text-emerald-700',
     completed: 'bg-gray-100 text-gray-500',
     pending: 'bg-amber-50 text-amber-700',
@@ -93,7 +93,7 @@ function RevenueChart({ months }) {
           <span className="w-20 text-xs font-medium text-gray-500 shrink-0">{m.label}</span>
           <div className="flex-1 h-6 bg-gray-100 rounded-full overflow-hidden">
             <div
-              className="h-full bg-blue-500 rounded-full transition-all"
+              className="h-full bg-red-500 rounded-full transition-all"
               style={{ width: `${Math.max((m.amount / max) * 100, 2)}%` }}
             />
           </div>
@@ -225,12 +225,12 @@ export default function StaffDashboard() {
           <div className="lg:col-span-2 bg-white rounded-xl border border-gray-200 shadow-sm">
             <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
               <div className="flex items-center gap-2">
-                <TrendingUp className="w-4 h-4 text-blue-500" />
+                <TrendingUp className="w-4 h-4 text-red-500" />
                 <h2 className="text-sm font-semibold text-gray-900">Monthly Revenue</h2>
               </div>
               <Link
                 to="/staff/revenue"
-                className="text-xs font-medium text-blue-600 hover:text-blue-700"
+                className="text-xs font-medium text-red-600 hover:text-red-700"
               >
                 View full report
               </Link>
@@ -255,7 +255,7 @@ export default function StaffDashboard() {
                 </div>
                 <Link
                   to="/staff/tournaments"
-                  className="text-xs font-medium text-blue-600 hover:text-blue-700"
+                  className="text-xs font-medium text-red-600 hover:text-red-700"
                 >
                   View all
                 </Link>
@@ -285,12 +285,12 @@ export default function StaffDashboard() {
             <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
               <div className="flex items-center justify-between px-5 py-3.5 border-b border-gray-100">
                 <div className="flex items-center gap-2">
-                  <UserPlus className="w-4 h-4 text-blue-500" />
+                  <UserPlus className="w-4 h-4 text-red-500" />
                   <h2 className="text-sm font-semibold text-gray-900">Recent Registrations</h2>
                 </div>
                 <Link
                   to="/staff/users"
-                  className="text-xs font-medium text-blue-600 hover:text-blue-700"
+                  className="text-xs font-medium text-red-600 hover:text-red-700"
                 >
                   View all
                 </Link>
@@ -306,7 +306,7 @@ export default function StaffDashboard() {
                       className="flex items-center justify-between px-5 py-3 hover:bg-gray-50 transition"
                     >
                       <div className="flex items-center gap-3 min-w-0">
-                        <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-xs font-bold shrink-0">
+                        <div className="w-8 h-8 rounded-full bg-red-100 text-red-600 flex items-center justify-center text-xs font-bold shrink-0">
                           {(u.full_name || u.email || '?').charAt(0).toUpperCase()}
                         </div>
                         <div className="min-w-0">

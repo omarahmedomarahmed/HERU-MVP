@@ -9,12 +9,12 @@ import { useAuth } from '@/lib/AuthContext';
 
 const STATUS_BADGE = {
   pending:    'bg-yellow-500/20 text-yellow-400 border border-yellow-500/30',
-  processing: 'bg-blue-500/20 text-blue-400 border border-blue-500/30',
+  processing: 'bg-red-500/20 text-red-400 border border-red-500/30',
   completed:  'bg-green-500/20 text-green-400 border border-green-500/30',
   cancelled:  'bg-red-500/20 text-red-400 border border-red-500/30',
   draft:           'bg-zinc-700 text-zinc-300',
   pending_payment: 'bg-amber-500/20 text-amber-400 border border-amber-500/30',
-  in_fulfillment:  'bg-blue-500/20 text-blue-400 border border-blue-500/30',
+  in_fulfillment:  'bg-red-500/20 text-red-400 border border-red-500/30',
   fulfilled:       'bg-green-500/20 text-green-400 border border-green-500/30',
 };
 
@@ -64,14 +64,14 @@ export default function StaffOrders() {
   return (
     <div className="space-y-6">
       <h1 className="text-2xl font-bold text-white">
-        All <span className="text-blue-400">Orders</span>
+        All <span className="text-red-400">Orders</span>
       </h1>
 
       {/* Stats */}
       <div className="grid grid-cols-3 gap-4">
         <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-5">
           <div className="flex items-center gap-3 mb-2">
-            <ShoppingCart className="w-5 h-5 text-blue-400" />
+            <ShoppingCart className="w-5 h-5 text-red-400" />
             <span className="text-sm text-gray-400">Gamer Orders</span>
           </div>
           <p className="text-xl font-bold text-white">{gamerOrders.length}</p>
@@ -97,7 +97,7 @@ export default function StaffOrders() {
         <button
           onClick={() => { setTab('gamer'); setStatusFilter('all'); }}
           className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-            tab === 'gamer' ? 'bg-blue-600 text-white' : 'bg-zinc-800 text-gray-400 hover:text-white'
+            tab === 'gamer' ? 'bg-red-600 text-white' : 'bg-zinc-800 text-gray-400 hover:text-white'
           }`}
         >
           <ShoppingCart className="w-4 h-4" /> Gamer Orders ({gamerOrders.length})
@@ -105,7 +105,7 @@ export default function StaffOrders() {
         <button
           onClick={() => { setTab('tournament'); setStatusFilter('all'); }}
           className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-            tab === 'tournament' ? 'bg-blue-600 text-white' : 'bg-zinc-800 text-gray-400 hover:text-white'
+            tab === 'tournament' ? 'bg-red-600 text-white' : 'bg-zinc-800 text-gray-400 hover:text-white'
           }`}
         >
           <Trophy className="w-4 h-4" /> Tournament Orders ({tournamentOrders.length})
@@ -121,7 +121,7 @@ export default function StaffOrders() {
               value={search}
               onChange={e => setSearch(e.target.value)}
               placeholder={tab === 'gamer' ? 'Search by order ID or customer...' : 'Search by order ID, tournament, or organizer...'}
-              className="w-full pl-10 pr-4 py-2.5 bg-zinc-800 border border-zinc-700 rounded-lg text-white text-sm placeholder-gray-500 focus:outline-none focus:border-blue-500"
+              className="w-full pl-10 pr-4 py-2.5 bg-zinc-800 border border-zinc-700 rounded-lg text-white text-sm placeholder-gray-500 focus:outline-none focus:border-red-500"
             />
           </div>
           <div className="flex items-center gap-2 flex-wrap">
@@ -131,7 +131,7 @@ export default function StaffOrders() {
                 key={s}
                 onClick={() => setStatusFilter(s)}
                 className={`px-3 py-2 rounded-lg text-xs font-medium capitalize transition-colors whitespace-nowrap ${
-                  statusFilter === s ? 'bg-blue-600 text-white' : 'bg-zinc-800 text-gray-400 hover:text-white'
+                  statusFilter === s ? 'bg-red-600 text-white' : 'bg-zinc-800 text-gray-400 hover:text-white'
                 }`}
               >
                 {s === 'all' ? 'All' : s.replace(/_/g, ' ')}
@@ -185,7 +185,7 @@ export default function StaffOrders() {
                     <td className="px-5 py-3 text-center">
                       <button
                         onClick={() => navigate(`/staff/orders/gamer/${order.id}`)}
-                        className="text-blue-400 hover:text-blue-300"
+                        className="text-red-400 hover:text-red-300"
                       >
                         <Eye className="w-4 h-4 inline" />
                       </button>
@@ -226,8 +226,8 @@ export default function StaffOrders() {
                     <td className="px-5 py-3">
                       <span className={`text-xs px-2 py-1 rounded ${
                         order.tournament_type === 'shared'
-                          ? 'bg-purple-500/20 text-purple-400'
-                          : 'bg-blue-500/20 text-blue-400'
+                          ? 'bg-red-500/20 text-red-400'
+                          : 'bg-red-500/20 text-red-400'
                       }`}>
                         {order.tournament_type || 'solo'}
                       </span>
@@ -246,7 +246,7 @@ export default function StaffOrders() {
                     <td className="px-5 py-3 text-center">
                       <button
                         onClick={() => navigate(`/staff/orders/tournament/${order.id}`)}
-                        className="text-blue-400 hover:text-blue-300"
+                        className="text-red-400 hover:text-red-300"
                       >
                         <Eye className="w-4 h-4 inline" />
                       </button>

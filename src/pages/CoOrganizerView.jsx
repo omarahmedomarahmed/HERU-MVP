@@ -23,7 +23,7 @@ const FOLDERS = ['Tournament Branding', 'Organizer Branding', 'Co-Organizer Bran
 
 const itemStatusConfig = {
   pending:     { label: 'Pending',     cls: 'bg-yellow-500/20 text-yellow-400', Icon: Clock },
-  in_progress: { label: 'In Progress', cls: 'bg-blue-500/20 text-blue-400',    Icon: Clock },
+  in_progress: { label: 'In Progress', cls: 'bg-red-500/20 text-red-400',    Icon: Clock },
   fulfilled:   { label: 'Fulfilled',   cls: 'bg-green-500/20 text-green-400',   Icon: CheckCircle },
   cancelled:   { label: 'Cancelled',   cls: 'bg-red-500/20 text-red-400',       Icon: AlertCircle },
 };
@@ -156,12 +156,12 @@ export default function CoOrganizerView() {
               <h1 className="text-3xl font-black text-white">{tournament.name}</h1>
               <span className={`text-xs font-bold px-3 py-1 rounded-full border ${
                 tournament.status === 'live' ? 'bg-green-500/20 text-green-400 border-green-500/30 animate-pulse' :
-                tournament.status === 'published' ? 'bg-blue-500/20 text-blue-400 border-blue-500/30' :
+                tournament.status === 'published' ? 'bg-red-500/20 text-red-400 border-red-500/30' :
                 'bg-zinc-500/20 text-zinc-400 border-zinc-500/30'
               }`}>
                 {tournament.status === 'live' ? '🔴 LIVE' : tournament.status?.toUpperCase()}
               </span>
-              <span className="text-xs bg-blue-500/20 text-blue-400 border border-blue-500/30 px-3 py-1 rounded-full font-bold">CO-ORGANIZER VIEW</span>
+              <span className="text-xs bg-red-500/20 text-red-400 border border-red-500/30 px-3 py-1 rounded-full font-bold">CO-ORGANIZER VIEW</span>
             </div>
             <p className="text-gray-400">{tournament.game} • {tournament.format}</p>
             {tournament.schedule && (
@@ -330,7 +330,7 @@ export default function CoOrganizerView() {
                         <div className="flex items-center gap-2 mb-0.5 flex-wrap">
                           <span className="text-white text-sm font-bold">{msg.sender_name}</span>
                           <span className={`text-[10px] px-2 py-0.5 rounded font-bold ${
-                            msg.sender_role === 'main_organizer' ? 'bg-red-500/20 text-red-400' : 'bg-blue-500/20 text-blue-400'
+                            msg.sender_role === 'main_organizer' ? 'bg-red-500/20 text-red-400' : 'bg-red-500/20 text-red-400'
                           }`}>
                             {msg.sender_role === 'main_organizer' ? 'Main Organizer' : 'Co-Organizer'}
                           </span>

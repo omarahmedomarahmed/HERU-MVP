@@ -107,7 +107,7 @@ export default function MyOrders() {
   const getStatusIcon = (status) => {
     switch (status) {
       case 'pending': return <Clock className="w-5 h-5 text-yellow-400" />;
-      case 'processing': return <Truck className="w-5 h-5 text-blue-400" />;
+      case 'processing': return <Truck className="w-5 h-5 text-red-400" />;
       case 'completed': return <CheckCircle className="w-5 h-5 text-green-400" />;
       default: return <Package className="w-5 h-5 text-gray-400" />;
     }
@@ -116,7 +116,7 @@ export default function MyOrders() {
   const getStatusColor = (status) => {
     switch (status) {
       case 'pending': return 'bg-yellow-500/20 text-yellow-400 border-yellow-500/50';
-      case 'processing': return 'bg-blue-500/20 text-blue-400 border-blue-500/50';
+      case 'processing': return 'bg-red-500/20 text-red-400 border-red-500/50';
       case 'completed': return 'bg-green-500/20 text-green-400 border-green-500/50';
       case 'cancelled': return 'bg-red-500/20 text-red-400 border-red-500/50';
       default: return 'bg-gray-500/20 text-gray-400 border-gray-500/50';

@@ -183,7 +183,7 @@ export default function OrganizerTournamentView() {
               <h1 className="text-3xl font-black text-white">{tournament.name}</h1>
               <HexBadge className={
                 tournament.status === 'live' ? 'bg-green-500/20 text-green-400 border-green-500/50' :
-                tournament.status === 'published' ? 'bg-blue-500/20 text-blue-400 border-blue-500/50' :
+                tournament.status === 'published' ? 'bg-red-500/20 text-red-400 border-red-500/50' :
                 'bg-yellow-500/20 text-yellow-400 border-yellow-500/50'
               }>
                 {tournament.status === 'live' ? '🔴 LIVE' : tournament.status.toUpperCase()}
@@ -230,7 +230,7 @@ export default function OrganizerTournamentView() {
               <TabsTrigger value="org-chat" className="relative">
                 Organizer Chat
                 {canViewOrgChat && (tournament.organizer_chat?.length || 0) > 0 && (
-                  <span className="ml-1.5 text-[10px] bg-blue-500 text-white rounded-full px-1.5 py-0.5">
+                  <span className="ml-1.5 text-[10px] bg-red-500 text-white rounded-full px-1.5 py-0.5">
                     {tournament.organizer_chat.length}
                   </span>
                 )}

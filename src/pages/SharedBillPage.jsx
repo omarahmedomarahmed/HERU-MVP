@@ -79,9 +79,9 @@ export default function SharedBillPage() {
 
         {/* Shared Banner */}
         {bill.shared_tournament && (
-          <FloatingPanel className="p-6 border-blue-500/30 bg-blue-500/5">
-            <p className="text-blue-400 font-bold">📋 Shared Tournament Bill</p>
-            <p className="text-blue-300 text-sm mt-1">All parties involved can view and manage this bill</p>
+          <FloatingPanel className="p-6 border-red-500/30 bg-red-500/5">
+            <p className="text-red-400 font-bold">📋 Shared Tournament Bill</p>
+            <p className="text-red-300 text-sm mt-1">All parties involved can view and manage this bill</p>
           </FloatingPanel>
         )}
 
@@ -172,8 +172,8 @@ export default function SharedBillPage() {
               </div>
               {bill.platform_fee > 0 && (
                 <div className="flex justify-between">
-                  <span className="text-blue-400">Platform Fee (15%)</span>
-                  <span className="text-blue-400">EGP {(bill.platform_fee || 0).toLocaleString()}</span>
+                  <span className="text-red-400">Platform Fee (15%)</span>
+                  <span className="text-red-400">EGP {(bill.platform_fee || 0).toLocaleString()}</span>
                 </div>
               )}
               <div className="flex justify-between border-t border-zinc-800 pt-2 font-bold">

@@ -11,9 +11,9 @@ const STATUS_OPTIONS = ['draft', 'published', 'live', 'completed'];
 
 const STATUS_COLORS = {
   draft:     'bg-yellow-500/15 text-yellow-400 border border-yellow-500/30',
-  published: 'bg-blue-500/15 text-blue-400 border border-blue-500/30',
+  published: 'bg-red-500/15 text-red-400 border border-red-500/30',
   live:      'bg-green-500/15 text-green-400 border border-green-500/30',
-  completed: 'bg-purple-500/15 text-purple-400 border border-purple-500/30',
+  completed: 'bg-red-500/15 text-red-400 border border-red-500/30',
 };
 
 const TABS = [
@@ -59,7 +59,7 @@ function ConfirmDialog({ open, title, message, confirmLabel, confirmColor, onCon
           <button
             onClick={onConfirm}
             disabled={loading}
-            className={`px-4 py-2 text-sm rounded-lg font-medium text-white transition-colors disabled:opacity-50 flex items-center gap-2 ${confirmColor || 'bg-blue-600 hover:bg-blue-500'}`}
+            className={`px-4 py-2 text-sm rounded-lg font-medium text-white transition-colors disabled:opacity-50 flex items-center gap-2 ${confirmColor || 'bg-red-600 hover:bg-red-500'}`}
           >
             {loading && <Loader2 className="w-4 h-4 animate-spin" />}
             {confirmLabel || 'Confirm'}
@@ -97,7 +97,7 @@ function StatusDropdown({ currentStatus, onSelect }) {
                 }}
                 className={`w-full text-left px-3 py-2 text-sm capitalize transition-colors ${
                   status === currentStatus
-                    ? 'text-blue-400 bg-blue-500/10'
+                    ? 'text-red-400 bg-red-500/10'
                     : 'text-zinc-300 hover:bg-zinc-700'
                 }`}
               >
@@ -192,11 +192,11 @@ export default function StaffTournaments() {
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8">
         <div>
           <div className="flex items-center gap-3">
-            <Trophy className="w-7 h-7 text-blue-500" />
+            <Trophy className="w-7 h-7 text-red-500" />
             <h1 className="text-2xl font-black text-white tracking-tight">
               All Tournaments
             </h1>
-            <span className="ml-1 px-2.5 py-0.5 rounded-full bg-blue-500/15 text-blue-400 text-sm font-semibold border border-blue-500/30">
+            <span className="ml-1 px-2.5 py-0.5 rounded-full bg-red-500/15 text-red-400 text-sm font-semibold border border-red-500/30">
               {tournaments.length}
             </span>
           </div>
@@ -215,7 +215,7 @@ export default function StaffTournaments() {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search by tournament name..."
-            className="w-full pl-10 pr-4 py-2.5 rounded-lg bg-zinc-900 border border-zinc-800 text-white text-sm placeholder:text-zinc-600 focus:outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/30 transition-colors"
+            className="w-full pl-10 pr-4 py-2.5 rounded-lg bg-zinc-900 border border-zinc-800 text-white text-sm placeholder:text-zinc-600 focus:outline-none focus:border-red-500/50 focus:ring-1 focus:ring-red-500/30 transition-colors"
           />
           {search && (
             <button
@@ -236,12 +236,12 @@ export default function StaffTournaments() {
             onClick={() => setActiveTab(key)}
             className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors whitespace-nowrap ${
               activeTab === key
-                ? 'bg-blue-600 text-white'
+                ? 'bg-red-600 text-white'
                 : 'bg-zinc-900 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200'
             }`}
           >
             {label}
-            <span className={`ml-1.5 text-xs ${activeTab === key ? 'text-blue-200' : 'text-zinc-600'}`}>
+            <span className={`ml-1.5 text-xs ${activeTab === key ? 'text-red-200' : 'text-zinc-600'}`}>
               {counts[key]}
             </span>
           </button>
@@ -251,7 +251,7 @@ export default function StaffTournaments() {
       {/* Table */}
       {isLoading ? (
         <div className="flex items-center justify-center py-20">
-          <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
+          <Loader2 className="w-8 h-8 animate-spin text-red-500" />
         </div>
       ) : filtered.length === 0 ? (
         <div className="text-center py-20">
@@ -342,7 +342,7 @@ export default function StaffTournaments() {
                     <div className="flex items-center justify-end gap-2">
                       <button
                         onClick={() => navigate(`/staff/tournaments/${t.id}`)}
-                        className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs rounded-lg bg-blue-600/15 text-blue-400 hover:bg-blue-600/25 border border-blue-500/20 transition-colors"
+                        className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs rounded-lg bg-red-600/15 text-red-400 hover:bg-red-600/25 border border-red-500/20 transition-colors"
                       >
                         <Eye className="w-3.5 h-3.5" /> View
                       </button>
@@ -381,7 +381,7 @@ export default function StaffTournaments() {
             : ''
         }
         confirmLabel={`Set to ${statusConfirm?.newStatus || ''}`}
-        confirmColor="bg-blue-600 hover:bg-blue-500"
+        confirmColor="bg-red-600 hover:bg-red-500"
         loading={updateStatusMutation.isPending}
         onConfirm={() =>
           updateStatusMutation.mutate({

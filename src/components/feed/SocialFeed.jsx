@@ -122,13 +122,13 @@ export default function SocialFeed({
           </button>
           <button 
             onClick={() => { setNewPost({ ...newPost, media_type: 'video' }); setShowPostModal(true); }}
-            className="flex items-center gap-2 text-blue-400 hover:bg-blue-500/10 px-3 py-1.5 rounded-lg transition-colors"
+            className="flex items-center gap-2 text-red-400 hover:bg-red-500/10 px-3 py-1.5 rounded-lg transition-colors"
           >
             <Video className="w-5 h-5" /> Video
           </button>
           <button 
             onClick={() => { setNewPost({ ...newPost, media_type: 'link' }); setShowPostModal(true); }}
-            className="flex items-center gap-2 text-purple-400 hover:bg-purple-500/10 px-3 py-1.5 rounded-lg transition-colors"
+            className="flex items-center gap-2 text-red-400 hover:bg-red-500/10 px-3 py-1.5 rounded-lg transition-colors"
           >
             <LinkIcon className="w-5 h-5" /> Link
           </button>
@@ -219,7 +219,7 @@ export default function SocialFeed({
                       href={post.media_url} 
                       target="_blank" 
                       rel="noopener noreferrer"
-                      className="block p-4 text-blue-400 hover:text-blue-300"
+                      className="block p-4 text-red-400 hover:text-red-300"
                     >
                       <LinkIcon className="w-4 h-4 inline mr-2" />
                       {post.media_url}

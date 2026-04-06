@@ -25,7 +25,7 @@ function formatDate(dateStr) {
 function StatusBadge({ status }) {
   const map = {
     draft: 'bg-gray-100 text-gray-600',
-    published: 'bg-blue-50 text-blue-700',
+    published: 'bg-red-50 text-red-700',
     live: 'bg-emerald-50 text-emerald-700',
     completed: 'bg-gray-100 text-gray-500',
   };
@@ -107,11 +107,11 @@ export default function StaffTournamentDetail() {
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
           <div className="flex items-center gap-4">
-            <div className="w-14 h-14 rounded-xl bg-blue-50 flex items-center justify-center shrink-0 overflow-hidden">
+            <div className="w-14 h-14 rounded-xl bg-red-50 flex items-center justify-center shrink-0 overflow-hidden">
               {tournament.tournament_image ? (
                 <img src={tournament.tournament_image} alt="" className="w-14 h-14 object-cover" />
               ) : (
-                <Trophy className="w-6 h-6 text-blue-500" />
+                <Trophy className="w-6 h-6 text-red-500" />
               )}
             </div>
             <div>
@@ -129,7 +129,7 @@ export default function StaffTournamentDetail() {
             <select
               value={newStatus}
               onChange={(e) => setNewStatus(e.target.value)}
-              className="px-3 py-2 text-sm border border-gray-300 rounded-lg bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="px-3 py-2 text-sm border border-gray-300 rounded-lg bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-red-500"
             >
               {STATUS_OPTIONS.map((s) => (
                 <option key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</option>
@@ -138,7 +138,7 @@ export default function StaffTournamentDetail() {
             <button
               onClick={() => statusMutation.mutate(newStatus)}
               disabled={statusMutation.isPending || newStatus === tournament.status}
-              className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed transition"
+              className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 disabled:opacity-40 disabled:cursor-not-allowed transition"
             >
               <Save className="w-4 h-4" />
               {statusMutation.isPending ? 'Saving...' : 'Update Status'}
@@ -156,7 +156,7 @@ export default function StaffTournamentDetail() {
               onClick={() => setActiveTab(tab.key)}
               className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium border-b-2 transition ${
                 activeTab === tab.key
-                  ? 'border-blue-500 text-blue-600'
+                  ? 'border-red-500 text-red-600'
                   : 'border-transparent text-gray-500 hover:text-gray-700'
               }`}
             >
@@ -221,7 +221,7 @@ export default function StaffTournamentDetail() {
                     {teams.map((teamId, idx) => (
                       <tr key={teamId} className="hover:bg-gray-50">
                         <td className="px-6 py-3 text-sm text-gray-500">{idx + 1}</td>
-                        <td className="px-6 py-3 text-sm font-mono text-blue-600">{teamId}</td>
+                        <td className="px-6 py-3 text-sm font-mono text-red-600">{teamId}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -315,7 +315,7 @@ function OrdersTab({ tournamentId }) {
           <tbody className="divide-y divide-gray-100">
             {orders.map((o) => (
               <tr key={o.id} className="hover:bg-gray-50">
-                <td className="px-6 py-3 text-sm font-mono text-blue-600">{o.id?.slice(0, 8)}</td>
+                <td className="px-6 py-3 text-sm font-mono text-red-600">{o.id?.slice(0, 8)}</td>
                 <td className="px-6 py-3 text-sm font-medium text-gray-900 text-right">
                   EGP {(o.grand_total || 0).toLocaleString('en-EG')}
                 </td>

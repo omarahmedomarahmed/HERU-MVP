@@ -36,10 +36,10 @@ const STATUS_STYLES = {
     label: 'Draft',
   },
   published: {
-    bg: 'bg-blue-500/15',
-    text: 'text-blue-400',
-    border: 'border-blue-500/40',
-    dot: 'bg-blue-400',
+    bg: 'bg-red-500/15',
+    text: 'text-red-400',
+    border: 'border-red-500/40',
+    dot: 'bg-red-400',
     label: 'Published',
   },
   live: {
@@ -50,10 +50,10 @@ const STATUS_STYLES = {
     label: 'Live',
   },
   completed: {
-    bg: 'bg-purple-500/15',
-    text: 'text-purple-400',
-    border: 'border-purple-500/40',
-    dot: 'bg-purple-400',
+    bg: 'bg-red-500/15',
+    text: 'text-red-400',
+    border: 'border-red-500/40',
+    dot: 'bg-red-400',
     label: 'Completed',
   },
 }
@@ -78,7 +78,7 @@ function StatusBadge({ status }) {
 function TypeBadge({ type }) {
   if (type === 'shared') {
     return (
-      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-cyan-500/15 text-cyan-400 border border-cyan-500/30">
+      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-orange-500/15 text-orange-400 border border-orange-500/30">
         <Share2 className="w-3 h-3" />
         Shared
       </span>

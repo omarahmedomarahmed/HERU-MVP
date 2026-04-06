@@ -222,13 +222,13 @@ export default function Home() {
             </motion.div>
             
             <motion.div initial={{ opacity: 0, scale: 0.9 }} whileInView={{ opacity: 1, scale: 1 }} viewport={{ once: true }} transition={{ delay: 0.3 }} className="bg-zinc-900/90 backdrop-blur border border-red-500/30 rounded-xl p-8 text-center">
-              <Users className="w-8 h-8 text-blue-500 mx-auto mb-3" />
+              <Users className="w-8 h-8 text-red-500 mx-auto mb-3" />
               <div className="text-4xl font-black text-white mb-2">500+</div>
               <p className="text-gray-300">Gamers</p>
             </motion.div>
             
             <motion.div initial={{ opacity: 0, scale: 0.9 }} whileInView={{ opacity: 1, scale: 1 }} viewport={{ once: true }} transition={{ delay: 0.4 }} className="bg-zinc-900/90 backdrop-blur border border-red-500/30 rounded-xl p-8 text-center">
-              <Crown className="w-8 h-8 text-purple-500 mx-auto mb-3" />
+              <Crown className="w-8 h-8 text-red-500 mx-auto mb-3" />
               <div className="text-4xl font-black text-white mb-2">5+</div>
               <p className="text-gray-300">Talents</p>
             </motion.div>
@@ -275,7 +275,7 @@ export default function Home() {
 
           <motion.div initial={{ opacity: 0, x: 30 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} className="bg-zinc-900/80 backdrop-blur border border-zinc-700 rounded-lg p-6">
             <div className="flex items-center gap-4 mb-6">
-              <div className="h-16 w-16 rounded-full bg-gradient-to-br from-blue-500 to-purple-600" />
+              <div className="h-16 w-16 rounded-full bg-gradient-to-br from-red-500 to-red-600" />
               <div>
                 <h3 className="font-bold">ShadowBlade</h3>
                 <p className="text-xs text-gray-400">Valorant Radiant</p>
@@ -288,7 +288,7 @@ export default function Home() {
               </div>
               <div className="flex items-center justify-between text-sm">
                 <span className="text-gray-400">Role</span>
-                <span className="bg-purple-500/20 text-purple-400 px-2 py-1 rounded text-xs">IGL / Coach</span>
+                <span className="bg-red-500/20 text-red-400 px-2 py-1 rounded text-xs">IGL / Coach</span>
               </div>
               <div className="flex items-center justify-between text-sm">
                 <span className="text-gray-400">Rating</span>
@@ -375,7 +375,7 @@ export default function Home() {
 
       {/* SECTION 5: For Sponsors */}
       <section className="py-24 px-6 relative overflow-hidden" id="for-sponsors">
-        <div className="absolute inset-0 bg-gradient-to-br from-red-950/20 via-transparent to-purple-950/20 z-0" />
+        <div className="absolute inset-0 bg-gradient-to-br from-red-950/20 via-transparent to-red-950/20 z-0" />
         <div className="max-w-7xl mx-auto relative z-10">
           <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="text-center mb-16">
             <p className="text-red-500 font-bold text-sm tracking-widest mb-4">FOR SPONSORS</p>
@@ -510,7 +510,7 @@ export default function Home() {
             {featuredTeams.map((team, i) => (
               <motion.div key={team.id} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.05 }} className="rounded-lg bg-zinc-900/50 border border-zinc-800 p-6 text-center hover:border-red-500/50 transition">
                 <div className="mb-4 flex justify-center">
-                  <div className="h-16 w-16 rounded-full bg-gradient-to-br from-red-500 to-purple-600 flex items-center justify-center text-2xl font-bold overflow-hidden">
+                  <div className="h-16 w-16 rounded-full bg-gradient-to-br from-red-500 to-red-600 flex items-center justify-center text-2xl font-bold overflow-hidden">
                     {team.logo ? <img src={team.logo} alt={team.name} className="h-full w-full object-cover" /> : team.name?.charAt(0)}
                   </div>
                 </div>

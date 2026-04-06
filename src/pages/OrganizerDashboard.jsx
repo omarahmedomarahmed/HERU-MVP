@@ -44,7 +44,7 @@ function statusColor(status) {
     case 'live':
       return 'bg-green-500/20 text-green-400 border border-green-500/40'
     case 'published':
-      return 'bg-blue-500/20 text-blue-400 border border-blue-500/40'
+      return 'bg-red-500/20 text-red-400 border border-red-500/40'
     case 'draft':
       return 'bg-zinc-700/40 text-zinc-400 border border-zinc-600/40'
     case 'completed':
@@ -61,7 +61,7 @@ function radarStatusColor(status) {
     case 'in_progress':
       return 'text-amber-400'
     case 'fully_funded':
-      return 'text-blue-400'
+      return 'text-red-400'
     case 'closed':
       return 'text-zinc-500'
     default:
@@ -93,13 +93,13 @@ function StatCard({ icon: Icon, label, value, color = 'red', to }) {
     red: 'from-red-600/20 to-red-900/10 border-red-500/20',
     green: 'from-green-600/20 to-green-900/10 border-green-500/20',
     amber: 'from-amber-600/20 to-amber-900/10 border-amber-500/20',
-    blue: 'from-blue-600/20 to-blue-900/10 border-blue-500/20',
+    blue: 'from-red-600/20 to-red-900/10 border-red-500/20',
   }
   const iconColorMap = {
     red: 'text-red-500',
     green: 'text-green-500',
     amber: 'text-amber-500',
-    blue: 'text-blue-500',
+    blue: 'text-red-500',
   }
 
   const card = (

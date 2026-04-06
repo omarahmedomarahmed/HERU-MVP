@@ -18,7 +18,7 @@ function formatEGP(value) {
 
 function RoleBadge({ role }) {
   const map = {
-    gamer: 'bg-blue-50 text-blue-700',
+    gamer: 'bg-red-50 text-red-700',
     organizer: 'bg-violet-50 text-violet-700',
     admin: 'bg-red-50 text-red-700',
   };
@@ -47,7 +47,7 @@ function ToggleButton({ enabled, onToggle, label, description }) {
       </div>
       <button
         onClick={onToggle}
-        className={`relative inline-flex h-6 w-11 items-center rounded-full transition ${enabled ? 'bg-blue-600' : 'bg-gray-200'}`}
+        className={`relative inline-flex h-6 w-11 items-center rounded-full transition ${enabled ? 'bg-red-600' : 'bg-gray-200'}`}
       >
         <span
           className={`inline-block h-4 w-4 transform rounded-full bg-white transition ${enabled ? 'translate-x-6' : 'translate-x-1'}`}
@@ -146,7 +146,7 @@ export default function StaffUserDetail() {
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <p className="text-sm text-red-500 mb-3">Failed to load user</p>
-          <Link to="/staff/users" className="text-sm font-medium text-blue-600 hover:text-blue-700">
+          <Link to="/staff/users" className="text-sm font-medium text-red-600 hover:text-red-700">
             Back to users
           </Link>
         </div>
@@ -172,7 +172,7 @@ export default function StaffUserDetail() {
         <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6 mb-6">
           <div className="flex items-start justify-between">
             <div className="flex items-center gap-4">
-              <div className="w-14 h-14 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-xl font-bold shrink-0">
+              <div className="w-14 h-14 rounded-full bg-red-100 text-red-600 flex items-center justify-center text-xl font-bold shrink-0">
                 {(user.full_name || user.email || '?').charAt(0).toUpperCase()}
               </div>
               <div>
@@ -224,7 +224,7 @@ export default function StaffUserDetail() {
                     setEditRole(e.target.value);
                     setHasChanges(true);
                   }}
-                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
                 >
                   <option value="gamer">Gamer</option>
                   <option value="organizer">Organizer</option>
@@ -252,7 +252,7 @@ export default function StaffUserDetail() {
                   <button
                     onClick={handleSave}
                     disabled={updateMutation.isPending}
-                    className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-50 transition"
+                    className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 disabled:opacity-50 transition"
                   >
                     <Save className="w-4 h-4" />
                     {updateMutation.isPending ? 'Saving...' : 'Save Changes'}
@@ -292,7 +292,7 @@ export default function StaffUserDetail() {
           {gamerProfile && (
             <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
               <div className="px-5 py-4 border-b border-gray-100 flex items-center gap-2">
-                <Gamepad2 className="w-4 h-4 text-blue-500" />
+                <Gamepad2 className="w-4 h-4 text-red-500" />
                 <h2 className="text-sm font-semibold text-gray-900">Gamer Profile</h2>
               </div>
               <div className="px-5 py-3">

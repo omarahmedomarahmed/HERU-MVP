@@ -11,8 +11,8 @@ const ROLES = ['all', 'gamer', 'organizer', 'admin'];
 
 const ROLE_BADGE = {
   gamer:     'bg-red-500/20 text-red-400 border border-red-500/30',
-  organizer: 'bg-blue-500/20 text-blue-400 border border-blue-500/30',
-  admin:     'bg-purple-500/20 text-purple-400 border border-purple-500/30',
+  organizer: 'bg-red-500/20 text-red-400 border border-red-500/30',
+  admin:     'bg-red-500/20 text-red-400 border border-red-500/30',
   user:      'bg-red-500/20 text-red-400 border border-red-500/30',
 };
 
@@ -87,12 +87,12 @@ export default function StaffUsers() {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center gap-3">
-        <div className="p-2.5 bg-blue-500/10 rounded-xl border border-blue-500/20">
-          <Users className="w-6 h-6 text-blue-400" />
+        <div className="p-2.5 bg-red-500/10 rounded-xl border border-red-500/20">
+          <Users className="w-6 h-6 text-red-400" />
         </div>
         <div className="flex items-center gap-3">
           <h1 className="text-2xl font-bold text-white tracking-tight">All Users</h1>
-          <span className="px-2.5 py-0.5 text-xs font-semibold rounded-full bg-blue-500/20 text-blue-400 border border-blue-500/30">
+          <span className="px-2.5 py-0.5 text-xs font-semibold rounded-full bg-red-500/20 text-red-400 border border-red-500/30">
             {filtered.length}
           </span>
         </div>
@@ -106,7 +106,7 @@ export default function StaffUsers() {
           placeholder="Search by name, email, or ID..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="w-full pl-10 pr-4 py-2.5 bg-zinc-900 border border-zinc-700 rounded-lg text-white text-sm placeholder:text-zinc-500 focus:outline-none focus:ring-1 focus:ring-blue-500/50 focus:border-blue-500/50 transition"
+          className="w-full pl-10 pr-4 py-2.5 bg-zinc-900 border border-zinc-700 rounded-lg text-white text-sm placeholder:text-zinc-500 focus:outline-none focus:ring-1 focus:ring-red-500/50 focus:border-red-500/50 transition"
         />
       </div>
 
@@ -118,7 +118,7 @@ export default function StaffUsers() {
             onClick={() => setFilterRole(role)}
             className={`px-4 py-2 rounded-lg text-sm font-medium capitalize transition-all ${
               filterRole === role
-                ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30'
+                ? 'bg-red-500/20 text-red-400 border border-red-500/30'
                 : 'text-zinc-400 hover:text-white hover:bg-zinc-800 border border-transparent'
             }`}
           >
@@ -215,7 +215,7 @@ export default function StaffUsers() {
                           {/* View button */}
                           <Link
                             to={`/staff/users/${u.id}`}
-                            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-blue-400 bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/20 rounded-lg transition"
+                            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-red-400 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 rounded-lg transition"
                           >
                             <Eye className="w-3.5 h-3.5" />
                             View
@@ -228,7 +228,7 @@ export default function StaffUsers() {
                               defaultValue={role}
                               onChange={(e) => handleRoleSelect(u.id, e.target.value)}
                               onBlur={() => { if (!confirmId) cancelRoleChange(); }}
-                              className="px-2.5 py-1.5 text-xs bg-zinc-800 border border-zinc-600 text-white rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500/50 cursor-pointer"
+                              className="px-2.5 py-1.5 text-xs bg-zinc-800 border border-zinc-600 text-white rounded-lg focus:outline-none focus:ring-1 focus:ring-red-500/50 cursor-pointer"
                             >
                               <option value="gamer">Gamer</option>
                               <option value="organizer">Organizer</option>
@@ -283,7 +283,7 @@ export default function StaffUsers() {
                       onClick={() => setPage(item)}
                       className={`w-8 h-8 rounded-lg text-xs font-medium transition ${
                         item === safePage
-                          ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30'
+                          ? 'bg-red-500/20 text-red-400 border border-red-500/30'
                           : 'text-zinc-400 hover:text-white hover:bg-zinc-800'
                       }`}
                     >
@@ -308,15 +308,15 @@ export default function StaffUsers() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
           <div className="bg-zinc-900 border border-zinc-700 rounded-2xl p-6 w-full max-w-sm shadow-2xl space-y-4">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-blue-500/10 rounded-lg border border-blue-500/20">
-                <ShieldCheck className="w-5 h-5 text-blue-400" />
+              <div className="p-2 bg-red-500/10 rounded-lg border border-red-500/20">
+                <ShieldCheck className="w-5 h-5 text-red-400" />
               </div>
               <h3 className="text-white font-semibold text-lg">Confirm Role Change</h3>
             </div>
             <p className="text-zinc-400 text-sm leading-relaxed">
               Change this user's role to{' '}
               <span className={`font-semibold capitalize ${
-                pendingRole === 'admin' ? 'text-purple-400' : pendingRole === 'organizer' ? 'text-blue-400' : 'text-red-400'
+                pendingRole === 'admin' ? 'text-red-400' : pendingRole === 'organizer' ? 'text-red-400' : 'text-red-400'
               }`}>
                 {pendingRole}
               </span>
@@ -332,7 +332,7 @@ export default function StaffUsers() {
               <button
                 onClick={confirmRoleChange}
                 disabled={updateMutation.isPending}
-                className="flex-1 px-4 py-2.5 text-sm font-medium text-white bg-blue-600 hover:bg-blue-500 rounded-lg transition disabled:opacity-50"
+                className="flex-1 px-4 py-2.5 text-sm font-medium text-white bg-red-600 hover:bg-red-500 rounded-lg transition disabled:opacity-50"
               >
                 {updateMutation.isPending ? 'Updating...' : 'Confirm'}
               </button>

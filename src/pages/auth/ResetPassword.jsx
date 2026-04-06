@@ -76,7 +76,7 @@ export default function ResetPassword() {
       <div className="w-full max-w-md relative z-10">
         <Link
           to={loginLink}
-          className={`inline-flex items-center gap-2 text-gray-400 mb-6 transition-colors ${isOrganizer ? 'hover:text-indigo-400' : 'hover:text-red-400'}`}
+          className={`inline-flex items-center gap-2 text-gray-400 mb-6 transition-colors ${isOrganizer ? 'hover:text-red-400' : 'hover:text-red-400'}`}
         >
           <ArrowLeft className="w-4 h-4" />
           <span className="text-sm">Back to {roleLabel} Login</span>
@@ -84,8 +84,8 @@ export default function ResetPassword() {
 
         <FloatingPanel className="p-8" glowBorder>
           <div className="text-center mb-8">
-            <div className={`w-16 h-16 rounded-2xl bg-gradient-to-br ${isOrganizer ? 'from-indigo-600/30' : 'from-red-600/30'} to-zinc-800 border ${isOrganizer ? 'border-indigo-500/20' : 'border-red-500/20'} flex items-center justify-center mx-auto mb-4 shadow-lg ${isOrganizer ? 'shadow-indigo-500/10' : 'shadow-red-500/10'}`}>
-              <Lock className={`w-8 h-8 ${isOrganizer ? 'text-indigo-400' : 'text-red-400'}`} />
+            <div className={`w-16 h-16 rounded-2xl bg-gradient-to-br ${isOrganizer ? 'from-red-600/30' : 'from-red-600/30'} to-zinc-800 border ${isOrganizer ? 'border-red-500/20' : 'border-red-500/20'} flex items-center justify-center mx-auto mb-4 shadow-lg ${isOrganizer ? 'shadow-red-500/10' : 'shadow-red-500/10'}`}>
+              <Lock className={`w-8 h-8 ${isOrganizer ? 'text-red-400' : 'text-red-400'}`} />
             </div>
             <HeruLogo className="h-10 mx-auto mb-3" />
             <h1 className="text-2xl font-black text-white tracking-wide">SET NEW PASSWORD</h1>
@@ -102,7 +102,7 @@ export default function ResetPassword() {
             </div>
           ) : !sessionReady ? (
             <div className="text-center space-y-4">
-              <div className={`w-10 h-10 border-3 rounded-full animate-spin mx-auto ${isOrganizer ? 'border-indigo-500/20 border-t-indigo-400' : 'border-red-500/20 border-t-red-400'}`} />
+              <div className={`w-10 h-10 border-3 rounded-full animate-spin mx-auto ${isOrganizer ? 'border-red-500/20 border-t-red-400' : 'border-red-500/20 border-t-red-400'}`} />
               <p className="text-gray-400 text-sm">Loading your recovery session...</p>
               <p className="text-gray-500 text-xs">If this takes too long, try clicking the reset link in your email again.</p>
             </div>
@@ -116,7 +116,7 @@ export default function ResetPassword() {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="Min. 6 characters"
-                    className={`bg-zinc-800 border-zinc-700 text-white pr-10 ${isOrganizer ? 'focus:border-indigo-500 focus:ring-indigo-500/20' : 'focus:border-red-500 focus:ring-red-500/20'}`}
+                    className={`bg-zinc-800 border-zinc-700 text-white pr-10 ${isOrganizer ? 'focus:border-red-500 focus:ring-red-500/20' : 'focus:border-red-500 focus:ring-red-500/20'}`}
                     required
                   />
                   <button
@@ -136,7 +136,7 @@ export default function ResetPassword() {
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   placeholder="Re-enter your password"
-                  className={`bg-zinc-800 border-zinc-700 text-white ${isOrganizer ? 'focus:border-indigo-500 focus:ring-indigo-500/20' : 'focus:border-red-500 focus:ring-red-500/20'}`}
+                  className={`bg-zinc-800 border-zinc-700 text-white ${isOrganizer ? 'focus:border-red-500 focus:ring-red-500/20' : 'focus:border-red-500 focus:ring-red-500/20'}`}
                   required
                 />
               </div>
@@ -152,12 +152,12 @@ export default function ResetPassword() {
                 <GlowButton
                   type="submit"
                   variant="secondary"
-                  className="w-full !border-indigo-500 !text-indigo-400 hover:!bg-indigo-500/10"
+                  className="w-full !border-red-500 !text-red-400 hover:!bg-red-500/10"
                   disabled={loading}
                 >
                   {loading ? (
                     <>
-                      <div className="w-4 h-4 border-2 border-indigo-300/30 border-t-indigo-300 rounded-full animate-spin" />
+                      <div className="w-4 h-4 border-2 border-red-300/30 border-t-red-300 rounded-full animate-spin" />
                       Updating...
                     </>
                   ) : (

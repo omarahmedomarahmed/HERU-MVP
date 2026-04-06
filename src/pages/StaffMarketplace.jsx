@@ -13,9 +13,9 @@ const CATEGORIES = [
 
 const CATEGORY_COLORS = {
   game_setup:  'bg-green-500/20 text-green-400',
-  teams:       'bg-blue-500/20 text-blue-400',
+  teams:       'bg-red-500/20 text-red-400',
   live_talent: 'bg-pink-500/20 text-pink-400',
-  production:  'bg-purple-500/20 text-purple-400',
+  production:  'bg-red-500/20 text-red-400',
   branding:    'bg-cyan-500/20 text-cyan-400',
   venue:       'bg-orange-500/20 text-orange-400',
   prizepool:   'bg-yellow-500/20 text-yellow-400',
@@ -122,11 +122,11 @@ export default function StaffMarketplace() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-white">
-          Marketplace <span className="text-blue-400">Items</span>
+          Marketplace <span className="text-red-400">Items</span>
         </h1>
         <button
           onClick={() => { resetForm(); setShowForm(true); }}
-          className="flex items-center gap-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors"
+          className="flex items-center gap-2 px-4 py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm font-medium transition-colors"
         >
           <Plus className="w-4 h-4" /> Add New Item
         </button>
@@ -138,7 +138,7 @@ export default function StaffMarketplace() {
           <select
             value={filterCategory}
             onChange={e => setFilterCategory(e.target.value)}
-            className="px-3 py-2 bg-zinc-800 border border-zinc-700 text-white rounded-lg text-sm focus:outline-none focus:border-blue-500"
+            className="px-3 py-2 bg-zinc-800 border border-zinc-700 text-white rounded-lg text-sm focus:outline-none focus:border-red-500"
           >
             <option value="all">All Categories</option>
             {CATEGORIES.map(c => (
@@ -148,7 +148,7 @@ export default function StaffMarketplace() {
           <select
             value={filterActive}
             onChange={e => setFilterActive(e.target.value)}
-            className="px-3 py-2 bg-zinc-800 border border-zinc-700 text-white rounded-lg text-sm focus:outline-none focus:border-blue-500"
+            className="px-3 py-2 bg-zinc-800 border border-zinc-700 text-white rounded-lg text-sm focus:outline-none focus:border-red-500"
           >
             <option value="all">All Status</option>
             <option value="active">Active</option>
@@ -176,7 +176,7 @@ export default function StaffMarketplace() {
                 value={form.title}
                 onChange={e => setForm(f => ({ ...f, title: e.target.value }))}
                 required
-                className="w-full px-3 py-2.5 bg-zinc-800 border border-zinc-700 rounded-lg text-white text-sm focus:outline-none focus:border-blue-500"
+                className="w-full px-3 py-2.5 bg-zinc-800 border border-zinc-700 rounded-lg text-white text-sm focus:outline-none focus:border-red-500"
                 placeholder="Item title"
               />
             </div>
@@ -185,7 +185,7 @@ export default function StaffMarketplace() {
               <select
                 value={form.category}
                 onChange={e => setForm(f => ({ ...f, category: e.target.value }))}
-                className="w-full px-3 py-2.5 bg-zinc-800 border border-zinc-700 rounded-lg text-white text-sm focus:outline-none focus:border-blue-500"
+                className="w-full px-3 py-2.5 bg-zinc-800 border border-zinc-700 rounded-lg text-white text-sm focus:outline-none focus:border-red-500"
               >
                 {CATEGORIES.map(c => (
                   <option key={c} value={c}>{c.replace(/_/g, ' ')}</option>
@@ -201,7 +201,7 @@ export default function StaffMarketplace() {
                 value={form.price}
                 onChange={e => setForm(f => ({ ...f, price: e.target.value }))}
                 required
-                className="w-full px-3 py-2.5 bg-zinc-800 border border-zinc-700 rounded-lg text-white text-sm focus:outline-none focus:border-blue-500"
+                className="w-full px-3 py-2.5 bg-zinc-800 border border-zinc-700 rounded-lg text-white text-sm focus:outline-none focus:border-red-500"
                 placeholder="0"
               />
             </div>
@@ -212,7 +212,7 @@ export default function StaffMarketplace() {
                 min="0"
                 value={form.stock}
                 onChange={e => setForm(f => ({ ...f, stock: e.target.value }))}
-                className="w-full px-3 py-2.5 bg-zinc-800 border border-zinc-700 rounded-lg text-white text-sm focus:outline-none focus:border-blue-500"
+                className="w-full px-3 py-2.5 bg-zinc-800 border border-zinc-700 rounded-lg text-white text-sm focus:outline-none focus:border-red-500"
                 placeholder="Unlimited"
               />
             </div>
@@ -222,7 +222,7 @@ export default function StaffMarketplace() {
                 value={form.description}
                 onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
                 rows={3}
-                className="w-full px-3 py-2.5 bg-zinc-800 border border-zinc-700 rounded-lg text-white text-sm focus:outline-none focus:border-blue-500 resize-none"
+                className="w-full px-3 py-2.5 bg-zinc-800 border border-zinc-700 rounded-lg text-white text-sm focus:outline-none focus:border-red-500 resize-none"
                 placeholder="Item description..."
               />
             </div>
@@ -232,7 +232,7 @@ export default function StaffMarketplace() {
                 {form.image && (
                   <img src={form.image} alt="" className="w-16 h-16 rounded-lg object-cover border border-zinc-700" />
                 )}
-                <label className="flex items-center gap-2 px-4 py-2.5 bg-zinc-800 border border-zinc-700 rounded-lg text-sm text-gray-300 hover:border-blue-500 cursor-pointer transition-colors">
+                <label className="flex items-center gap-2 px-4 py-2.5 bg-zinc-800 border border-zinc-700 rounded-lg text-sm text-gray-300 hover:border-red-500 cursor-pointer transition-colors">
                   <Upload className="w-4 h-4" />
                   {uploading ? 'Uploading...' : 'Upload Image'}
                   <input type="file" accept="image/*" onChange={handleImageUpload} className="hidden" />
@@ -250,7 +250,7 @@ export default function StaffMarketplace() {
               <button
                 type="submit"
                 disabled={createMutation.isPending || updateMutation.isPending}
-                className="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
+                className="px-6 py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
               >
                 {editingId ? 'Save Changes' : 'Create Item'}
               </button>
@@ -288,7 +288,7 @@ export default function StaffMarketplace() {
                       {item.category?.replace(/_/g, ' ')}
                     </span>
                   </div>
-                  <p className="text-blue-400 font-bold text-sm whitespace-nowrap">EGP {(item.price || 0).toLocaleString()}</p>
+                  <p className="text-red-400 font-bold text-sm whitespace-nowrap">EGP {(item.price || 0).toLocaleString()}</p>
                 </div>
 
                 <div className="flex items-center justify-between text-xs text-gray-400">

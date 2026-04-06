@@ -75,7 +75,7 @@ export default function StaffMessages() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-white">
-          Platform <span className="text-blue-400">Messages</span>
+          Platform <span className="text-red-400">Messages</span>
         </h1>
         <p className="text-gray-500 text-sm mt-1">
           {conversationList.length} conversations, {totalMessages} total messages
@@ -86,7 +86,7 @@ export default function StaffMessages() {
       <div className="grid grid-cols-3 gap-4">
         <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-4">
           <div className="flex items-center gap-2 mb-2">
-            <Users className="w-4 h-4 text-blue-400" />
+            <Users className="w-4 h-4 text-red-400" />
             <span className="text-xs text-gray-400">Organizer Chats</span>
           </div>
           <p className="text-xl font-bold text-white">
@@ -124,7 +124,7 @@ export default function StaffMessages() {
             key={t.id}
             onClick={() => setTab(t.id)}
             className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-              tab === t.id ? 'bg-blue-600 text-white' : 'bg-zinc-800 text-gray-400 hover:text-white'
+              tab === t.id ? 'bg-red-600 text-white' : 'bg-zinc-800 text-gray-400 hover:text-white'
             }`}
           >
             <t.icon className="w-4 h-4" /> {t.label}
@@ -139,7 +139,7 @@ export default function StaffMessages() {
           value={search}
           onChange={e => setSearch(e.target.value)}
           placeholder="Search tournaments..."
-          className="w-full pl-10 pr-4 py-2.5 bg-zinc-900 border border-zinc-800 rounded-xl text-white text-sm placeholder-gray-500 focus:outline-none focus:border-blue-500"
+          className="w-full pl-10 pr-4 py-2.5 bg-zinc-900 border border-zinc-800 rounded-xl text-white text-sm placeholder-gray-500 focus:outline-none focus:border-red-500"
         />
       </div>
 
@@ -161,14 +161,14 @@ export default function StaffMessages() {
               <div className="flex items-start justify-between gap-4">
                 <div className="flex items-start gap-3 min-w-0 flex-1">
                   <div className="w-10 h-10 rounded-lg bg-zinc-800 flex items-center justify-center flex-shrink-0">
-                    <Trophy className="w-5 h-5 text-blue-400" />
+                    <Trophy className="w-5 h-5 text-red-400" />
                   </div>
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2 mb-1">
                       <p className="text-white font-medium text-sm truncate">{conv.name}</p>
                       <span className={`text-xs px-2 py-0.5 rounded ${
                         conv.status === 'live' ? 'bg-green-500/20 text-green-400' :
-                        conv.status === 'published' ? 'bg-blue-500/20 text-blue-400' :
+                        conv.status === 'published' ? 'bg-red-500/20 text-red-400' :
                         'bg-zinc-700 text-gray-400'
                       }`}>
                         {conv.status}

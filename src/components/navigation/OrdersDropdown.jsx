@@ -36,7 +36,7 @@ export default function OrdersDropdown({ isOpen, onClose, orders = [] }) {
                     </span>
                     <HexBadge className={`text-xs ${
                       order.status === 'completed' ? 'bg-green-500/20 text-green-400 border-green-500/50' :
-                      order.status === 'processing' ? 'bg-blue-500/20 text-blue-400 border-blue-500/50' :
+                      order.status === 'processing' ? 'bg-red-500/20 text-red-400 border-red-500/50' :
                       order.status === 'cancelled' ? 'bg-red-500/20 text-red-400 border-red-500/50' :
                       'bg-yellow-500/20 text-yellow-400 border-yellow-500/50'
                     }`}>

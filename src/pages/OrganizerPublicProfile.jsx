@@ -12,8 +12,8 @@ const fmtDate = (d) => d ? new Date(d).toLocaleDateString('en-US', { month: 'sho
 
 const statusColors = {
   live: 'bg-green-500/20 text-green-400 border-green-500/30',
-  published: 'bg-blue-500/20 text-blue-400 border-blue-500/30',
-  completed: 'bg-purple-500/20 text-purple-400 border-purple-500/30',
+  published: 'bg-red-500/20 text-red-400 border-red-500/30',
+  completed: 'bg-red-500/20 text-red-400 border-red-500/30',
 };
 
 export default function OrganizerPublicProfile() {
@@ -28,7 +28,7 @@ export default function OrganizerPublicProfile() {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center">
-        <div className="w-8 h-8 border-2 border-purple-500 border-t-transparent rounded-full animate-spin" />
+        <div className="w-8 h-8 border-2 border-red-500 border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
@@ -38,7 +38,7 @@ export default function OrganizerPublicProfile() {
       <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center text-gray-400">
         <div className="text-center">
           <p className="text-lg mb-4">Organizer not found</p>
-          <Link to="/" className="text-purple-400 hover:underline">← Back to Home</Link>
+          <Link to="/" className="text-red-400 hover:underline">← Back to Home</Link>
         </div>
       </div>
     );
@@ -57,7 +57,7 @@ export default function OrganizerPublicProfile() {
     <div className="min-h-screen bg-[#0a0a0a] text-white">
       {/* Header */}
       <div className="max-w-5xl mx-auto px-4 pt-6 pb-4">
-        <Link to="/" className="inline-flex items-center gap-2 text-gray-400 hover:text-purple-400 mb-6 transition-colors text-sm">
+        <Link to="/" className="inline-flex items-center gap-2 text-gray-400 hover:text-red-400 mb-6 transition-colors text-sm">
           <ArrowLeft className="w-4 h-4" /> Back
         </Link>
       </div>
@@ -67,7 +67,7 @@ export default function OrganizerPublicProfile() {
         <div className="bg-[#1a1a2e] rounded-2xl p-6 md:p-8 border border-gray-800">
           <div className="flex flex-col md:flex-row items-start gap-6">
             {/* Logo */}
-            <div className="w-20 h-20 rounded-xl bg-gradient-to-br from-purple-600 to-blue-600 flex items-center justify-center flex-shrink-0 text-2xl font-bold">
+            <div className="w-20 h-20 rounded-xl bg-gradient-to-br from-red-600 to-red-600 flex items-center justify-center flex-shrink-0 text-2xl font-bold">
               {profile.brand_logo ? (
                 <img src={profile.brand_logo} alt="" className="w-full h-full rounded-xl object-cover" />
               ) : (
@@ -98,7 +98,7 @@ export default function OrganizerPublicProfile() {
                   {Object.entries(socialLinks).map(([platform, url]) => (
                     url && (
                       <a key={platform} href={url} target="_blank" rel="noopener noreferrer"
-                        className="text-gray-400 hover:text-purple-400 transition-colors text-sm flex items-center gap-1">
+                        className="text-gray-400 hover:text-red-400 transition-colors text-sm flex items-center gap-1">
                         <Globe className="w-4 h-4" /> {platform}
                       </a>
                     )
@@ -111,11 +111,11 @@ export default function OrganizerPublicProfile() {
           {/* Stats */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6 pt-6 border-t border-gray-700">
             <div className="text-center">
-              <p className="text-2xl font-bold text-purple-400">{tournaments.length}</p>
+              <p className="text-2xl font-bold text-red-400">{tournaments.length}</p>
               <p className="text-gray-400 text-sm">Tournaments</p>
             </div>
             <div className="text-center">
-              <p className="text-2xl font-bold text-blue-400">{totalTeams}</p>
+              <p className="text-2xl font-bold text-red-400">{totalTeams}</p>
               <p className="text-gray-400 text-sm">Teams Hosted</p>
             </div>
             <div className="text-center">
@@ -141,10 +141,10 @@ export default function OrganizerPublicProfile() {
           <div className="grid md:grid-cols-2 gap-4">
             {liveTournaments.map(t => (
               <Link key={t.id} to={`/tournaments/${t.id}`}
-                className="bg-[#1a1a2e] rounded-xl p-5 border border-gray-800 hover:border-purple-500/50 transition-colors group">
+                className="bg-[#1a1a2e] rounded-xl p-5 border border-gray-800 hover:border-red-500/50 transition-colors group">
                 <div className="flex items-start justify-between mb-3">
                   <div>
-                    <h3 className="font-semibold group-hover:text-purple-400 transition-colors">{t.name}</h3>
+                    <h3 className="font-semibold group-hover:text-red-400 transition-colors">{t.name}</h3>
                     <p className="text-gray-400 text-sm">{t.game}</p>
                   </div>
                   <span className={`px-2 py-0.5 rounded text-xs font-medium border ${statusColors[t.status] || ''}`}>
@@ -164,7 +164,7 @@ export default function OrganizerPublicProfile() {
       {/* Past Tournaments (Portfolio) */}
       <div className="max-w-5xl mx-auto px-4 pb-12">
         <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
-          <Star className="w-5 h-5 text-purple-400" /> Tournament Portfolio
+          <Star className="w-5 h-5 text-red-400" /> Tournament Portfolio
         </h2>
         {pastTournaments.length === 0 ? (
           <p className="text-gray-500 text-sm">No completed tournaments yet.</p>
@@ -177,8 +177,8 @@ export default function OrganizerPublicProfile() {
                   {t.tournament_image ? (
                     <img src={t.tournament_image} alt="" className="w-full h-36 object-cover" />
                   ) : (
-                    <div className="w-full h-36 bg-gradient-to-br from-purple-900/50 to-blue-900/50 flex items-center justify-center">
-                      <Trophy className="w-10 h-10 text-purple-400/50" />
+                    <div className="w-full h-36 bg-gradient-to-br from-red-900/50 to-red-900/50 flex items-center justify-center">
+                      <Trophy className="w-10 h-10 text-red-400/50" />
                     </div>
                   )}
                   <div className="p-4">
@@ -190,7 +190,7 @@ export default function OrganizerPublicProfile() {
                     </div>
                     {report ? (
                       <Link to={`/tournaments/${t.id}/report`}
-                        className="inline-flex items-center gap-1 text-sm text-purple-400 hover:text-purple-300">
+                        className="inline-flex items-center gap-1 text-sm text-red-400 hover:text-red-300">
                         <BarChart3 className="w-3.5 h-3.5" /> View Report <ExternalLink className="w-3 h-3" />
                       </Link>
                     ) : (

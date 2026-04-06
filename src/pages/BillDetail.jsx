@@ -82,7 +82,7 @@ Status: ${bill.payment_status?.toUpperCase()}
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin w-10 h-10 border-2 border-purple-500 border-t-transparent rounded-full" />
+        <div className="animate-spin w-10 h-10 border-2 border-red-500 border-t-transparent rounded-full" />
       </div>
     );
   }
@@ -107,7 +107,7 @@ Status: ${bill.payment_status?.toUpperCase()}
 
   const itemStatusColors = {
     pending: 'bg-yellow-500/20 text-yellow-400',
-    in_progress: 'bg-blue-500/20 text-blue-400',
+    in_progress: 'bg-red-500/20 text-red-400',
     fulfilled: 'bg-green-500/20 text-green-400',
     cancelled: 'bg-red-500/20 text-red-400',
   };
@@ -179,8 +179,8 @@ Status: ${bill.payment_status?.toUpperCase()}
               })}
             </div>
             {tournamentOrder && (
-              <div className="mt-4 p-3 bg-blue-500/10 border border-blue-500/30 rounded-lg">
-                <p className="text-blue-400 text-sm flex items-center gap-2">
+              <div className="mt-4 p-3 bg-red-500/10 border border-red-500/30 rounded-lg">
+                <p className="text-red-400 text-sm flex items-center gap-2">
                   <CheckCircle className="w-4 h-4" />
                   Fulfillment Progress: {fulfilledCount}/{totalItems} items fulfilled
                 </p>
@@ -195,13 +195,13 @@ Status: ${bill.payment_status?.toUpperCase()}
             </div>
             {bill.platform_fee > 0 && (
               <div className="flex justify-between">
-                <span className="text-blue-400">Platform Fee (15%)</span>
-                <span className="text-blue-400">EGP {bill.platform_fee?.toLocaleString()}</span>
+                <span className="text-red-400">Platform Fee (15%)</span>
+                <span className="text-red-400">EGP {bill.platform_fee?.toLocaleString()}</span>
               </div>
             )}
             <div className="flex justify-between pt-3 border-t border-zinc-700">
               <span className="text-white font-bold">Total Due</span>
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-cyan-400 font-black text-xl">
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-red-400 to-cyan-400 font-black text-xl">
                 EGP {bill.grand_total?.toLocaleString()}
               </span>
             </div>
@@ -225,12 +225,12 @@ Status: ${bill.payment_status?.toUpperCase()}
           {bill.shared_tournament && sharedBills.length > 1 && (
             <div className="mb-8">
               <h2 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
-                <Users className="w-5 h-5 text-purple-400" />
+                <Users className="w-5 h-5 text-red-400" />
                 All Parties ({sharedBills.length})
               </h2>
               <div className="space-y-2">
                 {sharedBills.map(sb => (
-                  <div key={sb.id} className={`flex items-center justify-between px-4 py-3 rounded-lg ${sb.id === bill.id ? 'bg-purple-500/10 border border-purple-500/30' : 'bg-zinc-800/40'}`}>
+                  <div key={sb.id} className={`flex items-center justify-between px-4 py-3 rounded-lg ${sb.id === bill.id ? 'bg-red-500/10 border border-red-500/30' : 'bg-zinc-800/40'}`}>
                     <div>
                       <p className="text-white font-medium">{sb.payer_name || 'Unknown'}</p>
                       <p className="text-xs text-gray-500 capitalize">{sb.bill_type?.replace('_', ' ')}</p>
@@ -254,7 +254,7 @@ Status: ${bill.payment_status?.toUpperCase()}
           {bill.payment_status !== 'paid' && (
             <div className="mb-6 p-5 bg-zinc-800/50 border border-zinc-700 rounded-lg">
               <h3 className="text-white font-bold mb-3 flex items-center gap-2">
-                <CreditCard className="w-5 h-5 text-purple-400" />
+                <CreditCard className="w-5 h-5 text-red-400" />
                 Payment Method
               </h3>
               <div className="grid grid-cols-3 gap-2 mb-4">
@@ -263,7 +263,7 @@ Status: ${bill.payment_status?.toUpperCase()}
                     key={method}
                     onClick={() => setPaymentMethod(method)}
                     className={`p-3 rounded-lg text-sm text-center transition-all ${paymentMethod === method
-                      ? 'bg-purple-500/20 border border-purple-500/50 text-purple-300'
+                      ? 'bg-red-500/20 border border-red-500/50 text-red-300'
                       : 'bg-zinc-800 border border-zinc-700 text-gray-400 hover:border-zinc-600'
                     }`}
                   >
@@ -277,7 +277,7 @@ Status: ${bill.payment_status?.toUpperCase()}
               <GlowButton
                 onClick={() => payMutation.mutate()}
                 disabled={payMutation.isPending || paymentMethod === 'paymob'}
-                className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500"
+                className="w-full bg-gradient-to-r from-red-600 to-red-600 hover:from-red-500 hover:to-red-500"
               >
                 <DollarSign className="w-4 h-4" />
                 {payMutation.isPending ? 'Processing...' : `Pay EGP ${bill.grand_total?.toLocaleString()}`}

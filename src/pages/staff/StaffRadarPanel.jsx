@@ -19,7 +19,7 @@ function StatusBadge({ status }) {
   const map = {
     open: 'bg-emerald-50 text-emerald-700',
     in_progress: 'bg-amber-50 text-amber-700',
-    fully_funded: 'bg-blue-50 text-blue-700',
+    fully_funded: 'bg-red-50 text-red-700',
     closed: 'bg-gray-100 text-gray-500',
   };
   return (
@@ -35,7 +35,7 @@ function FundingBar({ percent }) {
     <div className="flex items-center gap-2">
       <div className="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden">
         <div
-          className="h-full bg-blue-500 rounded-full transition-all"
+          className="h-full bg-red-500 rounded-full transition-all"
           style={{ width: `${p}%` }}
         />
       </div>
@@ -99,7 +99,7 @@ function RadarDetail({ item, onClose }) {
               {coOrgs.map((co, i) => (
                 <div key={i} className="flex items-center justify-between py-2 border-b border-gray-50 last:border-0">
                   <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-xs font-bold">
+                    <div className="w-8 h-8 rounded-full bg-red-100 text-red-600 flex items-center justify-center text-xs font-bold">
                       {(co.brand_name || co.organizer_brand || '?').charAt(0).toUpperCase()}
                     </div>
                     <div>
@@ -215,7 +215,7 @@ export default function StaffRadarPanel() {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search by tournament or organizer..."
-              className="w-full pl-10 pr-4 py-2 text-sm border border-gray-300 rounded-lg bg-white text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full pl-10 pr-4 py-2 text-sm border border-gray-300 rounded-lg bg-white text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
             />
           </div>
           <div className="relative">
@@ -223,7 +223,7 @@ export default function StaffRadarPanel() {
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
-              className="appearance-none pl-10 pr-8 py-2 text-sm border border-gray-300 rounded-lg bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="appearance-none pl-10 pr-8 py-2 text-sm border border-gray-300 rounded-lg bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
             >
               {STATUS_OPTIONS.map((o) => (
                 <option key={o.value} value={o.value}>{o.label}</option>

@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Switch } from '@/components/ui/switch';
 import { motion } from 'framer-motion';
 import {
   Users, Trophy, MessageSquare, Send, UserPlus, Check, X, Crown,
@@ -46,8 +47,8 @@ export default function TeamDetails() {
       const userData = await apiCall('/auth/me');
       setUser(userData);
     } catch (e) {
-      // might be logged out, allow viewing as guest if somehow reached
-      navigate('/auth/gamer/login');
+      // Not logged in — allow guest viewing of public team page
+      setUser(null);
     }
   };
 
@@ -313,18 +314,31 @@ export default function TeamDetails() {
             </div>
           </div>
           <div className="flex gap-2 flex-shrink-0 flex-wrap">
-            {!isMember && !hasPendingRequest && team.is_recruiting && (
+            {user && !isMember && !hasPendingRequest && team.is_recruiting && (
               <GlowButton onClick={() => setShowJoinModal(true)}>
-                <UserPlus className="w-4 h-4" /> Join Team
+                <UserPlus className="w-4 h-4" /> Request to Join
+              </GlowButton>
+            )}
+            {!user && team.is_recruiting && (
+              <GlowButton onClick={() => navigate('/auth/gamer/login')}>
+                <UserPlus className="w-4 h-4" /> Log in to Join
               </GlowButton>
             )}
             {hasPendingRequest && (
-              <HexBadge className="bg-yellow-500/20 text-yellow-400">Request Pending</HexBadge>
+              <div className="flex items-center gap-2 px-4 py-2 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
+                <Check className="w-4 h-4 text-yellow-400" />
+                <span className="text-yellow-400 text-sm font-medium">Request Sent</span>
+              </div>
             )}
             {isLeader && (
-              <GlowButton variant="secondary" onClick={() => setShowInviteFriendsModal(true)}>
-                <UserPlus className="w-4 h-4" /> Invite
-              </GlowButton>
+              <>
+                <GlowButton variant="secondary" onClick={() => setEditingSettings(true)}>
+                  <Edit2 className="w-4 h-4" /> Edit Team
+                </GlowButton>
+                <GlowButton variant="secondary" onClick={() => setShowInviteFriendsModal(true)}>
+                  <UserPlus className="w-4 h-4" /> Invite
+                </GlowButton>
+              </>
             )}
           </div>
         </div>
@@ -709,8 +723,19 @@ export default function TeamDetails() {
                 </SelectContent>
               </Select>
             </div>
-            <GlowButton className="w-full" onClick={() => joinRequestMutation.mutate()} disabled={!joinRequest.game || !joinRequest.game_id}>
-              <Send className="w-4 h-4" /> Submit Request
+            <GlowButton
+              className="w-full"
+              onClick={() => joinRequestMutation.mutate()}
+              disabled={!joinRequest.game || !joinRequest.game_id || joinRequestMutation.isPending}
+            >
+              {joinRequestMutation.isPending ? (
+                <span className="flex items-center gap-2">
+                  <div className="animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full" />
+                  Sending...
+                </span>
+              ) : (
+                <><Send className="w-4 h-4" /> Submit Request</>
+              )}
             </GlowButton>
           </div>
         </DialogContent>

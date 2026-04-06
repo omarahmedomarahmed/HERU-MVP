@@ -8,7 +8,7 @@ export default function TournamentTypeBadge({ tournament, coOrganizerProfiles = 
     const coOrgs = tournament.co_organizers || [];
     return (
       <div className="space-y-1">
-        <span className="inline-flex items-center gap-1.5 text-xs font-bold px-2.5 py-1 rounded-full bg-blue-500/20 text-blue-400 border border-blue-500/30">
+        <span className="inline-flex items-center gap-1.5 text-xs font-bold px-2.5 py-1 rounded-full bg-red-500/20 text-red-400 border border-red-500/30">
           <Users className="w-3 h-3" /> Shared
         </span>
         <div className="flex items-center gap-1.5 text-xs text-gray-400 flex-wrap">

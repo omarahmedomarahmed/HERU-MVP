@@ -358,7 +358,7 @@ export default function TournamentDetails() {
                   </div>
                   {tournament.schedule && (
                     <div className="flex items-center gap-3 p-3 bg-zinc-800/50 rounded-lg">
-                      <Calendar className="w-5 h-5 text-blue-500" />
+                      <Calendar className="w-5 h-5 text-red-500" />
                       <div>
                         <p className="text-gray-500 text-xs">Date</p>
                         <p className="text-white font-medium">{new Date(tournament.schedule).toLocaleDateString()}</p>

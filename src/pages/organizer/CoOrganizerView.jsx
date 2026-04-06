@@ -31,9 +31,9 @@ const formatDate = (dateStr) => {
 
 const statusColors = {
   draft: 'bg-gray-600/30 text-gray-300',
-  published: 'bg-blue-600/30 text-blue-300',
+  published: 'bg-red-600/30 text-red-300',
   live: 'bg-green-500/30 text-green-300',
-  completed: 'bg-purple-500/30 text-purple-300',
+  completed: 'bg-red-500/30 text-red-300',
 }
 
 // ---------------------------------------------------------------------------
@@ -275,9 +275,9 @@ export default function CoOrganizerView() {
       </button>
 
       {/* ------ Co-organizer banner ------ */}
-      <div className="rounded-xl border border-blue-500/30 bg-blue-500/10 p-4 mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+      <div className="rounded-xl border border-red-500/30 bg-red-500/10 p-4 mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div className="flex items-center gap-3">
-          <Shield className="w-5 h-5 text-blue-400 shrink-0" />
+          <Shield className="w-5 h-5 text-red-400 shrink-0" />
           <div>
             <p className="text-white font-medium text-sm">
               You are a co-organizer of this tournament
@@ -291,7 +291,7 @@ export default function CoOrganizerView() {
           <div className="flex items-center gap-4 shrink-0">
             <div className="text-right">
               <p className="text-xs text-gray-500">Your Commitment</p>
-              <p className="text-sm font-semibold text-blue-300">{commitmentPercent}%</p>
+              <p className="text-sm font-semibold text-red-300">{commitmentPercent}%</p>
             </div>
             <div className="w-px h-8 bg-white/10" />
             <div className="text-right">

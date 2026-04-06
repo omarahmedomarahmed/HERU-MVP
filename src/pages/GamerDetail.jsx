@@ -116,7 +116,7 @@ export default function GamerDetail() {
               <h2 className="text-lg font-bold text-white mb-4">Connect</h2>
               <div className="flex flex-wrap gap-3">
                 {gamerData.social_links?.twitter && (
-                  <a href={gamerData.social_links.twitter} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 bg-blue-500/20 text-blue-400 px-4 py-2 rounded-lg hover:bg-blue-500/30 transition">
+                  <a href={gamerData.social_links.twitter} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 bg-red-500/20 text-red-400 px-4 py-2 rounded-lg hover:bg-red-500/30 transition">
                     <Twitter className="w-4 h-4" /> Twitter
                   </a>
                 )}
@@ -126,7 +126,7 @@ export default function GamerDetail() {
                   </a>
                 )}
                 {gamerData.social_links?.discord && (
-                  <a href={gamerData.social_links.discord} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 bg-indigo-500/20 text-indigo-400 px-4 py-2 rounded-lg hover:bg-indigo-500/30 transition">
+                  <a href={gamerData.social_links.discord} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 bg-red-500/20 text-red-400 px-4 py-2 rounded-lg hover:bg-red-500/30 transition">
                     <MessageSquare className="w-4 h-4" /> Discord
                   </a>
                 )}

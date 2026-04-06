@@ -28,7 +28,7 @@ const CATEGORIES = [
 
 function CategoryBadge({ category }) {
   const colors = {
-    game_setup: 'bg-blue-50 text-blue-700',
+    game_setup: 'bg-red-50 text-red-700',
     teams: 'bg-violet-50 text-violet-700',
     live_talent: 'bg-amber-50 text-amber-700',
     production: 'bg-cyan-50 text-cyan-700',
@@ -203,7 +203,7 @@ export default function StaffMarketplace() {
           </div>
           <button
             onClick={openCreate}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-blue-600 text-white hover:bg-blue-700 transition"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-red-600 text-white hover:bg-red-700 transition"
           >
             <Plus className="w-4 h-4" />
             Add Item
@@ -219,13 +219,13 @@ export default function StaffMarketplace() {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search by title, description, or type..."
-              className="w-full pl-10 pr-4 py-2 text-sm border border-gray-300 rounded-lg bg-white text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full pl-10 pr-4 py-2 text-sm border border-gray-300 rounded-lg bg-white text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
             />
           </div>
           <select
             value={categoryFilter}
             onChange={(e) => setCategoryFilter(e.target.value)}
-            className="appearance-none px-4 py-2 text-sm border border-gray-300 rounded-lg bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="appearance-none px-4 py-2 text-sm border border-gray-300 rounded-lg bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
           >
             <option value="all">All categories</option>
             {CATEGORIES.map((c) => (
@@ -263,11 +263,11 @@ export default function StaffMarketplace() {
                     <tr key={item.id} className="hover:bg-gray-50 transition">
                       <td className="px-6 py-3.5">
                         <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center shrink-0">
+                          <div className="w-8 h-8 rounded-lg bg-red-50 flex items-center justify-center shrink-0">
                             {item.image ? (
                               <img src={item.image} alt="" className="w-8 h-8 rounded-lg object-cover" />
                             ) : (
-                              <ShoppingBag className="w-4 h-4 text-blue-500" />
+                              <ShoppingBag className="w-4 h-4 text-red-500" />
                             )}
                           </div>
                           <span className="text-sm font-medium text-gray-900 truncate max-w-[200px]">
@@ -299,7 +299,7 @@ export default function StaffMarketplace() {
                         <div className="flex items-center justify-end gap-1">
                           <button
                             onClick={() => openEdit(item)}
-                            className="p-1.5 rounded-lg hover:bg-gray-100 transition text-gray-500 hover:text-blue-600"
+                            className="p-1.5 rounded-lg hover:bg-gray-100 transition text-gray-500 hover:text-red-600"
                             title="Edit"
                           >
                             <Pencil className="w-4 h-4" />
@@ -370,7 +370,7 @@ export default function StaffMarketplace() {
                     required
                     value={form.title}
                     onChange={(e) => updateForm('title', e.target.value)}
-                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg bg-white text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg bg-white text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
                     placeholder="Item title"
                   />
                 </div>
@@ -382,7 +382,7 @@ export default function StaffMarketplace() {
                     value={form.description}
                     onChange={(e) => updateForm('description', e.target.value)}
                     rows={3}
-                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg bg-white text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg bg-white text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent resize-none"
                     placeholder="Item description (optional)"
                   />
                 </div>
@@ -394,7 +394,7 @@ export default function StaffMarketplace() {
                     <select
                       value={form.category}
                       onChange={(e) => updateForm('category', e.target.value)}
-                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
                     >
                       {CATEGORIES.map((c) => (
                         <option key={c.value} value={c.value}>{c.label}</option>
@@ -407,7 +407,7 @@ export default function StaffMarketplace() {
                       type="text"
                       value={form.type}
                       onChange={(e) => updateForm('type', e.target.value)}
-                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg bg-white text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg bg-white text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
                       placeholder="e.g. banner, camera"
                     />
                   </div>
@@ -424,7 +424,7 @@ export default function StaffMarketplace() {
                       step="0.01"
                       value={form.price}
                       onChange={(e) => updateForm('price', e.target.value)}
-                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg bg-white text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg bg-white text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
                       placeholder="0"
                     />
                   </div>
@@ -435,7 +435,7 @@ export default function StaffMarketplace() {
                       min="0"
                       value={form.stock}
                       onChange={(e) => updateForm('stock', e.target.value)}
-                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg bg-white text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg bg-white text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
                       placeholder="Unlimited"
                     />
                   </div>
@@ -448,7 +448,7 @@ export default function StaffMarketplace() {
                     type="text"
                     value={form.image}
                     onChange={(e) => updateForm('image', e.target.value)}
-                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg bg-white text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg bg-white text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
                     placeholder="https://example.com/image.jpg"
                   />
                 </div>
@@ -459,7 +459,7 @@ export default function StaffMarketplace() {
                     type="button"
                     onClick={() => updateForm('is_active', !form.is_active)}
                     className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                      form.is_active ? 'bg-blue-600' : 'bg-gray-300'
+                      form.is_active ? 'bg-red-600' : 'bg-gray-300'
                     }`}
                   >
                     <span
@@ -485,7 +485,7 @@ export default function StaffMarketplace() {
                   <button
                     type="submit"
                     disabled={isSaving}
-                    className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition disabled:opacity-50"
+                    className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 transition disabled:opacity-50"
                   >
                     {isSaving ? 'Saving...' : editingItem ? 'Save Changes' : 'Create Item'}
                   </button>

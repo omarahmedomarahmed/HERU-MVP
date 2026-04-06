@@ -16,9 +16,9 @@ const formatEGP = (n) => 'EGP ' + (n || 0).toLocaleString()
 
 const statusColors = {
   draft: 'bg-gray-600/30 text-gray-300',
-  published: 'bg-blue-600/30 text-blue-300',
+  published: 'bg-red-600/30 text-red-300',
   live: 'bg-green-500/30 text-green-300',
-  completed: 'bg-purple-500/30 text-purple-300',
+  completed: 'bg-red-500/30 text-red-300',
 }
 
 function StatusBadge({ status }) {
@@ -37,7 +37,7 @@ function FundingBar({ percent }) {
   return (
     <div className="w-full h-2 rounded-full bg-white/10 overflow-hidden">
       <div
-        className="h-full rounded-full bg-gradient-to-r from-violet-500 to-blue-500 transition-all duration-500"
+        className="h-full rounded-full bg-gradient-to-r from-violet-500 to-red-500 transition-all duration-500"
         style={{ width: `${Math.min(percent || 0, 100)}%` }}
       />
     </div>
@@ -55,7 +55,7 @@ function StatCard({ icon: Icon, label, value, accent = false }) {
         <div
           className={`flex items-center justify-center w-10 h-10 rounded-lg ${
             accent
-              ? 'bg-gradient-to-br from-violet-600 to-blue-600'
+              ? 'bg-gradient-to-br from-violet-600 to-red-600'
               : 'bg-white/5'
           }`}
         >
@@ -73,7 +73,7 @@ function QuickActions({ navigate }) {
     <div className="flex flex-wrap gap-3">
       <button
         onClick={() => navigate('/organizer/tournaments/new')}
-        className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-gradient-to-r from-violet-600 to-blue-600 text-white font-medium text-sm hover:brightness-110 transition"
+        className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-gradient-to-r from-violet-600 to-red-600 text-white font-medium text-sm hover:brightness-110 transition"
       >
         <Plus className="w-4 h-4" />
         Build Tournament
@@ -137,11 +137,11 @@ function RadarCard({ listing, onClick }) {
   return (
     <button
       onClick={onClick}
-      className="w-full text-left rounded-xl border border-white/10 bg-[#1a1a2e] p-4 hover:border-blue-500/40 transition-colors group"
+      className="w-full text-left rounded-xl border border-white/10 bg-[#1a1a2e] p-4 hover:border-red-500/40 transition-colors group"
     >
       <div className="flex items-start justify-between gap-3 mb-3">
         <div className="min-w-0 flex-1">
-          <h4 className="text-white font-semibold truncate group-hover:text-blue-300 transition-colors">
+          <h4 className="text-white font-semibold truncate group-hover:text-red-300 transition-colors">
             {listing.tournament_name}
           </h4>
           <div className="flex items-center gap-3 mt-1 text-sm text-gray-400">
@@ -157,13 +157,13 @@ function RadarCard({ listing, onClick }) {
             </span>
           </div>
         </div>
-        <ChevronRight className="w-4 h-4 text-gray-600 group-hover:text-blue-400 transition-colors shrink-0 mt-1" />
+        <ChevronRight className="w-4 h-4 text-gray-600 group-hover:text-red-400 transition-colors shrink-0 mt-1" />
       </div>
 
       <FundingBar percent={percentFunded} />
       <div className="flex items-center justify-between mt-2 text-xs">
         <span className="text-gray-500">{Math.round(percentFunded)}% funded</span>
-        <span className="text-blue-400 font-medium">{formatEGP(amountNeeded)} needed</span>
+        <span className="text-red-400 font-medium">{formatEGP(amountNeeded)} needed</span>
       </div>
     </button>
   )
@@ -343,7 +343,7 @@ export default function OrganizerDashboard() {
             </div>
             <button
               onClick={() => navigate('/organizer/radar')}
-              className="text-sm text-blue-400 hover:text-blue-300 inline-flex items-center gap-1 transition-colors"
+              className="text-sm text-red-400 hover:text-red-300 inline-flex items-center gap-1 transition-colors"
             >
               Browse all <ChevronRight className="w-4 h-4" />
             </button>

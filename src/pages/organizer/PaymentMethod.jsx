@@ -32,13 +32,13 @@ export default function PaymentMethod() {
             <FloatingPanel
               key={method.id}
               className={`p-5 cursor-pointer transition-all ${
-                selected === method.id ? 'border-purple-500/50 bg-purple-500/5' : ''
-              } ${!method.available ? 'opacity-50' : 'hover:border-purple-500/30'}`}
+                selected === method.id ? 'border-red-500/50 bg-red-500/5' : ''
+              } ${!method.available ? 'opacity-50' : 'hover:border-red-500/30'}`}
               onClick={() => method.available && setSelected(method.id)}
             >
               <div className="flex items-center gap-4">
                 <div className="p-3 rounded-xl bg-zinc-800">
-                  <Icon className="w-6 h-6 text-purple-400" />
+                  <Icon className="w-6 h-6 text-red-400" />
                 </div>
                 <div className="flex-1">
                   <p className="text-white font-bold">{method.label}</p>
@@ -48,7 +48,7 @@ export default function PaymentMethod() {
                   <span className="text-xs bg-yellow-500/10 text-yellow-400 px-2 py-1 rounded-full">Coming Soon</span>
                 )}
                 {selected === method.id && (
-                  <div className="w-5 h-5 rounded-full bg-purple-500 flex items-center justify-center">
+                  <div className="w-5 h-5 rounded-full bg-red-500 flex items-center justify-center">
                     <div className="w-2 h-2 rounded-full bg-white" />
                   </div>
                 )}

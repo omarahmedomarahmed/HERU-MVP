@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import GamerLayout from '@/components/layouts/GamerLayout.jsx';
@@ -7,7 +7,6 @@ import GlowButton from '@/components/ui/GlowButton';
 import HexBadge from '@/components/ui/HexBadge';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { GamerProfile, MarketplaceItem, apiCall } from '@/api/heruClient'
 import { useAuth } from '@/lib/AuthContext'
 
@@ -17,21 +16,12 @@ import {
   Tag, Check, Zap, Sparkles
 } from 'lucide-react';
 
-const CATEGORIES = [
-  { id: 'all', label: 'All Items', icon: ShoppingBag },
-  { id: 'prizepool', label: 'Prizes', icon: Award },
-  { id: 'branding', label: 'Merch', icon: Star },
-  { id: 'game_setup', label: 'Gaming', icon: Gamepad2 },
-  { id: 'production', label: 'Production', icon: Monitor },
-  { id: 'venue', label: 'Venue', icon: MapPin },
-];
-
 const CATEGORY_COLORS = {
   prizepool: 'from-orange-500 to-red-600',
-  branding: 'from-pink-500 to-purple-600',
-  game_setup: 'from-blue-500 to-cyan-600',
+  branding: 'from-red-500 to-red-600',
+  game_setup: 'from-red-500 to-red-600',
   production: 'from-green-500 to-emerald-600',
-  venue: 'from-violet-500 to-indigo-600',
+  venue: 'from-red-500 to-red-600',
   teams: 'from-yellow-500 to-amber-600',
   live_talent: 'from-rose-500 to-red-600',
 };
@@ -41,8 +31,6 @@ export default function Marketplace() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedItem, setSelectedItem] = useState(null);
   const [gameTag, setGameTag] = useState('');
-  const [activeTab, setActiveTab] = useState('all');
-  const [addedItems, setAddedItems] = useState({});
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
@@ -67,16 +55,16 @@ export default function Marketplace() {
     enabled: !!user?.id,
   });
 
-  const { data: items = [], isLoading } = useQuery({
+  const { data: allItems = [], isLoading } = useQuery({
     queryKey: ['marketplace-all-items'],
     queryFn: () => MarketplaceItem.list({ is_active: true }, '-created_date'),
   });
 
+  // Only show prizepool items to gamers
+  const items = useMemo(() => allItems.filter(i => i.category === 'prizepool'), [allItems]);
+
   const filterItems = () => {
     let filtered = items;
-    if (activeTab !== 'all') {
-      filtered = filtered.filter(i => i.category === activeTab);
-    }
     if (searchQuery) {
       filtered = filtered.filter(item =>
         item.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -95,18 +83,28 @@ export default function Marketplace() {
     enabled: !!user?.id,
   });
 
+  // Set of item IDs currently in the cart for quick lookup
+  const cartItemIds = useMemo(() => new Set(cart.map(c => c.id)), [cart]);
+
+  const isInCart = (itemId) => cartItemIds.has(itemId);
+
   const addToCart = (item, tag = '') => {
-    const newCart = [...cart, { ...item, cartId: Date.now(), gameTag: tag }];
+    // Check if item already in cart by id
+    if (isInCart(item.id)) {
+      setSelectedItem(null);
+      setGameTag('');
+      return;
+    }
+    const newCart = [...cart, { ...item, cartId: Date.now(), quantity: 1, gameTag: tag }];
     localStorage.setItem(`cart_${user?.id}`, JSON.stringify(newCart));
     queryClient.invalidateQueries(['cart', user?.id]);
-    setAddedItems(prev => ({ ...prev, [item.id]: true }));
-    setTimeout(() => setAddedItems(prev => ({ ...prev, [item.id]: false })), 2000);
     setSelectedItem(null);
     setGameTag('');
   };
 
   const quickAddToCart = (e, item) => {
     e.stopPropagation();
+    if (isInCart(item.id)) return;
     if (item.type === 'gaming_currency') {
       setSelectedItem(item);
       return;
@@ -124,12 +122,12 @@ export default function Marketplace() {
         <div className="relative flex items-start justify-between flex-wrap gap-4">
           <div>
             <HexBadge className="mb-3">
-              <Sparkles className="w-3 h-3 mr-1" /> MARKETPLACE
+              <Sparkles className="w-3 h-3 mr-1" /> GEAR SHOP
             </HexBadge>
             <h1 className="text-3xl md:text-4xl font-black text-white">
-              GAMER <span className="bg-gradient-to-r from-red-500 to-orange-500 bg-clip-text text-transparent">SHOP</span>
+              GEAR <span className="bg-gradient-to-r from-red-500 to-orange-500 bg-clip-text text-transparent">SHOP</span>
             </h1>
-            <p className="text-gray-400 mt-2 max-w-md">Browse items, gear, and prizes. Add to cart and checkout with EGP.</p>
+            <p className="text-gray-400 mt-2 max-w-md">Browse prizes and gear. Add to cart and checkout with EGP.</p>
           </div>
           <Link to={'/gamer/cart'}>
             <GlowButton>
@@ -151,24 +149,8 @@ export default function Marketplace() {
         />
       </div>
 
-      {/* Category Tabs */}
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <div className="overflow-x-auto pb-2 mb-6 -mx-1">
-          <TabsList className="bg-zinc-900/50 border-zinc-800 h-auto gap-1 p-1 inline-flex min-w-max">
-            {CATEGORIES.map(cat => (
-              <TabsTrigger
-                key={cat.id}
-                value={cat.id}
-                className="data-[state=active]:bg-red-600 data-[state=active]:text-white flex items-center gap-2 px-4 py-2 rounded-lg text-sm"
-              >
-                <cat.icon className="w-4 h-4" />
-                {cat.label}
-              </TabsTrigger>
-            ))}
-          </TabsList>
-        </div>
-
-        {/* Items Grid */}
+      {/* Items Grid */}
+      <div className="w-full">
         {isLoading ? (
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
             {[1,2,3,4,5,6,7,8].map(i => (
@@ -218,13 +200,13 @@ export default function Marketplace() {
                     <button
                       onClick={(e) => quickAddToCart(e, item)}
                       className={`px-4 py-2.5 rounded-xl font-bold text-sm flex items-center gap-2 transition-all transform scale-90 group-hover:scale-100 ${
-                        addedItems[item.id]
-                          ? 'bg-green-500 text-white'
+                        isInCart(item.id)
+                          ? 'bg-green-500 text-white cursor-default'
                           : 'bg-white text-black hover:bg-red-500 hover:text-white'
                       }`}
                     >
-                      {addedItems[item.id] ? (
-                        <><Check className="w-4 h-4" /> Added!</>
+                      {isInCart(item.id) ? (
+                        <><Check className="w-4 h-4" /> In Cart</>
                       ) : (
                         <><ShoppingCart className="w-4 h-4" /> Add to Cart</>
                       )}
@@ -252,7 +234,7 @@ export default function Marketplace() {
             <p className="text-gray-400">Try a different category or search term</p>
           </FloatingPanel>
         )}
-      </Tabs>
+      </div>
 
       {/* Item Detail Modal */}
       <Dialog open={!!selectedItem} onOpenChange={() => setSelectedItem(null)}>
@@ -310,14 +292,21 @@ export default function Marketplace() {
                 </div>
               )}
 
-              <GlowButton
-                className="w-full"
-                onClick={() => addToCart(selectedItem, gameTag)}
-                disabled={selectedItem.type === 'gaming_currency' && !gameTag}
-              >
-                <ShoppingCart className="w-4 h-4" />
-                Add to Cart — EGP {(selectedItem.price || 0).toLocaleString()}
-              </GlowButton>
+              {isInCart(selectedItem.id) ? (
+                <GlowButton className="w-full bg-green-600 hover:bg-green-600 cursor-default" disabled>
+                  <Check className="w-4 h-4" />
+                  In Cart
+                </GlowButton>
+              ) : (
+                <GlowButton
+                  className="w-full"
+                  onClick={() => addToCart(selectedItem, gameTag)}
+                  disabled={selectedItem.type === 'gaming_currency' && !gameTag}
+                >
+                  <ShoppingCart className="w-4 h-4" />
+                  Add to Cart — EGP {(selectedItem.price || 0).toLocaleString()}
+                </GlowButton>
+              )}
             </div>
           )}
         </DialogContent>

@@ -38,7 +38,7 @@ const TYPE_TABS = [
 const TYPE_COLORS = {
   team_join: { bg: 'bg-emerald-500/15', text: 'text-emerald-400', border: 'border-emerald-500/30' },
   tournament_publish: { bg: 'bg-amber-500/15', text: 'text-amber-400', border: 'border-amber-500/30' },
-  talent_application: { bg: 'bg-purple-500/15', text: 'text-purple-400', border: 'border-purple-500/30' },
+  talent_application: { bg: 'bg-red-500/15', text: 'text-red-400', border: 'border-red-500/30' },
   organizer_profile: { bg: 'bg-cyan-500/15', text: 'text-cyan-400', border: 'border-cyan-500/30' },
 };
 
@@ -135,7 +135,7 @@ function ApprovalCard({ approval, onApprove, onReject, isApproving, isRejecting 
 
         <div className="mt-3 flex items-center gap-2 text-sm">
           <span className="text-zinc-500">Reference:</span>
-          <span className="text-blue-400 font-medium">
+          <span className="text-red-400 font-medium">
             {approval.reference_name || approval.reference_id || '--'}
           </span>
         </div>
@@ -169,7 +169,7 @@ function ApprovalCard({ approval, onApprove, onReject, isApproving, isRejecting 
                   onChange={(e) => setRejectionReason(e.target.value)}
                   placeholder="Enter rejection reason..."
                   rows={3}
-                  className="w-full px-3 py-2 bg-zinc-900 border border-zinc-600 rounded-lg text-white text-sm placeholder-zinc-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 resize-none"
+                  className="w-full px-3 py-2 bg-zinc-900 border border-zinc-600 rounded-lg text-white text-sm placeholder-zinc-500 focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 resize-none"
                 />
                 <div className="flex items-center gap-2">
                   <button
@@ -193,7 +193,7 @@ function ApprovalCard({ approval, onApprove, onReject, isApproving, isRejecting 
                 <button
                   onClick={() => onApprove(approval.id)}
                   disabled={isApproving}
-                  className="px-4 py-2 bg-blue-600 hover:bg-blue-500 disabled:bg-blue-800 disabled:text-blue-400 text-white text-sm font-medium rounded-lg transition-colors flex items-center gap-2"
+                  className="px-4 py-2 bg-red-600 hover:bg-red-500 disabled:bg-red-800 disabled:text-red-400 text-white text-sm font-medium rounded-lg transition-colors flex items-center gap-2"
                 >
                   {isApproving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <CheckCircle2 className="w-3.5 h-3.5" />}
                   Approve
@@ -282,14 +282,14 @@ export default function StaffApprovals() {
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
           <div className="flex items-center gap-3">
-            <div className="p-2.5 bg-blue-600/15 border border-blue-500/30 rounded-xl">
-              <ShieldCheck className="w-6 h-6 text-blue-400" />
+            <div className="p-2.5 bg-red-600/15 border border-red-500/30 rounded-xl">
+              <ShieldCheck className="w-6 h-6 text-red-400" />
             </div>
             <div>
               <div className="flex items-center gap-2.5">
                 <h1 className="text-2xl font-bold text-white">Approval Requests</h1>
                 {pendingCount > 0 && (
-                  <span className="px-2.5 py-0.5 bg-blue-600 text-white text-xs font-bold rounded-full">
+                  <span className="px-2.5 py-0.5 bg-red-600 text-white text-xs font-bold rounded-full">
                     {pendingCount}
                   </span>
                 )}
@@ -316,7 +316,7 @@ export default function StaffApprovals() {
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search by name, email, or reference..."
-            className="w-full pl-10 pr-10 py-2.5 bg-zinc-800 border border-zinc-700 rounded-lg text-white text-sm placeholder-zinc-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+            className="w-full pl-10 pr-10 py-2.5 bg-zinc-800 border border-zinc-700 rounded-lg text-white text-sm placeholder-zinc-500 focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500"
           />
           {searchQuery && (
             <button
@@ -336,13 +336,13 @@ export default function StaffApprovals() {
               onClick={() => setStatusFilter(tab.key)}
               className={`flex-1 px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2 ${
                 statusFilter === tab.key
-                  ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20'
+                  ? 'bg-red-600 text-white shadow-lg shadow-red-600/20'
                   : 'text-zinc-400 hover:text-white hover:bg-zinc-700/50'
               }`}
             >
               {tab.label}
               <span className={`text-xs px-1.5 py-0.5 rounded-full ${
-                statusFilter === tab.key ? 'bg-blue-500/40 text-blue-100' : 'bg-zinc-700 text-zinc-400'
+                statusFilter === tab.key ? 'bg-red-500/40 text-red-100' : 'bg-zinc-700 text-zinc-400'
               }`}>
                 {statusCounts[tab.key]}
               </span>
@@ -360,7 +360,7 @@ export default function StaffApprovals() {
                 onClick={() => setTypeFilter(tab.key)}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-colors border ${
                   typeFilter === tab.key
-                    ? 'bg-blue-600/15 text-blue-400 border-blue-500/30'
+                    ? 'bg-red-600/15 text-red-400 border-red-500/30'
                     : 'bg-zinc-800/40 text-zinc-400 border-zinc-700/50 hover:text-zinc-200 hover:border-zinc-600'
                 }`}
               >
@@ -368,7 +368,7 @@ export default function StaffApprovals() {
                 {tab.label}
                 {typeCounts[tab.key] > 0 && (
                   <span className={`text-xs px-1.5 rounded-full ${
-                    typeFilter === tab.key ? 'bg-blue-500/30 text-blue-300' : 'bg-zinc-700 text-zinc-500'
+                    typeFilter === tab.key ? 'bg-red-500/30 text-red-300' : 'bg-zinc-700 text-zinc-500'
                   }`}>
                     {typeCounts[tab.key]}
                   </span>
@@ -381,7 +381,7 @@ export default function StaffApprovals() {
         {/* Content */}
         {isLoading ? (
           <div className="flex flex-col items-center justify-center py-24 text-zinc-400">
-            <Loader2 className="w-8 h-8 animate-spin mb-3 text-blue-500" />
+            <Loader2 className="w-8 h-8 animate-spin mb-3 text-red-500" />
             <p className="text-sm">Loading approval requests...</p>
           </div>
         ) : isError ? (
@@ -390,7 +390,7 @@ export default function StaffApprovals() {
             <p className="text-sm mb-3">Failed to load approvals</p>
             <button
               onClick={() => refetch()}
-              className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white text-sm rounded-lg transition-colors"
+              className="px-4 py-2 bg-red-600 hover:bg-red-500 text-white text-sm rounded-lg transition-colors"
             >
               Retry
             </button>

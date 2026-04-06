@@ -11,7 +11,7 @@ import { useAuth } from '@/lib/AuthContext';
 
 const STATUS_STYLES = {
   pending: { icon: Clock, color: 'text-yellow-400', bg: 'bg-yellow-500/10' },
-  processing: { icon: Truck, color: 'text-blue-400', bg: 'bg-blue-500/10' },
+  processing: { icon: Truck, color: 'text-red-400', bg: 'bg-red-500/10' },
   completed: { icon: CheckCircle, color: 'text-green-400', bg: 'bg-green-500/10' },
   cancelled: { icon: XCircle, color: 'text-red-400', bg: 'bg-red-500/10' },
 };

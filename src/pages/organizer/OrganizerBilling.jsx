@@ -290,7 +290,7 @@ export default function OrganizerBilling() {
             {sharedMainBills.length > 0 && (
               <div>
                 <h2 className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-3 flex items-center gap-2">
-                  <Receipt className="w-4 h-4 text-purple-400" />
+                  <Receipt className="w-4 h-4 text-red-400" />
                   Shared Tournaments (My Share)
                   <span className="text-xs text-gray-600 font-normal">({sharedMainBills.length})</span>
                 </h2>
@@ -306,7 +306,7 @@ export default function OrganizerBilling() {
             {coOrgBills.length > 0 && (
               <div>
                 <h2 className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-3 flex items-center gap-2">
-                  <Receipt className="w-4 h-4 text-blue-400" />
+                  <Receipt className="w-4 h-4 text-red-400" />
                   Co-Organized (Partner Share)
                   <span className="text-xs text-gray-600 font-normal">({coOrgBills.length})</span>
                 </h2>

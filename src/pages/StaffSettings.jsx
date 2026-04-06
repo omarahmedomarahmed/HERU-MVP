@@ -76,13 +76,13 @@ export default function StaffSettings() {
   return (
     <div className="max-w-3xl mx-auto space-y-6">
       <h1 className="text-2xl font-bold text-white">
-        Staff <span className="text-blue-400">Settings</span>
+        Staff <span className="text-red-400">Settings</span>
       </h1>
 
       {/* Current Session Info */}
       <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-6">
         <h2 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
-          <User className="w-5 h-5 text-blue-400" />
+          <User className="w-5 h-5 text-red-400" />
           Current Session
         </h2>
         <div className="grid grid-cols-2 gap-4">
@@ -113,12 +113,12 @@ export default function StaffSettings() {
       <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-6">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-bold text-white flex items-center gap-2">
-            <Key className="w-5 h-5 text-blue-400" />
+            <Key className="w-5 h-5 text-red-400" />
             Staff Access Keys
           </h2>
           <button
             onClick={() => setShowNewKey(!showNewKey)}
-            className="flex items-center gap-2 px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-medium transition-colors"
+            className="flex items-center gap-2 px-3 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-xs font-medium transition-colors"
           >
             <Plus className="w-3 h-3" /> New Key
           </button>
@@ -133,7 +133,7 @@ export default function StaffSettings() {
                 <input
                   value={newKeyForm.staff_name}
                   onChange={e => setNewKeyForm(f => ({ ...f, staff_name: e.target.value }))}
-                  className="w-full px-3 py-2 bg-zinc-900 border border-zinc-700 rounded-lg text-white text-sm focus:outline-none focus:border-blue-500"
+                  className="w-full px-3 py-2 bg-zinc-900 border border-zinc-700 rounded-lg text-white text-sm focus:outline-none focus:border-red-500"
                   placeholder="Name"
                 />
               </div>
@@ -142,7 +142,7 @@ export default function StaffSettings() {
                 <input
                   value={newKeyForm.staff_email}
                   onChange={e => setNewKeyForm(f => ({ ...f, staff_email: e.target.value }))}
-                  className="w-full px-3 py-2 bg-zinc-900 border border-zinc-700 rounded-lg text-white text-sm focus:outline-none focus:border-blue-500"
+                  className="w-full px-3 py-2 bg-zinc-900 border border-zinc-700 rounded-lg text-white text-sm focus:outline-none focus:border-red-500"
                   placeholder="Email"
                 />
               </div>
@@ -153,7 +153,7 @@ export default function StaffSettings() {
                 <input
                   value={newKeyForm.access_key}
                   onChange={e => setNewKeyForm(f => ({ ...f, access_key: e.target.value }))}
-                  className="flex-1 px-3 py-2 bg-zinc-900 border border-zinc-700 rounded-lg text-white text-sm font-mono focus:outline-none focus:border-blue-500"
+                  className="flex-1 px-3 py-2 bg-zinc-900 border border-zinc-700 rounded-lg text-white text-sm font-mono focus:outline-none focus:border-red-500"
                   placeholder="HERU-STAFF-..."
                 />
                 <button
@@ -175,7 +175,7 @@ export default function StaffSettings() {
               <button
                 onClick={() => createKeyMutation.mutate(newKeyForm)}
                 disabled={!newKeyForm.staff_name || !newKeyForm.staff_email || !newKeyForm.access_key || createKeyMutation.isPending}
-                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-medium transition-colors disabled:opacity-50"
+                className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-xs font-medium transition-colors disabled:opacity-50"
               >
                 Create Key
               </button>
@@ -232,7 +232,7 @@ export default function StaffSettings() {
       {/* Platform Settings */}
       <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-6">
         <h2 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
-          <Percent className="w-5 h-5 text-blue-400" />
+          <Percent className="w-5 h-5 text-red-400" />
           Platform Settings
         </h2>
         <div className="bg-zinc-800 rounded-lg p-4">
@@ -245,13 +245,13 @@ export default function StaffSettings() {
               step="1"
               value={feePercent}
               onChange={e => setFeePercent(e.target.value)}
-              className="w-24 px-3 py-2 bg-zinc-900 border border-zinc-700 rounded-lg text-white text-sm font-mono focus:outline-none focus:border-blue-500"
+              className="w-24 px-3 py-2 bg-zinc-900 border border-zinc-700 rounded-lg text-white text-sm font-mono focus:outline-none focus:border-red-500"
             />
             <span className="text-gray-400 text-sm">%</span>
             <button
               onClick={() => updateFeeMutation.mutate(feePercent)}
               disabled={updateFeeMutation.isPending || !feePercent}
-              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-medium transition-colors disabled:opacity-50"
+              className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-xs font-medium transition-colors disabled:opacity-50"
             >
               Save
             </button>

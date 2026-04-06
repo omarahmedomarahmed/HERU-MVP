@@ -141,7 +141,7 @@ export default function GamerAuthLogin() {
             </p>
             <p className="text-gray-600 text-xs">
               Are you an organizer?{' '}
-              <Link to="/auth/organizer/login" className="text-blue-400 hover:text-blue-300 transition-colors">
+              <Link to="/auth/organizer/login" className="text-red-400 hover:text-red-300 transition-colors">
                 Login here
               </Link>
             </p>

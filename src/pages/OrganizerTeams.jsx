@@ -66,7 +66,7 @@ export default function OrganizerTeams() {
       {/* Stats */}
       <div className="grid grid-cols-3 gap-4 mb-6">
         <FloatingPanel className="p-4">
-          <Users className="w-8 h-8 text-blue-500 mb-2" />
+          <Users className="w-8 h-8 text-red-500 mb-2" />
           <p className="text-2xl font-bold text-white">{teams.length}</p>
           <p className="text-gray-500 text-xs">Total Teams</p>
         </FloatingPanel>
@@ -76,7 +76,7 @@ export default function OrganizerTeams() {
           <p className="text-gray-500 text-xs">Recruiting</p>
         </FloatingPanel>
         <FloatingPanel className="p-4">
-          <Gamepad2 className="w-8 h-8 text-purple-500 mb-2" />
+          <Gamepad2 className="w-8 h-8 text-red-500 mb-2" />
           <p className="text-2xl font-bold text-white">{allGames.length}</p>
           <p className="text-gray-500 text-xs">Games Covered</p>
         </FloatingPanel>

@@ -13,9 +13,9 @@ import {
 function RoleBadge({ role }) {
   const colors = {
     organizer: 'bg-red-500/20 text-red-400 border-red-500/30',
-    'co-organizer': 'bg-purple-500/20 text-purple-400 border-purple-500/30',
+    'co-organizer': 'bg-red-500/20 text-red-400 border-red-500/30',
     sponsor: 'bg-amber-500/20 text-amber-400 border-amber-500/30',
-    staff: 'bg-blue-500/20 text-blue-400 border-blue-500/30',
+    staff: 'bg-red-500/20 text-red-400 border-red-500/30',
     talent: 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30',
   };
   const cls = colors[role] || 'bg-zinc-700/40 text-zinc-400 border-zinc-600/30';
