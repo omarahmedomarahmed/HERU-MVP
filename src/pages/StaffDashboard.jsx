@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import FloatingPanel from '@/components/ui/FloatingPanel';
 import GlowButton from '@/components/ui/GlowButton';
-import StaffLayout from '@/components/layouts/StaffLayout';
+
 import { BillingSnapshot, MarketplaceItem, OrganizerProfile, SponsorshipRadar, Tournament, TournamentOrder, apiCall } from '@/api/heruClient'
 import { useAuth } from '@/lib/AuthContext'
 
@@ -39,7 +39,7 @@ export default function StaffDashboard() {
   }, [navigate]);
 
   return (
-    <StaffLayout user={user}>
+    <>
       <div>
         {/* Tabs Navigation */}
         <div className="flex gap-2 mb-6 overflow-x-auto pb-2">
@@ -67,7 +67,7 @@ export default function StaffDashboard() {
         {activeTab === 'marketplace' && <MarketplaceTab />}
         {activeTab === 'billing' && <BillingTab />}
       </div>
-    </StaffLayout>
+    </>
   );
 }
 

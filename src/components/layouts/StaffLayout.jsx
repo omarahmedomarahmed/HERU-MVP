@@ -64,7 +64,7 @@ export default function StaffLayout({ children }) {
         {NAV_SECTIONS.map((section) => (
           <div key={section.label}>
             {!(collapsed && !isMobile) && (
-              <p className="px-3 mb-2 text-[10px] font-bold uppercase tracking-[0.15em] text-slate-400">
+              <p className="px-3 mb-2 text-[10px] font-bold uppercase tracking-[0.15em] text-blue-400/50">
                 {section.label}
               </p>
             )}
@@ -78,15 +78,15 @@ export default function StaffLayout({ children }) {
                     onClick={isMobile ? () => setDrawerOpen(false) : undefined}
                     className={`flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-medium transition-all ${
                       active
-                        ? 'bg-blue-50 text-blue-700 shadow-sm shadow-blue-500/5'
-                        : 'text-slate-500 hover:bg-slate-50 hover:text-slate-700'
+                        ? 'bg-blue-500/10 text-blue-400 shadow-sm shadow-blue-500/5'
+                        : 'text-gray-400 hover:bg-white/[0.04] hover:text-gray-200'
                     }`}
                     title={collapsed && !isMobile ? item.text : undefined}
                   >
-                    <item.icon size={18} className={`shrink-0 ${active ? 'text-blue-600' : ''}`} />
+                    <item.icon size={18} className={`shrink-0 ${active ? 'text-blue-400' : ''}`} />
                     {!(collapsed && !isMobile) && <span className="truncate">{item.text}</span>}
                     {active && !(collapsed && !isMobile) && (
-                      <div className="ml-auto w-1.5 h-1.5 rounded-full bg-blue-500" />
+                      <div className="ml-auto w-1.5 h-1.5 rounded-full bg-blue-400" />
                     )}
                   </Link>
                 )
@@ -96,21 +96,21 @@ export default function StaffLayout({ children }) {
         ))}
       </nav>
 
-      <div className="border-t border-slate-100 p-3">
+      <div className="border-t border-white/[0.06] p-3">
         {!(collapsed && !isMobile) && (
           <div className="flex items-center gap-3 px-3 py-2 mb-2">
-            <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-slate-700 to-slate-900 flex items-center justify-center">
+            <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-blue-600 to-blue-800 flex items-center justify-center">
               <Shield size={14} className="text-white" />
             </div>
             <div className="min-w-0">
-              <p className="text-sm font-semibold text-slate-700 truncate">Staff Admin</p>
-              <p className="text-[10px] text-slate-400 uppercase tracking-wider font-medium">Panel</p>
+              <p className="text-sm font-semibold text-white truncate">Staff Admin</p>
+              <p className="text-[10px] text-blue-400/50 uppercase tracking-wider font-medium">Panel</p>
             </div>
           </div>
         )}
         <button
           onClick={handleLogout}
-          className="flex items-center gap-3 w-full px-3 py-2 rounded-xl text-sm font-medium text-slate-400 hover:bg-red-50 hover:text-red-600 transition-all"
+          className="flex items-center gap-3 w-full px-3 py-2 rounded-xl text-sm font-medium text-gray-500 hover:bg-red-500/10 hover:text-red-400 transition-all"
           title={collapsed && !isMobile ? 'Logout' : undefined}
         >
           <LogOut size={18} className="shrink-0" />
@@ -121,29 +121,29 @@ export default function StaffLayout({ children }) {
   )
 
   return (
-    <div className="flex h-screen bg-[#f8f9fc] overflow-hidden">
+    <div className="flex h-screen bg-[#080810] overflow-hidden">
       {/* ── Desktop sidebar ── */}
       <aside
-        className={`hidden md:flex md:flex-col border-r border-slate-200/80 bg-white transition-[width] duration-300 ease-out z-10 ${
+        className={`hidden md:flex md:flex-col border-r border-white/[0.06] bg-[#0a0a14] transition-[width] duration-300 ease-out z-10 ${
           collapsed ? 'w-[72px]' : 'w-[260px]'
         }`}
       >
         {/* Logo */}
-        <div className="flex items-center justify-between h-16 px-4 border-b border-slate-100">
+        <div className="flex items-center justify-between h-16 px-4 border-b border-white/[0.06]">
           {!collapsed && (
             <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-slate-800 to-slate-950 flex items-center justify-center">
-                <Shield size={14} className="text-blue-400" />
+              <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-blue-600 to-blue-800 flex items-center justify-center">
+                <Shield size={14} className="text-white" />
               </div>
               <div>
-                <span className="text-sm font-black tracking-wide text-slate-800">HERU</span>
-                <span className="text-[10px] text-blue-500 ml-0.5 font-bold">STAFF</span>
+                <span className="text-sm font-black tracking-wide text-white">HERU</span>
+                <span className="text-[10px] text-blue-400 ml-0.5 font-bold">STAFF</span>
               </div>
             </div>
           )}
           <button
             onClick={() => setCollapsed(!collapsed)}
-            className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-50 transition-colors"
+            className="p-1.5 rounded-lg text-gray-500 hover:text-gray-300 hover:bg-white/[0.04] transition-colors"
           >
             {collapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
           </button>
@@ -155,39 +155,39 @@ export default function StaffLayout({ children }) {
       {/* ── Main column ── */}
       <div className="flex flex-col flex-1 min-w-0">
         {/* Top header */}
-        <header className="flex items-center justify-between h-14 px-4 md:px-6 bg-white border-b border-slate-200/80 z-20">
+        <header className="flex items-center justify-between h-14 px-4 md:px-6 bg-[#0a0a14]/80 backdrop-blur-sm border-b border-white/[0.06] z-20">
           <div className="flex items-center gap-3">
             <button
               onClick={() => setDrawerOpen(true)}
-              className="md:hidden p-2 text-slate-500 hover:text-slate-700 rounded-lg hover:bg-slate-50"
+              className="md:hidden p-2 text-gray-400 hover:text-white rounded-lg hover:bg-white/[0.04]"
             >
               <Menu size={20} />
             </button>
             {/* Mobile logo */}
             <div className="md:hidden flex items-center gap-2">
-              <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-slate-800 to-slate-950 flex items-center justify-center">
-                <Shield size={12} className="text-blue-400" />
+              <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-blue-600 to-blue-800 flex items-center justify-center">
+                <Shield size={12} className="text-white" />
               </div>
-              <span className="text-sm font-black text-slate-800">HERU</span>
+              <span className="text-sm font-black text-white">HERU</span>
             </div>
             {/* Page title */}
             <div className="hidden md:block">
-              <h1 className="text-lg font-bold text-slate-800 capitalize">{pageName}</h1>
+              <h1 className="text-lg font-bold text-white capitalize">{pageName}</h1>
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <button className="p-2 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-50 transition-colors">
+            <button className="p-2 text-gray-500 hover:text-gray-300 rounded-lg hover:bg-white/[0.04] transition-colors">
               <Search size={18} />
             </button>
-            <button className="p-2 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-50 transition-colors relative">
+            <button className="p-2 text-gray-500 hover:text-gray-300 rounded-lg hover:bg-white/[0.04] transition-colors relative">
               <Bell size={18} />
               <div className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-blue-500" />
             </button>
-            <div className="hidden sm:flex items-center gap-2 ml-2 px-3 py-1.5 rounded-xl bg-slate-50 border border-slate-100">
-              <div className="w-6 h-6 rounded-lg bg-gradient-to-br from-slate-700 to-slate-900 flex items-center justify-center">
-                <Shield size={10} className="text-blue-400" />
+            <div className="hidden sm:flex items-center gap-2 ml-2 px-3 py-1.5 rounded-xl bg-white/[0.04] border border-white/[0.06]">
+              <div className="w-6 h-6 rounded-lg bg-gradient-to-br from-blue-600 to-blue-800 flex items-center justify-center">
+                <Shield size={10} className="text-white" />
               </div>
-              <span className="text-sm text-slate-600 font-semibold">Admin</span>
+              <span className="text-sm text-gray-300 font-semibold">Admin</span>
             </div>
           </div>
         </header>
@@ -196,20 +196,20 @@ export default function StaffLayout({ children }) {
         {drawerOpen && (
           <div className="md:hidden fixed inset-0 z-50 flex">
             <div
-              className="absolute inset-0 bg-black/30 backdrop-blur-sm"
+              className="absolute inset-0 bg-black/60 backdrop-blur-sm"
               onClick={() => setDrawerOpen(false)}
             />
-            <div className="relative w-[280px] max-w-[85vw] bg-white flex flex-col shadow-2xl">
-              <div className="flex items-center justify-between px-4 h-14 border-b border-slate-100">
+            <div className="relative w-[280px] max-w-[85vw] bg-[#0a0a14] flex flex-col shadow-2xl">
+              <div className="flex items-center justify-between px-4 h-14 border-b border-white/[0.06]">
                 <div className="flex items-center gap-2">
-                  <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-slate-800 to-slate-950 flex items-center justify-center">
-                    <Shield size={12} className="text-blue-400" />
+                  <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-blue-600 to-blue-800 flex items-center justify-center">
+                    <Shield size={12} className="text-white" />
                   </div>
-                  <span className="text-sm font-black text-slate-800">HERU <span className="text-blue-500 text-[10px]">STAFF</span></span>
+                  <span className="text-sm font-black text-white">HERU <span className="text-blue-400 text-[10px]">STAFF</span></span>
                 </div>
                 <button
                   onClick={() => setDrawerOpen(false)}
-                  className="p-1 text-slate-400 hover:text-slate-600"
+                  className="p-1 text-gray-400 hover:text-white"
                 >
                   <X size={18} />
                 </button>

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import StaffLayout from '@/components/layouts/StaffLayout.jsx';
+
 import FloatingPanel from '@/components/ui/FloatingPanel';
 import GlowButton from '@/components/ui/GlowButton';
 import { Input } from '@/components/ui/input';
@@ -66,7 +66,7 @@ export default function StaffOrganizers() {
   const getOrgOrders = (org) => tournamentOrders.filter(o => o.main_organizer_id === org.user_id);
 
   return (
-    <StaffLayout user={user}>
+    <>
       <div className="mb-6">
         <h1 className="text-2xl font-black text-white">ALL <span className="text-red-500">ORGANIZERS</span></h1>
         <p className="text-gray-400">{organizers.length} total organizers</p>
@@ -288,6 +288,6 @@ export default function StaffOrganizers() {
           })()}
         </DialogContent>
       </Dialog>
-    </StaffLayout>
+    </>
   );
 }

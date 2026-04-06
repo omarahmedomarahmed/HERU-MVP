@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import StaffLayout from '@/components/layouts/StaffLayout.jsx';
+
 import FloatingPanel from '@/components/ui/FloatingPanel';
 import GlowButton from '@/components/ui/GlowButton';
 import { Input } from '@/components/ui/input';
@@ -90,27 +90,27 @@ export default function StaffOrderDetail() {
 
   if (isLoading) {
     return (
-      <StaffLayout user={user}>
+      <>
         <div className="flex items-center justify-center h-64">
           <div className="w-8 h-8 border-4 border-red-500 border-t-transparent rounded-full animate-spin"></div>
         </div>
-      </StaffLayout>
+      </>
     );
   }
 
   if (!order) {
     return (
-      <StaffLayout user={user}>
+      <>
         <div className="text-center py-12">
           <p className="text-gray-400 text-lg">Order not found</p>
           <GlowButton className="mt-4" onClick={() => navigate('/staff/tournament-orders')}>Back to Orders</GlowButton>
         </div>
-      </StaffLayout>
+      </>
     );
   }
 
   return (
-    <StaffLayout user={user}>
+    <>
       <div className="mb-6">
         <button onClick={() => navigate('/staff/tournament-orders')} className="flex items-center gap-2 text-gray-400 hover:text-white mb-4">
           <ChevronLeft className="w-4 h-4" />
@@ -329,6 +329,6 @@ export default function StaffOrderDetail() {
           </FloatingPanel>
         </TabsContent>
       </Tabs>
-    </StaffLayout>
+    </>
   );
 }

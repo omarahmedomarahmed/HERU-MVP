@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import StaffLayout from '@/components/layouts/StaffLayout';
+
 import FloatingPanel from '@/components/ui/FloatingPanel';
 import GlowButton from '@/components/ui/GlowButton';
 import { ArrowLeft, Shield, Mail, Calendar } from 'lucide-react';
@@ -37,10 +37,10 @@ export default function StaffUserDetail() {
     enabled: !!id,
   });
 
-  if (!user) return <StaffLayout><div className="p-8">Loading...</div></StaffLayout>;
+  if (!user) return <div className="p-8">Loading...</div>;
 
   return (
-    <StaffLayout>
+    <>
       <div className="space-y-6">
         <Link to="/dashboard/staff/users" className="inline-flex items-center gap-2 text-gray-400 hover:text-white">
           <ArrowLeft className="w-4 h-4" /> Back
@@ -131,6 +131,6 @@ export default function StaffUserDetail() {
           </FloatingPanel>
         )}
       </div>
-    </StaffLayout>
+    </>
   );
 }

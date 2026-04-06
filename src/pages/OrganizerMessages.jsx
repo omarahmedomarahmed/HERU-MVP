@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import OrganizerLayout from '@/components/layouts/OrganizerLayout.jsx';
+
 import FloatingPanel from '@/components/ui/FloatingPanel';
 import GlowButton from '@/components/ui/GlowButton';
 import HexBadge from '@/components/ui/HexBadge';
@@ -154,7 +154,7 @@ export default function OrganizerMessages() {
   }, [allTournaments]);
 
   return (
-    <OrganizerLayout user={user} profile={profile}>
+    <>
       <div className="mb-6">
         <h1 className="text-2xl font-black text-white">
           TOURNAMENT <span className="text-red-500">MESSAGES</span>
@@ -293,6 +293,6 @@ export default function OrganizerMessages() {
           )}
         </div>
       </div>
-    </OrganizerLayout>
+    </>
   );
 }

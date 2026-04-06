@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import AnimatedBackground from '@/components/shared/AnimatedBackground';
 import HeruLogo from '@/components/shared/HeruLogo';
@@ -28,9 +28,11 @@ export default function GamerLayout({ children, user, profile, cartCount = 0, no
 
   const isActive = (path) => location.pathname === path || location.pathname.startsWith(path + '/');
 
+  const navigate = useNavigate();
   const { logout } = useAuth();
   const handleLogout = async () => {
     await logout();
+    navigate('/auth/gamer/login');
   };
 
   // Fetch orders
@@ -97,17 +99,17 @@ export default function GamerLayout({ children, user, profile, cartCount = 0, no
             </div>
 
             {/* Cart */}
-            {cartCount > 0 && (
-              <Link
-                to={'/gamer/cart'}
-                className="relative p-2 text-gray-400 hover:text-white transition-colors"
-              >
-                <ShoppingCart className="w-5 h-5" />
+            <Link
+              to={'/gamer/cart'}
+              className="relative p-2 text-gray-400 hover:text-white transition-colors"
+            >
+              <ShoppingCart className="w-5 h-5" />
+              {cartCount > 0 && (
                 <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full text-white text-xs flex items-center justify-center font-bold">
                   {cartCount}
                 </span>
-              </Link>
-            )}
+              )}
+            </Link>
 
             {/* Notifications */}
             <div className="relative">

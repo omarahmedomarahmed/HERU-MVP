@@ -59,14 +59,14 @@ function NavItem({ to, icon: Icon, text, active, collapsed, highlight }) {
         to={to}
         className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-bold transition-all ${
           active
-            ? 'bg-gradient-to-r from-purple-600 to-blue-600 text-white shadow-lg shadow-purple-500/25'
-            : 'bg-gradient-to-r from-purple-600/10 to-blue-600/10 text-purple-300 hover:from-purple-600/20 hover:to-blue-600/20 border border-purple-500/20'
+            ? 'bg-gradient-to-r from-red-600 to-orange-600 text-white shadow-lg shadow-red-500/25'
+            : 'bg-gradient-to-r from-red-600/10 to-orange-600/10 text-red-300 hover:from-red-600/20 hover:to-orange-600/20 border border-red-500/20'
         }`}
         title={collapsed ? text : undefined}
       >
         <Icon size={18} className="shrink-0" />
         {!collapsed && <span className="truncate">{text}</span>}
-        {!collapsed && !active && <Zap size={14} className="ml-auto text-purple-400" />}
+        {!collapsed && !active && <Zap size={14} className="ml-auto text-red-400" />}
       </Link>
     )
   }
@@ -81,11 +81,11 @@ function NavItem({ to, icon: Icon, text, active, collapsed, highlight }) {
       }`}
       title={collapsed ? text : undefined}
     >
-      <div className={`p-0.5 ${active ? 'text-purple-400' : 'text-gray-500 group-hover:text-gray-300'}`}>
+      <div className={`p-0.5 ${active ? 'text-red-400' : 'text-gray-500 group-hover:text-gray-300'}`}>
         <Icon size={18} className="shrink-0" />
       </div>
       {!collapsed && <span className="truncate">{text}</span>}
-      {active && !collapsed && <div className="ml-auto w-1.5 h-1.5 rounded-full bg-purple-400" />}
+      {active && !collapsed && <div className="ml-auto w-1.5 h-1.5 rounded-full bg-red-400" />}
     </Link>
   )
 }
@@ -121,7 +121,7 @@ export default function OrganizerLayout({ children, isDashboard }) {
         {NAV_SECTIONS.map((section) => (
           <div key={section.label}>
             {!(collapsed && !isMobile) && (
-              <p className="px-3 mb-2 text-[10px] font-bold uppercase tracking-[0.15em] text-purple-400/60">
+              <p className="px-3 mb-2 text-[10px] font-bold uppercase tracking-[0.15em] text-red-400/60">
                 {section.label}
               </p>
             )}
@@ -147,13 +147,13 @@ export default function OrganizerLayout({ children, isDashboard }) {
             {brandLogo ? (
               <img src={brandLogo} alt="" className="w-8 h-8 rounded-lg object-cover border border-white/10" />
             ) : (
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-purple-600 to-blue-600 flex items-center justify-center text-white font-bold text-xs">
+              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-red-600 to-orange-600 flex items-center justify-center text-white font-bold text-xs">
                 {displayName.charAt(0).toUpperCase()}
               </div>
             )}
             <div className="min-w-0">
               <p className="text-sm font-semibold text-white truncate">{displayName}</p>
-              <p className="text-[10px] text-purple-400/60 uppercase tracking-wider font-medium">Organizer</p>
+              <p className="text-[10px] text-red-400/60 uppercase tracking-wider font-medium">Organizer</p>
             </div>
           </div>
         )}
@@ -173,8 +173,8 @@ export default function OrganizerLayout({ children, isDashboard }) {
     <div className="flex h-screen bg-[#080812] text-gray-100 overflow-hidden">
       {/* Background ambient effects */}
       <div className="fixed inset-0 pointer-events-none z-0">
-        <div className="absolute top-0 left-1/4 w-[600px] h-[600px] bg-purple-600/[0.03] rounded-full blur-[120px]" />
-        <div className="absolute bottom-0 right-1/4 w-[500px] h-[500px] bg-blue-600/[0.03] rounded-full blur-[120px]" />
+        <div className="absolute top-0 left-1/4 w-[600px] h-[600px] bg-red-600/[0.03] rounded-full blur-[120px]" />
+        <div className="absolute bottom-0 right-1/4 w-[500px] h-[500px] bg-orange-600/[0.03] rounded-full blur-[120px]" />
       </div>
 
       {/* ===== Desktop sidebar ===== */}
@@ -188,12 +188,12 @@ export default function OrganizerLayout({ children, isDashboard }) {
         <div className="flex items-center justify-between h-16 px-4 border-b border-white/[0.06]">
           {!collapsed && (
             <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-purple-600 to-blue-600 flex items-center justify-center">
+              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-red-600 to-orange-600 flex items-center justify-center">
                 <Zap size={16} className="text-white" />
               </div>
               <div>
                 <span className="text-sm font-black tracking-wide text-white">HERU</span>
-                <span className="text-[10px] text-purple-400 ml-1 font-medium">.gg</span>
+                <span className="text-[10px] text-red-400 ml-1 font-medium">.gg</span>
               </div>
             </div>
           )}
@@ -227,7 +227,7 @@ export default function OrganizerLayout({ children, isDashboard }) {
             </div>
             {/* Mobile logo */}
             <div className="md:hidden flex items-center gap-2">
-              <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-purple-600 to-blue-600 flex items-center justify-center">
+              <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-red-600 to-orange-600 flex items-center justify-center">
                 <Zap size={14} className="text-white" />
               </div>
               <span className="text-sm font-black text-white">HERU</span>
@@ -241,7 +241,7 @@ export default function OrganizerLayout({ children, isDashboard }) {
               {brandLogo ? (
                 <img src={brandLogo} alt="" className="w-6 h-6 rounded-md object-cover" />
               ) : (
-                <div className="w-6 h-6 rounded-md bg-gradient-to-br from-purple-600 to-blue-600 flex items-center justify-center text-white text-xs font-bold">
+                <div className="w-6 h-6 rounded-md bg-gradient-to-br from-red-600 to-orange-600 flex items-center justify-center text-white text-xs font-bold">
                   {displayName.charAt(0).toUpperCase()}
                 </div>
               )}
@@ -263,10 +263,10 @@ export default function OrganizerLayout({ children, isDashboard }) {
             >
               <div className="flex items-center justify-between h-14 px-4 border-b border-white/[0.06]">
                 <div className="flex items-center gap-2.5">
-                  <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-purple-600 to-blue-600 flex items-center justify-center">
+                  <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-red-600 to-orange-600 flex items-center justify-center">
                     <Zap size={14} className="text-white" />
                   </div>
-                  <span className="text-sm font-black text-white">HERU<span className="text-purple-400">.gg</span></span>
+                  <span className="text-sm font-black text-white">HERU<span className="text-red-400">.gg</span></span>
                 </div>
                 <button
                   onClick={() => setMobileOpen(false)}
@@ -300,12 +300,12 @@ export default function OrganizerLayout({ children, isDashboard }) {
                 >
                   <div className={`w-10 h-10 -mt-4 rounded-2xl flex items-center justify-center shadow-lg ${
                     active
-                      ? 'bg-gradient-to-br from-purple-600 to-blue-600 shadow-purple-500/30'
-                      : 'bg-gradient-to-br from-purple-600/30 to-blue-600/30 border border-purple-500/20'
+                      ? 'bg-gradient-to-br from-red-600 to-orange-600 shadow-red-500/30'
+                      : 'bg-gradient-to-br from-red-600/30 to-orange-600/30 border border-red-500/20'
                   }`}>
                     <Icon size={18} className="text-white" />
                   </div>
-                  <span className={`text-[10px] font-semibold ${active ? 'text-purple-400' : 'text-gray-500'}`}>{text}</span>
+                  <span className={`text-[10px] font-semibold ${active ? 'text-red-400' : 'text-gray-500'}`}>{text}</span>
                 </Link>
               )
             }
@@ -315,9 +315,9 @@ export default function OrganizerLayout({ children, isDashboard }) {
                 to={to}
                 className="flex flex-col items-center justify-center flex-1 gap-1"
               >
-                <Icon size={18} className={active ? 'text-purple-400' : 'text-gray-600'} />
-                <span className={`text-[10px] font-medium ${active ? 'text-purple-400' : 'text-gray-600'}`}>{text}</span>
-                {active && <div className="absolute top-0 w-8 h-0.5 rounded-full bg-gradient-to-r from-purple-500 to-blue-500" />}
+                <Icon size={18} className={active ? 'text-red-400' : 'text-gray-600'} />
+                <span className={`text-[10px] font-medium ${active ? 'text-red-400' : 'text-gray-600'}`}>{text}</span>
+                {active && <div className="absolute top-0 w-8 h-0.5 rounded-full bg-gradient-to-r from-red-500 to-orange-500" />}
               </Link>
             )
           })}

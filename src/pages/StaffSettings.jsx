@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import StaffLayout from '@/components/layouts/StaffLayout.jsx';
+
 import FloatingPanel from '@/components/ui/FloatingPanel';
 import GlowButton from '@/components/ui/GlowButton';
 import { Input } from '@/components/ui/input';
@@ -75,7 +75,7 @@ export default function StaffSettings() {
   };
 
   return (
-    <StaffLayout>
+    <>
       <div className="max-w-2xl mx-auto">
         <div className="mb-8">
           <h1 className="text-3xl font-black text-white mb-2">
@@ -178,6 +178,6 @@ export default function StaffSettings() {
           </GlowButton>
         </FloatingPanel>
       </div>
-    </StaffLayout>
+    </>
   );
 }

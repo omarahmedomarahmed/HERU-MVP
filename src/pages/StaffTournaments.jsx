@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import StaffLayout from '@/components/layouts/StaffLayout.jsx';
+
 import FloatingPanel from '@/components/ui/FloatingPanel';
 import GlowButton from '@/components/ui/GlowButton';
 import GameCard from '@/components/ui/GameCard';
@@ -160,7 +160,7 @@ export default function StaffTournaments() {
   );
 
   return (
-    <StaffLayout user={user}>
+    <>
       <div className="flex items-start justify-between mb-6">
         <div>
           <h1 className="text-2xl font-black text-white">MANAGE <span className="text-red-500">TOURNAMENTS</span></h1>
@@ -472,6 +472,6 @@ export default function StaffTournaments() {
           )}
         </DialogContent>
       </Dialog>
-    </StaffLayout>
+    </>
   );
 }

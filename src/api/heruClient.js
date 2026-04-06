@@ -116,7 +116,7 @@ export const GamerProfile = {
   ...createEntity('/gamers'),
   me:               ()            => apiCall('/gamers/me'),
   updateMe:         (data)        => apiCall('/gamers/me', { method: 'PUT', body: data }),
-  applyTalent:      (data)        => apiCall('/gamers/me/talent', { method: 'POST', body: data }),
+  applyTalent:      (data)        => apiCall('/gamers/talent-application', { method: 'POST', body: data }),
   stats:            (id)          => apiCall(`/gamers/${id}/stats`),
   achievements:     (id)          => apiCall(`/gamers/${id}/achievements`),
 }

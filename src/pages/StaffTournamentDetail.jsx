@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import StaffLayout from '@/components/layouts/StaffLayout';
+
 import FloatingPanel from '@/components/ui/FloatingPanel';
 import GlowButton from '@/components/ui/GlowButton';
 import { ArrowLeft, Trophy, Calendar, Users, Zap, Edit2, Save } from 'lucide-react';
@@ -30,10 +30,10 @@ export default function StaffTournamentDetail() {
     }
   });
 
-  if (!tournament) return <StaffLayout><div className="p-8">Loading...</div></StaffLayout>;
+  if (!tournament) return <div className="p-8">Loading...</div>;
 
   return (
-    <StaffLayout>
+    <>
       <div className="space-y-6">
         <Link to="/dashboard/staff/tournaments" className="inline-flex items-center gap-2 text-gray-400 hover:text-white">
           <ArrowLeft className="w-4 h-4" /> Back
@@ -176,6 +176,6 @@ export default function StaffTournamentDetail() {
           </FloatingPanel>
         )}
       </div>
-    </StaffLayout>
+    </>
   );
 }

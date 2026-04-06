@@ -56,7 +56,13 @@ export default function CreateTeam() {
   const loadUser = async () => {
     try {
       const userData = await apiCall('/auth/me');
-      setUser(userData);
+      const u = userData?.user || userData;
+      setUser({
+        id: u.id,
+        email: u.email,
+        full_name: u.full_name || u.email?.split('@')[0] || '',
+        role: u.role,
+      });
     } catch (e) {
       navigate('/gamer/home');
     }
@@ -121,7 +127,7 @@ export default function CreateTeam() {
 
       // Update creator's profile
       const teamIds = [...(profile.team_ids || []), team.id];
-      await GamerProfile.update(profile.id, { team_ids: teamIds });
+      await GamerProfile.updateMe({ team_ids: teamIds });
 
       // Update invited friends' profiles
       for (const friendId of selectedFriends) {

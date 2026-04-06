@@ -68,7 +68,7 @@ export default function Teams() {
           </h1>
           <p className="text-gray-400 mt-2">Find your squad or create your own</p>
         </div>
-        <Link to={'/create-team'}>
+        <Link to={'/gamer/teams/create'}>
           <GlowButton>
             <Plus className="w-4 h-4" /> Create Team
           </GlowButton>

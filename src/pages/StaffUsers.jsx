@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import StaffLayout from '@/components/layouts/StaffLayout';
+
 import FloatingPanel from '@/components/ui/FloatingPanel';
 import { Users, Shield } from 'lucide-react';
 import { Staff } from '@/api/heruClient'
@@ -24,7 +24,7 @@ export default function StaffUsers() {
   });
 
   return (
-    <StaffLayout>
+    <>
       <div className="space-y-6">
         <h1 className="text-3xl font-black text-white">ALL <span className="text-red-500">USERS</span></h1>
 
@@ -94,6 +94,6 @@ export default function StaffUsers() {
           </div>
         </FloatingPanel>
       </div>
-    </StaffLayout>
+    </>
   );
 }

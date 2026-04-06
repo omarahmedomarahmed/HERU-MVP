@@ -1,30 +1,54 @@
-import React, { createContext, useState, useContext, useEffect, useCallback } from 'react'
+import React, { createContext, useState, useContext, useEffect, useCallback, useRef } from 'react'
 import { supabase } from '@/lib/supabase'
-import { apiCall } from '@/api/heruClient'
 
+const API_URL = import.meta.env.VITE_API_URL || '/api'
 const AuthContext = createContext(null)
 
+/**
+ * Make an authenticated API call using the current Supabase session token.
+ */
+async function authFetch(endpoint, options = {}) {
+  const { method = 'GET', body } = options
+  const headers = { 'Content-Type': 'application/json' }
+
+  const { data: { session } } = await supabase.auth.getSession()
+  if (session?.access_token) {
+    headers['Authorization'] = `Bearer ${session.access_token}`
+  }
+
+  const staffToken = localStorage.getItem('heru_staff_token')
+  if (staffToken) {
+    headers['X-Staff-Token'] = staffToken
+  }
+
+  const res = await fetch(`${API_URL}${endpoint}`, {
+    method,
+    headers,
+    ...(body ? { body: JSON.stringify(body) } : {}),
+  })
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ error: 'Request failed' }))
+    throw new Error(err.error || `HTTP ${res.status}`)
+  }
+  return res.json()
+}
+
 export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(null)            // Supabase auth user
-  const [userProfile, setUserProfile] = useState(null) // user_profiles row (normalized)
+  const [user, setUser] = useState(null)
+  const [userProfile, setUserProfile] = useState(null)
   const [loading, setLoading] = useState(true)
   const [authError, setAuthError] = useState(null)
+  const fetchingRef = useRef(false)
 
   // -------------------------------------------------------------------
-  // Fetch the user profile and normalize the response so `role` is
-  // always available at the top level.
-  //
-  // Backend /auth/me returns: { user: { id, email, role, ... }, gamer_profile: {...} }
-  // We normalize to:          { role, full_name, is_verified, user: {...}, gamer_profile: {...} }
+  // Fetch user profile from backend /auth/me
   // -------------------------------------------------------------------
-  const fetchUserProfile = useCallback(async (authUser) => {
-    if (!authUser) {
-      setUserProfile(null)
-      return null
-    }
+  const fetchUserProfile = useCallback(async () => {
+    if (fetchingRef.current) return null
+    fetchingRef.current = true
     try {
-      const data = await apiCall('/auth/me')
-      // Normalize: pull role/full_name up from nested user object
+      const data = await authFetch('/auth/me')
       const profile = {
         ...data,
         role: data?.user?.role || data?.role || null,
@@ -34,191 +58,160 @@ export const AuthProvider = ({ children }) => {
       setUserProfile(profile)
       return profile
     } catch (err) {
-      console.error('Failed to fetch user profile:', err)
+      console.error('[AuthContext] fetchUserProfile failed:', err.message)
       setUserProfile(null)
       return null
+    } finally {
+      fetchingRef.current = false
     }
   }, [])
 
   // -------------------------------------------------------------------
-  // Initialise: check existing session and subscribe to auth changes
+  // Init: restore session on mount
   // -------------------------------------------------------------------
   useEffect(() => {
-    let isMounted = true
+    let mounted = true
 
     const init = async () => {
       try {
         const { data: { session } } = await supabase.auth.getSession()
-        if (isMounted) {
-          if (session?.user) {
-            setUser(session.user)
-            await fetchUserProfile(session.user)
-          }
-          setLoading(false)
+        if (!mounted) return
+        if (session?.user) {
+          setUser(session.user)
+          await fetchUserProfile()
         }
       } catch (err) {
-        console.error('Session init error:', err)
-        if (isMounted) setLoading(false)
+        console.error('[AuthContext] init error:', err)
+      } finally {
+        if (mounted) setLoading(false)
       }
     }
-
     init()
 
-    // Listen for sign-in / sign-out / token refresh
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        if (!isMounted) return
-
-        if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
-          setUser(session?.user ?? null)
-          await fetchUserProfile(session?.user ?? null)
-        } else if (event === 'SIGNED_OUT') {
+        if (!mounted) return
+        if (event === 'SIGNED_OUT') {
           setUser(null)
           setUserProfile(null)
+        } else if (event === 'TOKEN_REFRESHED' && session?.user) {
+          setUser(session.user)
         }
+        // Don't fetch profile on SIGNED_IN — login/register handle it directly
       }
     )
 
-    return () => {
-      isMounted = false
-      subscription.unsubscribe()
-    }
+    return () => { mounted = false; subscription.unsubscribe() }
   }, [fetchUserProfile])
 
   // -------------------------------------------------------------------
-  // Auth actions
+  // LOGIN: Supabase signIn → fetch profile → return role for redirect
   // -------------------------------------------------------------------
-
-  /**
-   * Login with email + password via backend /auth/login.
-   * Uses backend to authenticate and get role, then sets Supabase session.
-   * Returns { user, profile } on success.
-   */
   const login = async (email, password) => {
     setAuthError(null)
-    try {
-      // Call backend login which returns user info + session tokens
-      const result = await fetch(`${import.meta.env.VITE_API_URL || '/api'}/auth/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
-      })
-      const data = await result.json()
-      if (!result.ok) throw new Error(data.error || 'Login failed')
 
-      // Set Supabase session from backend-returned tokens
-      if (data.session?.access_token) {
-        await supabase.auth.setSession({
-          access_token: data.session.access_token,
-          refresh_token: data.session.refresh_token,
-        })
-      }
-
-      const { data: { session } } = await supabase.auth.getSession()
-      const authUser = session?.user || data.user
-      setUser(authUser)
-
-      // Build profile from backend response (already has role)
-      const profile = {
-        user: data.user,
-        role: data.user?.role || null,
-        full_name: data.user?.full_name || '',
-        is_verified: data.user?.is_verified || false,
-      }
-      setUserProfile(profile)
-
-      // Also fetch full profile in background for organizer/gamer data
-      fetchUserProfile(authUser)
-
-      return { user: authUser, profile }
-    } catch (err) {
-      setAuthError(err.message)
-      throw err
+    // Sign in with Supabase client-side
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password })
+    if (error) {
+      setAuthError(error.message)
+      throw error
     }
+
+    setUser(data.user)
+
+    // Fetch full profile from backend (session is now valid)
+    const profile = await fetchUserProfile()
+
+    // If backend /me failed, fallback to user_metadata
+    if (!profile) {
+      const fallback = {
+        role: data.user?.user_metadata?.role || 'gamer',
+        full_name: data.user?.user_metadata?.full_name || data.user?.email?.split('@')[0] || '',
+      }
+      setUserProfile(fallback)
+      return { user: data.user, profile: fallback }
+    }
+
+    return { user: data.user, profile }
   }
 
-  /**
-   * Register a new user via the backend.
-   * Backend creates auth user + user_profiles + role-specific profile.
-   * @param {string} email
-   * @param {string} password
-   * @param {'gamer'|'organizer'} role
-   * @param {object} profileData - extra fields (full_name, brand_name, etc.)
-   */
+  // -------------------------------------------------------------------
+  // REGISTER: backend creates user + profiles → sign in client-side
+  // Returns { user, profile, role } — caller handles redirect
+  // -------------------------------------------------------------------
   const register = async (email, password, role = 'gamer', profileData = {}) => {
     setAuthError(null)
 
-    // Call backend registration which creates auth user + profiles
     const endpoint = role === 'organizer' ? '/auth/register/organizer' : '/auth/register/gamer'
-    const result = await apiCall(endpoint, {
+
+    // Call backend registration (no auth needed — public endpoint)
+    const res = await fetch(`${API_URL}${endpoint}`, {
       method: 'POST',
-      body: { email, password, ...profileData },
-    }).catch(err => {
-      setAuthError(err.message)
-      throw err
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password, ...profileData }),
     })
 
-    // If backend returned a session, set it client-side
-    if (result?.session?.access_token) {
-      await supabase.auth.setSession({
-        access_token: result.session.access_token,
-        refresh_token: result.session.refresh_token,
-      })
-    } else {
-      // Fall back to signing in client-side
-      await supabase.auth.signInWithPassword({ email, password })
+    const result = await res.json()
+    if (!res.ok) {
+      const msg = result.error || 'Registration failed'
+      setAuthError(msg)
+      throw new Error(msg)
     }
 
-    const { data: { session } } = await supabase.auth.getSession()
-    if (session?.user) {
-      setUser(session.user)
-      const profile = await fetchUserProfile(session.user)
-      return { user: session.user, profile }
+    // Sign in client-side to establish session
+    const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({ email, password })
+    if (signInError) {
+      // Account created but auto-sign-in failed — user should sign in manually
+      return { user: result.user, profile: { role }, needsSignIn: true }
     }
 
-    return { user: result?.user, profile: { role } }
+    setUser(signInData.user)
+    const profile = await fetchUserProfile()
+    return { user: signInData.user, profile: profile || { role } }
   }
 
-  /**
-   * Sign out from Supabase Auth and clear local state.
-   */
-  const logout = async () => {
-    // Clear staff token if present
-    localStorage.removeItem('heru_staff_token')
-    localStorage.removeItem('heru_staff_expires')
-
-    await supabase.auth.signOut()
-    setUser(null)
-    setUserProfile(null)
-  }
-
-  /**
-   * Staff login — authenticates with email + password via backend,
-   * stores the returned staff session token locally.
-   * Returns { user, staff_session }.
-   */
+  // -------------------------------------------------------------------
+  // STAFF LOGIN: backend validates access_key → stores staff session token
+  // -------------------------------------------------------------------
   const staffLogin = async (email, password, access_key) => {
     setAuthError(null)
     try {
-      const result = await apiCall('/auth/staff/login', {
+      // Staff login via backend (validates access key)
+      const res = await fetch(`${API_URL}/auth/staff/login`, {
         method: 'POST',
-        body: { email, password, access_key },
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password, access_key }),
       })
+      const result = await res.json()
+      if (!res.ok) throw new Error(result.error || 'Staff login failed')
 
       // Store staff session token
       localStorage.setItem('heru_staff_token', result.staff_session.session_token)
       localStorage.setItem('heru_staff_expires', result.staff_session.expires_at)
 
-      if (result.user) {
-        setUser(result.user)
-        setUserProfile({ ...result.user, role: 'admin' })
-      }
+      // Also sign in to Supabase for JWT auth on other endpoints
+      await supabase.auth.signInWithPassword({ email, password }).catch(() => {})
+
+      const staffUser = result.user || { email, role: 'admin' }
+      setUser(staffUser)
+      setUserProfile({ ...staffUser, role: 'admin' })
 
       return result
     } catch (err) {
-      setAuthError(err.message || 'Staff login failed')
+      setAuthError(err.message)
       throw err
     }
+  }
+
+  // -------------------------------------------------------------------
+  // LOGOUT
+  // -------------------------------------------------------------------
+  const logout = async () => {
+    localStorage.removeItem('heru_staff_token')
+    localStorage.removeItem('heru_staff_expires')
+    await supabase.auth.signOut()
+    setUser(null)
+    setUserProfile(null)
   }
 
   // -------------------------------------------------------------------
@@ -226,23 +219,27 @@ export const AuthProvider = ({ children }) => {
   // -------------------------------------------------------------------
   const isAuthenticated = !!user
   const role = userProfile?.role || null
-  const isGamer = role === 'gamer'
-  const isOrganizer = role === 'organizer'
-  const isAdmin = role === 'admin'
+
+  /**
+   * Get the dashboard path for the current user's role.
+   */
+  const getDashboardPath = () => {
+    if (role === 'admin') return '/staff/dashboard'
+    if (role === 'organizer') return '/organizer/dashboard'
+    return '/gamer/home'
+  }
 
   const value = {
-    // State
     user,
     userProfile,
     loading,
     authError,
     isAuthenticated,
     role,
-    isGamer,
-    isOrganizer,
-    isAdmin,
-
-    // Actions
+    isGamer: role === 'gamer',
+    isOrganizer: role === 'organizer',
+    isAdmin: role === 'admin',
+    getDashboardPath,
     login,
     register,
     logout,
@@ -259,8 +256,6 @@ export const AuthProvider = ({ children }) => {
 
 export const useAuth = () => {
   const context = useContext(AuthContext)
-  if (!context) {
-    throw new Error('useAuth must be used within an AuthProvider')
-  }
+  if (!context) throw new Error('useAuth must be used within an AuthProvider')
   return context
 }

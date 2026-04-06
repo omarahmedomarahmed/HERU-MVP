@@ -172,7 +172,7 @@ export default function Cart() {
     <GamerLayout user={user} profile={profile} cartCount={cart.length}>
       <div className="flex items-start justify-between mb-8">
         <div>
-          <Link to={'/marketplace'} className="inline-flex items-center gap-2 text-gray-400 hover:text-white mb-4">
+          <Link to={'/gamer/marketplace'} className="inline-flex items-center gap-2 text-gray-400 hover:text-white mb-4">
             <ArrowLeft className="w-4 h-4" />
             <span>Continue Shopping</span>
           </Link>
@@ -193,7 +193,7 @@ export default function Cart() {
           <ShoppingCart className="w-16 h-16 text-zinc-700 mx-auto mb-4" />
           <h3 className="text-xl text-white font-bold mb-2">Your Cart is Empty</h3>
           <p className="text-gray-400 mb-6">Add some awesome items from the prizepool store!</p>
-          <Link to={'/marketplace'}>
+          <Link to={'/gamer/marketplace'}>
             <GlowButton>
               <Package className="w-4 h-4" />
               Browse Shop

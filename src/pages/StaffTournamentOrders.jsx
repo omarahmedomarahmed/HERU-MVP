@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import StaffLayout from '@/components/layouts/StaffLayout.jsx';
+
 import FloatingPanel from '@/components/ui/FloatingPanel';
 import GlowButton from '@/components/ui/GlowButton';
 import { Input } from '@/components/ui/input';
@@ -130,7 +130,7 @@ export default function StaffTournamentOrders() {
   };
 
   return (
-    <StaffLayout user={user}>
+    <>
       <div className="mb-6">
         <h1 className="text-2xl font-black text-white">TOURNAMENT <span className="text-red-500">ORDERS</span></h1>
         <p className="text-gray-400">{tournamentOrders.length} total orders</p>
@@ -412,6 +412,6 @@ export default function StaffTournamentOrders() {
           )}
         </DialogContent>
       </Dialog>
-    </StaffLayout>
+    </>
   );
 }

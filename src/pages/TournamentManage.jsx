@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getOrganizerSession } from '@/lib/auth-guards';
-import OrganizerLayout from '@/components/layouts/OrganizerLayout.jsx';
 import FloatingPanel from '@/components/ui/FloatingPanel';
 import GlowButton from '@/components/ui/GlowButton';
 import { Input } from '@/components/ui/input';
@@ -206,7 +205,7 @@ export default function TournamentManage() {
   const isShared = tournament.tournament_type === 'shared';
 
   return (
-    <OrganizerLayout user={user} profile={profile}>
+    <>
       <div className="max-w-7xl mx-auto p-4 md:p-6">
         {/* ── Header ── */}
         <div className="flex items-start justify-between gap-4 mb-8 flex-wrap">
@@ -513,6 +512,6 @@ export default function TournamentManage() {
           </TabsContent>
         </Tabs>
       </div>
-    </OrganizerLayout>
+    </>
   );
 }

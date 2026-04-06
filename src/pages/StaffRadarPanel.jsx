@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import StaffLayout from '@/components/layouts/StaffLayout.jsx';
+
 import FloatingPanel from '@/components/ui/FloatingPanel';
 import GlowButton from '@/components/ui/GlowButton';
 import { Input } from '@/components/ui/input';
@@ -64,7 +64,7 @@ export default function StaffRadarPanel() {
   });
 
   return (
-    <StaffLayout user={user}>
+    <>
       <div className="mb-6">
         <h1 className="text-2xl font-black text-white">SPONSORSHIP <span className="text-red-500">RADAR</span></h1>
         <p className="text-gray-400">{radarListings.length} total listings</p>
@@ -267,6 +267,6 @@ export default function StaffRadarPanel() {
           )}
         </DialogContent>
       </Dialog>
-    </StaffLayout>
+    </>
   );
 }

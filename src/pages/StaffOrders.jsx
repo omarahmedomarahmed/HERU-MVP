@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import StaffLayout from '@/components/layouts/StaffLayout.jsx';
+
 import FloatingPanel from '@/components/ui/FloatingPanel';
 import GlowButton from '@/components/ui/GlowButton';
 import HexBadge from '@/components/ui/HexBadge';
@@ -107,7 +107,7 @@ export default function StaffOrders() {
   });
 
   return (
-    <StaffLayout user={user}>
+    <>
       {/* Header */}
       <div className="mb-6">
         <h1 className="text-2xl font-black text-white">
@@ -584,6 +584,6 @@ export default function StaffOrders() {
           )}
         </DialogContent>
       </Dialog>
-    </StaffLayout>
+    </>
   );
 }

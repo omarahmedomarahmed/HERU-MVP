@@ -5,12 +5,14 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronDown, ChevronRight, Menu, X, Star, Trophy, Users, Zap, Flame, Target, Crown, Activity } from 'lucide-react';
 import HeruLogo from '@/components/shared/HeruLogo';
 import { GamerProfile, Team, Tournament } from '@/api/heruClient'
+import { useAuth } from '@/lib/AuthContext'
 
 
 export default function Home() {
   const [navOpen, setNavOpen] = useState(false);
   const [loginDropdown, setLoginDropdown] = useState(false);
   const navigate = useNavigate();
+  const { isAuthenticated, role, getDashboardPath } = useAuth();
 
   // Fetch data
   const { data: tournaments = [] } = useQuery({
@@ -98,10 +100,10 @@ export default function Home() {
 
             {/* Get Started Button */}
             <button
-              onClick={() => scrollToSection('cta-section')}
+              onClick={() => isAuthenticated ? navigate(getDashboardPath()) : scrollToSection('cta-section')}
               className="bg-red-600 hover:bg-red-700 text-white px-5 py-2 rounded-lg text-sm font-bold transition hidden md:block"
             >
-              Get Started
+              {isAuthenticated ? 'Dashboard' : 'Get Started'}
             </button>
 
             {/* Mobile Menu */}
@@ -131,8 +133,8 @@ export default function Home() {
                 <button onClick={() => { scrollToSection('for-sponsors'); setNavOpen(false); }} className="block text-sm text-gray-300 hover:text-white">For Sponsors</button>
                 <Link to="/auth/gamer/login" className="block text-sm text-gray-300 hover:text-white">Login as Gamer</Link>
                 <Link to="/auth/organizer/login" className="block text-sm text-gray-300 hover:text-white">Login as Organizer</Link>
-                <button onClick={() => { scrollToSection('cta-section'); setNavOpen(false); }} className="block w-full bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded text-sm font-bold">
-                  Get Started
+                <button onClick={() => { isAuthenticated ? navigate(getDashboardPath()) : scrollToSection('cta-section'); setNavOpen(false); }} className="block w-full bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded text-sm font-bold">
+                  {isAuthenticated ? 'Dashboard' : 'Get Started'}
                 </button>
               </div>
             </motion.div>

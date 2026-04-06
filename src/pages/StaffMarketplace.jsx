@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import StaffLayout from '@/components/layouts/StaffLayout';
+
 import FloatingPanel from '@/components/ui/FloatingPanel';
 import GlowButton from '@/components/ui/GlowButton';
 import { Plus, Edit2 } from 'lucide-react';
@@ -38,7 +38,7 @@ export default function StaffMarketplace() {
   const categories = ['game_setup', 'teams', 'live_talent', 'production', 'branding', 'venue', 'prizepool'];
 
   return (
-    <StaffLayout>
+    <>
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <h1 className="text-3xl font-black text-white">MARKETPLACE <span className="text-red-500">ITEMS</span></h1>
@@ -94,6 +94,6 @@ export default function StaffMarketplace() {
           ))}
         </div>
       </div>
-    </StaffLayout>
+    </>
   );
 }

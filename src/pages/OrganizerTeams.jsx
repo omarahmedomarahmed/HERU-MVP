@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import OrganizerLayout from '@/components/layouts/OrganizerLayout.jsx';
+
 import FloatingPanel from '@/components/ui/FloatingPanel';
 import GlowButton from '@/components/ui/GlowButton';
 import GameCard from '@/components/ui/GameCard';
@@ -55,7 +55,7 @@ export default function OrganizerTeams() {
   });
 
   return (
-    <OrganizerLayout user={user} profile={profile}>
+    <>
       <div className="mb-8">
         <h1 className="text-3xl font-black text-white mb-2">
           BROWSE <span className="text-red-500">TEAMS</span>
@@ -174,6 +174,6 @@ export default function OrganizerTeams() {
           ))}
         </div>
       )}
-    </OrganizerLayout>
+    </>
   );
 }

@@ -153,7 +153,7 @@ export default function MyOrders() {
           <Package className="w-16 h-16 text-zinc-700 mx-auto mb-4" />
           <h3 className="text-xl text-white font-bold mb-2">No Orders Yet</h3>
           <p className="text-gray-400 mb-6">Start shopping to see your orders here!</p>
-          <Link to={'/marketplace'}>
+          <Link to={'/gamer/marketplace'}>
             <GlowButton>
               <Package className="w-4 h-4" />
               Browse Shop

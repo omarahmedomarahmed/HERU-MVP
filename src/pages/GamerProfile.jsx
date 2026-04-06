@@ -68,7 +68,14 @@ export default function GamerProfile() {
   const loadUser = async () => {
     try {
       const userData = await apiCall('/auth/me');
-      setUser(userData);
+      // /auth/me returns { user: { id, email, ... }, gamer_profile: {...} }
+      const u = userData?.user || userData;
+      setUser({
+        id: u.id,
+        email: u.email,
+        full_name: u.full_name || u.email?.split('@')[0] || '',
+        role: u.role,
+      });
     } catch (e) {
       navigate('/auth/gamer/login');
     }
@@ -82,7 +89,7 @@ export default function GamerProfile() {
       if (profiles.length === 0) {
         const newProfile = await GamerProfileAPI.create({
           user_id: user.id,
-          username: user.full_name,
+          username: user.full_name || user.email?.split('@')[0] || 'Gamer',
           games: [],
           team_ids: [],
           purchased_items: [],
@@ -128,7 +135,7 @@ export default function GamerProfile() {
   }, [profile]);
 
   const updateProfileMutation = useMutation({
-    mutationFn: async (data) => GamerProfileAPI.update(profile.id, data),
+    mutationFn: async (data) => GamerProfileAPI.updateMe(data),
     onSuccess: () => {
       queryClient.invalidateQueries(['gamer-profile', user?.id]);
       setEditing(false);
@@ -138,7 +145,7 @@ export default function GamerProfile() {
   const addGameMutation = useMutation({
     mutationFn: async (game) => {
       const games = [...(profile.games || []), game];
-      return GamerProfileAPI.update(profile.id, { games });
+      return GamerProfileAPI.updateMe({ games });
     },
     onSuccess: () => {
       queryClient.invalidateQueries(['gamer-profile', user?.id]);
@@ -151,7 +158,7 @@ export default function GamerProfile() {
     mutationFn: async (index) => {
       const games = [...(profile.games || [])];
       games.splice(index, 1);
-      return GamerProfileAPI.update(profile.id, { games });
+      return GamerProfileAPI.updateMe({ games });
     },
     onSuccess: () => queryClient.invalidateQueries(['gamer-profile', user?.id])
   });

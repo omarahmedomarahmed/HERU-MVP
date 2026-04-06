@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import OrganizerLayout from '@/components/layouts/OrganizerLayout.jsx';
+
 import FloatingPanel from '@/components/ui/FloatingPanel';
 import GlowButton from '@/components/ui/GlowButton';
 import { Input } from '@/components/ui/input';
@@ -91,16 +91,16 @@ export default function OrganizerSettings() {
 
   if (isLoading) {
     return (
-      <OrganizerLayout user={user} profile={profile}>
+      <>
         <div className="flex items-center justify-center h-96">
           <Settings className="w-12 h-12 text-gray-600 animate-spin" />
         </div>
-      </OrganizerLayout>
+      </>
     );
   }
 
   return (
-    <OrganizerLayout user={user} profile={profile}>
+    <>
       <div className="max-w-2xl mx-auto">
         <div className="mb-8">
           <h1 className="text-3xl font-black text-white mb-2">
@@ -244,6 +244,6 @@ export default function OrganizerSettings() {
           </div>
         </FloatingPanel>
       </div>
-    </OrganizerLayout>
+    </>
   );
 }

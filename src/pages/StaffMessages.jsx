@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import StaffLayout from '@/components/layouts/StaffLayout';
+
 import FloatingPanel from '@/components/ui/FloatingPanel';
 import { MessageSquare } from 'lucide-react';
 import { Tournament } from '@/api/heruClient'
@@ -31,7 +31,7 @@ export default function StaffMessages() {
   );
 
   return (
-    <StaffLayout>
+    <>
       <div className="space-y-6">
         <h1 className="text-3xl font-black text-white">STAFF <span className="text-red-500">MESSAGES</span></h1>
 
@@ -80,6 +80,6 @@ export default function StaffMessages() {
           </FloatingPanel>
         )}
       </div>
-    </StaffLayout>
+    </>
   );
 }

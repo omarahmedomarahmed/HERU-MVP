@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import OrganizerLayout from '@/components/layouts/OrganizerLayout.jsx';
+
 import FloatingPanel from '@/components/ui/FloatingPanel';
 import GameCard from '@/components/ui/GameCard';
 import HexBadge from '@/components/ui/HexBadge';
@@ -165,16 +165,16 @@ export default function OrganizerTournamentView() {
 
   if (isLoading || !tournament) {
     return (
-      <OrganizerLayout user={user} profile={profile}>
+      <>
         <div className="flex items-center justify-center h-96">
           <Trophy className="w-12 h-12 text-gray-600 animate-pulse" />
         </div>
-      </OrganizerLayout>
+      </>
     );
   }
 
   return (
-    <OrganizerLayout user={user} profile={profile}>
+    <>
       <div className="max-w-7xl mx-auto p-6">
         {/* Header */}
         <div className="flex items-start justify-between mb-8">
@@ -508,6 +508,6 @@ export default function OrganizerTournamentView() {
 
 
       </div>
-    </OrganizerLayout>
+    </>
   );
 }

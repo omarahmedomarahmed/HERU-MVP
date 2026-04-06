@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import OrganizerLayout from '@/components/layouts/OrganizerLayout.jsx';
+
 import FloatingPanel from '@/components/ui/FloatingPanel';
 import GlowButton from '@/components/ui/GlowButton';
 import GameCard from '@/components/ui/GameCard';
@@ -209,16 +209,16 @@ export default function OrganizerTournamentManage() {
 
   if (isLoading || !tournament) {
     return (
-      <OrganizerLayout user={user} profile={profile}>
+      <>
         <div className="flex items-center justify-center min-h-[50vh]">
           <Trophy className="w-12 h-12 text-gray-600 animate-pulse" />
         </div>
-      </OrganizerLayout>
+      </>
     );
   }
 
   return (
-    <OrganizerLayout user={user} profile={profile}>
+    <>
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-4">
           <Link to={'/organizer-tournaments'} className="text-gray-400 hover:text-white">
@@ -482,6 +482,6 @@ export default function OrganizerTournamentManage() {
           </div>
         </DialogContent>
       </Dialog>
-    </OrganizerLayout>
+    </>
   );
 }

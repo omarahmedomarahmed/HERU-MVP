@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getOrganizerSession } from '@/lib/auth-guards';
-import OrganizerLayout from '@/components/layouts/OrganizerLayout.jsx';
+
 import FloatingPanel from '@/components/ui/FloatingPanel';
 import FundingBar from '@/components/radar/FundingBar';
 import RadarTournamentCard from '@/components/radar/RadarTournamentCard';
@@ -131,7 +131,7 @@ export default function SponsorshipRadarPage() {
   });
 
   return (
-    <OrganizerLayout user={user} profile={profile}>
+    <>
       {/* Page Header */}
       <div className="flex items-center gap-3 mb-6">
         <div className="w-10 h-10 rounded-xl bg-red-500/10 border border-red-500/20 flex items-center justify-center">
@@ -302,6 +302,6 @@ export default function SponsorshipRadarPage() {
           }
         />
       )}
-    </OrganizerLayout>
+    </>
   );
 }

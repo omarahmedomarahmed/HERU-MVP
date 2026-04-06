@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import StaffLayout from '@/components/layouts/StaffLayout';
+
 import FloatingPanel from '@/components/ui/FloatingPanel';
 import GlowButton from '@/components/ui/GlowButton';
 import { Check, X } from 'lucide-react';
@@ -43,7 +43,7 @@ export default function StaffApprovals() {
   };
 
   return (
-    <StaffLayout>
+    <>
       <div className="space-y-6">
         <h1 className="text-3xl font-black text-white">APPROVALS <span className="text-red-500">CENTER</span></h1>
 
@@ -125,6 +125,6 @@ export default function StaffApprovals() {
           )}
         </div>
       </div>
-    </StaffLayout>
+    </>
   );
 }
