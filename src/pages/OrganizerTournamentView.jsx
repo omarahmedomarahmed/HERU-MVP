@@ -73,7 +73,7 @@ export default function OrganizerTournamentView() {
 
   const { data: tournament, isLoading } = useQuery({
     queryKey: ['tournament', tournamentId],
-    queryFn: () => Tournament.list({ id: tournamentId }).then(t => t[0]),
+    queryFn: () => Tournament.get(tournamentId),
     enabled: !!tournamentId,
   });
 

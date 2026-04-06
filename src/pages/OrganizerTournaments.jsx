@@ -207,7 +207,7 @@ export default function OrganizerTournaments() {
     isError,
   } = useQuery({
     queryKey: ['organizer-tournaments', user?.id],
-    queryFn: () => Tournament.list({ organizer_id: user?.id }),
+    queryFn: () => Tournament.list({ organizer_id: user?.id, include_drafts: 'true' }),
     enabled: !!user?.id,
   })
 

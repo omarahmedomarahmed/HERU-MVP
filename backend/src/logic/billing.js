@@ -108,11 +108,18 @@ export async function createBillingSnapshot({
  * Returns the updated bill.
  */
 export async function markBillPaid(billId, paymentMethod, paymobTransactionId) {
+  // First fetch the bill to get grand_total
+  const { data: existingBill } = await supabaseAdmin
+    .from('bills')
+    .select('grand_total')
+    .eq('id', billId)
+    .single();
+
   const { data: bill, error } = await supabaseAdmin
     .from('bills')
     .update({
       payment_status: 'paid',
-      paid_amount: undefined, // will be set to grand_total below
+      paid_amount: existingBill?.grand_total || 0,
       paid_date: new Date().toISOString().split('T')[0],
       payment_method: paymentMethod || 'manual',
       paymob_transaction_id: paymobTransactionId || null,
@@ -123,12 +130,6 @@ export async function markBillPaid(billId, paymentMethod, paymobTransactionId) {
     .single();
 
   if (error) throw error;
-
-  // Set paid_amount = grand_total
-  await supabaseAdmin
-    .from('bills')
-    .update({ paid_amount: bill.grand_total })
-    .eq('id', billId);
 
   // Update billing snapshot if exists
   if (bill.tournament_id) {

@@ -63,15 +63,27 @@ router.post('/:id/commit', requireAuth, requireRole('organizer'), async (req, re
     const { data: radar } = await supabaseAdmin.from('sponsorship_radar').select('*').eq('id', req.params.id).single();
     if (!radar) return res.status(404).json({ error: 'Radar entry not found' });
 
-    const { percent, brand_name, brand_logo } = req.body;
+    const percent = req.body.percent || req.body.commitment_percent;
+    if (!percent) return res.status(400).json({ error: 'Commitment percent is required' });
+
     const validation = validateCommitment(radar, percent);
     if (!validation.valid) return res.status(400).json({ error: validation.error });
+
+    // Auto-fetch organizer brand info if not provided
+    let { brand_name, brand_logo } = req.body;
+    if (!brand_name) {
+      const { data: orgProfile } = await supabaseAdmin.from('organizer_profiles')
+        .select('brand_name, brand_logo').eq('user_id', req.user.id).single();
+      brand_name = orgProfile?.brand_name || 'Unknown';
+      brand_logo = orgProfile?.brand_logo || '';
+    }
 
     // Add co-organizer
     const coOrg = {
       organizer_id: req.user.id,
       brand_name,
       brand_logo,
+      percent,
       commitment_percent: percent,
       label: getCommitmentLabel(percent),
       amount: radar.total_cost * (percent / 100),

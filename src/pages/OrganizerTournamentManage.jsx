@@ -59,10 +59,7 @@ export default function OrganizerTournamentManage() {
 
   const { data: tournament, isLoading } = useQuery({
     queryKey: ['tournament', tournamentId],
-    queryFn: async () => {
-      const tournaments = await Tournament.list({ id: tournamentId });
-      return tournaments[0];
-    },
+    queryFn: () => Tournament.get(tournamentId),
     enabled: !!tournamentId,
   });
 

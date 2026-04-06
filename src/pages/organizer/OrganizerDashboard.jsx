@@ -211,7 +211,7 @@ export default function OrganizerDashboard() {
     isLoading: tournamentsLoading,
   } = useQuery({
     queryKey: ['organizer-tournaments'],
-    queryFn: () => Tournament.list({ organizer_id: user?.id, limit: 5 }),
+    queryFn: () => Tournament.list({ organizer_id: user?.id, limit: 5, include_drafts: 'true' }),
     enabled: !!user,
     staleTime: 30_000,
   })

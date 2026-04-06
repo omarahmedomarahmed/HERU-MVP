@@ -14,6 +14,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { GamerProfile, MarketplaceItem, OrganizerProfile, Team, Tournament, apiCall } from '@/api/heruClient'
 import { useAuth } from '@/lib/AuthContext'
 import { uploadFile } from '@/lib/uploadFile'
+import { useToast } from '@/components/ui/use-toast'
 
 import {
   Trophy, Gamepad2, Users, Star, Palette, MapPin, Award,
@@ -74,6 +75,7 @@ export default function TournamentBuilder() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [lastSaved, setLastSaved] = useState(null);
+  const { toast } = useToast();
 
   useEffect(() => {
     loadUser();
@@ -172,9 +174,15 @@ export default function TournamentBuilder() {
     },
     onSuccess: (result) => {
       if (!tournamentId && result?.id) {
-        navigate(`/organizer/tournaments/new/${result.id}`);
+        navigate(`/organizer/tournaments/new/${result.id}`, { replace: true });
       }
+      setLastSaved(new Date());
       queryClient.invalidateQueries(['organizer-tournaments']);
+      toast({ title: 'Draft saved', description: 'Your tournament has been saved as a draft.' });
+    },
+    onError: (err) => {
+      console.error('[save tournament]', err);
+      toast({ title: 'Save failed', description: err.message || 'Could not save tournament.', variant: 'destructive' });
     }
   });
 
@@ -186,7 +194,6 @@ export default function TournamentBuilder() {
         organizer_id: user?.id,
         main_organizer_id: user?.id,
         radar_funding_percent: tournament.tournament_type === 'shared' ? commitmentPercent : 100,
-        main_organizer_percent: commitmentPercent,
       };
 
       let tId = tournamentId;
@@ -204,7 +211,12 @@ export default function TournamentBuilder() {
       return tId;
     },
     onSuccess: () => {
+      toast({ title: 'Tournament published!', description: 'Your tournament is now live.' });
       navigate('/organizer/tournaments');
+    },
+    onError: (err) => {
+      console.error('[publish tournament]', err);
+      toast({ title: 'Publish failed', description: err.message || 'Could not publish tournament.', variant: 'destructive' });
     }
   });
 

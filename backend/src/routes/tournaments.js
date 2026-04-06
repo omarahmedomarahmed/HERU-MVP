@@ -8,14 +8,46 @@ import { generateBillNumber, createBill } from '../logic/billing.js';
 
 const router = Router();
 
-// GET / - list tournaments (public)
+// Valid columns for the tournaments table — used to strip unknown fields on insert/update
+const TOURNAMENT_COLUMNS = new Set([
+  'name','game','tournament_image','organizer_id','main_organizer_id','organizer_brand',
+  'tournament_type','status','format','max_teams','schedule','description','is_offline','venue',
+  'teams','invited_teams','join_requests','talents','branding_items','production_items',
+  'prizepool_items','venue_items','total_cost','prizepool_total','platform_fee',
+  'platform_fee_percent','prizepool_in_total_cost','on_radar','sponsorship_radar_id',
+  'radar_funding_percent','required_branding_committed','co_organizers','organizer_chat',
+  'brackets','support_chat','general_chat','stream_link','tournament_log',
+  'signup_banner','signup_description','signup_rules','signup_custom_fields','stream_embed_url',
+]);
+
+function sanitizeTournamentData(data) {
+  const clean = {};
+  for (const [key, value] of Object.entries(data)) {
+    if (TOURNAMENT_COLUMNS.has(key) && value !== undefined) {
+      // Convert empty strings to null for timestamp/numeric fields
+      if ((key === 'schedule' || key === 'total_cost' || key === 'platform_fee' || key === 'prizepool_total') && value === '') {
+        clean[key] = null;
+      } else {
+        clean[key] = value;
+      }
+    }
+  }
+  return clean;
+}
+
+// GET / - list tournaments (public, or organizer's own including drafts)
 router.get('/', async (req, res) => {
   try {
-    const { status, game, organizer_id, limit = 50, offset = 0 } = req.query;
+    const { status, game, organizer_id, include_drafts, limit = 50, offset = 0 } = req.query;
     let query = supabaseAdmin.from('tournaments').select('*');
 
-    if (status) query = query.eq('status', status);
-    else query = query.in('status', ['published', 'live', 'completed']);
+    if (status) {
+      query = query.eq('status', status);
+    } else if (organizer_id || include_drafts === 'true') {
+      // When fetching for a specific organizer, include all statuses (drafts too)
+    } else {
+      query = query.in('status', ['published', 'live', 'completed']);
+    }
 
     if (game) query = query.eq('game', game);
     if (organizer_id) query = query.eq('organizer_id', organizer_id);
@@ -45,15 +77,19 @@ router.get('/:id', async (req, res) => {
 router.post('/', requireAuth, requireRole('organizer', 'admin'), async (req, res) => {
   try {
     const tournament = {
-      ...req.body,
+      ...sanitizeTournamentData(req.body),
       organizer_id: req.user.id,
       main_organizer_id: req.user.id,
       status: 'draft',
     };
     const { data, error } = await supabaseAdmin.from('tournaments').insert(tournament).select().single();
-    if (error) throw error;
+    if (error) {
+      console.error('[tournament create] Supabase error:', error);
+      throw error;
+    }
     res.status(201).json(data);
   } catch (err) {
+    console.error('[tournament create] Error:', err);
     res.status(500).json({ error: err.message });
   }
 });
@@ -66,7 +102,7 @@ router.put('/:id', requireAuth, async (req, res) => {
     if (existing.organizer_id !== req.user.id && existing.main_organizer_id !== req.user.id) {
       return res.status(403).json({ error: 'Not authorized' });
     }
-    const updates = { ...req.body, updated_at: new Date().toISOString() };
+    const updates = { ...sanitizeTournamentData(req.body), updated_at: new Date().toISOString() };
     const { data, error } = await supabaseAdmin.from('tournaments').update(updates).eq('id', req.params.id).select().single();
     if (error) throw error;
     res.json(data);
