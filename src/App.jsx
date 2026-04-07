@@ -44,6 +44,7 @@ import Marketplace from './pages/Marketplace'
 import Cart from './pages/Cart'
 import TournamentDetails from './pages/TournamentDetails'
 import GamerArena from './pages/GamerArena'
+import Arena from './pages/gamer/Arena'
 import GamerBilling from './pages/GamerBilling'
 
 // Organizer pages
@@ -112,7 +113,8 @@ function App() {
 
             {/* ============ GAMER ZONE ============ */}
             <Route path="/gamer/home" element={<RequireGamer><GamerHome /></RequireGamer>} />
-            <Route path="/gamer/arena" element={<RequireGamer><GamerArena /></RequireGamer>} />
+            <Route path="/gamer/arena" element={<RequireGamer><Arena /></RequireGamer>} />
+            <Route path="/gamer/arena/:id" element={<RequireGamer><Arena /></RequireGamer>} />
             <Route path="/gamer/billing" element={<RequireGamer><GamerBilling /></RequireGamer>} />
             <Route path="/gamer/tournaments" element={<RequireGamer><Tournaments /></RequireGamer>} />
             <Route path="/gamer/tournaments/:id" element={<RequireGamer><TournamentDetails /></RequireGamer>} />
@@ -122,8 +124,6 @@ function App() {
             <Route path="/gamer/teams" element={<RequireGamer><Teams /></RequireGamer>} />
             <Route path="/gamer/teams/create" element={<RequireGamer><CreateTeam /></RequireGamer>} />
             <Route path="/gamer/teams/:id" element={<RequireGamer><TeamDetails /></RequireGamer>} />
-            <Route path="/gamer/arena" element={<RequireGamer><Arena /></RequireGamer>} />
-            <Route path="/gamer/arena/:id" element={<RequireGamer><Arena /></RequireGamer>} />
             <Route path="/gamer/gigs" element={<RequireGamer><GigRequests /></RequireGamer>} />
             <Route path="/gamer/gigs/:gig_id" element={<RequireGamer><GigDetailPage /></RequireGamer>} />
             <Route path="/gamer/orders" element={<RequireGamer><MyOrders /></RequireGamer>} />
