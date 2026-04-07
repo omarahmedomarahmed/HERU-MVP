@@ -14,6 +14,7 @@ import {
 import { awardCoins, spendCoins, COIN_REWARDS } from '@/components/utils/coinRewards';
 import { AppSettings, GamerProfile, Order, apiCall } from '@/api/heruClient'
 import { useAuth } from '@/lib/AuthContext'
+import PhoneInput from '@/components/ui/PhoneInput'
 
 
 export default function Cart() {
@@ -82,7 +83,7 @@ export default function Cart() {
   const removeFromCart = (cartId) => {
     const newCart = cart.filter(item => item.cartId !== cartId);
     localStorage.setItem(`cart_${user?.id}`, JSON.stringify(newCart));
-    queryClient.invalidateQueries(['cart', user?.id]);
+    queryClient.setQueryData(['cart', user?.id], newCart);
   };
 
   const updateQuantity = (cartId, delta) => {
@@ -94,12 +95,12 @@ export default function Cart() {
       return item;
     });
     localStorage.setItem(`cart_${user?.id}`, JSON.stringify(newCart));
-    queryClient.invalidateQueries(['cart', user?.id]);
+    queryClient.setQueryData(['cart', user?.id], newCart);
   };
 
   const clearCart = () => {
     localStorage.setItem(`cart_${user?.id}`, JSON.stringify([]));
-    queryClient.invalidateQueries(['cart', user?.id]);
+    queryClient.setQueryData(['cart', user?.id], []);
   };
 
   const applyPromoCode = () => {
@@ -416,14 +417,10 @@ export default function Cart() {
 
             <div>
               <label className="text-sm text-gray-400 block mb-1">Phone</label>
-              <div className="relative">
-                <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
-                <Input
-                  value={shippingAddress.phone}
-                  onChange={(e) => setShippingAddress({...shippingAddress, phone: e.target.value})}
-                  className="pl-10 bg-zinc-800 border-zinc-700 text-white"
-                />
-              </div>
+              <PhoneInput
+                value={shippingAddress.phone}
+                onChange={(v) => setShippingAddress({...shippingAddress, phone: v})}
+              />
             </div>
 
             <div className="border-t border-zinc-800 pt-4">

@@ -2,14 +2,19 @@ import React, { useState, useRef, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '@/lib/AuthContext'
-import { Tournament, Team, apiCall } from '@/api/heruClient'
+import { Tournament, Team, Deliverable, GigRequest, apiCall } from '@/api/heruClient'
 import BracketVisual from '@/components/tournament/BracketVisual'
+import TeamManagementPanel from '@/components/tournament/TeamManagementPanel'
+import SeedingPanel from '@/components/tournament/SeedingPanel'
+import BracketMatchPanel from '@/components/tournament/BracketMatchPanel'
+import OrganizerChat from '@/components/tournament/OrganizerChat'
 import {
   Trophy, Users, GitBranch, MessageSquare, FileText,
   ChevronRight, Loader2, Send, CheckCircle2, XCircle,
   Radio, Clock, Calendar, Gamepad2, DollarSign,
   Shield, ArrowLeft, AlertTriangle, GripVertical,
-  Play, Flag,
+  Play, Flag, Package, Upload, Briefcase, Eye,
+  Settings, BarChart3, ListChecks,
 } from 'lucide-react'
 
 // ---------------------------------------------------------------------------
@@ -57,11 +62,14 @@ function EmptyState({ icon: Icon, message }) {
 // ---------------------------------------------------------------------------
 
 const TABS = [
-  { id: 'overview',  label: 'Overview',  icon: Trophy },
-  { id: 'teams',     label: 'Teams',     icon: Users },
-  { id: 'brackets',  label: 'Brackets',  icon: GitBranch },
-  { id: 'chat',      label: 'Chat',      icon: MessageSquare },
-  { id: 'report',    label: 'Report',    icon: FileText },
+  { id: 'overview',      label: 'Overview',      icon: Trophy },
+  { id: 'teams',         label: 'Teams',         icon: Users },
+  { id: 'seeding',       label: 'Seeding',       icon: GripVertical },
+  { id: 'brackets',      label: 'Brackets',      icon: GitBranch },
+  { id: 'deliverables',  label: 'Deliverables',  icon: Package },
+  { id: 'gig-workers',   label: 'Gig Workers',   icon: Briefcase },
+  { id: 'chat',          label: 'Chat',          icon: MessageSquare },
+  { id: 'report',        label: 'Report',        icon: FileText },
 ]
 
 // ---------------------------------------------------------------------------
@@ -75,12 +83,14 @@ function OverviewTab({ tournament }) {
       })
     : 'Not set'
 
+  const coOrganizers = tournament.co_organizers || []
+
   const stats = [
     { icon: Users,      label: 'Teams Registered', value: tournament.teams?.length || 0 },
     { icon: Users,      label: 'Max Teams',        value: tournament.max_teams || 'Unlimited' },
     { icon: DollarSign, label: 'Total Cost',       value: formatEGP(tournament.total_cost) },
     { icon: DollarSign, label: 'Prizepool',        value: formatEGP(tournament.prizepool_total) },
-    { icon: DollarSign, label: 'Platform Fee',     value: formatEGP(tournament.platform_fee) },
+    { icon: DollarSign, label: 'Platform Fee (15%)',value: formatEGP(tournament.platform_fee) },
   ]
 
   return (
@@ -137,6 +147,32 @@ function OverviewTab({ tournament }) {
         </div>
       </div>
 
+      {/* Co-organizer partners */}
+      {coOrganizers.length > 0 && (
+        <div className="rounded-xl border border-white/10 bg-[#1a1a2e] p-5">
+          <h3 className="text-sm font-medium text-gray-400 uppercase tracking-wider mb-3">Partners</h3>
+          <div className="space-y-2">
+            {coOrganizers.map((co, i) => (
+              <div key={i} className="flex items-center justify-between rounded-lg bg-white/5 border border-white/10 p-3">
+                <div className="flex items-center gap-3">
+                  {co.brand_logo && (
+                    <img src={co.brand_logo} alt="" className="w-8 h-8 rounded-full object-cover bg-white/5" />
+                  )}
+                  <div>
+                    <p className="text-white text-sm font-medium">{co.brand_name || 'Co-Organizer'}</p>
+                    <p className="text-xs text-gray-500">{(co.commitment_percent || co.percent || 0) >= 66 ? 'Sponsor' : 'Co-Organizer'}</p>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <p className="text-sm font-semibold text-red-300">{co.commitment_percent || co.percent || 0}%</p>
+                  <p className="text-xs text-gray-500">{co.access_granted ? 'Access Granted' : 'Pending Payment'}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Description */}
       {tournament.description && (
         <div className="rounded-xl border border-white/10 bg-[#1a1a2e] p-5">
@@ -149,251 +185,162 @@ function OverviewTab({ tournament }) {
       {tournament.stream_link && (
         <div className="rounded-xl border border-white/10 bg-[#1a1a2e] p-5">
           <h3 className="text-sm font-medium text-gray-400 uppercase tracking-wider mb-2">Stream</h3>
-          <a
-            href={tournament.stream_link}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-sm text-red-400 hover:text-red-300 underline"
-          >
+          <a href={tournament.stream_link} target="_blank" rel="noopener noreferrer"
+            className="text-sm text-red-400 hover:text-red-300 underline">
             {tournament.stream_link}
           </a>
         </div>
       )}
-    </div>
-  )
-}
 
-// ---------------------------------------------------------------------------
-// Teams Tab
-// ---------------------------------------------------------------------------
-
-function TeamsTab({ tournament, queryClient }) {
-  const registeredTeamIds = tournament.teams || []
-  const joinRequests = tournament.join_requests || []
-
-  const { data: teamsData, isLoading: teamsLoading } = useQuery({
-    queryKey: ['tournament-teams', tournament.id],
-    queryFn: () => Promise.all(registeredTeamIds.map((tid) => Team.get(tid).catch(() => null))),
-    enabled: registeredTeamIds.length > 0,
-    staleTime: 30_000,
-  })
-
-  const handleJoinRequest = useMutation({
-    mutationFn: ({ requestId, action }) =>
-      Tournament.handleJoinRequest(tournament.id, requestId, { action }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['tournament', tournament.id] })
-      queryClient.invalidateQueries({ queryKey: ['tournament-teams', tournament.id] })
-    },
-  })
-
-  const teams = (teamsData || []).filter(Boolean)
-  const pendingRequests = joinRequests.filter((r) => r.status === 'pending')
-
-  return (
-    <div className="space-y-6">
-      {/* Pending join requests */}
-      {pendingRequests.length > 0 && (
-        <div className="rounded-xl border border-yellow-500/20 bg-yellow-500/5 p-5">
-          <h3 className="text-sm font-medium text-yellow-400 uppercase tracking-wider mb-3 flex items-center gap-2">
-            <AlertTriangle className="w-4 h-4" />
-            Pending Join Requests ({pendingRequests.length})
-          </h3>
-          <div className="space-y-2">
-            {pendingRequests.map((req) => (
-              <div
-                key={req.id || req.team_id}
-                className="flex items-center justify-between rounded-lg border border-white/5 bg-[#0f0f1a] p-3"
-              >
-                <div>
-                  <p className="text-white text-sm font-medium">{req.team_name || req.team_id}</p>
-                  {req.message && (
-                    <p className="text-gray-500 text-xs mt-0.5">{req.message}</p>
-                  )}
-                </div>
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => handleJoinRequest.mutate({ requestId: req.id || req.team_id, action: 'approve' })}
-                    disabled={handleJoinRequest.isPending}
-                    className="p-1.5 rounded-lg bg-green-500/20 text-green-400 hover:bg-green-500/30 transition"
-                    title="Approve"
-                  >
-                    <CheckCircle2 className="w-4 h-4" />
-                  </button>
-                  <button
-                    onClick={() => handleJoinRequest.mutate({ requestId: req.id || req.team_id, action: 'reject' })}
-                    disabled={handleJoinRequest.isPending}
-                    className="p-1.5 rounded-lg bg-red-500/20 text-red-400 hover:bg-red-500/30 transition"
-                    title="Reject"
-                  >
-                    <XCircle className="w-4 h-4" />
-                  </button>
-                </div>
+      {/* Tournament Log */}
+      {tournament.tournament_log?.length > 0 && (
+        <div className="rounded-xl border border-white/10 bg-[#1a1a2e] p-5">
+          <h3 className="text-sm font-medium text-gray-400 uppercase tracking-wider mb-3">Activity Log</h3>
+          <div className="space-y-2 max-h-60 overflow-y-auto">
+            {[...tournament.tournament_log].reverse().slice(0, 20).map((log, i) => (
+              <div key={i} className="flex items-start gap-2 text-xs">
+                <span className="text-gray-600 whitespace-nowrap">
+                  {new Date(log.timestamp).toLocaleString('en-GB', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                </span>
+                <span className="text-gray-400">{log.description}</span>
               </div>
             ))}
           </div>
         </div>
       )}
-
-      {/* Registered teams */}
-      <div>
-        <h3 className="text-sm font-medium text-gray-400 uppercase tracking-wider mb-3">
-          Registered Teams ({teams.length}{tournament.max_teams ? ` / ${tournament.max_teams}` : ''})
-        </h3>
-        {teamsLoading ? (
-          <SectionLoader />
-        ) : teams.length === 0 ? (
-          <EmptyState icon={Users} message="No teams registered yet." />
-        ) : (
-          <div className="space-y-2">
-            {teams.map((team, idx) => (
-              <div
-                key={team.id}
-                className="flex items-center gap-3 rounded-lg border border-white/5 bg-[#1a1a2e] p-3 hover:border-red-500/30 transition"
-              >
-                <span className="text-xs text-gray-600 font-mono w-6 text-center">{idx + 1}</span>
-                {team.logo ? (
-                  <img src={team.logo} alt="" className="w-8 h-8 rounded-lg object-cover bg-white/5" />
-                ) : (
-                  <div className="w-8 h-8 rounded-lg bg-red-500/20 flex items-center justify-center">
-                    <Users className="w-4 h-4 text-red-400" />
-                  </div>
-                )}
-                <div className="flex-1 min-w-0">
-                  <p className="text-white text-sm font-medium truncate">{team.name}</p>
-                  <p className="text-gray-500 text-xs">{team.members?.length || 0} members</p>
-                </div>
-                <GripVertical className="w-4 h-4 text-gray-600" />
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
     </div>
   )
 }
 
 // ---------------------------------------------------------------------------
-// Brackets Tab
+// Deliverables Tab
 // ---------------------------------------------------------------------------
 
-function BracketsTab({ tournament }) {
-  const brackets = tournament.brackets || []
-  const registeredTeamIds = tournament.teams || []
+function DeliverablesTab({ tournament, queryClient }) {
+  const tournamentId = tournament.id
 
-  const { data: teamsData } = useQuery({
-    queryKey: ['tournament-teams', tournament.id],
-    queryFn: () => Promise.all(registeredTeamIds.map((tid) => Team.get(tid).catch(() => null))),
-    enabled: registeredTeamIds.length > 0,
+  // Build deliverables from tournament order items
+  const { data: orderData } = useQuery({
+    queryKey: ['tournament-order', tournamentId],
+    queryFn: () => apiCall(`/tournament-orders?tournament_id=${tournamentId}`),
     staleTime: 30_000,
   })
 
-  const teams = (teamsData || []).filter(Boolean)
+  const order = Array.isArray(orderData) ? orderData[0] : orderData
+  const items = order?.items || []
 
-  if (brackets.length === 0) {
-    return (
-      <EmptyState
-        icon={GitBranch}
-        message="No brackets generated yet. Add teams and generate brackets from the Teams tab."
-      />
-    )
+  const updateItemStatus = useMutation({
+    mutationFn: async ({ itemIndex, status }) => {
+      const updatedItems = items.map((item, i) => i === itemIndex ? { ...item, status } : item)
+      await apiCall(`/tournament-orders/${order.id}`, { method: 'PUT', body: { items: updatedItems } })
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['tournament-order', tournamentId] }),
+  })
+
+  const deliverableStatuses = {
+    pending: { bg: 'bg-yellow-500/20', text: 'text-yellow-400', label: 'Pending' },
+    confirmed: { bg: 'bg-blue-500/20', text: 'text-blue-400', label: 'Confirmed' },
+    fulfilled: { bg: 'bg-green-500/20', text: 'text-green-400', label: 'Fulfilled' },
+  }
+
+  if (items.length === 0) {
+    return <EmptyState icon={Package} message="No deliverables yet. Publish the tournament to create the order." />
   }
 
   return (
-    <div className="rounded-xl border border-white/10 bg-[#1a1a2e] p-5 overflow-x-auto">
-      <BracketVisual brackets={brackets} teams={teams} />
+    <div className="space-y-4">
+      <div className="rounded-xl border border-white/10 bg-[#1a1a2e] p-5">
+        <h3 className="text-sm font-medium text-gray-400 uppercase tracking-wider mb-4">Tournament Deliverables</h3>
+        <div className="space-y-3">
+          {items.map((item, idx) => {
+            const st = deliverableStatuses[item.status] || deliverableStatuses.pending
+            return (
+              <div key={idx} className="flex items-center justify-between rounded-lg bg-white/5 border border-white/10 p-3">
+                <div className="flex-1 min-w-0">
+                  <p className="text-white text-sm font-medium truncate">{item.title}</p>
+                  <p className="text-xs text-gray-500 capitalize">{item.category} &middot; {formatEGP(item.price)}</p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${st.bg} ${st.text}`}>{st.label}</span>
+                  <select
+                    value={item.status || 'pending'}
+                    onChange={(e) => updateItemStatus.mutate({ itemIndex: idx, status: e.target.value })}
+                    className="bg-[#0f0f1a] border border-white/10 text-white text-xs rounded-lg px-2 py-1 focus:outline-none focus:border-red-500/50"
+                  >
+                    <option value="pending">Pending</option>
+                    <option value="confirmed">Confirmed</option>
+                    <option value="fulfilled">Fulfilled</option>
+                  </select>
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      </div>
+
+      {/* Fulfillment status */}
+      {order && (
+        <div className="rounded-xl border border-white/10 bg-[#1a1a2e] p-5">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-gray-400">Fulfillment Status</p>
+              <p className="text-white font-semibold capitalize">{(order.fulfillment_status || 'draft').replace(/_/g, ' ')}</p>
+            </div>
+            <div className="text-right">
+              <p className="text-sm text-gray-400">Grand Total</p>
+              <p className="text-white font-bold">{formatEGP(order.grand_total)}</p>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
 
 // ---------------------------------------------------------------------------
-// Chat Tab
+// Gig Workers Tab
 // ---------------------------------------------------------------------------
 
-function ChatTab({ tournament, queryClient }) {
-  const { user } = useAuth()
-  const [message, setMessage] = useState('')
-  const chatEndRef = useRef(null)
+function GigWorkersTab({ tournament }) {
+  const talents = tournament.talents || []
 
-  const messages = tournament.organizer_chat || []
-
-  useEffect(() => {
-    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [messages.length])
-
-  const sendMessage = useMutation({
-    mutationFn: (msg) => Tournament.sendChat(tournament.id, { message: msg, sender_id: user?.id }),
-    onSuccess: () => {
-      setMessage('')
-      queryClient.invalidateQueries({ queryKey: ['tournament', tournament.id] })
-    },
+  const { data: gigs = [] } = useQuery({
+    queryKey: ['tournament-gigs', tournament.id],
+    queryFn: () => apiCall(`/gigs?tournament_id=${tournament.id}`),
+    staleTime: 30_000,
   })
 
-  const handleSend = (e) => {
-    e.preventDefault()
-    const trimmed = message.trim()
-    if (!trimmed) return
-    sendMessage.mutate(trimmed)
+  const gigStatusBadge = {
+    pending: 'bg-yellow-500/20 text-yellow-400',
+    accepted: 'bg-green-500/20 text-green-400',
+    rejected: 'bg-red-500/20 text-red-400',
+    completed: 'bg-blue-500/20 text-blue-400',
+  }
+
+  if (talents.length === 0 && gigs.length === 0) {
+    return <EmptyState icon={Briefcase} message="No gig workers assigned to this tournament." />
   }
 
   return (
-    <div className="rounded-xl border border-white/10 bg-[#1a1a2e] flex flex-col" style={{ height: '500px' }}>
-      {/* Messages area */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-3">
-        {messages.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full text-gray-500">
-            <MessageSquare className="w-8 h-8 mb-2 opacity-40" />
-            <p className="text-sm">No messages yet. Start the conversation.</p>
-          </div>
-        ) : (
-          messages.map((msg, idx) => {
-            const isMe = msg.sender_id === user?.id
-            return (
-              <div key={idx} className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}>
-                <div
-                  className={`max-w-[75%] rounded-xl px-4 py-2.5 text-sm ${
-                    isMe
-                      ? 'bg-gradient-to-r from-red-600 to-red-600 text-white'
-                      : 'bg-white/5 text-gray-300'
-                  }`}
-                >
-                  {!isMe && (
-                    <p className="text-xs font-medium text-red-400 mb-1">
-                      {msg.sender_name || 'Unknown'}
-                    </p>
-                  )}
-                  <p className="whitespace-pre-wrap">{msg.message || msg.text}</p>
-                  <p className={`text-[10px] mt-1 ${isMe ? 'text-white/50' : 'text-gray-600'}`}>
-                    {msg.timestamp
-                      ? new Date(msg.timestamp).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
-                      : ''}
-                  </p>
-                </div>
+    <div className="space-y-4">
+      <div className="rounded-xl border border-white/10 bg-[#1a1a2e] p-5">
+        <h3 className="text-sm font-medium text-gray-400 uppercase tracking-wider mb-4">Assigned Talent</h3>
+        <div className="space-y-3">
+          {(gigs.length > 0 ? gigs : talents).map((gig, idx) => (
+            <div key={gig.id || idx} className="flex items-center justify-between rounded-lg bg-white/5 border border-white/10 p-3">
+              <div className="flex-1 min-w-0">
+                <p className="text-white text-sm font-medium capitalize">{gig.talent_type || gig.type || 'Talent'}</p>
+                <p className="text-xs text-gray-500">
+                  {gig.organizer_brand || ''} &middot; {formatEGP(gig.price)}
+                </p>
               </div>
-            )
-          })
-        )}
-        <div ref={chatEndRef} />
+              <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${gigStatusBadge[gig.status] || gigStatusBadge.pending}`}>
+                {(gig.status || 'pending').toUpperCase()}
+              </span>
+            </div>
+          ))}
+        </div>
       </div>
-
-      {/* Input area */}
-      <form onSubmit={handleSend} className="border-t border-white/10 p-3 flex gap-2">
-        <input
-          type="text"
-          value={message}
-          onChange={(e) => setMessage(e.target.value)}
-          placeholder="Type a message..."
-          className="flex-1 bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-red-500/50 transition"
-        />
-        <button
-          type="submit"
-          disabled={!message.trim() || sendMessage.isPending}
-          className="px-4 py-2 rounded-lg bg-gradient-to-r from-red-600 to-red-600 text-white text-sm font-medium disabled:opacity-40 hover:brightness-110 transition flex items-center gap-1.5"
-        >
-          <Send className="w-4 h-4" />
-          Send
-        </button>
-      </form>
     </div>
   )
 }
@@ -452,7 +399,20 @@ export default function TournamentManage() {
     queryFn: () => Tournament.get(id),
     enabled: !!id,
     staleTime: 15_000,
-    refetchInterval: 30_000, // Poll for chat + bracket updates
+    refetchInterval: 30_000,
+  })
+
+  // Fetch confirmed teams for seeding/brackets
+  const registeredTeamIds = tournament?.teams || []
+  const { data: confirmedTeams = [] } = useQuery({
+    queryKey: ['confirmed-teams', registeredTeamIds],
+    queryFn: async () => {
+      if (!registeredTeamIds.length) return []
+      const all = await Team.list()
+      return all.filter(t => registeredTeamIds.includes(t.id))
+    },
+    enabled: registeredTeamIds.length > 0,
+    staleTime: 30_000,
   })
 
   // Status mutations
@@ -463,6 +423,17 @@ export default function TournamentManage() {
 
   const completeTournament = useMutation({
     mutationFn: () => Tournament.update(id, { status: 'completed' }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['tournament', id] }),
+  })
+
+  // Chat mutation
+  const sendChatMutation = useMutation({
+    mutationFn: (message) => Tournament.sendChat(id, {
+      message,
+      sender_id: user?.id,
+      sender_name: user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Organizer',
+      sender_role: 'organizer',
+    }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['tournament', id] }),
   })
 
@@ -490,10 +461,11 @@ export default function TournamentManage() {
     )
   }
 
-  // Filter visible tabs — hide report if not completed
-  const visibleTabs = tournament.status === 'completed'
-    ? TABS
-    : TABS.filter((t) => t.id !== 'report')
+  // Filter visible tabs based on status
+  const visibleTabs = TABS.filter((t) => {
+    if (t.id === 'report' && tournament.status !== 'completed') return false
+    return true
+  })
 
   return (
     <div className="min-h-screen bg-[#0f0f1a] p-4 sm:p-6 lg:p-8">
@@ -532,11 +504,7 @@ export default function TournamentManage() {
                 disabled={goLive.isPending}
                 className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-green-600 text-white text-sm font-medium hover:bg-green-500 disabled:opacity-50 transition"
               >
-                {goLive.isPending ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : (
-                  <Play className="w-4 h-4" />
-                )}
+                {goLive.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Play className="w-4 h-4" />}
                 Go Live
               </button>
             )}
@@ -546,11 +514,7 @@ export default function TournamentManage() {
                 disabled={completeTournament.isPending}
                 className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-red-600 text-white text-sm font-medium hover:bg-red-500 disabled:opacity-50 transition"
               >
-                {completeTournament.isPending ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : (
-                  <Flag className="w-4 h-4" />
-                )}
+                {completeTournament.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Flag className="w-4 h-4" />}
                 Complete
               </button>
             )}
@@ -558,7 +522,7 @@ export default function TournamentManage() {
               onClick={() => navigate(`/organizer/tournaments/${id}/manage/settings`)}
               className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-white/10 text-gray-300 text-sm font-medium hover:border-red-500/40 hover:text-white transition"
             >
-              <Shield className="w-4 h-4" />
+              <Settings className="w-4 h-4" />
               Settings
             </button>
           </div>
@@ -597,9 +561,37 @@ export default function TournamentManage() {
         {/* ----------------------------------------------------------------- */}
         <div>
           {activeTab === 'overview' && <OverviewTab tournament={tournament} />}
-          {activeTab === 'teams' && <TeamsTab tournament={tournament} queryClient={queryClient} />}
-          {activeTab === 'brackets' && <BracketsTab tournament={tournament} />}
-          {activeTab === 'chat' && <ChatTab tournament={tournament} queryClient={queryClient} />}
+          {activeTab === 'teams' && (
+            <TeamManagementPanel tournament={tournament} canEdit={true} />
+          )}
+          {activeTab === 'seeding' && (
+            <SeedingPanel
+              tournament={tournament}
+              confirmedTeams={confirmedTeams}
+              onBracketsGenerated={() => setActiveTab('brackets')}
+            />
+          )}
+          {activeTab === 'brackets' && (
+            <BracketMatchPanel
+              tournament={tournament}
+              teams={confirmedTeams}
+              canEdit={true}
+            />
+          )}
+          {activeTab === 'deliverables' && (
+            <DeliverablesTab tournament={tournament} queryClient={queryClient} />
+          )}
+          {activeTab === 'gig-workers' && (
+            <GigWorkersTab tournament={tournament} />
+          )}
+          {activeTab === 'chat' && (
+            <OrganizerChat
+              tournament={tournament}
+              currentUser={user}
+              onSendMessage={(msg) => sendChatMutation.mutate(msg)}
+              isLoading={sendChatMutation.isPending}
+            />
+          )}
           {activeTab === 'report' && <ReportTab tournament={tournament} navigate={navigate} />}
         </div>
       </div>

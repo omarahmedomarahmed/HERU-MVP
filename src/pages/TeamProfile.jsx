@@ -59,18 +59,23 @@ export default function TeamProfile() {
 
   const joinRequestMutation = useMutation({
     mutationFn: async () => {
-      const requests = [...(team.join_requests || []), {
-        user_id: user.id,
-        ...joinRequest,
-        status: 'pending'
-      }];
-      await Team.update(id, { join_requests: requests });
+      await Team.joinRequest(id, {
+        username: profile?.username || user?.full_name || user?.email?.split('@')[0] || 'Unknown',
+        message: `Game: ${joinRequest.game}, ID: ${joinRequest.game_id}, Rank: ${joinRequest.rank}`,
+        game: joinRequest.game,
+        game_id: joinRequest.game_id,
+        rank: joinRequest.rank,
+      });
     },
     onSuccess: () => {
       queryClient.invalidateQueries(['team', id]);
       setShowJoinModal(false);
       setJoinRequest({ game: '', game_id: '', rank: '' });
-    }
+      alert('Join request submitted successfully!');
+    },
+    onError: (err) => {
+      alert(err.message || 'Failed to submit join request. Please try again.');
+    },
   });
 
   const cart = JSON.parse(localStorage.getItem(`cart_${user?.id}`) || '[]');

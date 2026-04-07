@@ -97,7 +97,8 @@ export default function Marketplace() {
     }
     const newCart = [...cart, { ...item, cartId: Date.now(), quantity: 1, gameTag: tag }];
     localStorage.setItem(`cart_${user?.id}`, JSON.stringify(newCart));
-    queryClient.invalidateQueries(['cart', user?.id]);
+    // Use setQueryData for immediate update since localStorage is synchronous
+    queryClient.setQueryData(['cart', user?.id], newCart);
     setSelectedItem(null);
     setGameTag('');
   };
