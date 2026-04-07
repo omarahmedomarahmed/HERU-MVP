@@ -32,6 +32,9 @@ import auditRoutes from './src/routes/audit.js';
 const app = express();
 const PORT = process.env.PORT || 3001;
 
+// Trust Nginx reverse proxy (required for express-rate-limit behind Nginx)
+app.set('trust proxy', 1);
+
 // ---------------------------------------------------------------------------
 // Global middleware
 // ---------------------------------------------------------------------------

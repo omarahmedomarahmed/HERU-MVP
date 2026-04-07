@@ -37,6 +37,18 @@ router.get('/:id', async (req, res) => {
   }
 });
 
+// POST / - create gamer profile
+router.post('/', requireAuth, async (req, res) => {
+  try {
+    const payload = { ...req.body, user_id: req.user.id, created_at: new Date().toISOString(), updated_at: new Date().toISOString() };
+    const { data, error } = await supabaseAdmin.from('gamer_profiles').insert(payload).select().single();
+    if (error) throw error;
+    res.status(201).json(data);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // PUT /me - update own profile
 router.put('/me', requireAuth, async (req, res) => {
   try {
@@ -73,17 +85,18 @@ router.get('/:id/stats', async (req, res) => {
   try {
     const { data: profile } = await supabaseAdmin
       .from('gamer_profiles')
-      .select('total_matches, total_wins, tournaments_played, tournaments_won, team_ids, username, avatar')
+      .select('team_ids, username, avatar, games, is_talent, talent_type, talent_rating')
       .or(`id.eq.${req.params.id},user_id.eq.${req.params.id}`)
       .single();
     if (!profile) return res.status(404).json({ error: 'Gamer not found' });
 
-    const winRate = profile.total_matches > 0 ? ((profile.total_wins / profile.total_matches) * 100).toFixed(1) : 0;
-
     res.json({
       ...profile,
-      win_rate: Number(winRate),
       teams_count: (profile.team_ids || []).length,
+      games_count: (profile.games || []).length,
+      win_rate: 0,
+      tournaments_played: 0,
+      tournaments_won: 0,
     });
   } catch (err) {
     res.status(500).json({ error: err.message });
