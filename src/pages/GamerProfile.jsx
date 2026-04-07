@@ -17,6 +17,7 @@ import { useAuth } from '@/lib/AuthContext'
 import { uploadFile } from '@/lib/uploadFile'
 import PhoneInput from '@/components/ui/PhoneInput'
 import UrlInput from '@/components/ui/UrlInput'
+import { useToast } from '@/components/ui/use-toast'
 
 import {
   User, Edit2, Save, X, Gamepad2, Users, Star,
@@ -53,6 +54,7 @@ const RARITY_GLOW = {
 
 export default function GamerProfile() {
   const { logout } = useAuth();
+  const { toast } = useToast();
   const [user, setUser] = useState(null);
   const [editing, setEditing] = useState(false);
   const [addGameModal, setAddGameModal] = useState(false);
@@ -236,7 +238,7 @@ export default function GamerProfile() {
       setTimeout(() => setBecomeOrgModal(false), 2000);
     },
     onError: (err) => {
-      alert(err.message || 'Failed to submit. Please try again.');
+      toast({ title: 'Submission failed', description: err.message || 'Failed to submit. Please try again.', variant: 'destructive' });
     },
   });
 

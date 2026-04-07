@@ -381,12 +381,12 @@ function ReportTab({ tournament, navigate }) {
 // Main Component
 // ---------------------------------------------------------------------------
 
-export default function TournamentManage() {
+export default function TournamentManage({ defaultTab = 'overview' }) {
   const { id } = useParams()
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const { user } = useAuth()
-  const [activeTab, setActiveTab] = useState('overview')
+  const [activeTab, setActiveTab] = useState(defaultTab)
 
   // Fetch tournament
   const {

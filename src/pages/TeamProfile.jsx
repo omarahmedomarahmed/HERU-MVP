@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Input } from '@/components/ui/input';
 import { GamerProfile, Team, apiCall } from '@/api/heruClient'
 import { useAuth } from '@/lib/AuthContext'
+import { useToast } from '@/components/ui/use-toast'
 
 import {
   Users, Trophy, Twitter, Instagram, MessageSquare, Crown, UserPlus, Phone, Send, ArrowLeft
@@ -27,6 +28,7 @@ export default function TeamProfile() {
   const [joinRequest, setJoinRequest] = useState({ game: '', game_id: '', rank: '' });
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { toast } = useToast();
 
   useEffect(() => {
     apiCall('/auth/me').then(setUser).catch(() => {});
@@ -71,10 +73,10 @@ export default function TeamProfile() {
       queryClient.invalidateQueries(['team', id]);
       setShowJoinModal(false);
       setJoinRequest({ game: '', game_id: '', rank: '' });
-      alert('Join request submitted successfully!');
+      toast({ title: 'Request submitted!', description: 'Your join request has been sent to the team leader.' });
     },
     onError: (err) => {
-      alert(err.message || 'Failed to submit join request. Please try again.');
+      toast({ title: 'Request failed', description: err.message || 'Failed to submit join request. Please try again.', variant: 'destructive' });
     },
   });
 

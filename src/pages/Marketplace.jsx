@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { GamerProfile, MarketplaceItem, apiCall } from '@/api/heruClient'
 import { useAuth } from '@/lib/AuthContext'
+import { useToast } from '@/components/ui/use-toast'
 
 import {
   ShoppingBag, Search, ShoppingCart, Award, Package,
@@ -33,6 +34,7 @@ export default function Marketplace() {
   const [gameTag, setGameTag] = useState('');
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { toast } = useToast();
 
   useEffect(() => {
     loadUser();
@@ -89,16 +91,16 @@ export default function Marketplace() {
   const isInCart = (itemId) => cartItemIds.has(itemId);
 
   const addToCart = (item, tag = '') => {
-    // Check if item already in cart by id
     if (isInCart(item.id)) {
+      toast({ title: 'Already in cart', description: `${item.title} is already in your cart.`, variant: 'default' });
       setSelectedItem(null);
       setGameTag('');
       return;
     }
     const newCart = [...cart, { ...item, cartId: Date.now(), quantity: 1, gameTag: tag }];
     localStorage.setItem(`cart_${user?.id}`, JSON.stringify(newCart));
-    // Use setQueryData for immediate update since localStorage is synchronous
     queryClient.setQueryData(['cart', user?.id], newCart);
+    toast({ title: 'Added to cart', description: `${item.title} was added to your cart.` });
     setSelectedItem(null);
     setGameTag('');
   };

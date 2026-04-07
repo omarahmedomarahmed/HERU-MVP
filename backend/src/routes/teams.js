@@ -85,6 +85,8 @@ router.post('/:id/join-request', requireAuth, async (req, res) => {
   try {
     const { data: team } = await supabaseAdmin.from('teams').select('join_requests, members').eq('id', req.params.id).single();
     if (team.members?.includes(req.user.id)) return res.status(400).json({ error: 'Already a member' });
+    const existing = (team.join_requests || []).find(r => r.user_id === req.user.id && r.status === 'pending');
+    if (existing) return res.status(400).json({ error: 'You already have a pending join request for this team' });
     const requests = [...(team.join_requests || []), { id: crypto.randomUUID(), user_id: req.user.id, username: req.body.username, message: req.body.message, status: 'pending', created_at: new Date().toISOString() }];
     const { data, error } = await supabaseAdmin.from('teams').update({ join_requests: requests }).eq('id', req.params.id).select().single();
     if (error) throw error;

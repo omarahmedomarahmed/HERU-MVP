@@ -49,10 +49,8 @@ import OrganizerLayout from '@/components/layouts/OrganizerLayout'
 import OrganizerDashboard from './pages/OrganizerDashboard'
 import OrganizerTournaments from './pages/OrganizerTournaments'
 import TournamentBuilder from './pages/TournamentBuilder'
-import TournamentManage from './pages/TournamentManage'
-import OrganizerTournamentManage from './pages/OrganizerTournamentManage'
-import OrganizerTournamentView from './pages/OrganizerTournamentView'
-import CoOrganizerView from './pages/CoOrganizerView'
+import OrgTournamentManage from './pages/organizer/TournamentManage'
+import CoOrganizerView from './pages/organizer/CoOrganizerView'
 import OrganizerSettings from './pages/OrganizerSettings'
 import OrganizerTeams from './pages/OrganizerTeams'
 import OrganizerMessages from './pages/OrganizerMessages'
@@ -134,11 +132,11 @@ function App() {
             <Route path="/organizer/tournaments" element={<RequireOrganizer><OrganizerLayout><OrganizerTournaments /></OrganizerLayout></RequireOrganizer>} />
             <Route path="/organizer/tournaments/new" element={<RequireOrganizer><OrganizerLayout><TournamentBuilder /></OrganizerLayout></RequireOrganizer>} />
             <Route path="/organizer/tournaments/new/:id" element={<RequireOrganizer><OrganizerLayout><TournamentBuilder /></OrganizerLayout></RequireOrganizer>} />
-            <Route path="/organizer/tournaments/:id/manage" element={<RequireOrganizer><OrganizerLayout><OrganizerTournamentManage /></OrganizerLayout></RequireOrganizer>} />
-            <Route path="/organizer/tournaments/:id/manage/teams" element={<RequireOrganizer><OrganizerLayout><TournamentManage /></OrganizerLayout></RequireOrganizer>} />
-            <Route path="/organizer/tournaments/:id/manage/brackets" element={<RequireOrganizer><OrganizerLayout><OrganizerTournamentManage /></OrganizerLayout></RequireOrganizer>} />
-            <Route path="/organizer/tournaments/:id/manage/chat" element={<RequireOrganizer><OrganizerLayout><OrganizerTournamentManage /></OrganizerLayout></RequireOrganizer>} />
-            <Route path="/organizer/tournaments/:id/manage/settings" element={<RequireOrganizer><OrganizerLayout><OrganizerTournamentManage /></OrganizerLayout></RequireOrganizer>} />
+            <Route path="/organizer/tournaments/:id/manage" element={<RequireOrganizer><OrganizerLayout><OrgTournamentManage /></OrganizerLayout></RequireOrganizer>} />
+            <Route path="/organizer/tournaments/:id/manage/teams" element={<RequireOrganizer><OrganizerLayout><OrgTournamentManage defaultTab="teams" /></OrganizerLayout></RequireOrganizer>} />
+            <Route path="/organizer/tournaments/:id/manage/brackets" element={<RequireOrganizer><OrganizerLayout><OrgTournamentManage defaultTab="brackets" /></OrganizerLayout></RequireOrganizer>} />
+            <Route path="/organizer/tournaments/:id/manage/chat" element={<RequireOrganizer><OrganizerLayout><OrgTournamentManage defaultTab="chat" /></OrganizerLayout></RequireOrganizer>} />
+            <Route path="/organizer/tournaments/:id/manage/settings" element={<RequireOrganizer><OrganizerLayout><OrgTournamentManage defaultTab="report" /></OrganizerLayout></RequireOrganizer>} />
             <Route path="/organizer/tournaments/:id/view" element={<RequireOrganizer><OrganizerLayout><CoOrganizerView /></OrganizerLayout></RequireOrganizer>} />
             <Route path="/organizer/radar" element={<RequireOrganizer><OrganizerLayout><SponsorshipRadar /></OrganizerLayout></RequireOrganizer>} />
             <Route path="/organizer/radar/:radar_id" element={<RequireOrganizer><OrganizerLayout><RadarDetailPage /></OrganizerLayout></RequireOrganizer>} />

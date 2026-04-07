@@ -14,6 +14,7 @@ import {
 import { awardCoins, COIN_REWARDS } from '@/components/utils/coinRewards';
 import { GamerProfile, Team, apiCall } from '@/api/heruClient'
 import { useAuth } from '@/lib/AuthContext'
+import { useToast } from '@/components/ui/use-toast'
 
 
 const GAMES = ['Valorant', 'CS2', 'League of Legends', 'Dota 2', 'Rocket League', 'Apex Legends', 'Fortnite', 'Call of Duty'];
@@ -48,6 +49,7 @@ export default function CreateTeam() {
   const [selectedFriends, setSelectedFriends] = useState([]);
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { toast } = useToast();
 
   useEffect(() => {
     loadUser();
@@ -158,11 +160,11 @@ export default function CreateTeam() {
     },
     onSuccess: (team) => {
       queryClient.invalidateQueries(['gamer-profile', user?.id]);
-      alert('Team created successfully!');
+      toast({ title: 'Team created!', description: `${team.name} is ready. You are the team leader.` });
       navigate(`/gamer/teams/${team.id}`);
     },
     onError: (err) => {
-      alert(err.message || 'Failed to create team. Please try again.');
+      toast({ title: 'Failed to create team', description: err.message || 'Please try again.', variant: 'destructive' });
     },
   });
 
