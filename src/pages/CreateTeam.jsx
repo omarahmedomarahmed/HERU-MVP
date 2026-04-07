@@ -106,15 +106,13 @@ export default function CreateTeam() {
 
   const createTeamMutation = useMutation({
     mutationFn: async () => {
-      const members = [user.id, ...selectedFriends];
-
       const team = await Team.create({
         name: teamData.name,
         description: teamData.description,
         story: teamData.story,
         logo: teamData.logo,
         leader_id: user.id,
-        members,
+        members: [user.id, ...selectedFriends],
         games: teamData.games,
         is_recruiting: teamData.is_recruiting,
         social_links: teamData.social_links,
@@ -125,31 +123,47 @@ export default function CreateTeam() {
         tournament_history: []
       });
 
-      // Update creator's profile
-      const teamIds = [...(profile.team_ids || []), team.id];
-      await GamerProfile.updateMe({ team_ids: teamIds });
+      // Update creator's profile (safely handle missing profile)
+      try {
+        const existingTeamIds = profile?.team_ids || [];
+        await GamerProfile.updateMe({ team_ids: [...existingTeamIds, team.id] });
+      } catch (e) {
+        console.warn('Could not update profile team_ids:', e);
+      }
 
       // Update invited friends' profiles
       for (const friendId of selectedFriends) {
-        const friendProfiles = await GamerProfile.list({ user_id: friendId });
-        if (friendProfiles.length > 0) {
-          const friendProfile = friendProfiles[0];
-          const friendTeamIds = [...(friendProfile.team_ids || []), team.id];
-          await GamerProfile.update(friendProfile.id, { team_ids: friendTeamIds });
+        try {
+          const friendProfiles = await GamerProfile.list({ user_id: friendId });
+          if (friendProfiles.length > 0) {
+            const friendProfile = friendProfiles[0];
+            const friendTeamIds = [...(friendProfile.team_ids || []), team.id];
+            await GamerProfile.update(friendProfile.id, { team_ids: friendTeamIds });
+          }
+        } catch (e) {
+          console.warn('Could not update friend profile:', e);
         }
       }
 
-      awardCoins(user.id, COIN_REWARDS.CREATE_TEAM, 'Created a team');
-      if (selectedFriends.length >= 5) {
-        awardCoins(user.id, COIN_REWARDS.INVITE_5_TO_TEAM, 'Invited 5 friends to team');
+      try {
+        awardCoins(user.id, COIN_REWARDS.CREATE_TEAM, 'Created a team');
+        if (selectedFriends.length >= 5) {
+          awardCoins(user.id, COIN_REWARDS.INVITE_5_TO_TEAM, 'Invited 5 friends to team');
+        }
+      } catch (e) {
+        console.warn('Could not award coins:', e);
       }
 
       return team;
     },
     onSuccess: (team) => {
       queryClient.invalidateQueries(['gamer-profile', user?.id]);
+      alert('Team created successfully!');
       navigate(`/gamer/teams/${team.id}`);
-    }
+    },
+    onError: (err) => {
+      alert(err.message || 'Failed to create team. Please try again.');
+    },
   });
 
   const cart = JSON.parse(localStorage.getItem(`cart_${user?.id}`) || '[]');

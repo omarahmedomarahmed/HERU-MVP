@@ -66,6 +66,17 @@ router.post('/:id/commit', requireAuth, requireRole('organizer'), async (req, re
     const percent = req.body.percent || req.body.commitment_percent;
     if (!percent) return res.status(400).json({ error: 'Commitment percent is required' });
 
+    // Main organizer cannot commit to their own tournament
+    if (req.user.id === radar.main_organizer_id) {
+      return res.status(400).json({ error: 'You cannot commit to your own tournament' });
+    }
+
+    // Check if already committed
+    const alreadyCommitted = (radar.co_organizers || []).find(co => co.organizer_id === req.user.id);
+    if (alreadyCommitted) {
+      return res.status(400).json({ error: 'You have already committed to this tournament' });
+    }
+
     const validation = validateCommitment(radar, percent);
     if (!validation.valid) return res.status(400).json({ error: validation.error });
 

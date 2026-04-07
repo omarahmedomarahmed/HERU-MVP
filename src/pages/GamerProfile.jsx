@@ -15,6 +15,8 @@ import { motion } from 'framer-motion';
 import { GamerProfile as GamerProfileAPI, Order, Team, Achievement, ApprovalRequest, apiCall } from '@/api/heruClient'
 import { useAuth } from '@/lib/AuthContext'
 import { uploadFile } from '@/lib/uploadFile'
+import PhoneInput from '@/components/ui/PhoneInput'
+import UrlInput from '@/components/ui/UrlInput'
 
 import {
   User, Edit2, Save, X, Gamepad2, Users, Star,
@@ -221,19 +223,21 @@ export default function GamerProfile() {
     mutationFn: async (data) => {
       return ApprovalRequest.create({
         approval_type: 'organizer_profile',
-        requester_id: user.id,
         requester_name: profile?.username || user?.full_name,
         requester_email: user?.email,
         reference_id: user.id,
         reference_name: data.brand_name,
         details: data,
-        status: 'pending',
       });
     },
     onSuccess: () => {
-      setBecomeOrgModal(false);
+      // Keep modal open to show success message, then close after delay
       setOrgForm({ brand_name: '', full_name: '', contact_number: '', website: '', facebook: '', instagram: '' });
-    }
+      setTimeout(() => setBecomeOrgModal(false), 2000);
+    },
+    onError: (err) => {
+      alert(err.message || 'Failed to submit. Please try again.');
+    },
   });
 
   const { data: teams = [] } = useQuery({
@@ -915,21 +919,17 @@ export default function GamerProfile() {
             </div>
             <div>
               <label className="text-sm text-gray-400 block mb-1">Showreel / Demo Link</label>
-              <Input
+              <UrlInput
                 value={talentForm.talent_video_link}
-                onChange={(e) => setTalentForm({ ...talentForm, talent_video_link: e.target.value })}
-                placeholder="YouTube or Twitch link"
-                className="bg-zinc-800 border-zinc-700 text-white"
+                onChange={(v) => setTalentForm({ ...talentForm, talent_video_link: v })}
+                placeholder="https://youtube.com/... or https://twitch.tv/..."
               />
             </div>
             <div>
               <label className="text-sm text-gray-400 block mb-1">Contact Number</label>
-              <Input
-                type="tel"
+              <PhoneInput
                 value={talentForm.contact_number}
-                onChange={(e) => setTalentForm({ ...talentForm, contact_number: e.target.value })}
-                placeholder="+20 ..."
-                className="bg-zinc-800 border-zinc-700 text-white"
+                onChange={(v) => setTalentForm({ ...talentForm, contact_number: v })}
               />
             </div>
             <div>
@@ -1080,20 +1080,20 @@ export default function GamerProfile() {
             </div>
             <div>
               <label className="text-xs text-gray-400 block mb-1">Contact Number</label>
-              <Input value={orgForm.contact_number} onChange={(e) => setOrgForm({ ...orgForm, contact_number: e.target.value })} placeholder="+20 ..." className="bg-zinc-800 border-zinc-700 text-white" />
+              <PhoneInput value={orgForm.contact_number} onChange={(v) => setOrgForm({ ...orgForm, contact_number: v })} />
             </div>
             <div>
               <label className="text-xs text-gray-400 block mb-1">Website</label>
-              <Input value={orgForm.website} onChange={(e) => setOrgForm({ ...orgForm, website: e.target.value })} placeholder="https://..." className="bg-zinc-800 border-zinc-700 text-white" />
+              <UrlInput value={orgForm.website} onChange={(v) => setOrgForm({ ...orgForm, website: v })} placeholder="https://yoursite.com" />
             </div>
             <div className="grid grid-cols-2 gap-2">
               <div>
                 <label className="text-xs text-gray-400 block mb-1">Facebook</label>
-                <Input value={orgForm.facebook} onChange={(e) => setOrgForm({ ...orgForm, facebook: e.target.value })} placeholder="facebook.com/..." className="bg-zinc-800 border-zinc-700 text-white" />
+                <UrlInput value={orgForm.facebook} onChange={(v) => setOrgForm({ ...orgForm, facebook: v })} placeholder="https://facebook.com/..." />
               </div>
               <div>
                 <label className="text-xs text-gray-400 block mb-1">Instagram</label>
-                <Input value={orgForm.instagram} onChange={(e) => setOrgForm({ ...orgForm, instagram: e.target.value })} placeholder="@handle" className="bg-zinc-800 border-zinc-700 text-white" />
+                <UrlInput value={orgForm.instagram} onChange={(v) => setOrgForm({ ...orgForm, instagram: v })} placeholder="https://instagram.com/..." />
               </div>
             </div>
             <GlowButton
