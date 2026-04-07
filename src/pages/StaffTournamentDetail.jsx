@@ -5,7 +5,7 @@ import {
   ArrowLeft, Trophy, Users, GitBranch, ShoppingCart,
   Calendar, MapPin, Globe, Save
 } from 'lucide-react';
-import { apiCall } from '@/api/heruClient';
+import { Staff, apiCall } from '@/api/heruClient';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -55,6 +55,8 @@ export default function StaffTournamentDetail() {
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState('details');
   const [newStatus, setNewStatus] = useState('');
+  const [editingField, setEditingField] = useState(null);
+  const [editValue, setEditValue] = useState('');
 
   React.useEffect(() => {
     const token = localStorage.getItem('heru_staff_token');
@@ -79,10 +81,36 @@ export default function StaffTournamentDetail() {
   }, [tournament.status, newStatus]);
 
   const statusMutation = useMutation({
-    mutationFn: (status) =>
-      apiCall('/tournaments/' + id, { method: 'PUT', body: { status } }),
+    mutationFn: (status) => Staff.updateTournamentStatus(id, { status }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['staff-tournament', id] }),
   });
+
+  const updateFieldMutation = useMutation({
+    mutationFn: ({ field, value }) => Staff.updateTournament(id, { [field]: value }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['staff-tournament', id] });
+      setEditingField(null);
+      setEditValue('');
+    },
+  });
+
+  const startEditing = (field, currentValue) => {
+    setEditingField(field);
+    setEditValue(currentValue ?? '');
+  };
+
+  const saveField = () => {
+    if (editingField) {
+      let val = editValue;
+      if (['max_teams', 'total_cost', 'prizepool_total', 'platform_fee'].includes(editingField)) {
+        val = Number(val) || 0;
+      }
+      if (editingField === 'is_offline') {
+        val = editValue === 'true';
+      }
+      updateFieldMutation.mutate({ field: editingField, value: val });
+    }
+  };
 
   if (isLoading) {
     return (
@@ -169,6 +197,86 @@ export default function StaffTournamentDetail() {
         {/* Tab: Details */}
         {activeTab === 'details' && (
           <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6 space-y-5">
+            {updateFieldMutation.isError && (
+              <p className="text-xs text-red-500 bg-red-50 rounded-lg px-3 py-2">Failed to update field.</p>
+            )}
+            {updateFieldMutation.isSuccess && (
+              <p className="text-xs text-emerald-600 bg-emerald-50 rounded-lg px-3 py-2">Field updated successfully.</p>
+            )}
+
+            <h4 className="text-sm font-semibold text-gray-700">Editable Fields</h4>
+            <div className="space-y-3">
+              {[
+                { field: 'name', label: 'Tournament Name', type: 'text' },
+                { field: 'game', label: 'Game', type: 'text' },
+                { field: 'format', label: 'Format', type: 'text' },
+                { field: 'max_teams', label: 'Max Teams', type: 'number' },
+                { field: 'schedule', label: 'Schedule', type: 'datetime-local' },
+                { field: 'description', label: 'Description', type: 'textarea' },
+                { field: 'venue', label: 'Venue', type: 'text' },
+                { field: 'stream_link', label: 'Stream Link', type: 'text' },
+                { field: 'total_cost', label: 'Total Cost (EGP)', type: 'number' },
+                { field: 'prizepool_total', label: 'Prizepool (EGP)', type: 'number' },
+                { field: 'platform_fee', label: 'Platform Fee (EGP)', type: 'number' },
+              ].map(({ field, label, type }) => (
+                <div key={field} className="flex items-start justify-between gap-4 py-2.5 border-b border-gray-50 last:border-0">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs text-gray-500">{label}</p>
+                    {editingField === field ? (
+                      <div className="flex items-center gap-2 mt-1">
+                        {type === 'textarea' ? (
+                          <textarea
+                            value={editValue}
+                            onChange={(e) => setEditValue(e.target.value)}
+                            className="flex-1 px-2 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 resize-none"
+                            rows={3}
+                          />
+                        ) : (
+                          <input
+                            type={type === 'datetime-local' ? 'datetime-local' : type}
+                            value={editValue}
+                            onChange={(e) => setEditValue(e.target.value)}
+                            className="flex-1 px-2 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
+                          />
+                        )}
+                        <button
+                          onClick={saveField}
+                          disabled={updateFieldMutation.isPending}
+                          className="px-3 py-1.5 text-xs font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 disabled:opacity-50"
+                        >
+                          {updateFieldMutation.isPending ? 'Saving...' : 'Save'}
+                        </button>
+                        <button
+                          onClick={() => setEditingField(null)}
+                          className="px-3 py-1.5 text-xs font-medium text-gray-500 bg-gray-100 rounded-lg hover:bg-gray-200"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    ) : (
+                      <p className="text-sm font-medium text-gray-900 mt-0.5">
+                        {type === 'number' && ['total_cost', 'prizepool_total', 'platform_fee'].includes(field)
+                          ? formatEGP(tournament[field])
+                          : field === 'schedule'
+                            ? formatDate(tournament[field])
+                            : (tournament[field] ?? '-')}
+                      </p>
+                    )}
+                  </div>
+                  {editingField !== field && (
+                    <button
+                      onClick={() => startEditing(field, field === 'schedule' && tournament[field] ? new Date(tournament[field]).toISOString().slice(0, 16) : tournament[field])}
+                      className="shrink-0 mt-3 px-2.5 py-1 text-xs text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg transition"
+                    >
+                      Edit
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+
+            <hr className="border-gray-100" />
+
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
               <InfoRow icon={Calendar} label="Schedule" value={formatDate(tournament.schedule)} />
               <InfoRow icon={Globe} label="Type" value={tournament.tournament_type === 'shared' ? 'Shared' : 'Solo'} />
@@ -181,12 +289,6 @@ export default function StaffTournamentDetail() {
               <CostCard label="Prizepool" value={formatEGP(tournament.prizepool_total)} />
               <CostCard label="Platform Fee (15%)" value={formatEGP(tournament.platform_fee)} />
             </div>
-            {tournament.description && (
-              <div>
-                <h4 className="text-sm font-semibold text-gray-700 mb-1">Description</h4>
-                <p className="text-sm text-gray-600 whitespace-pre-wrap">{tournament.description}</p>
-              </div>
-            )}
             {coOrgs.length > 0 && (
               <div>
                 <h4 className="text-sm font-semibold text-gray-700 mb-2">Co-Organizers</h4>

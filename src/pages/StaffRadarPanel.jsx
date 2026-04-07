@@ -3,8 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   Search, Radar, Shield, DollarSign, Users, Filter,
 } from 'lucide-react';
-import { SponsorshipRadar } from '@/api/heruClient';
-import { useAuth } from '@/lib/AuthContext';
+import { Staff } from '@/api/heruClient';
 
 const STATUS_COLORS = {
   open:         'bg-green-500/20 text-green-400 border border-green-500/30',
@@ -37,11 +36,11 @@ export default function StaffRadarPanel() {
 
   const { data: radarListings = [], isLoading } = useQuery({
     queryKey: ['staff-radar-listings'],
-    queryFn: () => SponsorshipRadar.list(),
+    queryFn: () => Staff.allRadar(),
   });
 
   const updateStatusMutation = useMutation({
-    mutationFn: ({ id, status }) => SponsorshipRadar.update(id, { status }),
+    mutationFn: ({ id, status }) => Staff.updateRadar(id, { status }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['staff-radar-listings'] });
     },

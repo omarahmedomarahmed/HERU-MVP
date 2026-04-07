@@ -9,8 +9,9 @@ import { Order } from '@/api/heruClient'
 import { useAuth } from '@/lib/AuthContext'
 
 import {
-  Home, Trophy, Users, ShoppingBag, User, Bell, 
-  ShoppingCart, Menu, X, LogOut, Package, LayoutDashboard
+  Home, Trophy, Users, ShoppingBag, User, Bell,
+  ShoppingCart, Menu, X, LogOut, Package, LayoutDashboard,
+  Swords, Wallet
 } from 'lucide-react';
 
 export default function GamerLayout({ children, user, profile, cartCount = 0, notificationCount = 0 }) {
@@ -21,9 +22,11 @@ export default function GamerLayout({ children, user, profile, cartCount = 0, no
   
   const navItems = [
     { icon: Home, label: 'Home', path: '/gamer/home' },
+    { icon: Swords, label: 'Arena', path: '/gamer/arena', prominent: true },
     { icon: Trophy, label: 'Tournaments', path: '/gamer/tournaments' },
     { icon: Users, label: 'Teams', path: '/gamer/teams' },
     { icon: ShoppingBag, label: 'Shop', path: '/gamer/marketplace' },
+    { icon: Wallet, label: 'Billing', path: '/gamer/billing' },
   ];
 
   const isActive = (path) => location.pathname === path || location.pathname.startsWith(path + '/');
@@ -66,9 +69,11 @@ export default function GamerLayout({ children, user, profile, cartCount = 0, no
                   className={`
                     flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium
                     transition-all duration-200
-                    ${isActive(item.path) 
-                      ? 'bg-red-500/20 text-red-400 border border-red-500/30' 
-                      : 'text-gray-400 hover:text-white hover:bg-white/5'
+                    ${isActive(item.path)
+                      ? 'bg-red-500/20 text-red-400 border border-red-500/30'
+                      : item.prominent
+                        ? 'text-red-400 hover:text-red-300 hover:bg-red-500/10 border border-red-500/20'
+                        : 'text-gray-400 hover:text-white hover:bg-white/5'
                     }
                   `}
                 >
@@ -215,7 +220,9 @@ export default function GamerLayout({ children, user, profile, cartCount = 0, no
                       flex items-center gap-3 px-4 py-3 rounded-lg
                       ${isActive(item.path)
                         ? 'bg-red-500/20 text-red-400'
-                        : 'text-gray-400 hover:text-white hover:bg-white/5'
+                        : item.prominent
+                          ? 'text-red-400 hover:text-red-300 hover:bg-red-500/10 border border-red-500/20'
+                          : 'text-gray-400 hover:text-white hover:bg-white/5'
                       }
                     `}
                   >

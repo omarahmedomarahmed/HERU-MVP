@@ -5,8 +5,7 @@ import { format } from 'date-fns';
 import {
   Search, Eye, DollarSign, Check, FileText, AlertTriangle, Filter,
 } from 'lucide-react';
-import { Bill } from '@/api/heruClient';
-import { useAuth } from '@/lib/AuthContext';
+import { Staff, Bill } from '@/api/heruClient';
 
 const STATUS_BADGE = {
   paid:    'bg-green-500/20 text-green-400 border border-green-500/30',
@@ -30,7 +29,7 @@ export default function StaffBilling() {
 
   const { data: bills = [], isLoading } = useQuery({
     queryKey: ['staff-all-bills'],
-    queryFn: () => Bill.list(),
+    queryFn: () => Staff.allBills(),
   });
 
   const filtered = useMemo(() => {
@@ -51,7 +50,7 @@ export default function StaffBilling() {
   }), [bills]);
 
   const markPaidMutation = useMutation({
-    mutationFn: (bill) => Bill.update(bill.id, {
+    mutationFn: (bill) => Staff.updateBill(bill.id, {
       payment_status: 'paid',
       paid_amount: bill.grand_total,
       paid_date: new Date().toISOString().split('T')[0],
@@ -63,7 +62,7 @@ export default function StaffBilling() {
   });
 
   const markUnpaidMutation = useMutation({
-    mutationFn: (bill) => Bill.update(bill.id, {
+    mutationFn: (bill) => Staff.updateBill(bill.id, {
       payment_status: 'unpaid',
       paid_amount: 0,
       paid_date: null,
@@ -177,7 +176,7 @@ export default function StaffBilling() {
                         {bill.bill_type?.replace('_', ' ')}
                       </span>
                     </td>
-                    <td className="px-5 py-3 text-gray-300">{bill.payer_name || '--'}</td>
+                    <td className="px-5 py-3 text-gray-300">{bill.payer_name || bill.payer_email || bill.payer_id?.slice(0, 8) || '--'}</td>
                     <td className="px-5 py-3 text-gray-400 truncate max-w-48">{bill.tournament_name || '--'}</td>
                     <td className="px-5 py-3 text-right text-white font-bold">EGP {(bill.grand_total || 0).toLocaleString()}</td>
                     <td className="px-5 py-3 text-center">

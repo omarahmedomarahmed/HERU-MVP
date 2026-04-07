@@ -462,8 +462,8 @@ export default function RadarDetailPage() {
             {/* Commit Section */}
             {canCommit && !commitSuccess && (
               <FloatingPanel className="p-5" glowBorder>
-                <h2 className="text-lg font-bold text-white mb-1">Commit as Co-Organizer</h2>
-                <p className="text-gray-400 text-xs mb-4">Your brand will be featured on this tournament page</p>
+                <h2 className="text-lg font-bold text-white mb-1">Commit as {availablePercent >= 66 ? 'Co-Organizer or Sponsor' : 'Co-Organizer'}</h2>
+                <p className="text-gray-400 text-xs mb-4">Your brand will be featured on this tournament page. 33% = Co-Organizer, 66% = Sponsor.</p>
                 <div className="space-y-4">
                   {/* Preset percentage buttons */}
                   <div>
@@ -579,6 +579,12 @@ export default function RadarDetailPage() {
                   <h2 className="text-lg font-bold text-white">Your Commitment</h2>
                 </div>
                 <div className="space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-gray-400">Role</span>
+                    <span className={`font-bold ${(myCoEntry.percent || myCoEntry.committed_percent || 0) >= 66 ? 'text-purple-400' : 'text-red-400'}`}>
+                      {(myCoEntry.percent || myCoEntry.committed_percent || 0) >= 66 ? 'Sponsor' : 'Co-Organizer'}
+                    </span>
+                  </div>
                   <div className="flex justify-between">
                     <span className="text-gray-400">Amount</span>
                     <span className="text-yellow-400 font-bold">EGP {(myCoEntry.amount || myCoEntry.committed_amount)?.toLocaleString()} ({myCoEntry.percent || myCoEntry.committed_percent}%)</span>

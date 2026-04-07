@@ -94,6 +94,8 @@ export const Tournament = {
   joinRequest:      (id, data)    => apiCall(`/tournaments/${id}/join-request`, { method: 'POST', body: data }),
   handleJoinRequest:(id, reqId, data) => apiCall(`/tournaments/${id}/join-request/${reqId}`, { method: 'PUT', body: data }),
   inviteTeam:       (id, data)    => apiCall(`/tournaments/${id}/invite-team`, { method: 'POST', body: data }),
+  invitePlayer:     (id, data)    => apiCall(`/tournaments/${id}/invite-player`, { method: 'POST', body: data }),
+  joinAsPlayer:     (id, data)    => apiCall(`/tournaments/${id}/join-player`, { method: 'POST', body: data }),
   removeTeam:       (id, teamId)  => apiCall(`/tournaments/${id}/teams/${teamId}`, { method: 'DELETE' }),
   addTalent:        (id, data)    => apiCall(`/tournaments/${id}/talents`, { method: 'POST', body: data }),
   removeTalent:     (id, talentId)=> apiCall(`/tournaments/${id}/talents/${talentId}`, { method: 'DELETE' }),
@@ -102,6 +104,13 @@ export const Tournament = {
   updateSignupPage: (id, data)   => apiCall(`/tournaments/${id}/signup-page`, { method: 'PUT', body: data }),
   getTeamChat:      (id, teamId) => apiCall(`/tournaments/${id}/team-chat/${teamId}`),
   sendTeamChat:     (id, teamId, msg) => apiCall(`/tournaments/${id}/team-chat/${teamId}`, { method: 'POST', body: msg }),
+  // Match records
+  getMatches:       (id)          => apiCall(`/tournaments/${id}/matches`),
+  getMatch:         (id, matchId) => apiCall(`/tournaments/${id}/matches/${matchId}`),
+  createMatch:      (id, data)    => apiCall(`/tournaments/${id}/matches`, { method: 'POST', body: data }),
+  updateMatch:      (id, matchId, data) => apiCall(`/tournaments/${id}/matches/${matchId}`, { method: 'PUT', body: data }),
+  submitMatchResult:(id, matchId, data) => apiCall(`/tournaments/${id}/matches/${matchId}/submit`, { method: 'POST', body: data }),
+  reportAbuse:      (id, matchId, data) => apiCall(`/tournaments/${id}/matches/${matchId}/report-abuse`, { method: 'POST', body: data }),
 }
 
 export const Team = {
@@ -169,8 +178,8 @@ export const BillingSnapshot = {
 
 export const ApprovalRequest = {
   ...createEntity('/approvals'),
-  approve:          (id, data)    => apiCall(`/approvals/${id}/approve`, { method: 'POST', body: data }),
-  reject:           (id, data)    => apiCall(`/approvals/${id}/reject`, { method: 'POST', body: data }),
+  approve:          (id, data)    => apiCall(`/approvals/${id}/approve`, { method: 'PUT', body: data }),
+  reject:           (id, data)    => apiCall(`/approvals/${id}/reject`, { method: 'PUT', body: data }),
 }
 
 export const AppSettings = {
@@ -191,6 +200,14 @@ export const Staff = {
   createAccessKey:  (data)        => apiCall('/staff/access-keys', { method: 'POST', body: data }),
   deactivateKey:    (id)          => apiCall(`/staff/access-keys/${id}/deactivate`, { method: 'POST' }),
   audit:            (filters)     => apiCall(`/staff/audit${buildQuery(filters)}`),
+  // Staff tournament/billing/radar controls
+  updateTournament: (id, data)    => apiCall(`/staff/tournaments/${id}`, { method: 'PUT', body: data }),
+  updateTournamentStatus: (id, data) => apiCall(`/staff/tournaments/${id}/status`, { method: 'PUT', body: data }),
+  allBills:         (filters)     => apiCall(`/staff/bills/all${buildQuery(filters)}`),
+  updateBill:       (id, data)    => apiCall(`/staff/bills/${id}`, { method: 'PUT', body: data }),
+  setMarketplaceRequired: (id, data) => apiCall(`/staff/marketplace/${id}/required`, { method: 'PUT', body: data }),
+  allRadar:         (filters)     => apiCall(`/staff/radar${buildQuery(filters)}`),
+  updateRadar:      (id, data)    => apiCall(`/staff/radar/${id}`, { method: 'PUT', body: data }),
 }
 
 export const TournamentReport = {

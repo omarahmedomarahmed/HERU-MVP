@@ -43,6 +43,8 @@ import GamerNotifications from './pages/GamerNotifications'
 import Marketplace from './pages/Marketplace'
 import Cart from './pages/Cart'
 import TournamentDetails from './pages/TournamentDetails'
+import GamerArena from './pages/GamerArena'
+import GamerBilling from './pages/GamerBilling'
 
 // Organizer pages
 import OrganizerLayout from '@/components/layouts/OrganizerLayout'
@@ -110,6 +112,8 @@ function App() {
 
             {/* ============ GAMER ZONE ============ */}
             <Route path="/gamer/home" element={<RequireGamer><GamerHome /></RequireGamer>} />
+            <Route path="/gamer/arena" element={<RequireGamer><GamerArena /></RequireGamer>} />
+            <Route path="/gamer/billing" element={<RequireGamer><GamerBilling /></RequireGamer>} />
             <Route path="/gamer/tournaments" element={<RequireGamer><Tournaments /></RequireGamer>} />
             <Route path="/gamer/tournaments/:id" element={<RequireGamer><TournamentDetails /></RequireGamer>} />
             <Route path="/gamer/profile" element={<RequireGamer><GamerProfile /></RequireGamer>} />

@@ -12,12 +12,14 @@ import {
   MapPin, Phone, User, Tag, Check, Coins
 } from 'lucide-react';
 import { awardCoins, spendCoins, COIN_REWARDS } from '@/components/utils/coinRewards';
-import { AppSettings, GamerProfile, Order, apiCall } from '@/api/heruClient'
+import { AppSettings, Bill, GamerProfile, Order, apiCall } from '@/api/heruClient'
 import { useAuth } from '@/lib/AuthContext'
 import PhoneInput from '@/components/ui/PhoneInput'
+import { useToast } from '@/components/ui/use-toast'
 
 
 export default function Cart() {
+  const { toast } = useToast();
   const [user, setUser] = useState(null);
   const [checkoutModal, setCheckoutModal] = useState(false);
   const [promoCode, setPromoCode] = useState('');
@@ -147,37 +149,65 @@ export default function Cart() {
       });
 
       // Mark promo code as used
-      if (promoApplied) {
-        await AppSettings.update(promoApplied.id, { used: true });
-      }
+      try {
+        if (promoApplied) {
+          await AppSettings.update(promoApplied.id, { used: true });
+        }
+      } catch (e) { console.warn('Could not mark promo used:', e); }
 
       // Spend coins if used
-      if (useCoins && coinsToSpend > 0) {
-        await spendCoins(user.id, coinsToSpend, 'Purchase discount');
-      }
+      try {
+        if (useCoins && coinsToSpend > 0) {
+          await spendCoins(user.id, coinsToSpend, 'Purchase discount');
+        }
+      } catch (e) { console.warn('Could not spend coins:', e); }
 
       // Add to purchased items
-      if (profile) {
-        const purchasedItems = profile.purchased_items || [];
-        cart.forEach(item => {
-          purchasedItems.push({
-            item_id: item.id,
-            purchased_at: new Date().toISOString(),
-            order_id: order.id
+      try {
+        if (profile) {
+          const purchasedItems = profile.purchased_items || [];
+          cart.forEach(item => {
+            purchasedItems.push({
+              item_id: item.id,
+              purchased_at: new Date().toISOString(),
+              order_id: order.id
+            });
           });
+          await GamerProfile.updateMe({ purchased_items: purchasedItems });
+        }
+      } catch (e) { console.warn('Could not update purchased items:', e); }
+
+      // Create a bill for this order
+      try {
+        await Bill.create({
+          bill_type: 'gamer',
+          payer_id: user.id,
+          payer_type: 'gamer',
+          payer_name: profile?.username || user?.full_name || user?.email,
+          payer_email: user?.email,
+          items: cart.map(item => ({ title: item.title, price: item.price, quantity: item.quantity || 1 })),
+          subtotal: subtotal,
+          platform_fee: 0,
+          grand_total: total,
+          payment_status: 'unpaid',
         });
-        await GamerProfile.update(profile.id, { purchased_items: purchasedItems });
-      }
+      } catch (e) { console.warn('Could not create bill:', e); }
 
       // Award coins for purchase
-      awardCoins(user.id, COIN_REWARDS.BUY_ITEM * cart.length, 'Made a purchase');
+      try {
+        awardCoins(user.id, COIN_REWARDS.BUY_ITEM * cart.length, 'Made a purchase');
+      } catch (e) { console.warn('Could not award coins:', e); }
 
       clearCart();
       return order;
     },
-    onSuccess: () => {
+    onSuccess: (order) => {
+      toast({ title: 'Order placed!', description: `Order #${order?.id?.slice(0, 8)} created. Check your billing for payment.` });
       setCheckoutModal(false);
-      navigate('/gamer/orders');
+      navigate('/gamer/billing');
+    },
+    onError: (err) => {
+      toast({ title: 'Order failed', description: err.message || 'Please try again.', variant: 'destructive' });
     }
   });
 

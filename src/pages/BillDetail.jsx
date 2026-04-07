@@ -138,8 +138,11 @@ Status: ${bill.payment_status?.toUpperCase()}
           <div className="grid md:grid-cols-2 gap-6 mb-8 pb-8 border-b border-zinc-800">
             <div>
               <p className="text-gray-400 text-sm mb-1">Bill To</p>
-              <p className="text-white font-bold">{bill.payer_name}</p>
-              <p className="text-gray-400 text-sm">{bill.payer_email}</p>
+              <p className="text-white font-bold">{bill.payer_name || bill.payer_email?.split('@')[0] || 'Organizer'}</p>
+              <p className="text-gray-400 text-sm">{bill.payer_email || '—'}</p>
+              {bill.bill_type && (
+                <p className="text-gray-500 text-xs mt-1 capitalize">{bill.bill_type.replace(/_/g, ' ')}</p>
+              )}
             </div>
             <div className="text-right">
               <p className="text-gray-400 text-sm mb-1">Issued</p>
@@ -155,29 +158,37 @@ Status: ${bill.payment_status?.toUpperCase()}
 
           <div className="mb-8">
             <h2 className="text-lg font-bold text-white mb-4">Bill Items & Fulfillment Status</h2>
+            {(!bill.items || bill.items.length === 0) ? (
+              <div className="text-center py-6 text-gray-500 text-sm bg-zinc-800/30 rounded-lg">
+                No itemized breakdown available for this bill.
+              </div>
+            ) : (
             <div className="space-y-2">
-              {bill.items?.map((item, i) => {
+              {bill.items.map((item, i) => {
                 const tourOrder = tournamentOrder?.items?.find(o => o.item_id === item.item_id);
                 const itemStatus = tourOrder?.status || 'pending';
+                const itemPrice = item.subtotal ?? item.price ?? 0;
+                const itemQty = item.quantity ?? 1;
                 return (
                   <div key={i} className="flex items-center justify-between bg-zinc-800/40 rounded-lg px-4 py-3">
                     <div className="flex-1">
-                      <p className="text-white font-medium">{item.title}</p>
-                      <p className="text-gray-500 text-sm capitalize">{item.category}</p>
+                      <p className="text-white font-medium">{item.title || item.name || 'Item'}</p>
+                      <p className="text-gray-500 text-sm capitalize">{item.category || '—'}</p>
                     </div>
                     <div className="flex items-center gap-3">
                       <span className={`text-xs px-2 py-1 rounded font-medium ${itemStatusColors[itemStatus] || 'bg-zinc-700 text-gray-300'}`}>
                         {itemStatus?.replace('_', ' ').toUpperCase()}
                       </span>
                       <div className="text-right">
-                        <p className="text-gray-400 text-sm">x{item.quantity}</p>
-                        <p className="text-white font-bold">EGP {item.subtotal?.toLocaleString()}</p>
+                        <p className="text-gray-400 text-sm">x{itemQty}</p>
+                        <p className="text-white font-bold">EGP {itemPrice.toLocaleString()}</p>
                       </div>
                     </div>
                   </div>
                 );
               })}
             </div>
+            )}
             {tournamentOrder && (
               <div className="mt-4 p-3 bg-red-500/10 border border-red-500/30 rounded-lg">
                 <p className="text-red-400 text-sm flex items-center gap-2">
@@ -191,18 +202,22 @@ Status: ${bill.payment_status?.toUpperCase()}
           <div className="bg-zinc-800/50 rounded-lg p-6 mb-8 space-y-3">
             <div className="flex justify-between">
               <span className="text-gray-400">Subtotal</span>
-              <span className="text-white">EGP {bill.subtotal?.toLocaleString()}</span>
+              <span className="text-white">EGP {(bill.subtotal ?? 0).toLocaleString()}</span>
             </div>
-            {bill.platform_fee > 0 && (
+            <div className="flex justify-between">
+              <span className="text-red-400">Platform Fee (15%)</span>
+              <span className="text-red-400">EGP {(bill.platform_fee ?? 0).toLocaleString()}</span>
+            </div>
+            {(bill.tax ?? 0) > 0 && (
               <div className="flex justify-between">
-                <span className="text-red-400">Platform Fee (15%)</span>
-                <span className="text-red-400">EGP {bill.platform_fee?.toLocaleString()}</span>
+                <span className="text-gray-400">Tax</span>
+                <span className="text-white">EGP {bill.tax.toLocaleString()}</span>
               </div>
             )}
             <div className="flex justify-between pt-3 border-t border-zinc-700">
               <span className="text-white font-bold">Total Due</span>
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-red-400 to-cyan-400 font-black text-xl">
-                EGP {bill.grand_total?.toLocaleString()}
+                EGP {(bill.grand_total ?? 0).toLocaleString()}
               </span>
             </div>
             {bill.paid_amount > 0 && (
@@ -232,8 +247,8 @@ Status: ${bill.payment_status?.toUpperCase()}
                 {sharedBills.map(sb => (
                   <div key={sb.id} className={`flex items-center justify-between px-4 py-3 rounded-lg ${sb.id === bill.id ? 'bg-red-500/10 border border-red-500/30' : 'bg-zinc-800/40'}`}>
                     <div>
-                      <p className="text-white font-medium">{sb.payer_name || 'Unknown'}</p>
-                      <p className="text-xs text-gray-500 capitalize">{sb.bill_type?.replace('_', ' ')}</p>
+                      <p className="text-white font-medium">{sb.payer_name || sb.payer_email?.split('@')[0] || 'Organizer'}</p>
+                      <p className="text-xs text-gray-500 capitalize">{sb.bill_type?.replace(/_/g, ' ')}</p>
                     </div>
                     <div className="flex items-center gap-3">
                       <span className={`text-xs px-2 py-1 rounded-full ${sb.payment_status === 'paid' ? 'bg-green-500/20 text-green-400' : 'bg-yellow-500/20 text-yellow-400'}`}>

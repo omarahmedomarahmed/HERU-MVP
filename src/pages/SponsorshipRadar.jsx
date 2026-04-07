@@ -113,7 +113,7 @@ function CommitModal({ radar, onClose, onConfirm, isLoading }) {
             </div>
             <div className="flex items-center justify-between text-sm">
               <span className="text-gray-400">Your Role</span>
-              <span className={`font-bold ${commitPercent >= 66 ? 'text-red-400' : 'text-red-400'}`}>
+              <span className={`font-bold ${commitPercent >= 66 ? 'text-purple-400' : 'text-red-400'}`}>
                 {commitLabel(commitPercent)}
               </span>
             </div>
@@ -298,7 +298,7 @@ function RadarCard({ radar, onCommit, isMyCommitment, myEntry }) {
             </div>
             <div className="flex items-center justify-between text-sm">
               <span className="text-gray-400">Role</span>
-              <span className={`font-bold ${myEntry.committed_percent >= 66 ? 'text-red-400' : 'text-red-400'}`}>
+              <span className={`font-bold ${myEntry.committed_percent >= 66 ? 'text-purple-400' : 'text-red-400'}`}>
                 {commitLabel(myEntry.committed_percent)}
               </span>
             </div>
@@ -361,8 +361,9 @@ export default function SponsorshipRadarPage() {
   })
 
   const myOrganizerId = orgProfile?.id || null
+  const myUserId = user?.id || null
 
-  // Fetch all radar records
+  // Fetch all radar records (no status filter — we filter client-side per tab)
   const { data: radarRecords = [], isLoading } = useQuery({
     queryKey: ['sponsorship-radar'],
     queryFn: () => RadarAPI.list(),
@@ -374,8 +375,12 @@ export default function SponsorshipRadarPage() {
   const browseRecords = radarRecords.filter(r => {
     // Only open or in_progress, not my own, not already committed
     if (r.status !== 'open' && r.status !== 'in_progress') return false
-    if (r.main_organizer_id === myOrganizerId) return false
-    if (r.co_organizers?.some(co => co.organizer_id === myOrganizerId)) return false
+    // Exclude tournaments where the user is the main organizer (check both profile ID and user ID)
+    if (r.main_organizer_id === myOrganizerId || r.main_organizer_id === myUserId) return false
+    // Exclude tournaments where user already committed (check both organizer_id fields)
+    if (r.co_organizers?.some(co =>
+      co.organizer_id === myOrganizerId || co.organizer_id === myUserId
+    )) return false
 
     // Search filter
     if (search) {
@@ -394,10 +399,13 @@ export default function SponsorshipRadarPage() {
     return true
   })
 
-  const myCommitments = radarRecords.filter(r =>
-    r.main_organizer_id !== myOrganizerId &&
-    r.co_organizers?.some(co => co.organizer_id === myOrganizerId)
-  )
+  const myCommitments = radarRecords.filter(r => {
+    const isNotMain = r.main_organizer_id !== myOrganizerId && r.main_organizer_id !== myUserId
+    const hasMyCommitment = r.co_organizers?.some(co =>
+      co.organizer_id === myOrganizerId || co.organizer_id === myUserId
+    )
+    return isNotMain && hasMyCommitment
+  })
 
   // ---------- Commit mutation ----------
 
@@ -548,7 +556,9 @@ export default function SponsorshipRadarPage() {
           ) : (
             <div className="grid lg:grid-cols-2 gap-5">
               {myCommitments.map(radar => {
-                const myEntry = radar.co_organizers?.find(co => co.organizer_id === myOrganizerId)
+                const myEntry = radar.co_organizers?.find(co =>
+                  co.organizer_id === myOrganizerId || co.organizer_id === myUserId
+                )
                 return (
                   <RadarCard
                     key={radar.id}

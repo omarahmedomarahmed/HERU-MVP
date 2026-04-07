@@ -12,11 +12,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from '@/components/ui/input';
 import { GamerProfile, MarketplaceItem, Order, Team, Tournament, apiCall } from '@/api/heruClient'
 import { useAuth } from '@/lib/AuthContext'
+import { useToast } from '@/components/ui/use-toast'
 
 import {
   Trophy, Users, Calendar, MapPin, Gamepad2, Play, Star,
   ArrowLeft, Clock, Award, ExternalLink, MessageSquare, Send,
-  Share2, Copy, Check, Radio
+  Share2, Copy, Check, Radio, Swords, User
 } from 'lucide-react';
 
 export default function TournamentDetails() {
@@ -98,6 +99,28 @@ export default function TournamentDetails() {
   });
 
 
+
+  const { toast } = useToast();
+
+  const joinAsPlayerMutation = useMutation({
+    mutationFn: async () => {
+      const userId = user?.user?.id || user?.id;
+      const matchingGame = (profile?.games || []).find(g =>
+        g.game_name?.toLowerCase() === tournament?.game?.toLowerCase()
+      );
+      return Tournament.joinAsPlayer(tournamentId, {
+        game_id: matchingGame?.game_id || '',
+        rank: matchingGame?.rank || '',
+      });
+    },
+    onSuccess: () => {
+      toast({ title: 'Joined!', description: 'You have joined the tournament as a player.' });
+      queryClient.invalidateQueries(['tournament', tournamentId]);
+    },
+    onError: (err) => {
+      toast({ title: 'Failed to join', description: err.message, variant: 'destructive' });
+    },
+  });
 
   const sendMessageMutation = useMutation({
     mutationFn: async (message) => {
@@ -185,13 +208,15 @@ export default function TournamentDetails() {
     );
   }
 
-  const teamsJoined = tournament.teams?.length || 0;
+  const is1v1 = tournament.participant_type === 'player';
+  const teamsJoined = is1v1 ? (tournament.player_participants?.length || 0) : (tournament.teams?.length || 0);
   const slotsLeft = tournament.max_teams ? tournament.max_teams - teamsJoined : null;
   const myTeamInTournament = myTeams.some(t => tournament.teams?.includes(t.id));
   const myTeamPendingRequest = myTeams.some(t =>
     (tournament.join_requests || []).some(r => r.team_id === t.id && r.status === 'pending')
   );
   const myTeamIds = new Set(myTeams.map(t => t.id));
+  const myPlayerJoined = is1v1 && (tournament.player_participants || []).some(p => p.user_id === user?.user?.id || p.user_id === user?.id);
 
   const shareUrl = window.location.href;
   const handleCopyLink = () => {
@@ -269,16 +294,23 @@ export default function TournamentDetails() {
                 </GlowButton>
               </a>
             )}
-            {tournament.status === 'published' && !myTeamInTournament && !myTeamPendingRequest && user && (
+            {/* Team tournament join */}
+            {tournament.status === 'published' && !is1v1 && !myTeamInTournament && !myTeamPendingRequest && user && (
               <GlowButton size="lg" onClick={() => setJoinModal(true)}>
-                <Play className="w-5 h-5" />
+                <Users className="w-5 h-5" />
                 Register Your Team
+              </GlowButton>
+            )}
+            {/* 1v1 tournament join */}
+            {tournament.status === 'published' && is1v1 && !myPlayerJoined && user && (
+              <GlowButton size="lg" onClick={() => joinAsPlayerMutation.mutate()}>
+                {joinAsPlayerMutation.isPending ? 'Joining...' : <><Swords className="w-5 h-5" /> Join as Player</>}
               </GlowButton>
             )}
             {myTeamPendingRequest && (
               <HexBadge className="bg-amber-500/20 text-amber-400 border-amber-500/50">Request Pending</HexBadge>
             )}
-            {myTeamInTournament && (
+            {(myTeamInTournament || myPlayerJoined) && (
               <HexBadge className="bg-green-500/20 text-green-400 border-green-500/50">Joined</HexBadge>
             )}
           </div>
@@ -386,11 +418,32 @@ export default function TournamentDetails() {
 
               <FloatingPanel className="p-6">
                 <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
-                  <Users className="w-5 h-5 text-red-500" />
-                  Participating Teams ({teamsJoined})
+                  {is1v1 ? <Swords className="w-5 h-5 text-red-500" /> : <Users className="w-5 h-5 text-red-500" />}
+                  {is1v1 ? `Players (${teamsJoined})` : `Participating Teams (${teamsJoined})`}
                 </h2>
 
-                {teams.length > 0 ? (
+                {/* 1v1 Players */}
+                {is1v1 && (tournament.player_participants || []).length > 0 && (
+                  <div className="grid md:grid-cols-2 gap-3 mb-4">
+                    {(tournament.player_participants || []).map((p, idx) => {
+                      const isMe = p.user_id === (user?.user?.id || user?.id);
+                      return (
+                        <div key={idx} className={`flex items-center gap-3 p-3 rounded-lg border ${isMe ? 'border-red-500/50 bg-red-500/5' : 'border-zinc-800 bg-zinc-800/50'}`}>
+                          <div className={`w-10 h-10 rounded-full flex items-center justify-center ${isMe ? 'bg-red-500/20' : 'bg-zinc-700'}`}>
+                            <User className="w-5 h-5 text-gray-400" />
+                          </div>
+                          <div>
+                            <p className="text-white font-medium text-sm">{p.username || 'Player'}{isMe && <span className="text-red-400 text-xs ml-2">(You)</span>}</p>
+                            {p.rank && <p className="text-gray-500 text-xs">{p.rank}</p>}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+
+                {/* Team participants */}
+                {!is1v1 && teams.length > 0 ? (
                   <div className="grid md:grid-cols-2 gap-4">
                     {teams.map((team) => {
                       const isMyTeam = myTeamIds.has(team.id);
@@ -420,10 +473,16 @@ export default function TournamentDetails() {
                       );
                     })}
                   </div>
-                ) : (
+                ) : !is1v1 && (
                   <div className="text-center py-8">
                     <Users className="w-12 h-12 text-zinc-700 mx-auto mb-2" />
                     <p className="text-gray-500">No teams have joined yet</p>
+                  </div>
+                )}
+                {is1v1 && (tournament.player_participants || []).length === 0 && (
+                  <div className="text-center py-8">
+                    <Swords className="w-12 h-12 text-zinc-700 mx-auto mb-2" />
+                    <p className="text-gray-500">No players have joined yet</p>
                   </div>
                 )}
               </FloatingPanel>

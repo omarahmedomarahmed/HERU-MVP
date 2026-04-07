@@ -519,7 +519,7 @@ export default function TournamentManage({ defaultTab = 'overview' }) {
               </button>
             )}
             <button
-              onClick={() => navigate(`/organizer/tournaments/${id}/manage/settings`)}
+              onClick={() => navigate(`/organizer/tournaments/new/${id}`)}
               className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-white/10 text-gray-300 text-sm font-medium hover:border-red-500/40 hover:text-white transition"
             >
               <Settings className="w-4 h-4" />
