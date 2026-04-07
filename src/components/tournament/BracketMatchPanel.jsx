@@ -479,6 +479,7 @@ export default function BracketMatchPanel({ tournament, teams, canEdit }) {
   const queryClient = useQueryClient();
   const tournamentId = tournament.id;
   const brackets = tournament.brackets || [];
+  const [selectedMatch, setSelectedMatch] = useState(null); // { roundIdx, matchIdx }
 
   const updateMatch = useMutation({
     mutationFn: async ({ roundIdx, matchIdx, updates }) => {
@@ -529,42 +530,180 @@ export default function BracketMatchPanel({ tournament, teams, canEdit }) {
     onSuccess: () => queryClient.invalidateQueries(['tournament', tournamentId]),
   });
 
+  // Generate empty brackets even with no teams
+  const generateEmptyBrackets = useMutation({
+    mutationFn: async (numTeams) => {
+      const count = numTeams || tournament.max_teams || 8;
+      const rounds = Math.ceil(Math.log2(count));
+      const newBrackets = [];
+
+      const firstRoundMatches = Math.ceil(count / 2);
+      const firstRound = [];
+      for (let m = 0; m < firstRoundMatches; m++) {
+        firstRound.push({
+          match_id: `r1-m${m}`,
+          team1: null,
+          team2: null,
+          winner: null,
+          score1: null,
+          score2: null,
+          chat: [],
+          submissions: [],
+          abuse_reports: [],
+        });
+      }
+      newBrackets.push({ round: 1, matches: firstRound });
+
+      for (let r = 2; r <= rounds; r++) {
+        const prevMatches = newBrackets[r - 2].matches.length;
+        const matchCount = Math.ceil(prevMatches / 2);
+        const roundMatches = [];
+        for (let m = 0; m < matchCount; m++) {
+          roundMatches.push({
+            match_id: `r${r}-m${m}`,
+            team1: null,
+            team2: null,
+            winner: null,
+            score1: null,
+            score2: null,
+            chat: [],
+            submissions: [],
+            abuse_reports: [],
+          });
+        }
+        newBrackets.push({ round: r, matches: roundMatches });
+      }
+
+      const log = [
+        ...(tournament.tournament_log || []),
+        {
+          action: 'brackets_generated',
+          description: `Empty bracket structure generated for ${count} team slots`,
+          timestamp: new Date().toISOString(),
+        },
+      ];
+
+      await Tournament.update(tournamentId, { brackets: newBrackets, tournament_log: log });
+    },
+    onSuccess: () => queryClient.invalidateQueries(['tournament', tournamentId]),
+  });
+
+  const selectedMatchData = selectedMatch
+    ? brackets[selectedMatch.roundIdx]?.matches[selectedMatch.matchIdx]
+    : null;
+
   if (!brackets.length) {
     return (
-      <FloatingPanel className="p-12 text-center">
-        <Trophy className="w-12 h-12 text-gray-600 mx-auto mb-3" />
-        <p className="text-gray-400">No brackets generated yet. Complete seeding first.</p>
-      </FloatingPanel>
+      <div className="space-y-4">
+        <FloatingPanel className="p-12 text-center">
+          <Trophy className="w-12 h-12 text-gray-600 mx-auto mb-3" />
+          <p className="text-gray-400 mb-4">No brackets generated yet.</p>
+          {canEdit && (
+            <div className="space-y-3">
+              <p className="text-gray-500 text-sm">Generate an empty bracket structure to set up matches.</p>
+              <div className="flex items-center justify-center gap-2 flex-wrap">
+                {[4, 8, 16, 32].map(n => (
+                  <GlowButton
+                    key={n}
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => generateEmptyBrackets.mutate(n)}
+                    disabled={generateEmptyBrackets.isPending}
+                  >
+                    {n} Teams
+                  </GlowButton>
+                ))}
+              </div>
+              {tournament.max_teams && (
+                <GlowButton
+                  onClick={() => generateEmptyBrackets.mutate(tournament.max_teams)}
+                  disabled={generateEmptyBrackets.isPending}
+                >
+                  Generate for {tournament.max_teams} Teams (Tournament Setting)
+                </GlowButton>
+              )}
+            </div>
+          )}
+        </FloatingPanel>
+      </div>
     );
   }
 
   return (
-    <div className="space-y-8 overflow-x-auto pb-6">
-      <div className="flex gap-6 min-w-max">
-        {brackets.map((round, roundIdx) => (
-          <div key={roundIdx} className="w-72 space-y-4">
-            <h4 className="text-center text-white font-black text-sm">
-              {round.round === brackets.length ? '🏆 FINALS' :
-               round.round === brackets.length - 1 ? 'SEMI-FINALS' :
-               round.round === 1 ? 'ROUND 1' : `ROUND ${round.round}`}
-            </h4>
-            <div className="space-y-4">
-              {round.matches.map((match, matchIdx) => (
-                <MatchCard
-                  key={matchIdx}
-                  match={match}
-                  roundIdx={roundIdx}
-                  matchIdx={matchIdx}
-                  teams={teams}
-                  canEdit={canEdit}
-                  onUpdate={(updates) => updateMatch.mutate({ roundIdx, matchIdx, updates })}
-                  onReset={() => resetMatch.mutate({ roundIdx, matchIdx })}
-                />
-              ))}
-            </div>
+    <div className="space-y-4">
+      {/* Bracket controls */}
+      {canEdit && (
+        <div className="flex items-center justify-between flex-wrap gap-2">
+          <div className="flex items-center gap-2">
+            <span className="text-gray-400 text-sm">{tournament.format || 'Single Elimination'}</span>
+            <span className="text-gray-600">|</span>
+            <span className="text-gray-400 text-sm">{brackets.length} rounds, {brackets.reduce((s, r) => s + r.matches.length, 0)} matches</span>
           </div>
-        ))}
+          <div className="flex gap-2">
+            <GlowButton
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                if (confirm('This will regenerate all brackets and reset all match data. Continue?')) {
+                  generateEmptyBrackets.mutate(tournament.max_teams || teams.length || 8);
+                }
+              }}
+              disabled={generateEmptyBrackets.isPending}
+            >
+              <RotateCcw className="w-3.5 h-3.5" /> Regenerate Brackets
+            </GlowButton>
+          </div>
+        </div>
+      )}
+
+      {/* Bracket visual */}
+      <div className="overflow-x-auto pb-6">
+        <div className="flex gap-6 min-w-max">
+          {brackets.map((round, roundIdx) => (
+            <div key={roundIdx} className="w-72 space-y-4">
+              <h4 className="text-center text-white font-black text-sm">
+                {round.round === brackets.length ? 'FINALS' :
+                 round.round === brackets.length - 1 ? 'SEMI-FINALS' :
+                 round.round === 1 ? 'ROUND 1' : `ROUND ${round.round}`}
+              </h4>
+              <div className="space-y-4">
+                {round.matches.map((match, matchIdx) => (
+                  <MatchCard
+                    key={matchIdx}
+                    match={match}
+                    roundIdx={roundIdx}
+                    matchIdx={matchIdx}
+                    teams={teams}
+                    canEdit={canEdit}
+                    onUpdate={(updates) => updateMatch.mutate({ roundIdx, matchIdx, updates })}
+                    onReset={() => resetMatch.mutate({ roundIdx, matchIdx })}
+                    onOpenDetail={() => setSelectedMatch({ roundIdx, matchIdx })}
+                  />
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
+
+      {/* Match Detail Modal */}
+      {selectedMatch && selectedMatchData && (
+        <MatchDetailModal
+          match={selectedMatchData}
+          roundIdx={selectedMatch.roundIdx}
+          matchIdx={selectedMatch.matchIdx}
+          teams={teams}
+          canEdit={canEdit}
+          tournament={tournament}
+          onUpdate={(updates) => {
+            updateMatch.mutate({ roundIdx: selectedMatch.roundIdx, matchIdx: selectedMatch.matchIdx, updates });
+          }}
+          onReset={() => {
+            resetMatch.mutate({ roundIdx: selectedMatch.roundIdx, matchIdx: selectedMatch.matchIdx });
+          }}
+          onClose={() => setSelectedMatch(null)}
+        />
+      )}
     </div>
   );
 }
