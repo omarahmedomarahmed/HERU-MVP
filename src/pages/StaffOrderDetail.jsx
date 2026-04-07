@@ -399,7 +399,6 @@ export default function StaffOrderDetail() {
             )}
           </div>
         </div>
-      </div>
     </div>
   );
 }
