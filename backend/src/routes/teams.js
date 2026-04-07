@@ -42,8 +42,23 @@ router.post('/', requireAuth, async (req, res) => {
     };
     const { data, error } = await supabaseAdmin.from('teams').insert(team).select().single();
     if (error) throw error;
-    // Add team to gamer profile
-    await supabaseAdmin.rpc('array_append_unique', { table_name: 'gamer_profiles', column_name: 'team_ids', value: data.id, user_id_val: req.user.id }).catch(() => {});
+    // Add team to gamer profile (direct update, no RPC needed)
+    try {
+      const { data: gp } = await supabaseAdmin
+        .from('gamer_profiles')
+        .select('team_ids')
+        .eq('user_id', req.user.id)
+        .single();
+      if (gp) {
+        const ids = Array.isArray(gp.team_ids) ? gp.team_ids : [];
+        if (!ids.includes(data.id)) {
+          await supabaseAdmin
+            .from('gamer_profiles')
+            .update({ team_ids: [...ids, data.id], updated_at: new Date().toISOString() })
+            .eq('user_id', req.user.id);
+        }
+      }
+    } catch (_) { /* profile update is best-effort */ }
     res.status(201).json(data);
   } catch (err) {
     res.status(500).json({ error: err.message });
