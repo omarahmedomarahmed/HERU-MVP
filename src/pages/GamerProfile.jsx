@@ -23,7 +23,7 @@ import {
   User, Edit2, Save, X, Gamepad2, Users, Star,
   Package, Plus, Trash2, LogOut, Briefcase, Trophy,
   Swords, TrendingUp, Crown, Shield, Medal, Award,
-  Target, Lock, ShoppingBag
+  Target, Lock, ShoppingBag, DollarSign, CreditCard, Bell, ChevronRight
 } from 'lucide-react';
 
 // Achievement icon mapping
@@ -495,6 +495,12 @@ export default function GamerProfile() {
               <Star className="w-4 h-4 mr-1.5" /> Talent
             </TabsTrigger>
           )}
+          <TabsTrigger value="tournaments" className="data-[state=active]:bg-red-600 data-[state=active]:text-white text-gray-400">
+            <Bell className="w-4 h-4 mr-1.5" /> Invites
+          </TabsTrigger>
+          <TabsTrigger value="billing" className="data-[state=active]:bg-red-600 data-[state=active]:text-white text-gray-400">
+            <DollarSign className="w-4 h-4 mr-1.5" /> Billing
+          </TabsTrigger>
         </TabsList>
 
         {/* Games Tab */}
@@ -889,6 +895,28 @@ export default function GamerProfile() {
             </FloatingPanel>
           </TabsContent>
         )}
+
+        {/* Tournament Invites Tab */}
+        <TabsContent value="tournaments">
+          <FloatingPanel className="p-6">
+            <h2 className="text-xl font-bold text-white flex items-center gap-2 mb-6">
+              <Bell className="w-5 h-5 text-red-500" />
+              Tournament Invites
+            </h2>
+            <TournamentInvitesTab userId={user?.id} profile={profile} />
+          </FloatingPanel>
+        </TabsContent>
+
+        {/* Billing Tab */}
+        <TabsContent value="billing">
+          <FloatingPanel className="p-6">
+            <h2 className="text-xl font-bold text-white flex items-center gap-2 mb-6">
+              <DollarSign className="w-5 h-5 text-red-500" />
+              My Bills
+            </h2>
+            <BillingTab userId={user?.id} />
+          </FloatingPanel>
+        </TabsContent>
       </Tabs>
 
       {/* Talent Application CTA (if not talent yet) */}
@@ -1191,5 +1219,186 @@ export default function GamerProfile() {
         </DialogContent>
       </Dialog>
     </GamerLayout>
+  );
+}
+
+// ─── Tournament Invites Sub-Component ────────────────────────────────────────
+function TournamentInvitesTab({ userId, profile }) {
+  const { data: tournaments = [], isLoading } = useQuery({
+    queryKey: ['gamer-tournament-invites', userId],
+    queryFn: async () => {
+      if (!userId) return [];
+      // Fetch tournaments where user is in invited_teams or gamer_invites
+      const res = await fetch(`/api/tournaments?invited_gamer=${userId}`, {
+        headers: { Authorization: `Bearer ${localStorage.getItem('auth_token')}` },
+      });
+      if (!res.ok) return [];
+      return res.json();
+    },
+    enabled: !!userId,
+  });
+
+  // Also show team join invites from teams
+  const { data: teamInvites = [] } = useQuery({
+    queryKey: ['team-invites', userId],
+    queryFn: async () => {
+      if (!userId) return [];
+      const res = await fetch(`/api/teams?invited_member=${userId}`, {
+        headers: { Authorization: `Bearer ${localStorage.getItem('auth_token')}` },
+      });
+      if (!res.ok) return [];
+      return res.json();
+    },
+    enabled: !!userId,
+  });
+
+  if (isLoading) return <div className="text-gray-400 py-8 text-center">Loading invites...</div>;
+
+  const hasAny = tournaments.length > 0 || teamInvites.length > 0;
+
+  return (
+    <div className="space-y-6">
+      {/* Tournament Invites */}
+      <div>
+        <h3 className="text-sm font-bold text-gray-400 uppercase mb-3 flex items-center gap-2">
+          <Trophy className="w-4 h-4" /> Tournament Invites
+        </h3>
+        {tournaments.length === 0 ? (
+          <div className="text-center py-8 text-gray-500 bg-zinc-800/30 rounded-xl">
+            <Trophy className="w-10 h-10 mx-auto mb-2 text-zinc-700" />
+            <p className="text-sm">No tournament invites</p>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {tournaments.map((t) => (
+              <div key={t.id} className="flex items-center justify-between p-4 bg-zinc-800/50 rounded-xl border border-zinc-700/30">
+                <div>
+                  <p className="text-white font-bold">{t.name}</p>
+                  <p className="text-gray-500 text-xs">{t.game} · {t.format}</p>
+                  {t.schedule && (
+                    <p className="text-gray-600 text-xs mt-0.5">{new Date(t.schedule).toLocaleDateString()}</p>
+                  )}
+                </div>
+                <Link to={`/gamer/arena/${t.id}`}>
+                  <GlowButton size="sm" variant="secondary">
+                    <ChevronRight className="w-4 h-4" /> View
+                  </GlowButton>
+                </Link>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Team Invites */}
+      <div>
+        <h3 className="text-sm font-bold text-gray-400 uppercase mb-3 flex items-center gap-2">
+          <Users className="w-4 h-4" /> Team Invites
+        </h3>
+        {teamInvites.length === 0 ? (
+          <div className="text-center py-8 text-gray-500 bg-zinc-800/30 rounded-xl">
+            <Users className="w-10 h-10 mx-auto mb-2 text-zinc-700" />
+            <p className="text-sm">No team invites</p>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {teamInvites.map((team) => (
+              <div key={team.id} className="flex items-center justify-between p-4 bg-zinc-800/50 rounded-xl border border-zinc-700/30">
+                <div className="flex items-center gap-3">
+                  {team.logo ? (
+                    <img src={team.logo} alt="" className="w-10 h-10 rounded-full object-cover" />
+                  ) : (
+                    <div className="w-10 h-10 rounded-full bg-zinc-700 flex items-center justify-center">
+                      <Users className="w-5 h-5 text-gray-400" />
+                    </div>
+                  )}
+                  <div>
+                    <p className="text-white font-bold">{team.name}</p>
+                    <p className="text-gray-500 text-xs">{team.games?.join(', ')}</p>
+                  </div>
+                </div>
+                <Link to={`/gamer/teams/${team.id}`}>
+                  <GlowButton size="sm" variant="secondary">
+                    <ChevronRight className="w-4 h-4" /> View
+                  </GlowButton>
+                </Link>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {!hasAny && (
+        <p className="text-center text-gray-500 text-sm pt-4">
+          Join teams or compete in tournaments to see invites here.
+        </p>
+      )}
+    </div>
+  );
+}
+
+// ─── Billing Sub-Component ────────────────────────────────────────────────────
+function BillingTab({ userId }) {
+  const { data: bills = [], isLoading } = useQuery({
+    queryKey: ['gamer-bills', userId],
+    queryFn: async () => {
+      if (!userId) return [];
+      const res = await fetch(`/api/bills?payer_id=${userId}`, {
+        headers: { Authorization: `Bearer ${localStorage.getItem('auth_token')}` },
+      });
+      if (!res.ok) return [];
+      return res.json();
+    },
+    enabled: !!userId,
+  });
+
+  if (isLoading) return <div className="text-gray-400 py-8 text-center">Loading bills...</div>;
+
+  if (bills.length === 0) {
+    return (
+      <div className="text-center py-12 text-gray-500">
+        <CreditCard className="w-12 h-12 mx-auto mb-3 text-zinc-700" />
+        <p className="font-medium">No bills yet</p>
+        <p className="text-sm mt-1">Bills from marketplace orders will appear here.</p>
+      </div>
+    );
+  }
+
+  const statusColor = (s) => {
+    if (s === 'paid') return 'text-green-400 bg-green-500/10';
+    if (s === 'partial') return 'text-yellow-400 bg-yellow-500/10';
+    if (s === 'overdue') return 'text-red-400 bg-red-500/10';
+    return 'text-gray-400 bg-zinc-700/50';
+  };
+
+  return (
+    <div className="space-y-3">
+      {bills.map((bill) => (
+        <div key={bill.id} className="flex items-center justify-between p-4 bg-zinc-800/50 rounded-xl border border-zinc-700/30 hover:border-red-500/20 transition-colors">
+          <div>
+            <p className="text-white font-bold font-mono text-sm">{bill.bill_number}</p>
+            <p className="text-gray-500 text-xs mt-0.5">
+              {bill.tournament_name || bill.bill_type} · {new Date(bill.created_at).toLocaleDateString()}
+            </p>
+            {bill.due_date && bill.payment_status !== 'paid' && (
+              <p className="text-gray-600 text-xs">Due: {new Date(bill.due_date).toLocaleDateString()}</p>
+            )}
+          </div>
+          <div className="flex items-center gap-3">
+            <div className="text-right">
+              <p className="text-white font-bold">EGP {bill.grand_total?.toLocaleString()}</p>
+              <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${statusColor(bill.payment_status)}`}>
+                {bill.payment_status?.toUpperCase()}
+              </span>
+            </div>
+            <Link to={`/bill/${bill.bill_number}`}>
+              <button className="p-2 text-gray-500 hover:text-red-400 transition-colors">
+                <ChevronRight className="w-5 h-5" />
+              </button>
+            </Link>
+          </div>
+        </div>
+      ))}
+    </div>
   );
 }

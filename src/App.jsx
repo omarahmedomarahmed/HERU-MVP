@@ -122,6 +122,8 @@ function App() {
             <Route path="/gamer/teams" element={<RequireGamer><Teams /></RequireGamer>} />
             <Route path="/gamer/teams/create" element={<RequireGamer><CreateTeam /></RequireGamer>} />
             <Route path="/gamer/teams/:id" element={<RequireGamer><TeamDetails /></RequireGamer>} />
+            <Route path="/gamer/arena" element={<RequireGamer><Arena /></RequireGamer>} />
+            <Route path="/gamer/arena/:id" element={<RequireGamer><Arena /></RequireGamer>} />
             <Route path="/gamer/gigs" element={<RequireGamer><GigRequests /></RequireGamer>} />
             <Route path="/gamer/gigs/:gig_id" element={<RequireGamer><GigDetailPage /></RequireGamer>} />
             <Route path="/gamer/orders" element={<RequireGamer><MyOrders /></RequireGamer>} />

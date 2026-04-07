@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { supabaseAdmin } from '../lib/supabase.js';
 import { requireAuth } from '../middleware/auth.js';
+import { logAudit } from './audit.js';
 
 const router = Router();
 
@@ -59,6 +60,7 @@ router.post('/', requireAuth, async (req, res) => {
         }
       }
     } catch (_) { /* profile update is best-effort */ }
+    logAudit({ actor_id: req.user.id, actor_role: 'gamer', action: 'team_created', entity_type: 'team', entity_id: data.id, details: { team_name: data.name } });
     res.status(201).json(data);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -105,6 +107,7 @@ router.post('/:id/join-request', requireAuth, async (req, res) => {
     const requests = [...(team.join_requests || []), { id: crypto.randomUUID(), user_id: req.user.id, username: req.body.username, message: req.body.message, status: 'pending', created_at: new Date().toISOString() }];
     const { data, error } = await supabaseAdmin.from('teams').update({ join_requests: requests }).eq('id', req.params.id).select().single();
     if (error) throw error;
+    logAudit({ actor_id: req.user.id, actor_role: 'gamer', action: 'team_join_requested', entity_type: 'team', entity_id: req.params.id, details: { username: req.body.username } });
     res.json(data);
   } catch (err) {
     res.status(500).json({ error: err.message });

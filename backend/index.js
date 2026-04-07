@@ -26,6 +26,8 @@ import tournamentReportRoutes from './src/routes/tournament-reports.js';
 import achievementRoutes from './src/routes/achievements.js';
 import deliverableRoutes from './src/routes/deliverables.js';
 import organizerPageRoutes from './src/routes/organizer-pages.js';
+import matchRecordRoutes from './src/routes/match-records.js';
+import auditRoutes from './src/routes/audit.js';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -103,6 +105,8 @@ app.use('/api/tournament-reports', tournamentReportRoutes);
 app.use('/api/achievements', achievementRoutes);
 app.use('/api/deliverables', deliverableRoutes);
 app.use('/api/organizer-pages', organizerPageRoutes);
+app.use('/api/match-records', matchRecordRoutes);
+app.use('/api/audit', auditRoutes);
 
 // ---------------------------------------------------------------------------
 // 404 handler
