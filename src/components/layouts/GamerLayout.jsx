@@ -21,12 +21,11 @@ export default function GamerLayout({ children, user, profile, cartCount = 0, no
   const location = useLocation();
   
   const navItems = [
-    { icon: Home, label: 'Home', path: '/gamer/home' },
     { icon: Swords, label: 'Arena', path: '/gamer/arena', prominent: true },
+    { icon: Home, label: 'Home', path: '/gamer/home' },
     { icon: Trophy, label: 'Tournaments', path: '/gamer/tournaments' },
     { icon: Users, label: 'Teams', path: '/gamer/teams' },
     { icon: ShoppingBag, label: 'Shop', path: '/gamer/marketplace' },
-    { icon: Wallet, label: 'Billing', path: '/gamer/billing' },
   ];
 
   const isActive = (path) => location.pathname === path || location.pathname.startsWith(path + '/');

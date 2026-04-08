@@ -202,9 +202,9 @@ export default function Cart() {
       return order;
     },
     onSuccess: (order) => {
-      toast({ title: 'Order placed!', description: `Order #${order?.id?.slice(0, 8)} created. Check your billing for payment.` });
+      toast({ title: 'Order placed!', description: `Order #${order?.id?.slice(0, 8)} created. Check your orders for details.` });
       setCheckoutModal(false);
-      navigate('/gamer/billing');
+      navigate('/gamer/orders');
     },
     onError: (err) => {
       toast({ title: 'Order failed', description: err.message || 'Please try again.', variant: 'destructive' });

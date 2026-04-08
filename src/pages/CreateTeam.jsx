@@ -9,12 +9,13 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import {
-  Users, Plus, Check, ArrowLeft, UserPlus, Palette, Image
+  Users, Plus, Check, ArrowLeft, UserPlus, Palette, Image, Upload, Loader2
 } from 'lucide-react';
 import { awardCoins, COIN_REWARDS } from '@/components/utils/coinRewards';
 import { GamerProfile, Team, apiCall } from '@/api/heruClient'
 import { useAuth } from '@/lib/AuthContext'
 import { useToast } from '@/components/ui/use-toast'
+import { uploadFile } from '@/lib/uploadFile'
 
 
 const GAMES = ['Valorant', 'CS2', 'League of Legends', 'Dota 2', 'Rocket League', 'Apex Legends', 'Fortnite', 'Call of Duty'];
@@ -47,6 +48,7 @@ export default function CreateTeam() {
     contact_number: '',
   });
   const [selectedFriends, setSelectedFriends] = useState([]);
+  const [uploading, setUploading] = useState(null); // 'logo' | 'banner' | null
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { toast } = useToast();
@@ -104,6 +106,20 @@ export default function CreateTeam() {
         ? prev.filter(id => id !== friendId)
         : [...prev, friendId]
     );
+  };
+
+  const handleImageUpload = async (file, field) => {
+    if (!file) return;
+    setUploading(field);
+    try {
+      const { file_url } = await uploadFile(file);
+      setTeamData(prev => ({ ...prev, [field]: file_url }));
+      toast({ title: 'Image uploaded!' });
+    } catch (err) {
+      toast({ title: 'Upload failed', description: err.message, variant: 'destructive' });
+    } finally {
+      setUploading(null);
+    }
   };
 
   const createTeamMutation = useMutation({
@@ -331,25 +347,41 @@ export default function CreateTeam() {
               </div>
 
               <div>
-                <label className="text-sm text-gray-400 block mb-2">Logo URL</label>
-                <Input
-                  value={teamData.logo}
-                  onChange={(e) => setTeamData({ ...teamData, logo: e.target.value })}
-                  placeholder="https://..."
-                  className="bg-zinc-800 border-zinc-700 text-white"
-                />
+                <label className="text-sm text-gray-400 block mb-2">Team Logo</label>
+                <div className="flex items-center gap-3">
+                  {teamData.logo && (
+                    <img src={teamData.logo} alt="Logo" className="w-14 h-14 rounded-lg object-cover border border-zinc-700" />
+                  )}
+                  <label className="cursor-pointer">
+                    <GlowButton variant="secondary" size="sm" asChild disabled={uploading === 'logo'}>
+                      <span>
+                        {uploading === 'logo' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+                        {uploading === 'logo' ? 'Uploading...' : 'Upload Logo'}
+                      </span>
+                    </GlowButton>
+                    <input type="file" accept="image/*" className="hidden" onChange={e => e.target.files[0] && handleImageUpload(e.target.files[0], 'logo')} />
+                  </label>
+                </div>
               </div>
 
               <div>
                 <label className="text-sm text-gray-400 block mb-2">
-                  <Image className="w-4 h-4 inline mr-1" /> Banner Image URL
+                  <Image className="w-4 h-4 inline mr-1" /> Banner Image
                 </label>
-                <Input
-                  value={teamData.banner}
-                  onChange={(e) => setTeamData({ ...teamData, banner: e.target.value })}
-                  placeholder="https://..."
-                  className="bg-zinc-800 border-zinc-700 text-white"
-                />
+                <div className="flex items-center gap-3">
+                  {teamData.banner && (
+                    <img src={teamData.banner} alt="Banner" className="h-14 w-28 rounded-lg object-cover border border-zinc-700" />
+                  )}
+                  <label className="cursor-pointer">
+                    <GlowButton variant="secondary" size="sm" asChild disabled={uploading === 'banner'}>
+                      <span>
+                        {uploading === 'banner' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+                        {uploading === 'banner' ? 'Uploading...' : 'Upload Banner'}
+                      </span>
+                    </GlowButton>
+                    <input type="file" accept="image/*" className="hidden" onChange={e => e.target.files[0] && handleImageUpload(e.target.files[0], 'banner')} />
+                  </label>
+                </div>
               </div>
 
               <div>

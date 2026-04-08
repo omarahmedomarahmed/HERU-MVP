@@ -7,11 +7,26 @@ import { generateBillNumber } from '../logic/billing.js';
 
 const router = Router();
 
-// GET / - list open radar entries
+// GET / - list open radar entries (shared tournaments only)
 router.get('/', async (req, res) => {
   try {
     const { status = 'open', game, limit = 50 } = req.query;
+
+    // Only include radar entries whose linked tournament is of type 'shared'
+    const { data: sharedTournaments, error: tErr } = await supabaseAdmin
+      .from('tournaments')
+      .select('id')
+      .eq('tournament_type', 'shared');
+    if (tErr) throw tErr;
+    const sharedIds = (sharedTournaments || []).map(t => t.id);
+
     let query = supabaseAdmin.from('sponsorship_radar').select('*');
+    if (sharedIds.length > 0) {
+      query = query.in('tournament_id', sharedIds);
+    } else {
+      // No shared tournaments exist — return empty list
+      return res.json([]);
+    }
     if (status !== 'all') query = query.eq('status', status);
     if (game) query = query.eq('game', game);
     query = query.order('created_at', { ascending: false }).limit(limit);

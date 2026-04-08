@@ -912,7 +912,17 @@ export default function TournamentBuilder() {
             <Save className="w-4 h-4" /> Save Draft
           </GlowButton>
           <GlowButton
-            onClick={() => publishTournamentMutation.mutate()}
+            onClick={() => {
+              if (!profile?.brand_name) {
+                toast({
+                  title: 'Profile incomplete',
+                  description: 'Please complete your organizer profile before publishing.',
+                  variant: 'destructive',
+                });
+                return;
+              }
+              publishTournamentMutation.mutate();
+            }}
             disabled={!tournament.name || !tournament.game || publishTournamentMutation.isPending}
             className="bg-gradient-to-r from-red-600 to-red-500 hover:from-red-500 hover:to-red-400"
           >

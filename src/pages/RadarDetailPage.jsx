@@ -459,6 +459,19 @@ export default function RadarDetailPage() {
               )}
             </FloatingPanel>
 
+            {/* Main organizer cannot co-organize their own tournament */}
+            {isMainOrg && (
+              <FloatingPanel className="p-5">
+                <div className="flex items-center gap-3 text-amber-400">
+                  <AlertCircle className="w-5 h-5 flex-shrink-0" />
+                  <div>
+                    <p className="font-bold text-sm">You are the main organizer</p>
+                    <p className="text-gray-400 text-xs mt-0.5">You cannot co-organize your own tournament.</p>
+                  </div>
+                </div>
+              </FloatingPanel>
+            )}
+
             {/* Commit Section */}
             {canCommit && !commitSuccess && (
               <FloatingPanel className="p-5" glowBorder>
