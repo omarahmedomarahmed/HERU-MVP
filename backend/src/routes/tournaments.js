@@ -235,7 +235,7 @@ router.post('/:id/publish', requireAuth, async (req, res) => {
       tournament_name: tournament.name,
       tournament_type: tournament.tournament_type,
       main_organizer_id: tournament.organizer_id,
-      main_organizer_brand: tournament.organizer_brand?.brand_name || '',
+      main_organizer_brand: tournament.organizer_brand?.name || tournament.organizer_brand?.brand_name || '',
       items: orderItems,
       subtotal_items: costs.subtotal - (tournament.prizepool_total || 0),
       prizepool_amount: tournament.prizepool_total || 0,
@@ -265,8 +265,8 @@ router.post('/:id/publish', requireAuth, async (req, res) => {
         tournament_order_id: order.id,
         payer_id: tournament.organizer_id,
         payer_type: 'organizer',
-        payer_name: tournament.organizer_brand?.brand_name || '',
-        items: order.items,
+        payer_name: tournament.organizer_brand?.name || tournament.organizer_brand?.brand_name || '',
+        items: orderItems,
         subtotal: costs.subtotal,
         platform_fee: costs.platformFee,
         grand_total: costs.total,
@@ -277,9 +277,16 @@ router.post('/:id/publish', requireAuth, async (req, res) => {
       // Shared: put on radar
       const radarPercent = tournament.radar_funding_percent || 33;
       const contribution = costs.total * (radarPercent / 100);
+      // Build full order breakdown including prizepool for radar display
+      const radarOrderBreakdown = [
+        ...orderItems,
+        ...(tournament.prizepool_total > 0 ? [{ title: 'Cash Prizepool', price: tournament.prizepool_total, category: 'prizepool' }] : []),
+        { title: 'Platform Fee (15%)', price: costs.platformFee, category: 'platform_fee' },
+      ];
       const { data: radar } = await supabaseAdmin.from('sponsorship_radar').insert({
         tournament_id: tournament.id,
         tournament_name: tournament.name,
+        tournament_image: tournament.tournament_image || '',
         main_organizer_id: tournament.organizer_id,
         main_organizer_brand: tournament.organizer_brand,
         game: tournament.game,
@@ -292,6 +299,7 @@ router.post('/:id/publish', requireAuth, async (req, res) => {
         amount_still_needed: costs.total - contribution,
         funding_percent: radarPercent,
         max_co_organizers: radarPercent <= 34 ? 2 : 1,
+        order_breakdown: radarOrderBreakdown,
         status: 'open',
       }).select().single();
 
@@ -308,7 +316,8 @@ router.post('/:id/publish', requireAuth, async (req, res) => {
         tournament_order_id: order.id,
         payer_id: tournament.organizer_id,
         payer_type: 'organizer',
-        payer_name: tournament.organizer_brand?.brand_name || '',
+        payer_name: tournament.organizer_brand?.name || tournament.organizer_brand?.brand_name || '',
+        items: orderItems,
         subtotal: costs.subtotal * (radarPercent / 100),
         platform_fee: costs.platformFee * (radarPercent / 100),
         grand_total: contribution,

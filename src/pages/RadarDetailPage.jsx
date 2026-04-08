@@ -315,29 +315,52 @@ export default function RadarDetailPage() {
               </FloatingPanel>
             )}
 
-            {/* Branding & Production Items */}
-            {radar.order_breakdown?.length > 0 && (
-              <FloatingPanel className="p-6">
-                <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
-                  <Shield className="w-5 h-5 text-red-400" /> Branding & Production Items
-                </h2>
-                <div className="space-y-2">
-                  {radar.order_breakdown.map((item, i) => (
-                    <div key={i} className="flex items-center justify-between bg-zinc-800/40 rounded-xl px-4 py-3">
-                      <div>
-                        <span className="text-white font-medium text-sm">{item.title}</span>
-                        <span className="ml-2 text-xs text-gray-500 capitalize bg-zinc-700 px-2 py-0.5 rounded">{item.category}</span>
+            {/* Tournament Items & Cost Breakdown */}
+            <FloatingPanel className="p-6">
+              <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
+                <Shield className="w-5 h-5 text-red-400" /> Full Cost Breakdown
+              </h2>
+              <div className="space-y-2">
+                {(radar.order_breakdown || []).length > 0 ? (
+                  radar.order_breakdown.map((item, i) => {
+                    const categoryColors = {
+                      branding: 'text-violet-400 bg-violet-500/10',
+                      production: 'text-blue-400 bg-blue-500/10',
+                      venue: 'text-orange-400 bg-orange-500/10',
+                      prizepool: 'text-yellow-400 bg-yellow-500/10',
+                      talent: 'text-pink-400 bg-pink-500/10',
+                      platform_fee: 'text-gray-400 bg-gray-500/10',
+                    }
+                    const catCls = categoryColors[item.category] || 'text-gray-400 bg-zinc-700/50'
+                    return (
+                      <div key={i} className="flex items-center justify-between bg-zinc-800/40 rounded-xl px-4 py-3">
+                        <div className="flex items-center gap-2">
+                          <span className={`text-xs font-bold px-2 py-0.5 rounded capitalize ${catCls}`}>{item.category?.replace('_', ' ')}</span>
+                          <span className="text-white text-sm">{item.title}</span>
+                        </div>
+                        <span className={`text-sm font-bold ${item.category === 'prizepool' ? 'text-yellow-400' : item.category === 'platform_fee' ? 'text-gray-400' : 'text-gray-200'}`}>
+                          EGP {(item.price || 0).toLocaleString()}
+                        </span>
                       </div>
-                      <span className="text-gray-300 text-sm font-bold">EGP {item.price?.toLocaleString()}</span>
-                    </div>
-                  ))}
-                  <div className="flex items-center justify-between pt-3 border-t border-zinc-700 mt-2">
-                    <span className="text-gray-300 font-bold">Total</span>
-                    <span className="text-white font-black text-lg">EGP {radar.total_cost?.toLocaleString()}</span>
-                  </div>
+                    )
+                  })
+                ) : (
+                  <>
+                    {radar.prizepool_amount > 0 && (
+                      <div className="flex items-center justify-between bg-yellow-500/10 border border-yellow-500/20 rounded-xl px-4 py-3">
+                        <span className="text-yellow-400 font-medium text-sm">Cash Prizepool</span>
+                        <span className="text-yellow-400 font-bold">EGP {radar.prizepool_amount?.toLocaleString()}</span>
+                      </div>
+                    )}
+                    <p className="text-gray-500 text-sm text-center py-2">Detailed item breakdown not available.</p>
+                  </>
+                )}
+                <div className="flex items-center justify-between pt-3 border-t border-zinc-700 mt-2">
+                  <span className="text-gray-300 font-bold">Grand Total</span>
+                  <span className="text-white font-black text-xl">EGP {radar.total_cost?.toLocaleString()}</span>
                 </div>
-              </FloatingPanel>
-            )}
+              </div>
+            </FloatingPanel>
 
             {/* Branding File Library — co-organizers with access */}
             {hasAccess && (

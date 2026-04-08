@@ -127,6 +127,12 @@ router.post('/:id/commit', requireAuth, requireRole('organizer'), async (req, re
     const subtotalShare = (radar.total_cost / 1.15) * (percent / 100);
     const grandTotal = coOrg.amount;
 
+    // Build co-org bill items from radar order_breakdown
+    const billItems = (radar.order_breakdown || []).map(item => ({
+      ...item,
+      amount: (item.price || 0) * (percent / 100),
+      co_org_share_percent: percent,
+    }));
     await supabaseAdmin.from('bills').insert({
       bill_number: billNumber,
       bill_type: 'co_organizer',
@@ -135,6 +141,7 @@ router.post('/:id/commit', requireAuth, requireRole('organizer'), async (req, re
       payer_id: req.user.id,
       payer_type: 'organizer',
       payer_name: brand_name,
+      items: billItems,
       subtotal: subtotalShare,
       platform_fee: platformFeeShare,
       grand_total: grandTotal,
