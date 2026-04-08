@@ -38,7 +38,7 @@ function sanitizeTournamentData(data) {
 // GET / - list tournaments (public, or organizer's own including drafts)
 router.get('/', async (req, res) => {
   try {
-    const { status, game, organizer_id, include_drafts, limit = 50, offset = 0 } = req.query;
+    const { status, game, organizer_id, include_drafts, invited_gamer, limit = 50, offset = 0 } = req.query;
     let query = supabaseAdmin.from('tournaments').select('*');
 
     if (status) {
@@ -51,11 +51,48 @@ router.get('/', async (req, res) => {
 
     if (game) query = query.eq('game', game);
     if (organizer_id) query = query.eq('organizer_id', organizer_id);
+    if (invited_gamer) query = query.contains('gamer_invites', [invited_gamer]);
 
     query = query.order('created_at', { ascending: false }).range(offset, offset + limit - 1);
     const { data, error } = await query;
     if (error) throw error;
     res.json(data);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// GET /my-arena - get tournaments the authenticated gamer is participating in
+router.get('/my-arena', requireAuth, async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    // 1. Find teams the gamer is in
+    const { data: teamsData } = await supabaseAdmin
+      .from('teams')
+      .select('id')
+      .or(`leader_id.eq.${userId},members.cs.{"${userId}"}`);
+    const teamIds = (teamsData || []).map(t => t.id);
+
+    // 2. Get all published/live tournaments
+    const { data: allTournaments, error } = await supabaseAdmin
+      .from('tournaments')
+      .select('id,name,game,tournament_image,status,format,max_teams,schedule,participant_type,teams,gamer_participants,player_participants,brackets,prizepool_total')
+      .in('status', ['published', 'live', 'completed'])
+      .order('created_at', { ascending: false });
+    if (error) throw error;
+
+    // 3. Filter to ones the user is actually in
+    const myTournaments = (allTournaments || []).filter(t => {
+      // Team-based: one of the user's teams is in tournament.teams
+      if (teamIds.length && (t.teams || []).some(tid => teamIds.includes(tid))) return true;
+      // 1v1/player: user_id in gamer_participants or player_participants
+      if ((t.gamer_participants || []).includes(userId)) return true;
+      if ((t.player_participants || []).some(p => p.user_id === userId)) return true;
+      return false;
+    });
+
+    res.json(myTournaments);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -76,11 +113,25 @@ router.get('/:id', async (req, res) => {
 // POST / - create tournament
 router.post('/', requireAuth, requireRole('organizer', 'admin'), async (req, res) => {
   try {
+    // Auto-populate organizer_brand from the organizer's profile
+    const { data: orgProfile } = await supabaseAdmin
+      .from('organizer_profiles')
+      .select('brand_name, brand_logo, location, is_verified')
+      .eq('user_id', req.user.id)
+      .single();
+
     const tournament = {
       ...sanitizeTournamentData(req.body),
       organizer_id: req.user.id,
       main_organizer_id: req.user.id,
       status: 'draft',
+      organizer_brand: req.body.organizer_brand || {
+        name: orgProfile?.brand_name || '',
+        logo: orgProfile?.brand_logo || '',
+        location: orgProfile?.location || '',
+        is_verified: orgProfile?.is_verified || false,
+        organizer_id: req.user.id,
+      },
     };
     const { data, error } = await supabaseAdmin.from('tournaments').insert(tournament).select().single();
     if (error) {

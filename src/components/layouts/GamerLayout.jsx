@@ -67,17 +67,19 @@ export default function GamerLayout({ children, user, profile, cartCount = 0, no
                   key={item.path}
                   to={item.path}
                   className={`
-                    flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium
+                    flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold
                     transition-all duration-200
                     ${isActive(item.path)
-                      ? 'bg-red-500/20 text-red-400 border border-red-500/30'
+                      ? item.prominent
+                        ? 'bg-gradient-to-r from-red-600 to-red-700 text-white shadow-lg shadow-red-900/40 border border-red-500'
+                        : 'bg-red-500/20 text-red-400 border border-red-500/30'
                       : item.prominent
-                        ? 'text-red-400 hover:text-red-300 hover:bg-red-500/10 border border-red-500/20'
-                        : 'text-gray-400 hover:text-white hover:bg-white/5'
+                        ? 'bg-gradient-to-r from-red-700/30 to-red-800/20 text-red-400 hover:from-red-600/50 hover:to-red-700/30 border border-red-600/40 shadow-sm'
+                        : 'text-gray-400 hover:text-white hover:bg-white/5 font-medium'
                     }
                   `}
                 >
-                  <item.icon className="w-4 h-4" />
+                  <item.icon className={`w-4 h-4 ${item.prominent ? 'drop-shadow-sm' : ''}`} />
                   {item.label}
                 </Link>
               ))}
@@ -217,17 +219,22 @@ export default function GamerLayout({ children, user, profile, cartCount = 0, no
                     to={item.path}
                     onClick={() => setMobileMenuOpen(false)}
                     className={`
-                      flex items-center gap-3 px-4 py-3 rounded-lg
+                      flex items-center gap-3 px-4 py-3 rounded-xl font-medium
                       ${isActive(item.path)
-                        ? 'bg-red-500/20 text-red-400'
+                        ? item.prominent
+                          ? 'bg-gradient-to-r from-red-600 to-red-700 text-white shadow-lg'
+                          : 'bg-red-500/20 text-red-400'
                         : item.prominent
-                          ? 'text-red-400 hover:text-red-300 hover:bg-red-500/10 border border-red-500/20'
+                          ? 'bg-red-700/20 text-red-400 border border-red-600/30'
                           : 'text-gray-400 hover:text-white hover:bg-white/5'
                       }
                     `}
                   >
                     <item.icon className="w-5 h-5" />
                     {item.label}
+                    {item.prominent && !isActive(item.path) && (
+                      <span className="ml-auto text-[10px] font-bold text-red-500 bg-red-500/10 px-1.5 py-0.5 rounded">BATTLE</span>
+                    )}
                   </Link>
                 ))}
                 <div className="border-t border-zinc-800 pt-2 mt-2">

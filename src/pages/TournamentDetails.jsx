@@ -216,6 +216,8 @@ export default function TournamentDetails() {
     (tournament.join_requests || []).some(r => r.team_id === t.id && r.status === 'pending')
   );
   const myTeamIds = new Set(myTeams.map(t => t.id));
+  // Only team leaders can register their team for a tournament
+  const myLeaderTeams = myTeams.filter(t => t.leader_id === (user?.user?.id || user?.id));
   const myPlayerJoined = is1v1 && (tournament.player_participants || []).some(p => p.user_id === user?.user?.id || p.user_id === user?.id);
 
   const shareUrl = window.location.href;
@@ -294,12 +296,18 @@ export default function TournamentDetails() {
                 </GlowButton>
               </a>
             )}
-            {/* Team tournament join */}
-            {tournament.status === 'published' && !is1v1 && !myTeamInTournament && !myTeamPendingRequest && user && (
+            {/* Team tournament join — only leaders can register */}
+            {tournament.status === 'published' && !is1v1 && !myTeamInTournament && !myTeamPendingRequest && user && myLeaderTeams.length > 0 && (
               <GlowButton size="lg" onClick={() => setJoinModal(true)}>
                 <Users className="w-5 h-5" />
                 Register Your Team
               </GlowButton>
+            )}
+            {/* Non-leader member: prompt them to ask their leader */}
+            {tournament.status === 'published' && !is1v1 && !myTeamInTournament && !myTeamPendingRequest && user && myTeams.length > 0 && myLeaderTeams.length === 0 && (
+              <div className="flex items-center gap-2 px-4 py-2 bg-zinc-800/60 border border-zinc-700 rounded-lg text-sm text-gray-400">
+                <Users className="w-4 h-4" /> Ask your team leader to register
+              </div>
             )}
             {/* 1v1 tournament join */}
             {tournament.status === 'published' && is1v1 && !myPlayerJoined && user && (

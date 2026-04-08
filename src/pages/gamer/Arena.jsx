@@ -9,8 +9,9 @@ import {
   Trophy, Users, MessageSquare, Send, ArrowLeft, Upload, Flag,
   AlertTriangle, CheckCircle2, Clock, Play, Shield, Gamepad2,
   Calendar, MapPin, Radio, ChevronRight, Loader2, Camera, X,
-  Swords, Star, Info,
+  Swords, Star, Info, Zap, Search,
 } from 'lucide-react'
+import GamerLayout from '@/components/layouts/GamerLayout.jsx'
 
 const formatEGP = (n) => 'EGP ' + (Number(n) || 0).toLocaleString()
 
@@ -179,6 +180,11 @@ export default function Arena() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['arena-tournament', id] }),
   })
 
+  // ── ARENA HUB (no tournament id selected) ──────────────────────────────
+  if (!id) {
+    return <ArenaHub userId={user?.id} navigate={navigate} />
+  }
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center">
@@ -192,8 +198,8 @@ export default function Arena() {
       <div className="min-h-screen bg-[#0a0a0a] flex flex-col items-center justify-center text-gray-400 gap-4 p-6">
         <Trophy className="w-12 h-12 text-red-400" />
         <p className="text-lg font-semibold">Tournament not found</p>
-        <button onClick={() => navigate('/gamer/home')} className="text-red-400 hover:text-red-300 flex items-center gap-1 text-sm">
-          <ArrowLeft className="w-4 h-4" /> Back to home
+        <button onClick={() => navigate('/gamer/arena')} className="text-red-400 hover:text-red-300 flex items-center gap-1 text-sm">
+          <ArrowLeft className="w-4 h-4" /> Back to Arena
         </button>
       </div>
     )
@@ -556,6 +562,13 @@ export default function Arena() {
         )}
       </div>
 
+      {/* Back to Arena Hub */}
+      <div className="max-w-4xl mx-auto px-4 pb-4">
+        <button onClick={() => navigate('/gamer/arena')} className="text-xs text-gray-600 hover:text-gray-400 flex items-center gap-1 transition mt-2">
+          <ArrowLeft className="w-3 h-3" /> All my tournaments
+        </button>
+      </div>
+
       {/* Report Abuse Modal */}
       {showReportModal && (
         <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4">
@@ -598,5 +611,126 @@ export default function Arena() {
         </div>
       )}
     </div>
+  )
+}
+
+// ── Arena Hub: Landing page showing the gamer's active tournaments ────────────
+function ArenaHub({ userId, navigate }) {
+  const { data: myTournaments = [], isLoading } = useQuery({
+    queryKey: ['my-arena', userId],
+    queryFn: () => apiCall('/tournaments/my-arena'),
+    enabled: !!userId,
+    staleTime: 30_000,
+  })
+
+  const statusColor = (s) => {
+    if (s === 'live') return 'text-red-400 bg-red-500/20 border-red-500/30'
+    if (s === 'published') return 'text-blue-400 bg-blue-500/20 border-blue-500/30'
+    if (s === 'completed') return 'text-green-400 bg-green-500/20 border-green-500/30'
+    return 'text-gray-400 bg-white/10 border-white/20'
+  }
+
+  return (
+    <GamerLayout>
+      <div className="min-h-screen bg-[#0a0a0a] pb-20">
+        {/* Hero header */}
+        <div className="relative overflow-hidden bg-gradient-to-br from-red-950/40 via-[#0f0f1a] to-black border-b border-white/5">
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(220,38,38,0.15),transparent_70%)]" />
+          <div className="relative max-w-4xl mx-auto px-4 py-10">
+            <div className="flex items-center gap-4 mb-3">
+              <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-red-600 to-red-800 flex items-center justify-center shadow-lg shadow-red-900/40">
+                <Swords className="w-6 h-6 text-white" />
+              </div>
+              <div>
+                <h1 className="text-3xl font-black text-white tracking-tight">ARENA</h1>
+                <p className="text-gray-400 text-sm">Your tournament battle station</p>
+              </div>
+            </div>
+            <div className="flex gap-3 mt-6">
+              <button
+                onClick={() => navigate('/gamer/tournaments')}
+                className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-red-600 text-white font-semibold text-sm hover:bg-red-500 transition shadow-lg shadow-red-900/30"
+              >
+                <Search className="w-4 h-4" /> Browse Tournaments
+              </button>
+              <button
+                onClick={() => navigate('/gamer/teams')}
+                className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-white/10 text-white font-semibold text-sm hover:bg-white/15 transition border border-white/10"
+              >
+                <Users className="w-4 h-4" /> My Teams
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div className="max-w-4xl mx-auto px-4 pt-6">
+          {isLoading ? (
+            <div className="flex items-center justify-center py-20">
+              <Loader2 className="w-8 h-8 animate-spin text-red-400" />
+            </div>
+          ) : myTournaments.length === 0 ? (
+            /* ── Empty state ── */
+            <div className="text-center py-16">
+              <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-red-900/30 to-black mx-auto mb-6 flex items-center justify-center border border-red-900/30">
+                <Swords className="w-10 h-10 text-red-500/60" />
+              </div>
+              <h2 className="text-2xl font-bold text-white mb-2">No active battles</h2>
+              <p className="text-gray-400 text-sm max-w-sm mx-auto mb-8">
+                Join a tournament to see your matches, brackets, and compete for prizes. Your next victory starts here.
+              </p>
+              <div className="flex gap-3 justify-center">
+                <button
+                  onClick={() => navigate('/gamer/tournaments')}
+                  className="flex items-center gap-2 px-6 py-3 rounded-xl bg-red-600 text-white font-bold hover:bg-red-500 transition shadow-lg shadow-red-900/30"
+                >
+                  <Zap className="w-4 h-4" /> Find a Tournament
+                </button>
+              </div>
+            </div>
+          ) : (
+            /* ── Tournament cards ── */
+            <div className="space-y-3">
+              <h2 className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-4">
+                Your Tournaments ({myTournaments.length})
+              </h2>
+              {myTournaments.map((t) => (
+                <button
+                  key={t.id}
+                  onClick={() => navigate(`/gamer/arena/${t.id}`)}
+                  className="w-full text-left rounded-2xl border border-white/10 bg-white/5 hover:border-red-500/30 hover:bg-white/8 transition-all p-4 group"
+                >
+                  <div className="flex items-center gap-4">
+                    <div className="w-14 h-14 rounded-xl overflow-hidden shrink-0 bg-gradient-to-br from-red-900/30 to-black border border-white/10">
+                      {t.tournament_image ? (
+                        <img src={t.tournament_image} alt="" className="w-full h-full object-cover" />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center">
+                          <Trophy className="w-6 h-6 text-red-500/60" />
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className={`inline-flex items-center text-[10px] font-bold px-2 py-0.5 rounded-full border ${statusColor(t.status)}`}>
+                          {t.status === 'live' && <span className="w-1 h-1 rounded-full bg-red-400 animate-pulse mr-1" />}
+                          {(t.status || 'draft').toUpperCase()}
+                        </span>
+                        <span className="text-xs text-gray-500">{t.game}</span>
+                      </div>
+                      <p className="text-white font-bold truncate">{t.name}</p>
+                      <p className="text-gray-500 text-xs mt-0.5">
+                        {t.format} · {t.participant_type === 'player' ? 'Solo' : 'Teams'}
+                        {t.prizepool_total > 0 && ` · EGP ${Number(t.prizepool_total).toLocaleString()} prize`}
+                      </p>
+                    </div>
+                    <ChevronRight className="w-5 h-5 text-gray-600 group-hover:text-red-400 transition shrink-0" />
+                  </div>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </GamerLayout>
   )
 }

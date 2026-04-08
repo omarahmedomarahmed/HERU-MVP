@@ -141,8 +141,7 @@ export default function Cart() {
           gameTag: item.gameTag
         })),
         total,
-        discount_applied: discount + coinDiscount,
-        promo_code_used: promoApplied?.code,
+        promo_code_used: promoApplied?.code || null,
         status: 'pending',
         shipping_address: shippingAddress,
         support_chat: []

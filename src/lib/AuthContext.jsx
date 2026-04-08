@@ -74,30 +74,53 @@ export const AuthProvider = ({ children }) => {
 
     const init = async () => {
       try {
-        const { data: { session } } = await supabase.auth.getSession()
+        const { data: { session }, error } = await supabase.auth.getSession()
         if (!mounted) return
+
+        // If session is stale/invalid, clear it so the page doesn't hang
+        if (error || (session && !session.user)) {
+          await supabase.auth.signOut().catch(() => {})
+          if (mounted) setLoading(false)
+          return
+        }
+
         if (session?.user) {
           setUser(session.user)
           await fetchUserProfile()
         }
       } catch (err) {
-        console.error('[AuthContext] init error:', err)
+        // Any error (e.g. network timeout on refresh) → clear session, unblock UI
+        console.warn('[AuthContext] init error, clearing session:', err.message)
+        await supabase.auth.signOut().catch(() => {})
       } finally {
         if (mounted) setLoading(false)
       }
     }
-    init()
+
+    // Safety net: never let the app hang for more than 5s on init
+    const timeout = setTimeout(() => {
+      if (mounted) setLoading(false)
+    }, 5000)
+
+    init().finally(() => clearTimeout(timeout))
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         if (!mounted) return
-        if (event === 'SIGNED_OUT') {
+        if (event === 'SIGNED_OUT' || event === 'USER_DELETED') {
           setUser(null)
           setUserProfile(null)
-        } else if (event === 'TOKEN_REFRESHED' && session?.user) {
-          setUser(session.user)
+          setLoading(false)
+        } else if (event === 'TOKEN_REFRESHED') {
+          if (session?.user) {
+            setUser(session.user)
+          } else {
+            // Refresh failed — clear session so UI unblocks
+            setUser(null)
+            setUserProfile(null)
+            setLoading(false)
+          }
         }
-        // Don't fetch profile on SIGNED_IN — login/register handle it directly
       }
     )
 

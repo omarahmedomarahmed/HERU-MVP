@@ -1071,12 +1071,25 @@ export default function TournamentBuilder() {
             >
               <ChevronLeft className="w-4 h-4" /> Previous
             </GlowButton>
-            <GlowButton
-              onClick={() => setCurrentStage(Math.min(STAGES.length - 1, currentStage + 1))}
-              disabled={currentStage === STAGES.length - 1}
-            >
-              Next <ChevronRight className="w-4 h-4" />
-            </GlowButton>
+            {currentStage === STAGES.length - 1 ? (
+              <GlowButton
+                onClick={() => publishTournamentMutation.mutate()}
+                disabled={!tournament.name || !tournament.game || publishTournamentMutation.isPending}
+                className="bg-gradient-to-r from-red-600 to-red-700 border-red-500 shadow-lg shadow-red-900/30 px-8"
+              >
+                {publishTournamentMutation.isPending ? (
+                  <><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin inline-block" /> Publishing...</>
+                ) : (
+                  <><Send className="w-4 h-4" /> {tournament.tournament_type === 'shared' ? 'Publish to Radar' : 'Publish Tournament'}</>
+                )}
+              </GlowButton>
+            ) : (
+              <GlowButton
+                onClick={() => setCurrentStage(Math.min(STAGES.length - 1, currentStage + 1))}
+              >
+                Next <ChevronRight className="w-4 h-4" />
+              </GlowButton>
+            )}
           </div>
         </div>
 

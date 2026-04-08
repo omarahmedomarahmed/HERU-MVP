@@ -22,6 +22,30 @@ router.get('/', async (req, res) => {
   }
 });
 
+// GET /me - get own organizer profile (must be before /:id)
+router.get('/me', requireAuth, async (req, res) => {
+  try {
+    const { data, error } = await supabaseAdmin
+      .from('organizer_profiles')
+      .select('*')
+      .eq('user_id', req.user.id)
+      .single();
+    if (error && error.code !== 'PGRST116') throw error;
+    if (!data) {
+      // Auto-create profile if missing
+      const { data: newProfile, error: createErr } = await supabaseAdmin
+        .from('organizer_profiles')
+        .insert({ user_id: req.user.id, created_at: new Date().toISOString(), updated_at: new Date().toISOString() })
+        .select().single();
+      if (createErr) throw createErr;
+      return res.json(newProfile);
+    }
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // GET /:id - get by id or user_id
 router.get('/:id', async (req, res) => {
   try {

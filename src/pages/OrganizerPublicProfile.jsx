@@ -1,5 +1,5 @@
 import React from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { apiCall } from '@/api/heruClient';
 import {
@@ -18,6 +18,7 @@ const statusColors = {
 
 export default function OrganizerPublicProfile() {
   const { id } = useParams();
+  const navigate = useNavigate();
 
   const { data: portfolio, isLoading } = useQuery({
     queryKey: ['organizer-portfolio', id],
@@ -57,9 +58,9 @@ export default function OrganizerPublicProfile() {
     <div className="min-h-screen bg-[#0a0a0a] text-white">
       {/* Header */}
       <div className="max-w-5xl mx-auto px-4 pt-6 pb-4">
-        <Link to="/" className="inline-flex items-center gap-2 text-gray-400 hover:text-red-400 mb-6 transition-colors text-sm">
+        <button onClick={() => navigate(-1)} className="inline-flex items-center gap-2 text-gray-400 hover:text-red-400 mb-6 transition-colors text-sm">
           <ArrowLeft className="w-4 h-4" /> Back
-        </Link>
+        </button>
       </div>
 
       {/* Profile Hero */}
