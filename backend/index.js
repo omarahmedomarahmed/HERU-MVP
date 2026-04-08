@@ -28,6 +28,7 @@ import deliverableRoutes from './src/routes/deliverables.js';
 import organizerPageRoutes from './src/routes/organizer-pages.js';
 import matchRecordRoutes from './src/routes/match-records.js';
 import auditRoutes from './src/routes/audit.js';
+import promoRoutes from './src/routes/promos.js';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -110,6 +111,7 @@ app.use('/api/deliverables', deliverableRoutes);
 app.use('/api/organizer-pages', organizerPageRoutes);
 app.use('/api/match-records', matchRecordRoutes);
 app.use('/api/audit', auditRoutes);
+app.use('/api/promos', promoRoutes);
 
 // ---------------------------------------------------------------------------
 // 404 handler
