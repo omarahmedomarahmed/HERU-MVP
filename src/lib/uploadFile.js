@@ -2,7 +2,7 @@ import { supabase } from '@/lib/supabase';
 
 /**
  * Upload a file to Supabase Storage (heru-uploads bucket).
- * Returns { file_url } matching the old Base44 UploadFile API shape.
+ * Returns { file_url } for use in profile images, tournament assets, etc.
  */
 export async function uploadFile(file) {
   if (!file) throw new Error('No file provided');

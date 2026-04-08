@@ -8,7 +8,7 @@ import { Users, Trophy } from 'lucide-react';
 import { Tournament } from '@/api/heruClient'
 
 
-export default function RegisterTeamModal({ open, onClose, tournament, myTeams, user }) {
+export default function RegisterTeamModal({ open, onClose, onArenaRedirect, tournament, myTeams, user }) {
   const [selectedTeamId, setSelectedTeamId] = useState('');
   const [gameId, setGameId] = useState('');
   const [rank, setRank] = useState('');
@@ -53,6 +53,8 @@ export default function RegisterTeamModal({ open, onClose, tournament, myTeams, 
     onSuccess: () => {
       queryClient.invalidateQueries(['tournament', tournament.id]);
       onClose();
+      // Redirect to arena after short delay so gamer sees they've entered
+      if (onArenaRedirect) setTimeout(onArenaRedirect, 600);
     },
   });
 

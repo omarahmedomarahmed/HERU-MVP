@@ -5,8 +5,8 @@
  *   1. React component guards (RequireGamer, RequireOrganizer, RequireStaff)
  *      for use in React Router route definitions.
  *   2. Legacy function-based helpers (getOrganizerSession, getStaffSession, etc.)
- *      that remain available for existing page components during the migration
- *      away from the old Base44/sessionStorage pattern.
+ *      that remain available for page components that need session checks outside
+ *      of the React tree.
  */
 
 import React from 'react'
