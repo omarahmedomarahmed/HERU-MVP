@@ -213,7 +213,21 @@ export default function Arena() {
   ]
 
   const bracketMatches = (tournament.brackets || []).flat ? (tournament.brackets || []) : []
-  const isParticipant = !!myTeam || tournament.gamer_participants?.includes(user?.id)
+  const is1v1 = tournament.participant_type === 'player' || tournament.participant_type === '1v1'
+  const isParticipant = !!myTeam ||
+    (tournament.player_participants || []).some(p => p.user_id === user?.id) ||
+    (tournament.gamer_participants || []).includes(user?.id)
+
+  // Determine arena phase for participants
+  const arenaPhase = (() => {
+    if (!isParticipant) return 'spectator'
+    if (tournament.status === 'published') return 'waiting'
+    if (tournament.status === 'live' && !myActiveMatch && !matchRecords.some(m => m.status === 'completed')) return 'seeding'
+    if (tournament.status === 'live' && myActiveMatch) return 'in_match'
+    if (tournament.status === 'live' && !myActiveMatch) return 'between_matches'
+    if (tournament.status === 'completed') return 'completed'
+    return 'spectator'
+  })()
 
   return (
     <div className="min-h-screen bg-[#0a0a0a] text-white pb-20">
@@ -253,22 +267,47 @@ export default function Arena() {
       </div>
 
       <div className="max-w-4xl mx-auto px-4 pt-4">
-        {/* Participant status */}
-        {isParticipant ? (
-          <div className="mb-4 rounded-xl bg-green-500/10 border border-green-500/20 px-4 py-3 flex items-center gap-3">
-            <CheckCircle2 className="w-5 h-5 text-green-400 shrink-0" />
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold text-green-400">You're competing</p>
-              {myTeam && <p className="text-xs text-gray-400 truncate">Team: {myTeam.name}</p>}
+
+        {/* ── WAITING ROOM (registered, tournament not started yet) ── */}
+        {arenaPhase === 'waiting' && (
+          <WaitingRoom tournament={tournament} myTeam={myTeam} is1v1={is1v1} />
+        )}
+
+        {/* ── SEEDING (live but no match assigned yet) ── */}
+        {arenaPhase === 'seeding' && (
+          <SeedingRoom tournament={tournament} myTeam={myTeam} is1v1={is1v1} onViewBrackets={() => setActiveTab('brackets')} />
+        )}
+
+        {/* ── IN MATCH callout ── */}
+        {arenaPhase === 'in_match' && (
+          <div className="mb-4 rounded-xl bg-red-500/10 border border-red-500/30 px-4 py-3 flex items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <span className="w-2.5 h-2.5 rounded-full bg-red-400 animate-ping" />
+              <div>
+                <p className="text-sm font-bold text-red-300">Match in progress!</p>
+                {myTeam && <p className="text-xs text-gray-400">Team: {myTeam.name}</p>}
+              </div>
             </div>
-            {myActiveMatch && (
-              <button onClick={() => { setActiveMatchId(myActiveMatch.id); setActiveTab('my-match') }}
-                className="text-xs bg-red-600 text-white px-3 py-1.5 rounded-lg font-medium hover:bg-red-500 transition whitespace-nowrap">
-                Go to Match
-              </button>
-            )}
+            <button onClick={() => { setActiveMatchId(myActiveMatch?.id); setActiveTab('my-match') }}
+              className="text-xs bg-red-600 text-white px-4 py-2 rounded-lg font-bold hover:bg-red-500 transition flex items-center gap-1.5 whitespace-nowrap">
+              <Swords className="w-3.5 h-3.5" /> Go to Match
+            </button>
           </div>
-        ) : (
+        )}
+
+        {/* ── BETWEEN MATCHES ── */}
+        {arenaPhase === 'between_matches' && (
+          <div className="mb-4 rounded-xl bg-blue-500/10 border border-blue-500/20 px-4 py-3 flex items-center gap-3">
+            <Clock className="w-5 h-5 text-blue-400 shrink-0" />
+            <div>
+              <p className="text-sm font-semibold text-blue-300">Waiting for next match</p>
+              <p className="text-xs text-gray-400">Your next opponent will be assigned after the current round completes.</p>
+            </div>
+          </div>
+        )}
+
+        {/* ── SPECTATOR notice ── */}
+        {arenaPhase === 'spectator' && (
           <div className="mb-4 rounded-xl bg-white/5 border border-white/10 px-4 py-3 flex items-center gap-3">
             <Info className="w-5 h-5 text-gray-500 shrink-0" />
             <p className="text-sm text-gray-400">You are spectating this tournament.</p>
@@ -610,6 +649,149 @@ export default function Arena() {
           </div>
         </div>
       )}
+    </div>
+  )
+}
+
+// ── Waiting Room ─────────────────────────────────────────────────────────────
+function WaitingRoom({ tournament, myTeam, is1v1 }) {
+  const total = is1v1
+    ? (tournament.player_participants?.length || 0)
+    : (tournament.teams?.length || 0)
+  const max = tournament.max_teams || '?'
+  const fillPct = max !== '?' ? Math.min(100, Math.round((total / max) * 100)) : null
+
+  return (
+    <div className="mb-6 rounded-2xl overflow-hidden border border-yellow-500/20 bg-gradient-to-br from-yellow-900/10 to-amber-900/5">
+      <div className="px-5 py-4 border-b border-yellow-500/10 flex items-center gap-3">
+        <Clock className="w-5 h-5 text-yellow-400" />
+        <div>
+          <p className="text-yellow-300 font-bold text-sm">Waiting Room</p>
+          <p className="text-gray-500 text-xs">Tournament hasn't started yet. You're registered and confirmed.</p>
+        </div>
+      </div>
+      <div className="px-5 py-4 space-y-4">
+        {/* Your slot */}
+        <div className="flex items-center gap-3 p-3 rounded-xl bg-white/5 border border-white/10">
+          <CheckCircle2 className="w-5 h-5 text-green-400 shrink-0" />
+          <div>
+            <p className="text-white text-sm font-semibold">
+              {is1v1 ? 'You are registered as a solo player' : `Your team "${myTeam?.name || 'Team'}" is registered`}
+            </p>
+            <p className="text-gray-400 text-xs mt-0.5">
+              {is1v1 ? `Your in-game ID is on file — you'll be seeded once the tournament starts.` : 'The organizer will approve teams and seed the bracket when the tournament starts.'}
+            </p>
+          </div>
+        </div>
+
+        {/* Slot fill bar */}
+        {fillPct !== null && (
+          <div>
+            <div className="flex justify-between text-xs text-gray-500 mb-1.5">
+              <span>{total} {is1v1 ? 'player' : 'team'}{total !== 1 ? 's' : ''} registered</span>
+              <span>{max} slots total</span>
+            </div>
+            <div className="h-2 rounded-full bg-white/10 overflow-hidden">
+              <div className="h-full rounded-full bg-gradient-to-r from-yellow-500 to-amber-400 transition-all duration-700"
+                style={{ width: `${fillPct}%` }} />
+            </div>
+            <p className="text-xs text-gray-600 mt-1">{fillPct}% of slots filled</p>
+          </div>
+        )}
+
+        {/* Schedule */}
+        {tournament.schedule && (
+          <div className="flex items-center gap-2 text-sm text-gray-400">
+            <Calendar className="w-4 h-4 text-yellow-400" />
+            Tournament starts:{' '}
+            <span className="text-white font-medium">
+              {new Date(tournament.schedule).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'long', year: 'numeric' })}
+            </span>
+          </div>
+        )}
+
+        <p className="text-xs text-gray-600 text-center">
+          This page refreshes automatically. You'll see your match here when you're seeded.
+        </p>
+      </div>
+    </div>
+  )
+}
+
+// ── Seeding Room ──────────────────────────────────────────────────────────────
+function SeedingRoom({ tournament, myTeam, is1v1, onViewBrackets }) {
+  return (
+    <div className="mb-6 rounded-2xl overflow-hidden border border-blue-500/20 bg-gradient-to-br from-blue-900/10 to-indigo-900/5">
+      <div className="px-5 py-4 border-b border-blue-500/10 flex items-center gap-3">
+        <div className="relative">
+          <Swords className="w-5 h-5 text-blue-400" />
+          <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-blue-400 animate-ping" />
+        </div>
+        <div>
+          <p className="text-blue-300 font-bold text-sm">Tournament is Live — Seeding in Progress</p>
+          <p className="text-gray-500 text-xs">Your bracket position is being assigned. Your first match will appear here shortly.</p>
+        </div>
+      </div>
+      <div className="px-5 py-4 space-y-4">
+        <div className="flex items-center gap-3 p-3 rounded-xl bg-white/5 border border-white/10">
+          <CheckCircle2 className="w-5 h-5 text-green-400 shrink-0" />
+          <div>
+            <p className="text-white text-sm font-semibold">
+              {is1v1 ? 'You are in the tournament' : `"${myTeam?.name || 'Your team'}" is competing`}
+            </p>
+            <p className="text-gray-400 text-xs mt-0.5">Waiting for opponent assignment…</p>
+          </div>
+          <div className="ml-auto flex gap-0.5">
+            {[0, 1, 2].map(i => (
+              <span key={i} className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-bounce"
+                style={{ animationDelay: `${i * 0.15}s` }} />
+            ))}
+          </div>
+        </div>
+
+        {/* Participants in this tournament */}
+        {is1v1 && (tournament.player_participants || []).length > 0 && (
+          <div>
+            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
+              Players in this tournament ({tournament.player_participants.length})
+            </p>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 max-h-48 overflow-y-auto">
+              {tournament.player_participants.map((p, i) => (
+                <div key={i} className="flex items-center gap-2 px-2 py-1.5 rounded-lg bg-white/5 border border-white/10">
+                  <div className="w-6 h-6 rounded-full bg-gradient-to-br from-red-700 to-red-900 flex items-center justify-center text-xs font-bold text-white shrink-0">
+                    {(p.username || p.game_id || '?')[0]?.toUpperCase()}
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-white text-xs font-medium truncate">{p.username || 'Player'}</p>
+                    {p.game_id && <p className="text-gray-500 text-[10px] truncate">{p.game_id}</p>}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {!is1v1 && (tournament.teams || []).length > 0 && (
+          <div>
+            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
+              Teams in this tournament ({tournament.teams.length})
+            </p>
+            <div className="grid grid-cols-2 gap-2">
+              {tournament.teams.slice(0, 8).map((teamId, i) => (
+                <div key={i} className="flex items-center gap-2 px-2 py-1.5 rounded-lg bg-white/5 border border-white/10">
+                  <div className="w-6 h-6 rounded-full bg-gradient-to-br from-red-700 to-red-900 flex items-center justify-center text-xs font-bold text-white shrink-0">T</div>
+                  <p className="text-white text-xs font-medium truncate">Team #{i + 1}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        <button onClick={onViewBrackets}
+          className="w-full py-2 rounded-xl border border-blue-500/30 text-blue-400 text-sm font-medium hover:bg-blue-500/10 transition flex items-center justify-center gap-2">
+          <Star className="w-4 h-4" /> View Brackets
+        </button>
+      </div>
     </div>
   )
 }

@@ -43,7 +43,6 @@ import GamerNotifications from './pages/GamerNotifications'
 import Marketplace from './pages/Marketplace'
 import Cart from './pages/Cart'
 import TournamentDetails from './pages/TournamentDetails'
-import GamerArena from './pages/GamerArena'
 import Arena from './pages/gamer/Arena'
 import GamerBilling from './pages/GamerBilling'
 

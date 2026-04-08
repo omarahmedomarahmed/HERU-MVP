@@ -81,7 +81,7 @@ function createEntity(basePath) {
 }
 
 // ---------------------------------------------------------------------------
-// Entity helpers — mirror the Base44 pattern for easy migration
+// Entity helpers — standard CRUD factory pattern
 // ---------------------------------------------------------------------------
 
 export const Tournament = {

@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 
-// Navigation tracker - logs page views without Base44 dependency
+// Navigation tracker - logs page views for analytics
 export default function NavigationTracker() {
   const location = useLocation();
 

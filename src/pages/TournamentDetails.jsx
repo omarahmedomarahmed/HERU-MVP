@@ -8,6 +8,7 @@ import GameCard from '@/components/ui/GameCard';
 import HexBadge from '@/components/ui/HexBadge';
 import BracketVisual from '@/components/tournament/BracketVisual.jsx';
 import RegisterTeamModal from '@/components/tournament/RegisterTeamModal';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from '@/components/ui/input';
 import { GamerProfile, MarketplaceItem, Order, Team, Tournament, apiCall } from '@/api/heruClient'
@@ -17,12 +18,13 @@ import { useToast } from '@/components/ui/use-toast'
 import {
   Trophy, Users, Calendar, MapPin, Gamepad2, Play, Star,
   ArrowLeft, Clock, Award, ExternalLink, MessageSquare, Send,
-  Share2, Copy, Check, Radio, Swords, User
+  Share2, Copy, Check, Radio, Swords, User, Zap, ChevronRight, Info
 } from 'lucide-react';
 
 export default function TournamentDetails() {
   const [user, setUser] = useState(null);
   const [joinModal, setJoinModal] = useState(false);
+  const [show1v1Modal, setShow1v1Modal] = useState(false);
   const [newMessage, setNewMessage] = useState('');
   const [copied, setCopied] = useState(false);
   const navigate = useNavigate();
@@ -103,19 +105,14 @@ export default function TournamentDetails() {
   const { toast } = useToast();
 
   const joinAsPlayerMutation = useMutation({
-    mutationFn: async () => {
-      const userId = user?.user?.id || user?.id;
-      const matchingGame = (profile?.games || []).find(g =>
-        g.game_name?.toLowerCase() === tournament?.game?.toLowerCase()
-      );
-      return Tournament.joinAsPlayer(tournamentId, {
-        game_id: matchingGame?.game_id || '',
-        rank: matchingGame?.rank || '',
-      });
+    mutationFn: async ({ gameId, rank }) => {
+      return Tournament.joinAsPlayer(tournamentId, { game_id: gameId, rank });
     },
     onSuccess: () => {
-      toast({ title: 'Joined!', description: 'You have joined the tournament as a player.' });
+      toast({ title: 'Joined!', description: 'You are now registered. Heading to your Arena...' });
       queryClient.invalidateQueries(['tournament', tournamentId]);
+      setShow1v1Modal(false);
+      setTimeout(() => navigate(`/gamer/arena/${tournamentId}`), 800);
     },
     onError: (err) => {
       toast({ title: 'Failed to join', description: err.message, variant: 'destructive' });
@@ -311,15 +308,26 @@ export default function TournamentDetails() {
             )}
             {/* 1v1 tournament join */}
             {tournament.status === 'published' && is1v1 && !myPlayerJoined && user && (
-              <GlowButton size="lg" onClick={() => joinAsPlayerMutation.mutate()}>
-                {joinAsPlayerMutation.isPending ? 'Joining...' : <><Swords className="w-5 h-5" /> Join as Player</>}
+              <GlowButton size="lg" onClick={() => setShow1v1Modal(true)}
+                className="bg-gradient-to-r from-red-600 to-red-700 border-red-500 shadow-lg shadow-red-900/30">
+                <Swords className="w-5 h-5" /> Enter the Arena
+              </GlowButton>
+            )}
+            {/* Already joined 1v1 — go to arena */}
+            {myPlayerJoined && tournament.status !== 'completed' && (
+              <GlowButton size="lg" onClick={() => navigate(`/gamer/arena/${tournamentId}`)}
+                className="bg-gradient-to-r from-red-600 to-red-700 border-red-500">
+                <Zap className="w-5 h-5" /> Go to Arena
               </GlowButton>
             )}
             {myTeamPendingRequest && (
               <HexBadge className="bg-amber-500/20 text-amber-400 border-amber-500/50">Request Pending</HexBadge>
             )}
-            {(myTeamInTournament || myPlayerJoined) && (
-              <HexBadge className="bg-green-500/20 text-green-400 border-green-500/50">Joined</HexBadge>
+            {myTeamInTournament && (
+              <GlowButton size="lg" onClick={() => navigate(`/gamer/arena/${tournamentId}`)}
+                className="bg-gradient-to-r from-green-700 to-green-800 border-green-600">
+                <Zap className="w-5 h-5" /> Go to Arena
+              </GlowButton>
             )}
           </div>
         </div>
@@ -658,10 +666,146 @@ export default function TournamentDetails() {
       <RegisterTeamModal
         open={joinModal}
         onClose={() => setJoinModal(false)}
+        onArenaRedirect={() => navigate(`/gamer/arena/${tournamentId}`)}
         tournament={tournament}
         myTeams={myTeams}
         user={user}
       />
+
+      {/* 1v1 Join Modal — asks for in-game ID */}
+      <JoinAs1v1Modal
+        open={show1v1Modal}
+        onClose={() => setShow1v1Modal(false)}
+        tournament={tournament}
+        profile={profile}
+        isLoading={joinAsPlayerMutation.isPending}
+        onSubmit={({ gameId, rank }) => joinAsPlayerMutation.mutate({ gameId, rank })}
+      />
     </GamerLayout>
+  );
+}
+
+// ── 1v1 Join Modal ─────────────────────────────────────────────────────────
+function JoinAs1v1Modal({ open, onClose, tournament, profile, isLoading, onSubmit }) {
+  const [gameId, setGameId] = useState('');
+  const [rank, setRank] = useState('');
+
+  // Pre-fill from profile if they have this game set up
+  useEffect(() => {
+    if (!open) return;
+    const match = (profile?.games || []).find(g =>
+      g.game_name?.toLowerCase() === tournament?.game?.toLowerCase()
+    );
+    if (match) {
+      setGameId(match.game_id || '');
+      setRank(match.rank || '');
+    }
+  }, [open, profile, tournament]);
+
+  const handleSubmit = () => {
+    if (!gameId.trim()) return;
+    onSubmit({ gameId: gameId.trim(), rank: rank.trim() });
+  };
+
+  const gamePlaceholders = {
+    'Valorant': 'e.g. PlayerName#EUW',
+    'CS2': 'e.g. steam_username',
+    'League of Legends': 'e.g. SummonerName#EUW',
+    'PUBG': 'e.g. Player#1234',
+    'Fortnite': 'e.g. EpicGamesUsername',
+    'Apex Legends': 'e.g. EA_Username',
+  };
+  const placeholder = gamePlaceholders[tournament?.game] || `Your ${tournament?.game || 'game'} username or ID`;
+
+  return (
+    <Dialog open={open} onOpenChange={onClose}>
+      <DialogContent className="bg-zinc-900 border-zinc-800 text-white max-w-md">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2 text-xl font-black">
+            <Swords className="w-5 h-5 text-red-500" /> Enter the Arena
+          </DialogTitle>
+        </DialogHeader>
+
+        <div className="space-y-5 py-2">
+          {/* Tournament info */}
+          <div className="rounded-xl bg-zinc-800/60 border border-zinc-700 p-4 space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-gray-400 text-sm">Tournament</span>
+              <span className="text-white font-semibold text-sm">{tournament?.name}</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-gray-400 text-sm">Game</span>
+              <span className="text-white font-semibold text-sm flex items-center gap-1">
+                <Gamepad2 className="w-3.5 h-3.5 text-red-400" /> {tournament?.game}
+              </span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-gray-400 text-sm">Players</span>
+              <span className="text-white text-sm">
+                {tournament?.player_participants?.length || 0} / {tournament?.max_teams || '∞'}
+              </span>
+            </div>
+            {tournament?.prizepool_total > 0 && (
+              <div className="flex items-center justify-between">
+                <span className="text-gray-400 text-sm">Prizepool</span>
+                <span className="text-yellow-400 font-bold text-sm">EGP {tournament.prizepool_total?.toLocaleString()}</span>
+              </div>
+            )}
+          </div>
+
+          {/* In-game ID */}
+          <div>
+            <label className="text-sm font-semibold text-white mb-2 block flex items-center gap-1.5">
+              <User className="w-4 h-4 text-red-400" />
+              In-Game ID / Username
+              <span className="text-red-400 ml-0.5">*</span>
+            </label>
+            <Input
+              value={gameId}
+              onChange={e => setGameId(e.target.value)}
+              placeholder={placeholder}
+              className="bg-zinc-800 border-zinc-700 text-white placeholder-gray-500 focus:border-red-500/50"
+              autoFocus
+            />
+            <p className="text-xs text-gray-500 mt-1.5 flex items-center gap-1">
+              <Info className="w-3 h-3" />
+              This is shared with your opponent and the organizer for match verification.
+            </p>
+          </div>
+
+          {/* Rank */}
+          <div>
+            <label className="text-sm font-semibold text-white mb-2 block">
+              Current Rank <span className="text-gray-500 font-normal">(optional)</span>
+            </label>
+            <Input
+              value={rank}
+              onChange={e => setRank(e.target.value)}
+              placeholder="e.g. Diamond, Platinum, Global Elite..."
+              className="bg-zinc-800 border-zinc-700 text-white placeholder-gray-500"
+            />
+          </div>
+
+          {/* Warning */}
+          <div className="flex items-start gap-2 text-xs text-amber-400 bg-amber-500/10 border border-amber-500/20 rounded-lg px-3 py-2.5">
+            <Info className="w-3.5 h-3.5 shrink-0 mt-0.5" />
+            <span>Once you join, you will be entered into the bracket. Make sure your in-game ID is correct — it cannot be changed after joining.</span>
+          </div>
+
+          {/* CTA */}
+          <GlowButton
+            className="w-full bg-gradient-to-r from-red-600 to-red-700 border-red-500 shadow-lg shadow-red-900/30"
+            disabled={!gameId.trim() || isLoading}
+            onClick={handleSubmit}
+          >
+            {isLoading ? (
+              <><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin inline-block" /> Joining...</>
+            ) : (
+              <><Swords className="w-4 h-4" /> Confirm & Enter Arena <ChevronRight className="w-4 h-4" /></>
+            )}
+          </GlowButton>
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 }
