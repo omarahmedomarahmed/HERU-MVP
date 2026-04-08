@@ -118,6 +118,21 @@ router.get('/:id/achievements', async (req, res) => {
   }
 });
 
+// GET /by-user/:userId - get gamer profile by Supabase auth user_id
+router.get('/by-user/:userId', async (req, res) => {
+  try {
+    const { data, error } = await supabaseAdmin
+      .from('gamer_profiles')
+      .select('*')
+      .eq('user_id', req.params.userId)
+      .single();
+    if (error || !data) return res.status(404).json({ error: 'Profile not found' });
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // GET /:id - get by id or user_id (MUST be last)
 router.get('/:id', async (req, res) => {
   try {

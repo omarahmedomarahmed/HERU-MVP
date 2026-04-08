@@ -4,15 +4,13 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import GamerLayout from '@/components/layouts/GamerLayout.jsx';
 import FloatingPanel from '@/components/ui/FloatingPanel';
 import GlowButton from '@/components/ui/GlowButton';
-import CoinDisplay from '@/components/ui/CoinDisplay';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { 
+import {
   ShoppingCart, Trash2, ArrowLeft, Package, CreditCard,
-  MapPin, Phone, User, Tag, Check, Coins
+  MapPin, User, Tag, Check
 } from 'lucide-react';
-import { awardCoins, spendCoins, COIN_REWARDS } from '@/components/utils/coinRewards';
-import { AppSettings, Bill, GamerProfile, Order, apiCall } from '@/api/heruClient'
+import { Bill, GamerProfile, Order, apiCall } from '@/api/heruClient'
 import { useAuth } from '@/lib/AuthContext'
 import PhoneInput from '@/components/ui/PhoneInput'
 import { useToast } from '@/components/ui/use-toast'
@@ -20,11 +18,13 @@ import { useToast } from '@/components/ui/use-toast'
 
 export default function Cart() {
   const { toast } = useToast();
-  const [user, setUser] = useState(null);
+  // Use the global auth context — gives correct user.id (Supabase UUID)
+  const { user, isAuthenticated, loading: authLoading } = useAuth();
   const [checkoutModal, setCheckoutModal] = useState(false);
   const [promoCode, setPromoCode] = useState('');
   const [promoApplied, setPromoApplied] = useState(null);
-  const [useCoins, setUseCoins] = useState(false);
+  const [promoLoading, setPromoLoading] = useState(false);
+  // (coins feature reserved for future — no backend yet)
   const [shippingAddress, setShippingAddress] = useState({
     name: '',
     street: '',
@@ -36,34 +36,26 @@ export default function Cart() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
+  // Pre-fill name from auth user
   useEffect(() => {
-    loadUser();
-  }, []);
-
-  const loadUser = async () => {
-    try {
-      const userData = await apiCall('/auth/me');
-      setUser(userData);
-      setShippingAddress(prev => ({ ...prev, name: userData.full_name }));
-    } catch (e) {
-      navigate('/gamer/home');
+    if (user && !shippingAddress.name) {
+      setShippingAddress(prev => ({
+        ...prev,
+        name: user.user_metadata?.full_name || user.email?.split('@')[0] || '',
+      }));
     }
-  };
+  }, [user]);
+
+  // Redirect if not authenticated after loading
+  useEffect(() => {
+    if (!authLoading && !isAuthenticated) navigate('/auth/gamer/login');
+  }, [authLoading, isAuthenticated]);
 
   const { data: profile } = useQuery({
     queryKey: ['gamer-profile', user?.id],
     queryFn: async () => {
       const profiles = await GamerProfile.list({ user_id: user.id });
       return profiles[0];
-    },
-    enabled: !!user?.id,
-  });
-
-  const { data: coinData } = useQuery({
-    queryKey: ['coins', user?.id],
-    queryFn: async () => {
-      const coins = await AppSettings.list({ user_id: user.id });
-      return coins[0] || { balance: 0 };
     },
     enabled: !!user?.id,
   });
@@ -75,11 +67,6 @@ export default function Cart() {
       return savedCart ? JSON.parse(savedCart) : [];
     },
     enabled: !!user?.id,
-  });
-
-  const { data: promoCodes = [] } = useQuery({
-    queryKey: ['promo-codes'],
-    queryFn: () => AppSettings.list(),
   });
 
   const removeFromCart = (cartId) => {
@@ -105,29 +92,26 @@ export default function Cart() {
     queryClient.setQueryData(['cart', user?.id], []);
   };
 
-  const applyPromoCode = () => {
-    const code = promoCodes.find(c => 
-      c.code === promoCode && 
-      !c.used && 
-      (c.is_generic || c.gamer_id === user?.id)
-    );
-    if (code) {
-      setPromoApplied(code);
-    } else {
-      alert('Invalid or expired promo code');
+  const applyPromoCode = async () => {
+    if (!promoCode.trim()) return;
+    setPromoLoading(true);
+    try {
+      const result = await apiCall('/promos/validate', {
+        method: 'POST',
+        body: { code: promoCode.trim(), gamer_id: user?.id },
+      });
+      setPromoApplied(result);
+      toast({ title: `${result.discount_percent}% discount applied!` });
+    } catch {
+      toast({ title: 'Invalid or expired promo code', variant: 'destructive' });
+    } finally {
+      setPromoLoading(false);
     }
   };
 
-  const COIN_VALUE = 0.01;
   const subtotal = cart.reduce((sum, item) => sum + (item.price || 0) * (item.quantity || 1), 0);
   const discount = promoApplied ? (subtotal * promoApplied.discount_percent / 100) : 0;
-  const afterDiscount = subtotal - discount;
-  
-  const maxCoinDiscount = Math.min(coinData?.balance * COIN_VALUE || 0, afterDiscount);
-  const coinDiscount = useCoins ? maxCoinDiscount : 0;
-  const coinsToSpend = useCoins ? Math.floor(maxCoinDiscount / COIN_VALUE) : 0;
-  
-  const total = afterDiscount - coinDiscount;
+  const total = subtotal - discount;
 
   const placeOrderMutation = useMutation({
     mutationFn: async () => {
@@ -147,55 +131,21 @@ export default function Cart() {
         support_chat: []
       });
 
-      // Mark promo code as used
-      try {
-        if (promoApplied) {
-          await AppSettings.update(promoApplied.id, { used: true });
-        }
-      } catch (e) { console.warn('Could not mark promo used:', e); }
-
-      // Spend coins if used
-      try {
-        if (useCoins && coinsToSpend > 0) {
-          await spendCoins(user.id, coinsToSpend, 'Purchase discount');
-        }
-      } catch (e) { console.warn('Could not spend coins:', e); }
-
-      // Add to purchased items
-      try {
-        if (profile) {
-          const purchasedItems = profile.purchased_items || [];
-          cart.forEach(item => {
-            purchasedItems.push({
-              item_id: item.id,
-              purchased_at: new Date().toISOString(),
-              order_id: order.id
-            });
-          });
-          await GamerProfile.updateMe({ purchased_items: purchasedItems });
-        }
-      } catch (e) { console.warn('Could not update purchased items:', e); }
-
       // Create a bill for this order
       try {
         await Bill.create({
           bill_type: 'gamer',
           payer_id: user.id,
           payer_type: 'gamer',
-          payer_name: profile?.username || user?.full_name || user?.email,
+          payer_name: profile?.username || user?.user_metadata?.full_name || user?.email,
           payer_email: user?.email,
           items: cart.map(item => ({ title: item.title, price: item.price, quantity: item.quantity || 1 })),
-          subtotal: subtotal,
+          subtotal,
           platform_fee: 0,
           grand_total: total,
           payment_status: 'unpaid',
         });
       } catch (e) { console.warn('Could not create bill:', e); }
-
-      // Award coins for purchase
-      try {
-        awardCoins(user.id, COIN_REWARDS.BUY_ITEM * cart.length, 'Made a purchase');
-      } catch (e) { console.warn('Could not award coins:', e); }
 
       clearCart();
       return order;
@@ -304,14 +254,15 @@ export default function Cart() {
                   <Input
                     value={promoCode}
                     onChange={(e) => setPromoCode(e.target.value)}
-                    placeholder="Enter code"
+                    placeholder="Enter promo code"
                     className="bg-zinc-800 border-zinc-700 text-white"
-                    disabled={!!promoApplied}
+                    disabled={!!promoApplied || promoLoading}
+                    onKeyDown={(e) => e.key === 'Enter' && !promoApplied && applyPromoCode()}
                   />
-                  <GlowButton 
-                    variant="secondary" 
+                  <GlowButton
+                    variant="secondary"
                     onClick={applyPromoCode}
-                    disabled={!!promoApplied}
+                    disabled={!!promoApplied || promoLoading || !promoCode.trim()}
                   >
                     {promoApplied ? <Check className="w-4 h-4" /> : <Tag className="w-4 h-4" />}
                   </GlowButton>
@@ -323,32 +274,6 @@ export default function Cart() {
                 )}
               </div>
 
-              {/* Use Coins */}
-              {coinData?.balance > 0 && (
-                <div className="mb-4 p-3 bg-zinc-800/50 rounded-lg">
-                  <div className="flex items-center justify-between mb-2">
-                    <label className="flex items-center gap-2 text-white">
-                      <input
-                        type="checkbox"
-                        checked={useCoins}
-                        onChange={(e) => setUseCoins(e.target.checked)}
-                        className="rounded bg-zinc-700 border-zinc-600"
-                      />
-                      <Coins className="w-4 h-4 text-yellow-400" />
-                      Use HERU Coins
-                    </label>
-                  </div>
-                  <p className="text-gray-500 text-xs">
-                    You have {coinData.balance} coins (EGP {(coinData.balance * COIN_VALUE).toFixed(2)} value)
-                  </p>
-                  {useCoins && (
-                    <p className="text-yellow-400 text-sm mt-1">
-                      Using {coinsToSpend} coins for -EGP {coinDiscount.toFixed(2)} discount
-                    </p>
-                  )}
-                </div>
-              )}
-
               <div className="space-y-3 border-t border-zinc-800 pt-4">
                 <div className="flex justify-between text-gray-400">
                   <span>Subtotal ({cart.length} items)</span>
@@ -358,12 +283,6 @@ export default function Cart() {
                   <div className="flex justify-between text-green-400">
                     <span>Promo Discount</span>
                     <span>-EGP {discount.toFixed(2)}</span>
-                  </div>
-                )}
-                {coinDiscount > 0 && (
-                  <div className="flex justify-between text-yellow-400">
-                    <span>Coin Discount</span>
-                    <span>-EGP {coinDiscount.toFixed(2)}</span>
                   </div>
                 )}
                 <div className="flex justify-between text-xl font-bold text-white pt-3 border-t border-zinc-800">
