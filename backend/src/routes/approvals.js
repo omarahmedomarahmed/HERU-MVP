@@ -100,6 +100,21 @@ router.put('/:id/approve', requireAuth, requireStaff, async (req, res) => {
         talent_video_link: approval.details?.talent_video_link,
         updated_at: new Date().toISOString(),
       }).eq('user_id', approval.requester_id);
+
+      // Automatically create a marketplace item for the approved talent
+      const details = approval.details || {};
+      const talentUserId = details.user_id || approval.requester_id;
+      const talentType = details.talent_type || 'Live Talent';
+      const username = details.username || 'Talent';
+      await supabaseAdmin.from('marketplace_items').insert({
+        title: `${username} - ${talentType}`,
+        description: `Professional ${talentType} available for tournaments`,
+        category: 'live_talent',
+        type: talentType,
+        price: details.talent_price || 0,
+        talent_user_id: talentUserId,
+        is_active: true,
+      });
     }
 
     res.json(data);

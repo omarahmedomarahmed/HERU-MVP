@@ -73,7 +73,7 @@ export default function Teams() {
           </h2>
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
             {myTeams.map((team) => (
-              <Link key={team.id} to={`/teams/${team.id}`}>
+              <Link key={team.id} to={`/gamer/teams/${team.id}`}>
                 <GameCard className="p-5 h-full border-red-500/30">
                   <div className="flex items-center gap-4 mb-4">
                     <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-red-600/30 to-zinc-800 flex items-center justify-center overflow-hidden">
@@ -139,7 +139,7 @@ export default function Teams() {
         ) : filteredOtherTeams.length > 0 ? (
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredOtherTeams.map((team) => (
-              <Link key={team.id} to={`/teams/${team.id}`}>
+              <Link key={team.id} to={`/gamer/teams/${team.id}`}>
                 <GameCard className="p-5 h-full">
                   <div className="flex items-center gap-4 mb-4">
                     <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-red-600/20 to-zinc-800 flex items-center justify-center overflow-hidden">

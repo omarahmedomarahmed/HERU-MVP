@@ -418,11 +418,25 @@ router.put('/marketplace/:id/required', requireAuth, requireStaff, async (req, r
   }
 });
 
-// GET /radar - get all radar entries with full details
+// GET /radar - get all radar entries with full details (shared tournaments only)
 router.get('/radar', requireAuth, requireStaff, async (req, res) => {
   try {
     const { status, search, limit = 100, offset = 0 } = req.query;
+
+    // Only include radar entries whose linked tournament is of type 'shared'
+    const { data: sharedTournaments, error: tErr } = await supabaseAdmin
+      .from('tournaments')
+      .select('id')
+      .eq('tournament_type', 'shared');
+    if (tErr) throw tErr;
+    const sharedIds = (sharedTournaments || []).map(t => t.id);
+
     let query = supabaseAdmin.from('sponsorship_radar').select('*');
+    if (sharedIds.length > 0) {
+      query = query.in('tournament_id', sharedIds);
+    } else {
+      return res.json([]);
+    }
     if (status) query = query.eq('status', status);
     if (search) query = query.or(`tournament_name.ilike.%${search}%,game.ilike.%${search}%`);
     query = query.order('created_at', { ascending: false }).range(Number(offset), Number(offset) + Number(limit) - 1);

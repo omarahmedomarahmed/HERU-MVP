@@ -921,16 +921,17 @@ export default function GamerProfile() {
 
       {/* Talent Application CTA (if not talent yet) */}
       {!profile?.is_talent && (
-        <FloatingPanel className="p-6 mt-6 text-center" glowBorder>
-          <Star className="w-10 h-10 text-yellow-500 mx-auto mb-3" />
-          <h3 className="text-xl font-bold text-white mb-2">Become a Talent</h3>
-          <p className="text-gray-400 text-sm mb-4 max-w-md mx-auto">
-            Are you a caster, host, analyst, or observer? Apply to join our talent roster and get booked for tournaments.
+        <div className="mt-6 relative overflow-hidden rounded-2xl border-2 border-yellow-500/40 bg-gradient-to-br from-yellow-500/10 via-zinc-900 to-red-500/10 p-8 text-center shadow-lg shadow-yellow-500/5">
+          <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-yellow-500 via-red-500 to-yellow-500" />
+          <Star className="w-14 h-14 text-yellow-400 mx-auto mb-4 drop-shadow-lg" />
+          <h3 className="text-2xl font-black text-white mb-2">JOIN THE TALENT ROSTER</h3>
+          <p className="text-gray-400 text-sm mb-6 max-w-md mx-auto">
+            Are you a caster, host, analyst, or observer? Apply to join our talent roster and get booked for tournaments. Earn EGP per event!
           </p>
-          <GlowButton onClick={() => setTalentModal(true)}>
-            <Star className="w-4 h-4" /> Apply Now
+          <GlowButton onClick={() => setTalentModal(true)} size="lg" className="bg-gradient-to-r from-yellow-600 to-red-600 hover:from-yellow-500 hover:to-red-500 text-white font-bold px-8">
+            <Star className="w-5 h-5" /> Apply as Talent
           </GlowButton>
-        </FloatingPanel>
+        </div>
       )}
 
       {/* Logout */}

@@ -520,7 +520,7 @@ export default function TournamentDetails() {
                     {teams.map((team) => {
                       const isMyTeam = myTeams.some(t => t.id === team.id);
                       return (
-                        <Link key={team.id} to={`/teams/${team.id}`}>
+                        <Link key={team.id} to={`/gamer/teams/${team.id}`}>
                           <GameCard className={`p-4 transition-colors ${isMyTeam ? 'border-red-500/50 bg-red-500/5' : ''}`}>
                             <div className="flex items-center gap-3">
                               <div className={`w-12 h-12 rounded-lg flex items-center justify-center overflow-hidden ${isMyTeam ? 'bg-red-500/20 ring-2 ring-red-500/30' : 'bg-zinc-800'}`}>

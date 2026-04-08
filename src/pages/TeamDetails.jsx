@@ -14,11 +14,13 @@ import { Switch } from '@/components/ui/switch';
 import { motion } from 'framer-motion';
 import {
   Users, Trophy, MessageSquare, Send, UserPlus, Check, X, Crown,
-  Shield, Settings, ArrowLeft, Gamepad2, Edit2, Save, Trash2
+  Shield, Settings, ArrowLeft, Gamepad2, Edit2, Save, Trash2, Upload, Loader2
 } from 'lucide-react';
 
 import { GamerProfile, Team, Tournament, apiCall } from '@/api/heruClient'
 import { useAuth } from '@/lib/AuthContext'
+import { uploadFile } from '@/lib/uploadFile'
+import { useToast } from '@/components/ui/use-toast'
 
 const GAMES = ['Valorant', 'CS2', 'League of Legends', 'Dota 2', 'Rocket League', 'Apex Legends'];
 const RANKS = ['Unranked', 'Bronze', 'Silver', 'Gold', 'Platinum', 'Diamond', 'Master', 'Grandmaster', 'Radiant', 'Global Elite'];
@@ -33,8 +35,10 @@ export default function TeamDetails() {
   const [newMessage, setNewMessage] = useState('');
   const [editingSettings, setEditingSettings] = useState(false);
   const [settingsForm, setSettingsForm] = useState({});
+  const [uploadingField, setUploadingField] = useState(null);
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { toast } = useToast();
 
   const { id: teamId } = useParams();
 
@@ -235,8 +239,29 @@ export default function TeamDetails() {
     onSuccess: () => {
       queryClient.invalidateQueries(['team', teamId]);
       setEditingSettings(false);
+      toast({ title: 'Settings saved!' });
     }
   });
+
+  const handleTeamImageUpload = async (file, field) => {
+    if (!file) return;
+    setUploadingField(field);
+    try {
+      const { file_url } = await uploadFile(file);
+      if (field === 'logo') {
+        await Team.update(teamId, { logo: file_url });
+      } else if (field === 'banner') {
+        const images = [file_url, ...(team.images || []).slice(1)];
+        await Team.update(teamId, { images });
+      }
+      queryClient.invalidateQueries(['team', teamId]);
+      toast({ title: `${field === 'logo' ? 'Logo' : 'Banner'} updated!` });
+    } catch (err) {
+      toast({ title: 'Upload failed', description: err.message, variant: 'destructive' });
+    } finally {
+      setUploadingField(null);
+    }
+  };
 
   const cart = JSON.parse(localStorage.getItem(`cart_${user?.id}`) || '[]');
 
@@ -643,6 +668,40 @@ export default function TeamDetails() {
                 <Settings className="w-5 h-5 text-gray-400" /> Team Settings
               </h3>
               <div className="space-y-4">
+                {/* Logo & Banner Upload */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-sm text-gray-400 block mb-2">Team Logo</label>
+                    <div className="flex flex-col items-center gap-2">
+                      <div className="w-16 h-16 rounded-xl bg-zinc-800 overflow-hidden flex items-center justify-center">
+                        {team.logo ? <img src={team.logo} alt="" className="w-full h-full object-cover" /> : <Users className="w-8 h-8 text-zinc-600" />}
+                      </div>
+                      <label className="cursor-pointer">
+                        <span className="flex items-center gap-1 px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 text-gray-300 text-xs rounded-lg transition-colors">
+                          {uploadingField === 'logo' ? <Loader2 className="w-3 h-3 animate-spin" /> : <Upload className="w-3 h-3" />}
+                          {uploadingField === 'logo' ? 'Uploading...' : 'Upload'}
+                        </span>
+                        <input type="file" accept="image/*" className="hidden" onChange={e => e.target.files[0] && handleTeamImageUpload(e.target.files[0], 'logo')} />
+                      </label>
+                    </div>
+                  </div>
+                  <div>
+                    <label className="text-sm text-gray-400 block mb-2">Banner Image</label>
+                    <div className="flex flex-col items-center gap-2">
+                      <div className="w-full h-16 rounded-xl bg-zinc-800 overflow-hidden flex items-center justify-center">
+                        {team.images?.[0] ? <img src={team.images[0]} alt="" className="w-full h-full object-cover" /> : <span className="text-zinc-600 text-xs">No banner</span>}
+                      </div>
+                      <label className="cursor-pointer">
+                        <span className="flex items-center gap-1 px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 text-gray-300 text-xs rounded-lg transition-colors">
+                          {uploadingField === 'banner' ? <Loader2 className="w-3 h-3 animate-spin" /> : <Upload className="w-3 h-3" />}
+                          {uploadingField === 'banner' ? 'Uploading...' : 'Upload'}
+                        </span>
+                        <input type="file" accept="image/*" className="hidden" onChange={e => e.target.files[0] && handleTeamImageUpload(e.target.files[0], 'banner')} />
+                      </label>
+                    </div>
+                  </div>
+                </div>
+
                 <div>
                   <label className="text-sm text-gray-400 block mb-1">Description</label>
                   <Input
