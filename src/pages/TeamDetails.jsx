@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react'; // useEffect kept for settings form
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import GamerLayout from '@/components/layouts/GamerLayout.jsx';
@@ -16,7 +16,7 @@ import {
   Users, Trophy, MessageSquare, Send, UserPlus, Check, X, Crown,
   Shield, Settings, ArrowLeft, Gamepad2, Edit2, Save, Trash2
 } from 'lucide-react';
-import { awardCoins, COIN_REWARDS } from '@/components/utils/coinRewards';
+
 import { GamerProfile, Team, Tournament, apiCall } from '@/api/heruClient'
 import { useAuth } from '@/lib/AuthContext'
 
@@ -25,7 +25,7 @@ const RANKS = ['Unranked', 'Bronze', 'Silver', 'Gold', 'Platinum', 'Diamond', 'M
 const TEAM_ROLES = ['Player', 'Coach', 'Manager', 'Analyst', 'Sub', 'Content Creator'];
 
 export default function TeamDetails() {
-  const [user, setUser] = useState(null);
+  const { user } = useAuth();
   const [showJoinModal, setShowJoinModal] = useState(false);
   const [showInviteFriendsModal, setShowInviteFriendsModal] = useState(false);
   const [showRoleModal, setShowRoleModal] = useState(null); // member object
@@ -37,20 +37,6 @@ export default function TeamDetails() {
   const queryClient = useQueryClient();
 
   const { id: teamId } = useParams();
-
-  useEffect(() => {
-    loadUser();
-  }, []);
-
-  const loadUser = async () => {
-    try {
-      const userData = await apiCall('/auth/me');
-      setUser(userData);
-    } catch (e) {
-      // Not logged in — allow guest viewing of public team page
-      setUser(null);
-    }
-  };
 
   const { data: profile } = useQuery({
     queryKey: ['gamer-profile', user?.id],
@@ -122,7 +108,7 @@ export default function TeamDetails() {
     mutationFn: async () => {
       const requests = [...(team.join_requests || []), {
         user_id: user.id,
-        username: profile?.username || user.full_name,
+        username: profile?.username || user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Member',
         ...joinRequest,
         status: 'pending',
         requested_at: new Date().toISOString()
@@ -160,7 +146,7 @@ export default function TeamDetails() {
         }
       }
 
-      awardCoins(request.user_id, COIN_REWARDS.JOIN_TEAM, 'Joined a team');
+      // coin reward pending server-side implementation
     },
     onSuccess: () => queryClient.invalidateQueries(['team', teamId])
   });
@@ -210,7 +196,7 @@ export default function TeamDetails() {
     mutationFn: async (message) => {
       const msgObj = {
         sender_id: user.id,
-        sender_name: profile?.username || user.full_name,
+        sender_name: profile?.username || user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Member',
         message,
         timestamp: new Date().toISOString()
       };

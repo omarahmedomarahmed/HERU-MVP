@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import GamerLayout from '@/components/layouts/GamerLayout.jsx';
@@ -11,8 +11,7 @@ import { Switch } from '@/components/ui/switch';
 import {
   Users, Plus, Check, ArrowLeft, UserPlus, Palette, Image
 } from 'lucide-react';
-import { awardCoins, COIN_REWARDS } from '@/components/utils/coinRewards';
-import { GamerProfile, Team, apiCall } from '@/api/heruClient'
+import { GamerProfile, Team } from '@/api/heruClient'
 import { useAuth } from '@/lib/AuthContext'
 import { useToast } from '@/components/ui/use-toast'
 
@@ -31,7 +30,7 @@ const COLOR_PRESETS = [
 ];
 
 export default function CreateTeam() {
-  const [user, setUser] = useState(null);
+  const { user } = useAuth();
   const [step, setStep] = useState(1); // 1: basics, 2: branding, 3: invite
   const [teamData, setTeamData] = useState({
     name: '',
@@ -50,25 +49,6 @@ export default function CreateTeam() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { toast } = useToast();
-
-  useEffect(() => {
-    loadUser();
-  }, []);
-
-  const loadUser = async () => {
-    try {
-      const userData = await apiCall('/auth/me');
-      const u = userData?.user || userData;
-      setUser({
-        id: u.id,
-        email: u.email,
-        full_name: u.full_name || u.email?.split('@')[0] || '',
-        role: u.role,
-      });
-    } catch (e) {
-      navigate('/gamer/home');
-    }
-  };
 
   const { data: profile } = useQuery({
     queryKey: ['gamer-profile', user?.id],
@@ -145,15 +125,6 @@ export default function CreateTeam() {
         } catch (e) {
           console.warn('Could not update friend profile:', e);
         }
-      }
-
-      try {
-        awardCoins(user.id, COIN_REWARDS.CREATE_TEAM, 'Created a team');
-        if (selectedFriends.length >= 5) {
-          awardCoins(user.id, COIN_REWARDS.INVITE_5_TO_TEAM, 'Invited 5 friends to team');
-        }
-      } catch (e) {
-        console.warn('Could not award coins:', e);
       }
 
       return team;

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import GamerLayout from '@/components/layouts/GamerLayout.jsx';
@@ -7,7 +7,7 @@ import GlowButton from '@/components/ui/GlowButton';
 import GameCard from '@/components/ui/GameCard';
 import HexBadge from '@/components/ui/HexBadge';
 import { Input } from '@/components/ui/input';
-import { GamerProfile, Team, apiCall } from '@/api/heruClient'
+import { GamerProfile, Team } from '@/api/heruClient'
 import { useAuth } from '@/lib/AuthContext'
 
 import {
@@ -15,20 +15,9 @@ import {
 } from 'lucide-react';
 
 export default function Teams() {
-  const [user, setUser] = useState(null);
+  const { user } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
   const navigate = useNavigate();
-
-  useEffect(() => {
-    loadUser();
-  }, []);
-
-  const loadUser = async () => {
-    try {
-      const userData = await apiCall('/auth/me');
-      setUser(userData);
-    } catch (e) {}
-  };
 
   const { data: profile } = useQuery({
     queryKey: ['gamer-profile', user?.id],
