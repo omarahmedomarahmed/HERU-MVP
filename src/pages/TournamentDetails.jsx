@@ -381,6 +381,18 @@ export default function TournamentDetails() {
                 <Zap className="w-5 h-5" /> Arena
               </GlowButton>
             )}
+            {/* 1v1 tournament join */}
+            {tournament.status === 'published' && is1v1 && !myPlayerJoined && user && (
+              <GlowButton size="lg" onClick={() => setJoinModal(true)}>
+                <Swords className="w-5 h-5" /> Join as Player
+              </GlowButton>
+            )}
+            {myTeamPendingRequest && (
+              <HexBadge className="bg-amber-500/20 text-amber-400 border-amber-500/50">Request Pending</HexBadge>
+            )}
+            {(myTeamInTournament || myPlayerJoined) && (
+              <HexBadge className="bg-green-500/20 text-green-400 border-green-500/50">Joined</HexBadge>
+            )}
           </div>
         </div>
       </div>

@@ -12,8 +12,14 @@ router.get('/', async (_req, res) => {
       .select('*')
       .eq('is_active', true)
       .order('category');
-    if (error) throw error;
-    res.json(data);
+    if (error) {
+      // Table may not exist yet — return empty array instead of 500
+      if (error.code === '42P01' || error.message?.includes('relation') || error.message?.includes('does not exist')) {
+        return res.json([]);
+      }
+      throw error;
+    }
+    res.json(data || []);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -27,8 +33,13 @@ router.get('/user/:userId', async (req, res) => {
       .select('*, achievements(*)')
       .eq('user_id', req.params.userId)
       .order('earned_at', { ascending: false });
-    if (error) throw error;
-    res.json(data);
+    if (error) {
+      if (error.code === '42P01' || error.message?.includes('relation') || error.message?.includes('does not exist')) {
+        return res.json([]);
+      }
+      throw error;
+    }
+    res.json(data || []);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

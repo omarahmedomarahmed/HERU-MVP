@@ -1,4 +1,4 @@
-import { useToast } from "@/components/ui/use-toast";
+import { useToast, removeToast } from "@/components/ui/use-toast";
 import {
   Toast,
   ToastClose,
@@ -9,7 +9,7 @@ import {
 } from "@/components/ui/toast";
 
 export function Toaster() {
-  const { toasts, dismiss } = useToast();
+  const { toasts } = useToast();
 
   return (
     <ToastProvider>
@@ -23,7 +23,7 @@ export function Toaster() {
               )}
             </div>
             {action}
-            <ToastClose onClick={() => dismiss(id)} />
+            <ToastClose onClick={() => removeToast(id)} />
           </Toast>
         );
       })}

@@ -4,6 +4,7 @@ import { queryClientInstance } from '@/lib/query-client'
 import NavigationTracker from '@/lib/NavigationTracker'
 import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom'
 import PageNotFound from './lib/PageNotFound'
+import NotFound from './pages/NotFound'
 import { AuthProvider } from '@/lib/AuthContext'
 import { RequireGamer, RequireOrganizer, RequireStaff } from '@/lib/auth-guards'
 
@@ -192,7 +193,7 @@ function App() {
             <Route path="/marketplace" element={<Navigate to="/gamer/marketplace" replace />} />
 
             {/* 404 */}
-            <Route path="*" element={<PageNotFound />} />
+            <Route path="*" element={<NotFound />} />
           </Routes>
         </Router>
         <Toaster />

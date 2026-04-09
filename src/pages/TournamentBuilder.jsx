@@ -32,7 +32,7 @@ const STAGES = [
   { id: 'prizepool', label: 'Prizepool', icon: Award },
 ];
 
-const GAMES = ['Valorant', 'CS2', 'League of Legends', 'Dota 2', 'Rocket League', 'Apex Legends', 'Fortnite', 'Call of Duty', 'Rainbow Six Siege', 'Overwatch 2'];
+import { useGames } from '@/hooks/useGames';
 const FORMATS = ['Single Elimination', 'Double Elimination', 'Round Robin', 'Swiss', 'Best of 1', 'Best of 3', 'Best of 5'];
 
 export default function TournamentBuilder() {
@@ -77,6 +77,7 @@ export default function TournamentBuilder() {
   const queryClient = useQueryClient();
   const [lastSaved, setLastSaved] = useState(null);
   const { toast } = useToast();
+  const GAMES = useGames();
 
   useEffect(() => {
     loadUser();
@@ -203,6 +204,7 @@ export default function TournamentBuilder() {
         await Tournament.update(tId, dataToSave);
       } else {
         const created = await Tournament.create(dataToSave);
+        if (!created?.id) throw new Error('Failed to create tournament. Please try again.');
         tId = created.id;
       }
 
@@ -332,7 +334,13 @@ export default function TournamentBuilder() {
 
             <div>
               <label className="text-sm text-gray-400 block mb-2">Game *</label>
-              <Select value={tournament.game} onValueChange={(v) => setTournament({ ...tournament, game: v })}>
+              <Select value={GAMES.includes(tournament.game) ? tournament.game : tournament.game ? '__other__' : ''} onValueChange={(v) => {
+                if (v === '__other__') {
+                  setTournament({ ...tournament, game: '' });
+                } else {
+                  setTournament({ ...tournament, game: v });
+                }
+              }}>
                 <SelectTrigger className="bg-zinc-800 border-zinc-700 text-white">
                   <SelectValue placeholder="Select game" />
                 </SelectTrigger>
@@ -340,8 +348,24 @@ export default function TournamentBuilder() {
                   {GAMES.map(game => (
                     <SelectItem key={game} value={game}>{game}</SelectItem>
                   ))}
+                  <SelectItem value="__other__">Other...</SelectItem>
                 </SelectContent>
               </Select>
+              {!GAMES.includes(tournament.game) && tournament.game !== '' && (
+                <Input
+                  value={tournament.game}
+                  onChange={(e) => setTournament({ ...tournament, game: e.target.value })}
+                  placeholder="Enter game name..."
+                  className="mt-2 bg-zinc-800 border-zinc-700 text-white"
+                />
+              )}
+              {tournament.game === '' && (
+                <Input
+                  onChange={(e) => setTournament({ ...tournament, game: e.target.value })}
+                  placeholder="Enter game name..."
+                  className="mt-2 bg-zinc-800 border-zinc-700 text-white"
+                />
+              )}
             </div>
 
             {/* Participant Type Toggle */}

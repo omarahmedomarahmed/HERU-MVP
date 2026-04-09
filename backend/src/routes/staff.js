@@ -8,13 +8,14 @@ const router = Router();
 // GET /dashboard - stats
 router.get('/dashboard', requireAuth, requireStaff, async (req, res) => {
   try {
-    const [tournaments, activeTournaments, users, orders, bills, revenue] = await Promise.all([
+    const [tournaments, activeTournaments, users, orders, bills, revenue, staffSessions] = await Promise.all([
       supabaseAdmin.from('tournaments').select('id', { count: 'exact', head: true }),
       supabaseAdmin.from('tournaments').select('id', { count: 'exact', head: true }).in('status', ['published', 'live']),
       supabaseAdmin.from('user_profiles').select('id', { count: 'exact', head: true }),
       supabaseAdmin.from('tournament_orders').select('id', { count: 'exact', head: true }),
       supabaseAdmin.from('bills').select('id', { count: 'exact', head: true }).eq('payment_status', 'paid'),
       supabaseAdmin.from('bills').select('platform_fee').eq('payment_status', 'paid'),
+      supabaseAdmin.from('staff_sessions').select('id', { count: 'exact', head: true }).eq('is_active', true).gte('expires_at', new Date().toISOString()),
     ]);
 
     const totalRevenue = (revenue.data || []).reduce((sum, b) => sum + (b.platform_fee || 0), 0);
@@ -26,6 +27,7 @@ router.get('/dashboard', requireAuth, requireStaff, async (req, res) => {
       total_orders: orders.count || 0,
       paid_bills: bills.count || 0,
       total_platform_revenue: totalRevenue,
+      active_staff_sessions: staffSessions.count || 0,
     });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -109,18 +111,32 @@ router.put('/users/:id', requireAuth, requireStaff, async (req, res) => {
 router.get('/revenue', requireAuth, requireStaff, async (req, res) => {
   try {
     const { from_date, to_date, tournament_id } = req.query;
-    let query = supabaseAdmin.from('bills').select('tournament_id, tournament_name, platform_fee, payment_status, paid_date, created_at').eq('payment_status', 'paid');
-    if (from_date) query = query.gte('paid_date', from_date);
-    if (to_date) query = query.lte('paid_date', to_date);
-    if (tournament_id) query = query.eq('tournament_id', tournament_id);
-    query = query.order('paid_date', { ascending: false });
-    const { data: bills, error } = await query;
-    if (error) throw error;
 
-    const totalRevenue = (bills || []).reduce((sum, b) => sum + (b.platform_fee || 0), 0);
+    // Fetch PAID bills (collected revenue)
+    let paidQuery = supabaseAdmin.from('bills').select('tournament_id, tournament_name, platform_fee, payment_status, paid_date, created_at').eq('payment_status', 'paid');
+    if (from_date) paidQuery = paidQuery.gte('paid_date', from_date);
+    if (to_date) paidQuery = paidQuery.lte('paid_date', to_date);
+    if (tournament_id) paidQuery = paidQuery.eq('tournament_id', tournament_id);
+    paidQuery = paidQuery.order('paid_date', { ascending: false });
+
+    // Fetch ALL bills for total expected fees
+    let allQuery = supabaseAdmin.from('bills').select('platform_fee, payment_status');
+    if (tournament_id) allQuery = allQuery.eq('tournament_id', tournament_id);
+
+    const [{ data: paidBills, error: paidErr }, { data: allBills, error: allErr }] = await Promise.all([
+      paidQuery,
+      allQuery,
+    ]);
+    if (paidErr) throw paidErr;
+    if (allErr) throw allErr;
+
+    const totalRevenue = (paidBills || []).reduce((sum, b) => sum + (b.platform_fee || 0), 0);
+    const totalExpectedFees = (allBills || []).reduce((sum, b) => sum + (b.platform_fee || 0), 0);
+    const pendingFees = totalExpectedFees - totalRevenue;
+
     const byTournament = {};
     const byMonth = {};
-    for (const bill of (bills || [])) {
+    for (const bill of (paidBills || [])) {
       const name = bill.tournament_name || 'Marketplace';
       byTournament[name] = (byTournament[name] || 0) + (bill.platform_fee || 0);
       if (bill.paid_date) {
@@ -131,9 +147,11 @@ router.get('/revenue', requireAuth, requireStaff, async (req, res) => {
 
     res.json({
       total_revenue: totalRevenue,
+      total_expected_fees: totalExpectedFees,
+      pending_fees: pendingFees,
       by_tournament: Object.entries(byTournament).map(([name, amount]) => ({ name, amount })),
       by_month: Object.entries(byMonth).map(([month, amount]) => ({ month, amount })).sort((a, b) => b.month.localeCompare(a.month)),
-      bills,
+      bills: paidBills,
     });
   } catch (err) {
     res.status(500).json({ error: err.message });

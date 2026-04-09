@@ -2,7 +2,7 @@
 import { useState, useEffect } from "react";
 
 const TOAST_LIMIT = 5;
-const TOAST_REMOVE_DELAY = 5000;
+const TOAST_REMOVE_DELAY = 1000;
 
 const actionTypes = {
   ADD_TOAST: "ADD_TOAST",
@@ -164,4 +164,8 @@ function useToast() {
   };
 }
 
-export { useToast, toast }; 
+function removeToast(toastId) {
+  dispatch({ type: actionTypes.REMOVE_TOAST, toastId });
+}
+
+export { useToast, toast, removeToast };

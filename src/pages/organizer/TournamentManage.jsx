@@ -3,6 +3,8 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '@/lib/AuthContext'
 import { Tournament, Team, Deliverable, GigRequest, apiCall } from '@/api/heruClient'
+import { uploadFile } from '@/lib/uploadFile'
+import { useToast } from '@/components/ui/use-toast'
 import BracketVisual from '@/components/tournament/BracketVisual'
 import TeamManagementPanel from '@/components/tournament/TeamManagementPanel'
 import SeedingPanel from '@/components/tournament/SeedingPanel'
@@ -14,7 +16,8 @@ import {
   Radio, Clock, Calendar, Gamepad2, DollarSign,
   Shield, ArrowLeft, AlertTriangle, GripVertical,
   Play, Flag, Package, Upload, Briefcase, Eye,
-  Settings, BarChart3, ListChecks,
+  Settings, BarChart3, ListChecks, Pencil, Trash2,
+  Save, Image, X,
 } from 'lucide-react'
 
 // ---------------------------------------------------------------------------
@@ -70,6 +73,7 @@ const TABS = [
   { id: 'gig-workers',   label: 'Gig Workers',   icon: Briefcase },
   { id: 'chat',          label: 'Chat',          icon: MessageSquare },
   { id: 'report',        label: 'Report',        icon: FileText },
+  { id: 'settings',      label: 'Quick Edit',    icon: Pencil },
 ]
 
 // ---------------------------------------------------------------------------
@@ -378,6 +382,281 @@ function ReportTab({ tournament, navigate }) {
 }
 
 // ---------------------------------------------------------------------------
+// Quick Edit / Settings Tab
+// ---------------------------------------------------------------------------
+
+const FORMAT_OPTIONS = [
+  'Single Elimination',
+  'Double Elimination',
+  'Round Robin',
+  'Swiss',
+  'Best of 1',
+  'Best of 3',
+  'Best of 5',
+]
+
+function SettingsTab({ tournament, queryClient }) {
+  const { toast } = useToast()
+  const fileInputRef = useRef(null)
+
+  // Local form state initialised from tournament
+  const [name, setName] = useState(tournament.name || '')
+  const [format, setFormat] = useState(tournament.format || '')
+  const [schedule, setSchedule] = useState(
+    tournament.schedule ? tournament.schedule.slice(0, 16) : '' // datetime-local expects YYYY-MM-DDTHH:mm
+  )
+  const [description, setDescription] = useState(tournament.description || '')
+  const [bannerPreview, setBannerPreview] = useState(tournament.tournament_image || '')
+  const [bannerFile, setBannerFile] = useState(null)
+  const [isUploading, setIsUploading] = useState(false)
+
+  // Keep local state in sync when tournament data refreshes
+  useEffect(() => {
+    setName(tournament.name || '')
+    setFormat(tournament.format || '')
+    setSchedule(tournament.schedule ? tournament.schedule.slice(0, 16) : '')
+    setDescription(tournament.description || '')
+    setBannerPreview(tournament.tournament_image || '')
+  }, [tournament.id, tournament.updated_at])
+
+  // Save mutation
+  const saveMutation = useMutation({
+    mutationFn: async () => {
+      const updates = {
+        name: name.trim(),
+        format,
+        schedule: schedule ? new Date(schedule).toISOString() : null,
+        description: description.trim(),
+      }
+
+      // Upload banner if a new file was selected
+      if (bannerFile) {
+        setIsUploading(true)
+        try {
+          const { file_url } = await uploadFile(bannerFile)
+          updates.tournament_image = file_url
+        } finally {
+          setIsUploading(false)
+        }
+      }
+
+      return Tournament.update(tournament.id, updates)
+    },
+    onSuccess: () => {
+      setBannerFile(null)
+      queryClient.invalidateQueries({ queryKey: ['tournament', tournament.id] })
+      toast({ title: 'Saved', description: 'Tournament details updated.' })
+    },
+    onError: (err) => {
+      toast({ title: 'Error', description: err.message || 'Failed to save changes.', variant: 'destructive' })
+    },
+  })
+
+  // Delete brackets mutation
+  const deleteBracketsMutation = useMutation({
+    mutationFn: () => Tournament.updateBrackets(tournament.id, { brackets: [] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['tournament', tournament.id] })
+      toast({ title: 'Brackets cleared', description: 'All brackets have been deleted. You can re-seed and generate new ones.' })
+    },
+    onError: (err) => {
+      toast({ title: 'Error', description: err.message || 'Failed to clear brackets.', variant: 'destructive' })
+    },
+  })
+
+  const [confirmDeleteBrackets, setConfirmDeleteBrackets] = useState(false)
+
+  const handleBannerSelect = (e) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setBannerFile(file)
+    setBannerPreview(URL.createObjectURL(file))
+  }
+
+  const removeBanner = () => {
+    setBannerFile(null)
+    setBannerPreview('')
+    if (fileInputRef.current) fileInputRef.current.value = ''
+  }
+
+  const isSaving = saveMutation.isPending || isUploading
+
+  // Check if anything changed
+  const hasChanges =
+    name.trim() !== (tournament.name || '') ||
+    format !== (tournament.format || '') ||
+    (schedule ? new Date(schedule).toISOString() : '') !== (tournament.schedule || '') ||
+    description.trim() !== (tournament.description || '') ||
+    bannerFile !== null ||
+    (bannerPreview === '' && tournament.tournament_image)
+
+  return (
+    <div className="space-y-6">
+      {/* Editable fields */}
+      <div className="rounded-xl border border-white/10 bg-[#1a1a2e] p-5 space-y-5">
+        <h3 className="text-sm font-medium text-gray-400 uppercase tracking-wider">Quick Edit</h3>
+
+        {/* Name */}
+        <div className="space-y-1.5">
+          <label className="block text-xs text-gray-400 font-medium">Tournament Name</label>
+          <input
+            type="text"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            className="w-full bg-[#0f0f1a] border border-white/10 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-red-500/50 transition"
+            placeholder="Tournament name"
+          />
+        </div>
+
+        {/* Format */}
+        <div className="space-y-1.5">
+          <label className="block text-xs text-gray-400 font-medium">Format</label>
+          <select
+            value={format}
+            onChange={(e) => setFormat(e.target.value)}
+            className="w-full bg-[#0f0f1a] border border-white/10 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-red-500/50 transition"
+          >
+            <option value="">Select format...</option>
+            {FORMAT_OPTIONS.map((f) => (
+              <option key={f} value={f}>{f}</option>
+            ))}
+          </select>
+        </div>
+
+        {/* Schedule */}
+        <div className="space-y-1.5">
+          <label className="block text-xs text-gray-400 font-medium">Schedule Date & Time</label>
+          <input
+            type="datetime-local"
+            value={schedule}
+            onChange={(e) => setSchedule(e.target.value)}
+            className="w-full bg-[#0f0f1a] border border-white/10 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-red-500/50 transition [color-scheme:dark]"
+          />
+        </div>
+
+        {/* Banner Image */}
+        <div className="space-y-1.5">
+          <label className="block text-xs text-gray-400 font-medium">Banner Image</label>
+          {bannerPreview ? (
+            <div className="relative group">
+              <img
+                src={bannerPreview}
+                alt="Tournament banner"
+                className="w-full h-40 object-cover rounded-lg border border-white/10"
+              />
+              <button
+                type="button"
+                onClick={removeBanner}
+                className="absolute top-2 right-2 p-1.5 rounded-full bg-black/60 text-white hover:bg-red-600 transition opacity-0 group-hover:opacity-100"
+                title="Remove banner"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          ) : (
+            <div
+              onClick={() => fileInputRef.current?.click()}
+              className="flex flex-col items-center justify-center h-40 border-2 border-dashed border-white/10 rounded-lg cursor-pointer hover:border-red-500/40 transition"
+            >
+              <Image className="w-8 h-8 text-gray-600 mb-2" />
+              <p className="text-xs text-gray-500">Click to upload banner</p>
+            </div>
+          )}
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            onChange={handleBannerSelect}
+            className="hidden"
+          />
+          {bannerPreview && (
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              className="text-xs text-red-400 hover:text-red-300 transition"
+            >
+              Change image
+            </button>
+          )}
+        </div>
+
+        {/* Description / Rules */}
+        <div className="space-y-1.5">
+          <label className="block text-xs text-gray-400 font-medium">Rules / Description</label>
+          <textarea
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            rows={6}
+            className="w-full bg-[#0f0f1a] border border-white/10 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-red-500/50 transition resize-y"
+            placeholder="Tournament rules, description, or notes..."
+          />
+        </div>
+
+        {/* Save button */}
+        <div className="flex items-center gap-3 pt-2">
+          <button
+            onClick={() => saveMutation.mutate()}
+            disabled={isSaving || !hasChanges}
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-gradient-to-r from-red-600 to-red-500 text-white font-medium text-sm hover:brightness-110 disabled:opacity-40 disabled:cursor-not-allowed transition"
+          >
+            {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+            {isUploading ? 'Uploading...' : isSaving ? 'Saving...' : 'Save Changes'}
+          </button>
+          {!hasChanges && (
+            <span className="text-xs text-gray-600">No unsaved changes</span>
+          )}
+        </div>
+      </div>
+
+      {/* Danger zone — delete brackets */}
+      <div className="rounded-xl border border-red-500/20 bg-red-500/5 p-5 space-y-4">
+        <h3 className="text-sm font-medium text-red-400 uppercase tracking-wider">Danger Zone</h3>
+
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div>
+            <p className="text-white text-sm font-medium">Delete Brackets & Restart</p>
+            <p className="text-xs text-gray-500">
+              Permanently clears all bracket data and match results. You will need to re-seed teams and generate new brackets.
+            </p>
+          </div>
+
+          {!confirmDeleteBrackets ? (
+            <button
+              onClick={() => setConfirmDeleteBrackets(true)}
+              disabled={!tournament.brackets?.length}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-red-500/30 text-red-400 text-sm font-medium hover:bg-red-500/10 disabled:opacity-30 disabled:cursor-not-allowed transition shrink-0"
+            >
+              <Trash2 className="w-4 h-4" />
+              Delete Brackets
+            </button>
+          ) : (
+            <div className="flex items-center gap-2 shrink-0">
+              <button
+                onClick={() => {
+                  deleteBracketsMutation.mutate()
+                  setConfirmDeleteBrackets(false)
+                }}
+                disabled={deleteBracketsMutation.isPending}
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-red-600 text-white text-sm font-medium hover:bg-red-500 disabled:opacity-50 transition"
+              >
+                {deleteBracketsMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                Confirm Delete
+              </button>
+              <button
+                onClick={() => setConfirmDeleteBrackets(false)}
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-white/10 text-gray-400 text-sm font-medium hover:text-white transition"
+              >
+                Cancel
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ---------------------------------------------------------------------------
 // Main Component
 // ---------------------------------------------------------------------------
 
@@ -593,6 +872,9 @@ export default function TournamentManage({ defaultTab = 'overview' }) {
             />
           )}
           {activeTab === 'report' && <ReportTab tournament={tournament} navigate={navigate} />}
+          {activeTab === 'settings' && (
+            <SettingsTab tournament={tournament} queryClient={queryClient} />
+          )}
         </div>
       </div>
     </div>

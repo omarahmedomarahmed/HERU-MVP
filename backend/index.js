@@ -29,6 +29,7 @@ import organizerPageRoutes from './src/routes/organizer-pages.js';
 import matchRecordRoutes from './src/routes/match-records.js';
 import auditRoutes from './src/routes/audit.js';
 import promoRoutes from './src/routes/promos.js';
+import gameRoutes from './src/routes/games.js';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -55,7 +56,7 @@ app.use(
 // Strict rate limiter for auth endpoints (prevent brute force)
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 10, // 10 login attempts per 15 minutes
+  max: 30, // 30 login attempts per 15 minutes
   standardHeaders: true,
   legacyHeaders: false,
   message: { error: 'Too many login attempts, please try again later.' },
@@ -63,10 +64,10 @@ const authLimiter = rateLimit({
 app.use('/api/auth/login', authLimiter);
 app.use('/api/auth/staff/login', authLimiter);
 
-// General rate limiter
+// General rate limiter — generous to avoid cascading 429s on page loads
 const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 200,
+  windowMs: 1 * 60 * 1000, // 1 minute window
+  max: 300, // 300 requests per minute per IP
   standardHeaders: true,
   legacyHeaders: false,
   message: { error: 'Too many requests, please try again later.' },
@@ -112,6 +113,7 @@ app.use('/api/organizer-pages', organizerPageRoutes);
 app.use('/api/match-records', matchRecordRoutes);
 app.use('/api/audit', auditRoutes);
 app.use('/api/promos', promoRoutes);
+app.use('/api/games', gameRoutes);
 
 // ---------------------------------------------------------------------------
 // 404 handler
