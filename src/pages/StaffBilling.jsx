@@ -73,6 +73,33 @@ export default function StaffBilling() {
     },
   });
 
+  const zeroOutMutation = useMutation({
+    mutationFn: (bill) => {
+      const zeroedItems = (bill.items || []).map(item => ({
+        ...item,
+        price: 0,
+        subtotal: 0,
+        original_price: item.subtotal ?? item.price ?? 0,
+      }));
+      return Staff.updateBill(bill.id, {
+        items: zeroedItems,
+        subtotal: 0,
+        platform_fee: 0,
+        tax: 0,
+        grand_total: 0,
+        payment_status: 'paid',
+        paid_amount: 0,
+        paid_date: new Date().toISOString().split('T')[0],
+        payment_method: 'staff_zeroed',
+        notes: `${bill.notes ? bill.notes + '\n' : ''}[Staff] Bill zeroed out on ${new Date().toISOString().split('T')[0]}`,
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['staff-all-bills'] });
+      setSelectedBill(null);
+    },
+  });
+
   return (
     <div className="space-y-6">
       <h1 className="text-2xl font-bold text-white">
@@ -188,13 +215,33 @@ export default function StaffBilling() {
                       {bill.due_date ? format(new Date(bill.due_date), 'MMM dd, yyyy') : '--'}
                     </td>
                     <td className="px-5 py-3 text-center">
-                      <button
-                        onClick={() => navigate(`/staff/billing/${bill.bill_number}`)}
-                        className="text-red-400 hover:text-red-300 transition-colors"
-                        title="View bill"
-                      >
-                        <Eye className="w-4 h-4 inline" />
-                      </button>
+                      <div className="flex items-center justify-center gap-1.5">
+                        <button
+                          onClick={() => navigate(`/staff/billing/${bill.bill_number}`)}
+                          className="text-red-400 hover:text-red-300 transition-colors p-1"
+                          title="View bill detail"
+                        >
+                          <Eye className="w-4 h-4" />
+                        </button>
+                        {bill.payment_status !== 'paid' && (
+                          <button
+                            onClick={(e) => { e.stopPropagation(); setSelectedBill(bill); }}
+                            className="text-green-400 hover:text-green-300 transition-colors p-1"
+                            title="Mark as paid"
+                          >
+                            <Check className="w-4 h-4" />
+                          </button>
+                        )}
+                        {bill.payment_status === 'paid' && (
+                          <button
+                            onClick={(e) => { e.stopPropagation(); setSelectedBill(bill); }}
+                            className="text-yellow-400 hover:text-yellow-300 transition-colors p-1"
+                            title="Mark as unpaid"
+                          >
+                            <DollarSign className="w-4 h-4" />
+                          </button>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))
@@ -221,21 +268,39 @@ export default function StaffBilling() {
             <div className="grid grid-cols-2 gap-3 text-sm">
               <div>
                 <p className="text-gray-500 text-xs">Payer</p>
-                <p className="text-white">{selectedBill.payer_name}</p>
+                <p className="text-white">{selectedBill.payer_name || selectedBill.payer_email || '--'}</p>
               </div>
               <div>
                 <p className="text-gray-500 text-xs">Amount</p>
                 <p className="text-white font-bold">EGP {(selectedBill.grand_total || 0).toLocaleString()}</p>
               </div>
+              {selectedBill.tournament_name && (
+                <div>
+                  <p className="text-gray-500 text-xs">Tournament</p>
+                  <p className="text-white">{selectedBill.tournament_name}</p>
+                </div>
+              )}
+              <div>
+                <p className="text-gray-500 text-xs">Status</p>
+                <span className={`text-xs px-2 py-1 rounded font-medium ${STATUS_BADGE[selectedBill.payment_status] || 'bg-zinc-700 text-gray-300'}`}>
+                  {selectedBill.payment_status}
+                </span>
+              </div>
+              {selectedBill.platform_fee > 0 && (
+                <div>
+                  <p className="text-gray-500 text-xs">Platform Fee</p>
+                  <p className="text-red-400 font-medium">EGP {(selectedBill.platform_fee || 0).toLocaleString()}</p>
+                </div>
+              )}
             </div>
-            <div className="flex gap-3">
+            <div className="flex flex-wrap gap-2">
               {selectedBill.payment_status !== 'paid' && (
                 <button
                   onClick={() => markPaidMutation.mutate(selectedBill)}
                   disabled={markPaidMutation.isPending}
                   className="flex-1 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm font-medium transition-colors"
                 >
-                  Mark Paid
+                  {markPaidMutation.isPending ? 'Updating...' : 'Mark as Paid'}
                 </button>
               )}
               {selectedBill.payment_status === 'paid' && (
@@ -244,10 +309,28 @@ export default function StaffBilling() {
                   disabled={markUnpaidMutation.isPending}
                   className="flex-1 py-2 bg-zinc-700 hover:bg-zinc-600 text-white rounded-lg text-sm font-medium transition-colors"
                 >
-                  Mark Unpaid
+                  {markUnpaidMutation.isPending ? 'Updating...' : 'Mark as Unpaid'}
+                </button>
+              )}
+              {selectedBill.grand_total > 0 && (
+                <button
+                  onClick={() => {
+                    if (window.confirm('Zero out this entire bill? All items will be set to EGP 0 and the bill marked as paid.')) {
+                      zeroOutMutation.mutate(selectedBill);
+                    }
+                  }}
+                  disabled={zeroOutMutation.isPending}
+                  className="flex-1 py-2 bg-red-600/80 hover:bg-red-600 text-white rounded-lg text-sm font-medium transition-colors"
+                >
+                  {zeroOutMutation.isPending ? 'Zeroing...' : 'Zero Out Bill'}
                 </button>
               )}
             </div>
+            {(markPaidMutation.isError || markUnpaidMutation.isError || zeroOutMutation.isError) && (
+              <p className="text-red-400 text-xs">
+                Error: {(markPaidMutation.error || markUnpaidMutation.error || zeroOutMutation.error)?.message}
+              </p>
+            )}
           </div>
         </div>
       )}

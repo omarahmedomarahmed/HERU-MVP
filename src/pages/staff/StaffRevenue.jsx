@@ -4,8 +4,7 @@ import {
   DollarSign, TrendingUp, Trophy, FileText,
   ArrowUpRight, ArrowDownRight,
 } from 'lucide-react';
-import { Staff, apiCall } from '@/api/heruClient';
-import { useAuth } from '@/lib/AuthContext';
+import { Staff } from '@/api/heruClient';
 
 function formatEGP(value) {
   return `EGP ${(value || 0).toLocaleString('en-EG', { minimumFractionDigits: 0 })}`;
@@ -90,29 +89,31 @@ export default function StaffRevenue() {
     staleTime: 60_000,
   });
 
-  // Fetch bills for tournament breakdown
+  // Fetch ALL bills for tournament breakdown (staff endpoint returns every bill)
   const { data: rawBills = [], isLoading: billsLoading } = useQuery({
     queryKey: ['staff-revenue-bills'],
-    queryFn: () => apiCall('/bills'),
+    queryFn: () => Staff.allBills(),
     staleTime: 60_000,
   });
 
   const bills = Array.isArray(rawBills) ? rawBills : rawBills.data || [];
 
-  // Derived stats
-  const totalPlatformFees = revenueData?.total_platform_fees
-    ?? bills.reduce((sum, b) => sum + (b.platform_fee || 0), 0);
+  // Derived stats — total fees across ALL bills (paid + unpaid)
+  const totalPlatformFees = bills.reduce((sum, b) => sum + (b.platform_fee || 0), 0);
 
-  const paidFees = bills
-    .filter(b => b.payment_status === 'paid')
-    .reduce((sum, b) => sum + (b.platform_fee || 0), 0);
+  // Collected = only from paid bills
+  const paidFees = revenueData?.total_revenue
+    ?? bills.filter(b => b.payment_status === 'paid').reduce((sum, b) => sum + (b.platform_fee || 0), 0);
 
   const pendingFees = totalPlatformFees - paidFees;
 
-  const monthlyRevenue = revenueData?.monthly || [];
+  // Monthly revenue from the backend (paid bills only), mapped to chart format
+  const monthlyRevenue = (revenueData?.by_month || []).map(m => ({
+    label: m.month, // YYYY-MM format
+    amount: m.amount || 0,
+  }));
 
-  const totalTournaments = revenueData?.total_tournaments
-    ?? new Set(bills.filter(b => b.tournament_id).map(b => b.tournament_id)).size;
+  const totalTournaments = new Set(bills.filter(b => b.tournament_id).map(b => b.tournament_id)).size;
 
   // Tournament breakdown: aggregate platform fees by tournament
   const tournamentBreakdown = useMemo(() => {

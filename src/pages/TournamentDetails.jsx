@@ -303,8 +303,8 @@ export default function TournamentDetails() {
             )}
             {/* 1v1 tournament join */}
             {tournament.status === 'published' && is1v1 && !myPlayerJoined && user && (
-              <GlowButton size="lg" onClick={() => joinAsPlayerMutation.mutate()}>
-                {joinAsPlayerMutation.isPending ? 'Joining...' : <><Swords className="w-5 h-5" /> Join as Player</>}
+              <GlowButton size="lg" onClick={() => setJoinModal(true)}>
+                <Swords className="w-5 h-5" /> Join as Player
               </GlowButton>
             )}
             {myTeamPendingRequest && (

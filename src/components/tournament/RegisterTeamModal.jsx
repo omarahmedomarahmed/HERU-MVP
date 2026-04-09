@@ -13,6 +13,7 @@ export default function RegisterTeamModal({ open, onClose, tournament, myTeams, 
   const [selectedTeamId, setSelectedTeamId] = useState('');
   const [gameId, setGameId] = useState('');
   const [rank, setRank] = useState('');
+  const [discordName, setDiscordName] = useState('');
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
@@ -38,6 +39,7 @@ export default function RegisterTeamModal({ open, onClose, tournament, myTeams, 
         game: tournament.game,
         game_id: gameId,
         rank,
+        discord_name: discordName,
         is_leader: isLeaderOfSelected,
       });
     },
@@ -66,6 +68,7 @@ export default function RegisterTeamModal({ open, onClose, tournament, myTeams, 
       return Tournament.joinAsPlayer(tournament.id, {
         game_id: gameId,
         rank,
+        discord_name: discordName,
       });
     },
     onSuccess: () => {
@@ -119,11 +122,11 @@ export default function RegisterTeamModal({ open, onClose, tournament, myTeams, 
           {is1v1 && !myPlayerJoined && (
             <>
               <div>
-                <label className="text-gray-400 text-xs mb-1 block">In-Game ID</label>
+                <label className="text-gray-400 text-xs mb-1 block">In-Game Name / ID</label>
                 <Input
                   value={gameId}
                   onChange={(e) => setGameId(e.target.value)}
-                  placeholder="Your in-game username or ID..."
+                  placeholder={`Your ${tournament?.game || 'in-game'} username or ID...`}
                   className="bg-zinc-800 border-zinc-700 text-white"
                 />
               </div>
@@ -134,6 +137,16 @@ export default function RegisterTeamModal({ open, onClose, tournament, myTeams, 
                   value={rank}
                   onChange={(e) => setRank(e.target.value)}
                   placeholder="e.g. Diamond, Platinum, Global Elite..."
+                  className="bg-zinc-800 border-zinc-700 text-white"
+                />
+              </div>
+
+              <div>
+                <label className="text-gray-400 text-xs mb-1 block">Discord Name</label>
+                <Input
+                  value={discordName}
+                  onChange={(e) => setDiscordName(e.target.value)}
+                  placeholder="e.g. username#1234 or username"
                   className="bg-zinc-800 border-zinc-700 text-white"
                 />
               </div>
@@ -202,11 +215,11 @@ export default function RegisterTeamModal({ open, onClose, tournament, myTeams, 
               )}
 
               <div>
-                <label className="text-gray-400 text-xs mb-1 block">In-Game ID</label>
+                <label className="text-gray-400 text-xs mb-1 block">In-Game Name / ID</label>
                 <Input
                   value={gameId}
                   onChange={(e) => setGameId(e.target.value)}
-                  placeholder="Your in-game username or ID..."
+                  placeholder={`Your ${tournament?.game || 'in-game'} username or ID...`}
                   className="bg-zinc-800 border-zinc-700 text-white"
                 />
               </div>
@@ -217,6 +230,16 @@ export default function RegisterTeamModal({ open, onClose, tournament, myTeams, 
                   value={rank}
                   onChange={(e) => setRank(e.target.value)}
                   placeholder="e.g. Diamond, Platinum, Global Elite..."
+                  className="bg-zinc-800 border-zinc-700 text-white"
+                />
+              </div>
+
+              <div>
+                <label className="text-gray-400 text-xs mb-1 block">Discord Name</label>
+                <Input
+                  value={discordName}
+                  onChange={(e) => setDiscordName(e.target.value)}
+                  placeholder="e.g. username#1234 or username"
                   className="bg-zinc-800 border-zinc-700 text-white"
                 />
               </div>

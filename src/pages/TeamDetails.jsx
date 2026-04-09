@@ -22,11 +22,12 @@ import { useAuth } from '@/lib/AuthContext'
 import { uploadFile } from '@/lib/uploadFile'
 import { useToast } from '@/components/ui/use-toast'
 
-const GAMES = ['Valorant', 'CS2', 'League of Legends', 'Dota 2', 'Rocket League', 'Apex Legends'];
+import { useGames } from '@/hooks/useGames';
 const RANKS = ['Unranked', 'Bronze', 'Silver', 'Gold', 'Platinum', 'Diamond', 'Master', 'Grandmaster', 'Radiant', 'Global Elite'];
 const TEAM_ROLES = ['Player', 'Coach', 'Manager', 'Analyst', 'Sub', 'Content Creator'];
 
 export default function TeamDetails() {
+  const GAMES = useGames();
   const [user, setUser] = useState(null);
   const [showJoinModal, setShowJoinModal] = useState(false);
   const [showInviteFriendsModal, setShowInviteFriendsModal] = useState(false);
@@ -124,45 +125,39 @@ export default function TeamDetails() {
 
   const joinRequestMutation = useMutation({
     mutationFn: async () => {
-      const requests = [...(team.join_requests || []), {
-        user_id: user.id,
+      await Team.joinRequest(teamId, {
         username: profile?.username || user.full_name,
-        ...joinRequest,
-        status: 'pending',
-        requested_at: new Date().toISOString()
-      }];
-      await Team.update(teamId, { join_requests: requests });
+        message: joinRequest.game ? `Game: ${joinRequest.game}, Rank: ${joinRequest.rank || 'N/A'}` : undefined,
+      });
     },
     onSuccess: () => {
       queryClient.invalidateQueries(['team', teamId]);
       setShowJoinModal(false);
       setJoinRequest({ game: '', game_id: '', rank: '' });
+      toast({ title: 'Request sent', description: 'Your join request has been sent to the team leader.' });
+    },
+    onError: (err) => {
+      toast({ title: 'Join failed', description: err.message || 'Could not send join request.', variant: 'destructive' });
     }
   });
 
   const approveRequestMutation = useMutation({
     mutationFn: async (requestIndex) => {
       const request = team.join_requests[requestIndex];
-      const updatedRequests = [...team.join_requests];
-      updatedRequests[requestIndex] = { ...request, status: 'approved' };
-
-      const members = [...(team.members || [])];
-      if (!members.includes(request.user_id)) {
-        members.push(request.user_id);
-      }
-
-      await Team.update(teamId, { join_requests: updatedRequests, members });
+      await Team.handleJoinRequest(teamId, request.id, { status: 'approved' });
 
       // Update joiner's profile
-      const joinerProfiles = await GamerProfile.list({ user_id: request.user_id });
-      if (joinerProfiles.length > 0) {
-        const joinerProfile = joinerProfiles[0];
-        const teamIds = [...(joinerProfile.team_ids || [])];
-        if (!teamIds.includes(teamId)) {
-          teamIds.push(teamId);
-          await GamerProfile.update(joinerProfile.id, { team_ids: teamIds });
+      try {
+        const joinerProfiles = await GamerProfile.list({ user_id: request.user_id });
+        if (joinerProfiles.length > 0) {
+          const joinerProfile = joinerProfiles[0];
+          const teamIds = [...(joinerProfile.team_ids || [])];
+          if (!teamIds.includes(teamId)) {
+            teamIds.push(teamId);
+            await GamerProfile.update(joinerProfile.id, { team_ids: teamIds });
+          }
         }
-      }
+      } catch (e) { console.warn('Could not update joiner profile:', e); }
 
       awardCoins(request.user_id, COIN_REWARDS.JOIN_TEAM, 'Joined a team');
     },
@@ -171,9 +166,8 @@ export default function TeamDetails() {
 
   const rejectRequestMutation = useMutation({
     mutationFn: async (requestIndex) => {
-      const updatedRequests = [...team.join_requests];
-      updatedRequests[requestIndex] = { ...updatedRequests[requestIndex], status: 'rejected' };
-      await Team.update(teamId, { join_requests: updatedRequests });
+      const request = team.join_requests[requestIndex];
+      await Team.handleJoinRequest(teamId, request.id, { status: 'rejected' });
     },
     onSuccess: () => queryClient.invalidateQueries(['team', teamId])
   });
@@ -218,8 +212,7 @@ export default function TeamDetails() {
         message,
         timestamp: new Date().toISOString()
       };
-      const chat = [...(team.chat_messages || []), msgObj];
-      await Team.update(teamId, { chat_messages: chat });
+      await apiCall(`/teams/${teamId}/chat`, { method: 'POST', body: msgObj });
     },
     onSuccess: () => {
       queryClient.invalidateQueries(['team', teamId]);

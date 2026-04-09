@@ -18,7 +18,7 @@ import { useToast } from '@/components/ui/use-toast'
 import { uploadFile } from '@/lib/uploadFile'
 
 
-const GAMES = ['Valorant', 'CS2', 'League of Legends', 'Dota 2', 'Rocket League', 'Apex Legends', 'Fortnite', 'Call of Duty'];
+import { useGames } from '@/hooks/useGames';
 
 const COLOR_PRESETS = [
   { name: 'Red', primary: '#ff1a1a', secondary: '#0a0a0a' },
@@ -32,6 +32,7 @@ const COLOR_PRESETS = [
 ];
 
 export default function CreateTeam() {
+  const GAMES = useGames();
   const [user, setUser] = useState(null);
   const [step, setStep] = useState(1); // 1: basics, 2: branding, 3: invite
   const [teamData, setTeamData] = useState({

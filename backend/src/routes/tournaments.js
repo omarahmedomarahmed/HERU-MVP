@@ -18,6 +18,7 @@ const TOURNAMENT_COLUMNS = new Set([
   'radar_funding_percent','required_branding_committed','co_organizers','organizer_chat',
   'brackets','support_chat','general_chat','stream_link','tournament_log',
   'signup_banner','signup_description','signup_rules','signup_custom_fields','stream_embed_url',
+  'participant_type','player_participants',
 ]);
 
 function sanitizeTournamentData(data) {

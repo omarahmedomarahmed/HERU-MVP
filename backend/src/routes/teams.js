@@ -153,7 +153,15 @@ router.get('/:id/members', async (req, res) => {
       .select('*')
       .eq('team_id', req.params.id)
       .order('joined_at');
-    if (error) throw error;
+    if (error) {
+      // team_members table may not exist — fall back to team.members array
+      if (error.code === '42P01' || error.message?.includes('relation') || error.message?.includes('does not exist')) {
+        const { data: team } = await supabaseAdmin.from('teams').select('members, leader_id').eq('id', req.params.id).single();
+        if (!team) return res.json([]);
+        return res.json((team.members || []).map(uid => ({ team_id: req.params.id, user_id: uid, role: uid === team.leader_id ? 'leader' : 'player' })));
+      }
+      throw error;
+    }
     res.json(data || []);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -182,6 +190,21 @@ router.put('/:id/members/:userId/role', requireAuth, async (req, res) => {
       }, { onConflict: 'team_id,user_id' })
       .select()
       .single();
+    if (error) throw error;
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// POST /:id/chat - team chat (any team member)
+router.post('/:id/chat', requireAuth, async (req, res) => {
+  try {
+    const { data: team } = await supabaseAdmin.from('teams').select('members, chat_messages').eq('id', req.params.id).single();
+    if (!team) return res.status(404).json({ error: 'Team not found' });
+    if (!team.members?.includes(req.user.id)) return res.status(403).json({ error: 'Only team members can chat' });
+    const chat = [...(team.chat_messages || []), { ...req.body, user_id: req.user.id, timestamp: new Date().toISOString() }];
+    const { data, error } = await supabaseAdmin.from('teams').update({ chat_messages: chat }).eq('id', req.params.id).select().single();
     if (error) throw error;
     res.json(data);
   } catch (err) {
