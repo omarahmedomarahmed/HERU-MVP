@@ -3,7 +3,6 @@ import { QueryClientProvider } from '@tanstack/react-query'
 import { queryClientInstance } from '@/lib/query-client'
 import NavigationTracker from '@/lib/NavigationTracker'
 import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom'
-import PageNotFound from './lib/PageNotFound'
 import NotFound from './pages/NotFound'
 import { AuthProvider } from '@/lib/AuthContext'
 import { RequireGamer, RequireOrganizer, RequireStaff } from '@/lib/auth-guards'
@@ -62,6 +61,7 @@ import BillDetail from './pages/BillDetail'
 import OrganizerBilling from './pages/organizer/OrganizerBilling'
 import CoOrganizedTournaments from './pages/organizer/CoOrganizedTournaments'
 import PaymentMethod from './pages/organizer/PaymentMethod'
+import TournamentSummaryReport from './pages/organizer/TournamentSummaryReport'
 
 // Staff pages
 import StaffLayout from '@/components/layouts/StaffLayout'
@@ -138,6 +138,7 @@ function App() {
             <Route path="/organizer/tournaments" element={<RequireOrganizer><OrganizerLayout><OrganizerTournaments /></OrganizerLayout></RequireOrganizer>} />
             <Route path="/organizer/tournaments/new" element={<RequireOrganizer><OrganizerLayout><TournamentBuilder /></OrganizerLayout></RequireOrganizer>} />
             <Route path="/organizer/tournaments/new/:id" element={<RequireOrganizer><OrganizerLayout><TournamentBuilder /></OrganizerLayout></RequireOrganizer>} />
+            <Route path="/organizer/tournaments/:id/report" element={<RequireOrganizer><OrganizerLayout><TournamentSummaryReport /></OrganizerLayout></RequireOrganizer>} />
             <Route path="/organizer/tournaments/:id/manage" element={<RequireOrganizer><OrganizerLayout><OrgTournamentManage /></OrganizerLayout></RequireOrganizer>} />
             <Route path="/organizer/tournaments/:id/manage/teams" element={<RequireOrganizer><OrganizerLayout><OrgTournamentManage defaultTab="teams" /></OrganizerLayout></RequireOrganizer>} />
             <Route path="/organizer/tournaments/:id/manage/brackets" element={<RequireOrganizer><OrganizerLayout><OrgTournamentManage defaultTab="brackets" /></OrganizerLayout></RequireOrganizer>} />

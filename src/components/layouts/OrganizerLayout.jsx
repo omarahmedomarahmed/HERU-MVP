@@ -20,6 +20,7 @@ const NAV_SECTIONS = [
     label: 'Tournaments',
     items: [
       { to: '/organizer/tournaments', icon: Trophy, text: 'My Tournaments' },
+      { to: '/organizer/sponsored', icon: Share2, text: 'Co-Organized' },
       { to: '/organizer/tournaments/new', icon: Plus, text: 'Build Tournament', highlight: true },
     ],
   },
@@ -27,7 +28,6 @@ const NAV_SECTIONS = [
     label: 'Finance',
     items: [
       { to: '/organizer/billing', icon: CreditCard, text: 'Billing' },
-      { to: '/organizer/sponsored', icon: Share2, text: 'Co-Organized' },
     ],
   },
   {

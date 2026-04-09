@@ -1,7 +1,7 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
-  Search, Shield, CheckCircle, XCircle, MapPin, Star, Eye, Trophy, Users,
+  Search, Shield, CheckCircle, XCircle, MapPin, Star, Eye, Trophy, Users, Save,
 } from 'lucide-react';
 import { OrganizerProfile, Tournament } from '@/api/heruClient';
 import { useAuth } from '@/lib/AuthContext';
@@ -196,69 +196,245 @@ export default function StaffOrganizers() {
 
       {/* Detail Modal */}
       {selected && (
-        <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4" onClick={() => setSelected(null)}>
-          <div onClick={e => e.stopPropagation()} className="bg-zinc-900 border border-zinc-800 rounded-xl w-full max-w-lg max-h-[80vh] overflow-y-auto p-6 space-y-5">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-lg bg-zinc-800 flex items-center justify-center overflow-hidden">
-                  {selected.brand_logo
-                    ? <img src={selected.brand_logo} className="w-full h-full object-cover" alt="" />
-                    : <Shield className="w-6 h-6 text-zinc-600" />
-                  }
-                </div>
-                <div>
-                  <h2 className="text-lg font-bold text-white">{selected.brand_name}</h2>
-                  {selected.is_verified && (
-                    <span className="text-xs text-green-400 bg-green-500/10 border border-green-500/30 px-2 py-0.5 rounded">Verified</span>
-                  )}
-                </div>
-              </div>
-              <button onClick={() => setSelected(null)} className="text-gray-500 hover:text-white text-xl">&times;</button>
+        <OrganizerDetailModal
+          organizer={selected}
+          onClose={() => setSelected(null)}
+          getOrgTournamentCount={getOrgTournamentCount}
+          toggleVerifiedMutation={toggleVerifiedMutation}
+          queryClient={queryClient}
+        />
+      )}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Organizer Detail Modal with editable fields
+// ---------------------------------------------------------------------------
+
+function OrganizerDetailModal({ organizer, onClose, getOrgTournamentCount, toggleVerifiedMutation, queryClient }) {
+  const [form, setForm] = useState({
+    brand_name: organizer.brand_name || '',
+    description: organizer.description || '',
+    bio: organizer.bio || '',
+    location: organizer.location || '',
+    primary_color: organizer.primary_color || '#ff1a1a',
+    secondary_color: organizer.secondary_color || '#0a0a0a',
+    featured_games: (organizer.featured_games || []).join(', '),
+    social_links: JSON.stringify(organizer.social_links || {}, null, 2),
+  });
+  const [saveStatus, setSaveStatus] = useState(null); // 'success' | 'error' | null
+
+  const updateMutation = useMutation({
+    mutationFn: (data) => OrganizerProfile.update(organizer.id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['staff-organizers'] });
+      setSaveStatus('success');
+      setTimeout(() => setSaveStatus(null), 3000);
+    },
+    onError: () => {
+      setSaveStatus('error');
+      setTimeout(() => setSaveStatus(null), 3000);
+    },
+  });
+
+  const handleChange = (field, value) => {
+    setForm(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleSave = () => {
+    let socialLinks = {};
+    try {
+      socialLinks = JSON.parse(form.social_links);
+    } catch {
+      socialLinks = organizer.social_links || {};
+    }
+
+    const payload = {
+      brand_name: form.brand_name,
+      description: form.description,
+      bio: form.bio,
+      location: form.location,
+      primary_color: form.primary_color,
+      secondary_color: form.secondary_color,
+      featured_games: form.featured_games.split(',').map(g => g.trim()).filter(Boolean),
+      social_links: socialLinks,
+    };
+
+    updateMutation.mutate(payload);
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4" onClick={onClose}>
+      <div onClick={e => e.stopPropagation()} className="bg-zinc-900 border border-zinc-800 rounded-xl w-full max-w-lg max-h-[85vh] overflow-y-auto p-6 space-y-5">
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-12 h-12 rounded-lg bg-zinc-800 flex items-center justify-center overflow-hidden">
+              {organizer.brand_logo
+                ? <img src={organizer.brand_logo} className="w-full h-full object-cover" alt="" />
+                : <Shield className="w-6 h-6 text-zinc-600" />
+              }
             </div>
-
-            <div className="grid grid-cols-2 gap-3 text-sm">
-              <div className="bg-zinc-800 rounded-lg p-3">
-                <p className="text-gray-500 text-xs">Email</p>
-                <p className="text-white">{selected.organizer_email || '--'}</p>
-              </div>
-              <div className="bg-zinc-800 rounded-lg p-3">
-                <p className="text-gray-500 text-xs">Location</p>
-                <p className="text-white">{selected.location || '--'}</p>
-              </div>
-              <div className="bg-zinc-800 rounded-lg p-3">
-                <p className="text-gray-500 text-xs">Rating</p>
-                <p className="text-white">{selected.rating || '--'}</p>
-              </div>
-              <div className="bg-zinc-800 rounded-lg p-3">
-                <p className="text-gray-500 text-xs">Tournaments</p>
-                <p className="text-white">{selected.total_tournaments_organized || getOrgTournamentCount(selected)}</p>
-              </div>
-            </div>
-
-            {selected.bio && (
-              <div className="bg-zinc-800 rounded-lg p-3">
-                <p className="text-gray-500 text-xs mb-1">Bio</p>
-                <p className="text-gray-300 text-sm">{selected.bio}</p>
-              </div>
-            )}
-
-            <div className="flex items-center justify-between pt-2 border-t border-zinc-800">
-              <p className="text-gray-400 text-sm">Verification</p>
-              <button
-                onClick={() => toggleVerifiedMutation.mutate({ id: selected.id, is_verified: !selected.is_verified })}
-                disabled={toggleVerifiedMutation.isPending}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                  selected.is_verified
-                    ? 'bg-zinc-800 text-gray-300 hover:bg-zinc-700'
-                    : 'bg-red-600 text-white hover:bg-red-700'
-                }`}
-              >
-                {selected.is_verified ? 'Remove Verification' : 'Verify Organizer'}
-              </button>
+            <div>
+              <h2 className="text-lg font-bold text-white">{organizer.brand_name}</h2>
+              {organizer.is_verified && (
+                <span className="text-xs text-green-400 bg-green-500/10 border border-green-500/30 px-2 py-0.5 rounded">Verified</span>
+              )}
             </div>
           </div>
+          <button onClick={onClose} className="text-gray-500 hover:text-white text-xl">&times;</button>
         </div>
-      )}
+
+        {/* Read-only info */}
+        <div className="grid grid-cols-2 gap-3 text-sm">
+          <div className="bg-zinc-800 rounded-lg p-3">
+            <p className="text-gray-500 text-xs">Email</p>
+            <p className="text-white">{organizer.organizer_email || '--'}</p>
+          </div>
+          <div className="bg-zinc-800 rounded-lg p-3">
+            <p className="text-gray-500 text-xs">Rating</p>
+            <p className="text-white">{organizer.rating || '--'}</p>
+          </div>
+          <div className="bg-zinc-800 rounded-lg p-3">
+            <p className="text-gray-500 text-xs">Tournaments</p>
+            <p className="text-white">{organizer.total_tournaments_organized || getOrgTournamentCount(organizer)}</p>
+          </div>
+        </div>
+
+        {/* Editable fields */}
+        <div className="border-t border-zinc-800 pt-4 space-y-3">
+          <h3 className="text-sm font-semibold text-gray-400 uppercase tracking-wider">Edit Profile</h3>
+
+          <div>
+            <label className="block text-xs text-gray-500 mb-1">Brand Name</label>
+            <input
+              value={form.brand_name}
+              onChange={e => handleChange('brand_name', e.target.value)}
+              className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white text-sm placeholder-gray-500 focus:outline-none focus:border-red-500"
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs text-gray-500 mb-1">Description</label>
+            <textarea
+              value={form.description}
+              onChange={e => handleChange('description', e.target.value)}
+              rows={3}
+              className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white text-sm placeholder-gray-500 focus:outline-none focus:border-red-500 resize-none"
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs text-gray-500 mb-1">Bio</label>
+            <textarea
+              value={form.bio}
+              onChange={e => handleChange('bio', e.target.value)}
+              rows={2}
+              className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white text-sm placeholder-gray-500 focus:outline-none focus:border-red-500 resize-none"
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs text-gray-500 mb-1">Location</label>
+            <input
+              value={form.location}
+              onChange={e => handleChange('location', e.target.value)}
+              className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white text-sm placeholder-gray-500 focus:outline-none focus:border-red-500"
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs text-gray-500 mb-1">Primary Color</label>
+              <div className="flex items-center gap-2">
+                <input
+                  type="color"
+                  value={form.primary_color}
+                  onChange={e => handleChange('primary_color', e.target.value)}
+                  className="w-8 h-8 rounded border border-zinc-700 bg-zinc-800 cursor-pointer"
+                />
+                <input
+                  value={form.primary_color}
+                  onChange={e => handleChange('primary_color', e.target.value)}
+                  className="flex-1 px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white text-sm font-mono focus:outline-none focus:border-red-500"
+                />
+              </div>
+            </div>
+            <div>
+              <label className="block text-xs text-gray-500 mb-1">Secondary Color</label>
+              <div className="flex items-center gap-2">
+                <input
+                  type="color"
+                  value={form.secondary_color}
+                  onChange={e => handleChange('secondary_color', e.target.value)}
+                  className="w-8 h-8 rounded border border-zinc-700 bg-zinc-800 cursor-pointer"
+                />
+                <input
+                  value={form.secondary_color}
+                  onChange={e => handleChange('secondary_color', e.target.value)}
+                  className="flex-1 px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white text-sm font-mono focus:outline-none focus:border-red-500"
+                />
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-xs text-gray-500 mb-1">Featured Games (comma-separated)</label>
+            <input
+              value={form.featured_games}
+              onChange={e => handleChange('featured_games', e.target.value)}
+              placeholder="Valorant, League of Legends, CS2"
+              className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white text-sm placeholder-gray-500 focus:outline-none focus:border-red-500"
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs text-gray-500 mb-1">Social Links (JSON)</label>
+            <textarea
+              value={form.social_links}
+              onChange={e => handleChange('social_links', e.target.value)}
+              rows={3}
+              className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white text-sm font-mono placeholder-gray-500 focus:outline-none focus:border-red-500 resize-none"
+            />
+          </div>
+
+          {/* Save button + status */}
+          <div className="flex items-center justify-between pt-2">
+            {saveStatus === 'success' && (
+              <p className="text-xs text-green-400">Profile saved successfully.</p>
+            )}
+            {saveStatus === 'error' && (
+              <p className="text-xs text-red-400">Failed to save profile.</p>
+            )}
+            {!saveStatus && <span />}
+            <button
+              onClick={handleSave}
+              disabled={updateMutation.isPending}
+              className="inline-flex items-center gap-1.5 px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-lg hover:bg-red-700 disabled:opacity-50 transition-colors"
+            >
+              <Save className="w-4 h-4" />
+              {updateMutation.isPending ? 'Saving...' : 'Save Changes'}
+            </button>
+          </div>
+        </div>
+
+        {/* Verification toggle */}
+        <div className="flex items-center justify-between pt-2 border-t border-zinc-800">
+          <p className="text-gray-400 text-sm">Verification</p>
+          <button
+            onClick={() => toggleVerifiedMutation.mutate({ id: organizer.id, is_verified: !organizer.is_verified })}
+            disabled={toggleVerifiedMutation.isPending}
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+              organizer.is_verified
+                ? 'bg-zinc-800 text-gray-300 hover:bg-zinc-700'
+                : 'bg-red-600 text-white hover:bg-red-700'
+            }`}
+          >
+            {organizer.is_verified ? 'Remove Verification' : 'Verify Organizer'}
+          </button>
+        </div>
+      </div>
     </div>
   );
 }

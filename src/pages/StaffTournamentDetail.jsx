@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   ArrowLeft, Trophy, Users, GitBranch, ShoppingCart,
-  Calendar, MapPin, Globe, Save
+  Calendar, MapPin, Globe, Save, CheckCircle, MessageSquare, Send,
 } from 'lucide-react';
 import { Staff, apiCall } from '@/api/heruClient';
 
@@ -25,13 +25,17 @@ function formatDate(dateStr) {
 function StatusBadge({ status }) {
   const map = {
     draft: 'bg-gray-100 text-gray-600',
+    pending_approval: 'bg-amber-50 text-amber-700',
     published: 'bg-red-50 text-red-700',
     live: 'bg-emerald-50 text-emerald-700',
     completed: 'bg-gray-100 text-gray-500',
   };
+  const labels = {
+    pending_approval: 'Pending Approval',
+  };
   return (
     <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium capitalize ${map[status] || 'bg-gray-100 text-gray-600'}`}>
-      {status || 'unknown'}
+      {labels[status] || status || 'unknown'}
     </span>
   );
 }
@@ -41,9 +45,10 @@ const TABS = [
   { key: 'teams', label: 'Teams', icon: Users },
   { key: 'brackets', label: 'Brackets', icon: GitBranch },
   { key: 'orders', label: 'Orders', icon: ShoppingCart },
+  { key: 'chat', label: 'Chat', icon: MessageSquare },
 ];
 
-const STATUS_OPTIONS = ['draft', 'published', 'live', 'completed'];
+const STATUS_OPTIONS = ['draft', 'pending_approval', 'published', 'live', 'completed'];
 
 // ---------------------------------------------------------------------------
 // Main component
@@ -160,7 +165,7 @@ export default function StaffTournamentDetail() {
               className="px-3 py-2 text-sm border border-gray-300 rounded-lg bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-red-500"
             >
               {STATUS_OPTIONS.map((s) => (
-                <option key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</option>
+                <option key={s} value={s}>{s === 'pending_approval' ? 'Pending Approval' : s.charAt(0).toUpperCase() + s.slice(1)}</option>
               ))}
             </select>
             <button
@@ -174,6 +179,24 @@ export default function StaffTournamentDetail() {
           </div>
           {statusMutation.isError && <p className="text-xs text-red-500 mt-2">Failed to update status.</p>}
           {statusMutation.isSuccess && <p className="text-xs text-emerald-600 mt-2">Status updated.</p>}
+          {tournament.status === 'pending_approval' && (
+            <div className="mt-4 pt-4 border-t border-gray-100">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-amber-700">This tournament is awaiting staff approval.</p>
+                  <p className="text-xs text-gray-500 mt-0.5">Approve to make it publicly visible.</p>
+                </div>
+                <button
+                  onClick={() => statusMutation.mutate('published')}
+                  disabled={statusMutation.isPending}
+                  className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-white bg-emerald-600 rounded-lg hover:bg-emerald-700 disabled:opacity-40 disabled:cursor-not-allowed transition"
+                >
+                  <CheckCircle className="w-4 h-4" />
+                  {statusMutation.isPending ? 'Approving...' : 'Approve & Publish'}
+                </button>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Tabs */}
@@ -359,6 +382,9 @@ export default function StaffTournamentDetail() {
 
         {/* Tab: Orders */}
         {activeTab === 'orders' && <OrdersTab tournamentId={id} />}
+
+        {/* Tab: Chat */}
+        {activeTab === 'chat' && <ChatTab tournament={tournament} tournamentId={id} queryClient={queryClient} />}
       </div>
     </div>
   );
@@ -430,6 +456,107 @@ function OrdersTab({ tournamentId }) {
             ))}
           </tbody>
         </table>
+      </div>
+    </div>
+  );
+}
+
+function ChatTab({ tournament, tournamentId, queryClient }) {
+  const [message, setMessage] = useState('');
+  const chatMessages = tournament.support_chat || [];
+  const chatEndRef = React.useRef(null);
+
+  React.useEffect(() => {
+    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [chatMessages.length]);
+
+  const sendMutation = useMutation({
+    mutationFn: (newMsg) => {
+      const updatedChat = [...chatMessages, newMsg];
+      return Staff.updateTournament(tournamentId, { support_chat: updatedChat });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['staff-tournament', tournamentId] });
+      setMessage('');
+    },
+  });
+
+  const handleSend = () => {
+    const text = message.trim();
+    if (!text) return;
+    sendMutation.mutate({
+      user_id: 'staff',
+      sender_name: 'HERU Staff',
+      message: text,
+      timestamp: new Date().toISOString(),
+    });
+  };
+
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSend();
+    }
+  };
+
+  return (
+    <div className="bg-white rounded-xl border border-gray-200 shadow-sm flex flex-col" style={{ height: '500px' }}>
+      <div className="px-5 py-3 border-b border-gray-200">
+        <h4 className="text-sm font-semibold text-gray-700">Support Chat</h4>
+        <p className="text-xs text-gray-400">Staff-to-organizer tournament support channel</p>
+      </div>
+
+      {/* Messages */}
+      <div className="flex-1 overflow-y-auto px-5 py-4 space-y-3">
+        {chatMessages.length === 0 ? (
+          <p className="text-sm text-gray-400 text-center py-10">No messages yet. Start the conversation.</p>
+        ) : (
+          chatMessages.map((msg, idx) => {
+            const isStaff = msg.user_id === 'staff';
+            return (
+              <div key={idx} className={`flex ${isStaff ? 'justify-end' : 'justify-start'}`}>
+                <div className={`max-w-[75%] rounded-lg px-3.5 py-2.5 ${
+                  isStaff
+                    ? 'bg-red-50 border border-red-100'
+                    : 'bg-gray-50 border border-gray-100'
+                }`}>
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className={`text-xs font-medium ${isStaff ? 'text-red-600' : 'text-gray-700'}`}>
+                      {msg.sender_name || (isStaff ? 'Staff' : 'Organizer')}
+                    </span>
+                    <span className="text-[10px] text-gray-400">
+                      {msg.timestamp ? new Date(msg.timestamp).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : ''}
+                    </span>
+                  </div>
+                  <p className="text-sm text-gray-800 whitespace-pre-wrap">{msg.message}</p>
+                </div>
+              </div>
+            );
+          })
+        )}
+        <div ref={chatEndRef} />
+      </div>
+
+      {/* Input */}
+      <div className="px-5 py-3 border-t border-gray-200">
+        {sendMutation.isError && <p className="text-xs text-red-500 mb-2">Failed to send message.</p>}
+        <div className="flex items-center gap-2">
+          <input
+            value={message}
+            onChange={(e) => setMessage(e.target.value)}
+            onKeyDown={handleKeyDown}
+            placeholder="Type a message..."
+            className="flex-1 px-3 py-2 text-sm border border-gray-300 rounded-lg bg-white text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
+          />
+          <button
+            onClick={handleSend}
+            disabled={!message.trim() || sendMutation.isPending}
+            className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 disabled:opacity-40 disabled:cursor-not-allowed transition"
+          >
+            <Send className="w-4 h-4" />
+            {sendMutation.isPending ? 'Sending...' : 'Send'}
+          </button>
+        </div>
       </div>
     </div>
   );

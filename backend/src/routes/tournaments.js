@@ -247,7 +247,7 @@ router.post('/:id/publish', requireAuth, async (req, res) => {
     }).select().single();
 
     const updateData = {
-      status: tournament.tournament_type === 'shared' ? 'draft' : 'published',
+      status: tournament.tournament_type === 'shared' ? 'draft' : 'pending_approval',
       total_cost: costs.total,
       platform_fee: costs.platformFee,
       platform_fee_percent: costs.platformFeePercent,

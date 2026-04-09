@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
-  Search, Radar, Shield, DollarSign, Users, Filter,
+  Search, Radar, Shield, DollarSign, Users, Filter, Eye,
 } from 'lucide-react';
 import { Staff } from '@/api/heruClient';
 
@@ -272,6 +272,55 @@ export default function StaffRadarPanel() {
               </div>
             )}
           </div>
+        </div>
+      )}
+
+      {/* Radar View Log */}
+      <RadarViewLog />
+    </div>
+  );
+}
+
+function RadarViewLog() {
+  const { data: views = [], isLoading } = useQuery({
+    queryKey: ['staff-radar-views'],
+    queryFn: () => Staff.radarViews(),
+  });
+
+  return (
+    <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-5">
+      <div className="flex items-center gap-2 mb-4">
+        <Eye className="w-5 h-5 text-red-400" />
+        <h2 className="text-lg font-bold text-white">Radar View Log</h2>
+        <span className="text-xs text-gray-500 ml-auto">{views.length} recent views</span>
+      </div>
+
+      {isLoading ? (
+        <p className="text-gray-500 text-sm text-center py-6">Loading view log...</p>
+      ) : views.length === 0 ? (
+        <p className="text-gray-500 text-sm text-center py-6">No radar views recorded yet.</p>
+      ) : (
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-zinc-800">
+                <th className="text-left py-2 px-3 text-gray-500 font-medium">Viewer</th>
+                <th className="text-left py-2 px-3 text-gray-500 font-medium">Radar ID</th>
+                <th className="text-left py-2 px-3 text-gray-500 font-medium">Viewed At</th>
+              </tr>
+            </thead>
+            <tbody>
+              {views.map((v) => (
+                <tr key={v.id} className="border-b border-zinc-800/50 hover:bg-zinc-800/30">
+                  <td className="py-2.5 px-3 text-white">{v.viewer_brand_name || v.viewer_id?.slice(0, 8) || 'Unknown'}</td>
+                  <td className="py-2.5 px-3 text-gray-400 font-mono text-xs">{v.radar_id?.slice(0, 8)}...</td>
+                  <td className="py-2.5 px-3 text-gray-400">
+                    {v.viewed_at ? new Date(v.viewed_at).toLocaleString() : '-'}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       )}
     </div>
