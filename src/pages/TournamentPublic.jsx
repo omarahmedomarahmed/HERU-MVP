@@ -97,27 +97,12 @@ export default function TournamentPublic() {
   const teamRegisterMutation = useMutation({
     mutationFn: async () => {
       const team = userTeams.find(t => t.id === selectedTeam);
-      const newReq = {
+      return Tournament.joinRequest(id, {
         team_id: selectedTeam,
         team_name: team?.name || '',
-        user_id: user.id,
         game: tournament?.game,
         game_id: inGameId,
         rank,
-        status: 'pending',
-        submitted_at: new Date().toISOString(),
-      };
-      const log = [
-        ...(tournament.tournament_log || []),
-        {
-          action: 'join_request',
-          description: `${team?.name || 'A team'} submitted a join request`,
-          timestamp: new Date().toISOString(),
-        },
-      ];
-      await Tournament.update(id, {
-        join_requests: [...(tournament.join_requests || []), newReq],
-        tournament_log: log,
       });
     },
     onSuccess: () => {

@@ -525,24 +525,26 @@ export default function TeamDetails() {
                             </div>
                             <div className="flex gap-2 flex-shrink-0">
                               <GlowButton size="sm" onClick={async () => {
-                                const invites = team.tournament_invites.map(inv =>
-                                  inv.tournament_id === invite.tournament_id ? { ...inv, status: 'accepted' } : inv
-                                );
-                                await Team.update(teamId, { tournament_invites: invites });
-                                if (tournament) {
-                                  const tournamentTeams = [...(tournament.teams || []), teamId];
-                                  await Tournament.update(invite.tournament_id, { teams: tournamentTeams });
+                                try {
+                                  await Tournament.acceptInvite(invite.tournament_id, { team_id: teamId });
+                                  queryClient.invalidateQueries(['team', teamId]);
+                                  toast({ title: 'Invite accepted!', description: `Your team joined ${tournament?.name || 'the tournament'}.` });
+                                } catch (err) {
+                                  toast({ title: 'Failed to accept invite', description: err.message, variant: 'destructive' });
                                 }
-                                queryClient.invalidateQueries(['team', teamId]);
                               }}>
                                 <Check className="w-4 h-4" />
                               </GlowButton>
                               <GlowButton variant="ghost" size="sm" onClick={async () => {
-                                const invites = team.tournament_invites.map(inv =>
-                                  inv.tournament_id === invite.tournament_id ? { ...inv, status: 'rejected' } : inv
-                                );
-                                await Team.update(teamId, { tournament_invites: invites });
-                                queryClient.invalidateQueries(['team', teamId]);
+                                try {
+                                  const invites = team.tournament_invites.map(inv =>
+                                    inv.tournament_id === invite.tournament_id ? { ...inv, status: 'rejected' } : inv
+                                  );
+                                  await Team.update(teamId, { tournament_invites: invites });
+                                  queryClient.invalidateQueries(['team', teamId]);
+                                } catch (err) {
+                                  toast({ title: 'Failed to decline invite', description: err.message, variant: 'destructive' });
+                                }
                               }}>
                                 <X className="w-4 h-4" />
                               </GlowButton>

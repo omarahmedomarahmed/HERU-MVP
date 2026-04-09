@@ -112,16 +112,13 @@ export default function TournamentDetails() {
   // ── General chat ───────────────────────────────────────────────────────────
   const sendMessageMutation = useMutation({
     mutationFn: async (message) => {
-      const msgObj = {
+      await Tournament.sendGeneralChat(tournament.id, {
         user_id: user.id,
         sender_id: user.id,
         sender_name: profile?.username || user?.email?.split('@')[0] || 'Gamer',
         sender_type: 'gamer',
         message,
         timestamp: new Date().toISOString(),
-      };
-      await Tournament.update(tournament.id, {
-        general_chat: [...(tournament.general_chat || []), msgObj],
       });
     },
     onSuccess: () => {

@@ -94,6 +94,7 @@ export const Tournament = {
   joinRequest:      (id, data)    => apiCall(`/tournaments/${id}/join-request`, { method: 'POST', body: data }),
   handleJoinRequest:(id, reqId, data) => apiCall(`/tournaments/${id}/join-request/${reqId}`, { method: 'PUT', body: data }),
   inviteTeam:       (id, data)    => apiCall(`/tournaments/${id}/invite-team`, { method: 'POST', body: data }),
+  acceptInvite:     (id, data)    => apiCall(`/tournaments/${id}/accept-invite`, { method: 'POST', body: data }),
   invitePlayer:     (id, data)    => apiCall(`/tournaments/${id}/invite-player`, { method: 'POST', body: data }),
   joinAsPlayer:     (id, data)    => apiCall(`/tournaments/${id}/join-player`, { method: 'POST', body: data }),
   removeTeam:       (id, teamId)  => apiCall(`/tournaments/${id}/teams/${teamId}`, { method: 'DELETE' }),

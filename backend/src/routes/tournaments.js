@@ -18,7 +18,7 @@ const TOURNAMENT_COLUMNS = new Set([
   'radar_funding_percent','required_branding_committed','co_organizers','organizer_chat',
   'brackets','support_chat','general_chat','stream_link','tournament_log',
   'signup_banner','signup_description','signup_rules','signup_custom_fields','stream_embed_url',
-  'participant_type','player_participants',
+  'participant_type','player_participants','gamer_participants','player_invites',
 ]);
 
 function sanitizeTournamentData(data) {
@@ -506,6 +506,42 @@ router.post('/:id/invite-team', requireAuth, async (req, res) => {
   }
 });
 
+// POST /:id/accept-invite - team leader accepts a tournament invite
+router.post('/:id/accept-invite', requireAuth, async (req, res) => {
+  try {
+    const { team_id } = req.body;
+    if (!team_id) return res.status(400).json({ error: 'team_id required' });
+
+    // Verify requester is the team leader
+    const { data: team } = await supabaseAdmin.from('teams').select('leader_id, tournament_invites').eq('id', team_id).single();
+    if (!team) return res.status(404).json({ error: 'Team not found' });
+    if (team.leader_id !== req.user.id) return res.status(403).json({ error: 'Only the team leader can accept invites' });
+
+    const { data: tournament } = await supabaseAdmin.from('tournaments').select('teams, max_teams, invited_teams').eq('id', req.params.id).single();
+    if (!tournament) return res.status(404).json({ error: 'Tournament not found' });
+    if ((tournament.teams || []).includes(team_id)) return res.status(400).json({ error: 'Team already in tournament' });
+    if (tournament.max_teams && (tournament.teams || []).length >= tournament.max_teams) {
+      return res.status(400).json({ error: 'Tournament is full' });
+    }
+
+    // Add team to tournament
+    const { data: updatedTournament, error: tErr } = await supabaseAdmin.from('tournaments')
+      .update({ teams: [...(tournament.teams || []), team_id], updated_at: new Date().toISOString() })
+      .eq('id', req.params.id).select().single();
+    if (tErr) throw tErr;
+
+    // Mark invite as accepted on the team
+    const updatedInvites = (team.tournament_invites || []).map(inv =>
+      inv.tournament_id === req.params.id ? { ...inv, status: 'accepted' } : inv
+    );
+    await supabaseAdmin.from('teams').update({ tournament_invites: updatedInvites }).eq('id', team_id);
+
+    res.json(updatedTournament);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // PUT /:id/brackets/:matchId - update individual match score
 router.put('/:id/brackets/:matchId', requireAuth, async (req, res) => {
   try {
@@ -713,7 +749,8 @@ router.post('/:id/join-player', requireAuth, async (req, res) => {
 
     const { data: tournament } = await supabaseAdmin.from('tournaments').select('participant_type, player_participants, status, name').eq('id', req.params.id).single();
     if (!tournament) return res.status(404).json({ error: 'Tournament not found' });
-    if (tournament.participant_type !== 'player') {
+    const soloTypes = ['player', '1v1', 'solo'];
+    if (!soloTypes.includes(tournament.participant_type)) {
       return res.status(400).json({ error: 'This tournament does not accept individual player signups' });
     }
     if (!['published', 'live'].includes(tournament.status)) {
@@ -743,15 +780,15 @@ router.post('/:id/join-player', requireAuth, async (req, res) => {
     }).eq('id', req.params.id).select().single();
     if (error) throw error;
 
-    // Audit log
-    await supabaseAdmin.from('audit_log').insert({
+    // Audit log (non-critical — don't fail the join if this errors)
+    supabaseAdmin.from('audit_log').insert({
       action: 'player_joined',
       entity_type: 'tournament',
       entity_id: req.params.id,
       actor_id: req.user.id,
       details: { game_id, rank, username: gamerProfile?.username },
       created_at: new Date().toISOString(),
-    });
+    }).catch(() => {});
 
     res.json(data);
   } catch (err) {
