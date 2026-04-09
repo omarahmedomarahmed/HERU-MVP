@@ -361,8 +361,8 @@ router.put('/tournaments/:id', requireAuth, requireStaff, async (req, res) => {
 router.put('/tournaments/:id/status', requireAuth, requireStaff, async (req, res) => {
   try {
     const { status } = req.body;
-    if (!status || !['draft', 'published', 'live', 'completed'].includes(status)) {
-      return res.status(400).json({ error: 'Invalid status. Must be one of: draft, published, live, completed' });
+    if (!status || !['draft', 'pending_approval', 'published', 'live', 'completed'].includes(status)) {
+      return res.status(400).json({ error: 'Invalid status. Must be one of: draft, pending_approval, published, live, completed' });
     }
     const { data, error } = await supabaseAdmin
       .from('tournaments')
@@ -432,6 +432,29 @@ router.put('/marketplace/:id/required', requireAuth, requireStaff, async (req, r
     if (!data) return res.status(404).json({ error: 'Marketplace item not found' });
     res.json(data);
   } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// GET /radar-views - get all radar views (latest 200)
+router.get('/radar-views', requireAuth, requireStaff, async (req, res) => {
+  try {
+    const { data, error } = await supabaseAdmin
+      .from('radar_views')
+      .select('*')
+      .order('viewed_at', { ascending: false })
+      .limit(200);
+    if (error) {
+      if (error.code === '42P01' || error.message?.includes('does not exist')) {
+        return res.json([]);
+      }
+      throw error;
+    }
+    res.json(data || []);
+  } catch (err) {
+    if (err.code === '42P01' || err.message?.includes('does not exist')) {
+      return res.json([]);
+    }
     res.status(500).json({ error: err.message });
   }
 });

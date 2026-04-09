@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { supabaseAdmin } from '../lib/supabase.js';
 import { requireAuth } from '../middleware/auth.js';
 import { requireRole } from '../middleware/roleGuard.js';
+import { requireStaff } from '../middleware/staffGuard.js';
 import { validateCommitment, commitCoOrganizer, calculateFunding, getCommitmentLabel } from '../logic/radar.js';
 import { generateBillNumber } from '../logic/billing.js';
 
@@ -174,6 +175,91 @@ router.post('/:id/commit', requireAuth, requireRole('organizer'), async (req, re
 
     res.json({ success: true, bill_number: billNumber, amount: grandTotal, label: coOrg.label });
   } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// GET /views/all - staff: get all radar views (latest 200)
+router.get('/views/all', requireAuth, requireStaff, async (req, res) => {
+  try {
+    const { data, error } = await supabaseAdmin
+      .from('radar_views')
+      .select('*')
+      .order('viewed_at', { ascending: false })
+      .limit(200);
+    if (error) {
+      // Table may not exist yet
+      if (error.code === '42P01' || error.message?.includes('does not exist')) {
+        return res.json([]);
+      }
+      throw error;
+    }
+    res.json(data || []);
+  } catch (err) {
+    if (err.code === '42P01' || err.message?.includes('does not exist')) {
+      return res.json([]);
+    }
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// POST /:id/view - record that current user viewed a radar entry
+router.post('/:id/view', requireAuth, async (req, res) => {
+  try {
+    // Fetch viewer brand name
+    let viewerBrandName = null;
+    const { data: orgProfile } = await supabaseAdmin
+      .from('organizer_profiles')
+      .select('brand_name')
+      .eq('user_id', req.user.id)
+      .single();
+    if (orgProfile) viewerBrandName = orgProfile.brand_name;
+
+    const { data, error } = await supabaseAdmin
+      .from('radar_views')
+      .insert({
+        radar_id: req.params.id,
+        viewer_id: req.user.id,
+        viewer_brand_name: viewerBrandName,
+      })
+      .select()
+      .single();
+
+    if (error) {
+      // Table may not exist yet — gracefully handle
+      if (error.code === '42P01' || error.message?.includes('does not exist')) {
+        return res.json({ success: true, note: 'radar_views table not yet created' });
+      }
+      throw error;
+    }
+    res.json(data);
+  } catch (err) {
+    if (err.code === '42P01' || err.message?.includes('does not exist')) {
+      return res.json({ success: true, note: 'radar_views table not yet created' });
+    }
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// GET /:id/views - staff: get all views for a radar entry
+router.get('/:id/views', requireAuth, requireStaff, async (req, res) => {
+  try {
+    const { data, error } = await supabaseAdmin
+      .from('radar_views')
+      .select('*')
+      .eq('radar_id', req.params.id)
+      .order('viewed_at', { ascending: false });
+    if (error) {
+      if (error.code === '42P01' || error.message?.includes('does not exist')) {
+        return res.json([]);
+      }
+      throw error;
+    }
+    res.json(data || []);
+  } catch (err) {
+    if (err.code === '42P01' || err.message?.includes('does not exist')) {
+      return res.json([]);
+    }
     res.status(500).json({ error: err.message });
   }
 });

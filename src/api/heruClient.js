@@ -155,6 +155,7 @@ export const SponsorshipRadar = {
   ...createEntity('/radar'),
   commit:           (id, data)    => apiCall(`/radar/${id}/commit`, { method: 'POST', body: data }),
   sendChat:         (id, msg)     => apiCall(`/radar/${id}/chat`, { method: 'POST', body: msg }),
+  recordView:       (id)          => apiCall(`/radar/${id}/view`, { method: 'POST' }),
 }
 
 export const GigRequest = {
@@ -208,6 +209,7 @@ export const Staff = {
   setMarketplaceRequired: (id, data) => apiCall(`/staff/marketplace/${id}/required`, { method: 'PUT', body: data }),
   allRadar:         (filters)     => apiCall(`/staff/radar${buildQuery(filters)}`),
   updateRadar:      (id, data)    => apiCall(`/staff/radar/${id}`, { method: 'PUT', body: data }),
+  radarViews:       ()            => apiCall('/staff/radar-views'),
 }
 
 export const TournamentReport = {

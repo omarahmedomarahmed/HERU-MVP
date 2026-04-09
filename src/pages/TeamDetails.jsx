@@ -384,6 +384,16 @@ export default function TeamDetails() {
           <TabsTrigger value="history" className="data-[state=active]:bg-red-600 data-[state=active]:text-white text-gray-400">
             <Trophy className="w-4 h-4 mr-1" /> History
           </TabsTrigger>
+          {isMember && (
+            <TabsTrigger value="invites" className="data-[state=active]:bg-red-600 data-[state=active]:text-white text-gray-400">
+              <Trophy className="w-4 h-4 mr-1" /> Invites
+              {pendingInvites.length > 0 && (
+                <span className="ml-1 w-5 h-5 rounded-full bg-yellow-500 text-black text-xs flex items-center justify-center">
+                  {pendingInvites.length}
+                </span>
+              )}
+            </TabsTrigger>
+          )}
           {isLeader && (
             <TabsTrigger value="settings" className="data-[state=active]:bg-red-600 data-[state=active]:text-white text-gray-400">
               <Settings className="w-4 h-4 mr-1" /> Settings
@@ -414,7 +424,7 @@ export default function TeamDetails() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
-                        <p className="text-white font-bold truncate">{member.username || 'Member'}</p>
+                        <Link to={`/gamer/${member.user_id}`} className="text-white font-bold truncate hover:text-red-400 transition-colors">{member.username || 'Member'}</Link>
                         {member.user_id === team.leader_id && <Crown className="w-4 h-4 text-yellow-500 flex-shrink-0" />}
                       </div>
                       <p className="text-xs text-gray-500">
@@ -666,6 +676,75 @@ export default function TeamDetails() {
             </FloatingPanel>
           </div>
         </TabsContent>
+
+        {/* Invites Tab */}
+        {isMember && (
+          <TabsContent value="invites">
+            {team.tournament_invites?.length > 0 ? (
+              <div className="space-y-3">
+                {team.tournament_invites.map((invite, i) => {
+                  const tournament = tournaments.find(t => t.id === invite.tournament_id);
+                  const isPending = invite.status === 'pending';
+                  return (
+                    <FloatingPanel key={i} className="p-4">
+                      <div className="flex items-center justify-between gap-4">
+                        <div className="flex-1 min-w-0">
+                          <p className="text-white font-medium">{invite.tournament_name || tournament?.name || 'Tournament Invite'}</p>
+                          <p className="text-gray-400 text-sm">{invite.game || tournament?.game || 'Unknown Game'}</p>
+                          {(invite.schedule || tournament?.schedule) && (
+                            <p className="text-gray-500 text-xs mt-1">
+                              {new Date(invite.schedule || tournament.schedule).toLocaleDateString()}
+                            </p>
+                          )}
+                          {!isPending && (
+                            <span className={`inline-block mt-1 text-xs px-2 py-0.5 rounded-full ${
+                              invite.status === 'accepted' ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'
+                            }`}>
+                              {invite.status === 'accepted' ? 'Accepted' : 'Rejected'}
+                            </span>
+                          )}
+                        </div>
+                        {isLeader && isPending && (
+                          <div className="flex gap-2 flex-shrink-0">
+                            <GlowButton size="sm" onClick={async () => {
+                              const invites = team.tournament_invites.map(inv =>
+                                inv.tournament_id === invite.tournament_id ? { ...inv, status: 'accepted' } : inv
+                              );
+                              await Team.update(teamId, { tournament_invites: invites });
+                              if (tournament) {
+                                const tournamentTeams = [...(tournament.teams || []), teamId];
+                                await Tournament.update(invite.tournament_id, { teams: tournamentTeams });
+                              }
+                              queryClient.invalidateQueries(['team', teamId]);
+                              toast({ title: 'Invite accepted', description: `Your team has joined ${invite.tournament_name || tournament?.name || 'the tournament'}.` });
+                            }}>
+                              <Check className="w-4 h-4" /> Accept
+                            </GlowButton>
+                            <GlowButton variant="ghost" size="sm" onClick={async () => {
+                              const invites = team.tournament_invites.map(inv =>
+                                inv.tournament_id === invite.tournament_id ? { ...inv, status: 'rejected' } : inv
+                              );
+                              await Team.update(teamId, { tournament_invites: invites });
+                              queryClient.invalidateQueries(['team', teamId]);
+                              toast({ title: 'Invite rejected' });
+                            }}>
+                              <X className="w-4 h-4" /> Reject
+                            </GlowButton>
+                          </div>
+                        )}
+                      </div>
+                    </FloatingPanel>
+                  );
+                })}
+              </div>
+            ) : (
+              <FloatingPanel className="p-12 text-center">
+                <Trophy className="w-16 h-16 text-zinc-700 mx-auto mb-4" />
+                <p className="text-gray-400">No tournament invites yet</p>
+              </FloatingPanel>
+            )}
+          </TabsContent>
+        )}
 
         {/* Settings Tab (Leader only) */}
         {isLeader && (
