@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Input } from '@/components/ui/input';
 import { GamerProfile, Team, apiCall } from '@/api/heruClient'
 import { useAuth } from '@/lib/AuthContext'
+import { useToast } from '@/components/ui/use-toast'
 
 import {
   Users, Trophy, Twitter, Instagram, MessageSquare, Crown, UserPlus, Phone, Send, ArrowLeft
@@ -27,6 +28,7 @@ export default function TeamProfile() {
   const [joinRequest, setJoinRequest] = useState({ game: '', game_id: '', rank: '' });
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { toast } = useToast();
 
   useEffect(() => {
     apiCall('/auth/me').then(setUser).catch(() => {});
@@ -59,18 +61,23 @@ export default function TeamProfile() {
 
   const joinRequestMutation = useMutation({
     mutationFn: async () => {
-      const requests = [...(team.join_requests || []), {
-        user_id: user.id,
-        ...joinRequest,
-        status: 'pending'
-      }];
-      await Team.update(id, { join_requests: requests });
+      await Team.joinRequest(id, {
+        username: profile?.username || user?.full_name || user?.email?.split('@')[0] || 'Unknown',
+        message: `Game: ${joinRequest.game}, ID: ${joinRequest.game_id}, Rank: ${joinRequest.rank}`,
+        game: joinRequest.game,
+        game_id: joinRequest.game_id,
+        rank: joinRequest.rank,
+      });
     },
     onSuccess: () => {
       queryClient.invalidateQueries(['team', id]);
       setShowJoinModal(false);
       setJoinRequest({ game: '', game_id: '', rank: '' });
-    }
+      toast({ title: 'Request submitted!', description: 'Your join request has been sent to the team leader.' });
+    },
+    onError: (err) => {
+      toast({ title: 'Request failed', description: err.message || 'Failed to submit join request. Please try again.', variant: 'destructive' });
+    },
   });
 
   const cart = JSON.parse(localStorage.getItem(`cart_${user?.id}`) || '[]');

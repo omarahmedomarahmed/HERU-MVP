@@ -13,13 +13,14 @@ const NAV_SECTIONS = [
     label: 'Overview',
     items: [
       { to: '/organizer/dashboard', icon: LayoutDashboard, text: 'Dashboard' },
-      { to: '/organizer/radar', icon: Radar, text: 'Sponsorship Radar' },
+      { to: '/organizer/radar', icon: Radar, text: 'Sponsorship Radar', badge: 'NEW' },
     ],
   },
   {
     label: 'Tournaments',
     items: [
       { to: '/organizer/tournaments', icon: Trophy, text: 'My Tournaments' },
+      { to: '/organizer/sponsored', icon: Share2, text: 'Co-Organized' },
       { to: '/organizer/tournaments/new', icon: Plus, text: 'Build Tournament', highlight: true },
     ],
   },
@@ -27,7 +28,6 @@ const NAV_SECTIONS = [
     label: 'Finance',
     items: [
       { to: '/organizer/billing', icon: CreditCard, text: 'Billing' },
-      { to: '/organizer/sponsored', icon: Share2, text: 'Co-Organized' },
     ],
   },
   {
@@ -52,7 +52,7 @@ const BOTTOM_TABS = [
   { to: '/organizer/billing', icon: CreditCard, text: 'Billing' },
 ]
 
-function NavItem({ to, icon: Icon, text, active, collapsed, highlight }) {
+function NavItem({ to, icon: Icon, text, active, collapsed, highlight, badge }) {
   if (highlight) {
     return (
       <Link
@@ -85,7 +85,10 @@ function NavItem({ to, icon: Icon, text, active, collapsed, highlight }) {
         <Icon size={18} className="shrink-0" />
       </div>
       {!collapsed && <span className="truncate">{text}</span>}
-      {active && !collapsed && <div className="ml-auto w-1.5 h-1.5 rounded-full bg-red-400" />}
+      {badge && !collapsed && (
+        <span className="ml-auto text-[9px] font-black tracking-wider bg-red-500 text-white px-1.5 py-0.5 rounded-full">{badge}</span>
+      )}
+      {active && !collapsed && !badge && <div className="ml-auto w-1.5 h-1.5 rounded-full bg-red-400" />}
     </Link>
   )
 }

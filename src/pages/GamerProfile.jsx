@@ -15,6 +15,9 @@ import { motion } from 'framer-motion';
 import { GamerProfile as GamerProfileAPI, Order, Team, Achievement, ApprovalRequest, apiCall } from '@/api/heruClient'
 import { useAuth } from '@/lib/AuthContext'
 import { uploadFile } from '@/lib/uploadFile'
+import PhoneInput from '@/components/ui/PhoneInput'
+import UrlInput from '@/components/ui/UrlInput'
+import { useToast } from '@/components/ui/use-toast'
 
 import {
   User, Edit2, Save, X, Gamepad2, Users, Star,
@@ -51,6 +54,7 @@ const RARITY_GLOW = {
 
 export default function GamerProfile() {
   const { logout } = useAuth();
+  const { toast } = useToast();
   const [user, setUser] = useState(null);
   const [editing, setEditing] = useState(false);
   const [addGameModal, setAddGameModal] = useState(false);
@@ -221,19 +225,21 @@ export default function GamerProfile() {
     mutationFn: async (data) => {
       return ApprovalRequest.create({
         approval_type: 'organizer_profile',
-        requester_id: user.id,
         requester_name: profile?.username || user?.full_name,
         requester_email: user?.email,
         reference_id: user.id,
         reference_name: data.brand_name,
         details: data,
-        status: 'pending',
       });
     },
     onSuccess: () => {
-      setBecomeOrgModal(false);
+      // Keep modal open to show success message, then close after delay
       setOrgForm({ brand_name: '', full_name: '', contact_number: '', website: '', facebook: '', instagram: '' });
-    }
+      setTimeout(() => setBecomeOrgModal(false), 2000);
+    },
+    onError: (err) => {
+      toast({ title: 'Submission failed', description: err.message || 'Failed to submit. Please try again.', variant: 'destructive' });
+    },
   });
 
   const { data: teams = [] } = useQuery({
@@ -478,6 +484,9 @@ export default function GamerProfile() {
           <TabsTrigger value="achievements" className="data-[state=active]:bg-red-600 data-[state=active]:text-white text-gray-400">
             <Award className="w-4 h-4 mr-1.5" /> Badges
           </TabsTrigger>
+          <TabsTrigger value="invites" className="data-[state=active]:bg-red-600 data-[state=active]:text-white text-gray-400">
+            <Trophy className="w-4 h-4 mr-1.5" /> Invites
+          </TabsTrigger>
           <TabsTrigger value="orders" className="data-[state=active]:bg-red-600 data-[state=active]:text-white text-gray-400">
             <Package className="w-4 h-4 mr-1.5" /> Orders
           </TabsTrigger>
@@ -702,6 +711,82 @@ export default function GamerProfile() {
           </FloatingPanel>
         </TabsContent>
 
+        {/* Tournament Invites Tab */}
+        <TabsContent value="invites">
+          <FloatingPanel className="p-6">
+            <h2 className="text-xl font-bold text-white flex items-center gap-2 mb-4">
+              <Trophy className="w-5 h-5 text-red-500" /> Tournament Requests
+            </h2>
+            <Tabs defaultValue="1v1" className="space-y-4">
+              <TabsList className="bg-zinc-800 border border-zinc-700 p-0.5">
+                <TabsTrigger value="1v1" className="data-[state=active]:bg-red-600 data-[state=active]:text-white text-gray-400 text-xs">
+                  <Swords className="w-3.5 h-3.5 mr-1" /> 1v1 Invites
+                </TabsTrigger>
+                <TabsTrigger value="team" className="data-[state=active]:bg-red-600 data-[state=active]:text-white text-gray-400 text-xs">
+                  <Users className="w-3.5 h-3.5 mr-1" /> Team Invites
+                </TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="1v1">
+                {(profile?.tournament_invites || []).filter(i => i.type === '1v1').length === 0 ? (
+                  <div className="text-center py-8 text-gray-500">
+                    <Swords className="w-10 h-10 mx-auto mb-2 text-zinc-700" />
+                    <p className="text-sm">No 1v1 tournament invites yet</p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {(profile?.tournament_invites || []).filter(i => i.type === '1v1').map((invite, idx) => (
+                      <div key={idx} className="bg-zinc-800/50 border border-zinc-700 rounded-xl p-4 flex items-center justify-between">
+                        <div>
+                          <p className="text-white font-bold text-sm">{invite.tournament_name}</p>
+                          <p className="text-gray-400 text-xs">{invite.game} - {invite.format || '1v1'}</p>
+                          <p className="text-gray-500 text-xs mt-1">From: {invite.organizer_name || 'Organizer'}</p>
+                        </div>
+                        <div className="flex gap-2">
+                          <Link to={`/gamer/tournaments/${invite.tournament_id}`}>
+                            <GlowButton size="sm">View</GlowButton>
+                          </Link>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </TabsContent>
+
+              <TabsContent value="team">
+                {(() => {
+                  const teamInvites = (profile?.tournament_invites || []).filter(i => i.type !== '1v1');
+                  // Also check team tournament_invites from teams the user leads
+                  return teamInvites.length === 0 ? (
+                    <div className="text-center py-8 text-gray-500">
+                      <Users className="w-10 h-10 mx-auto mb-2 text-zinc-700" />
+                      <p className="text-sm">No team tournament invites yet</p>
+                      <p className="text-xs text-gray-600 mt-1">Team leaders receive invites for their teams</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {teamInvites.map((invite, idx) => (
+                        <div key={idx} className="bg-zinc-800/50 border border-zinc-700 rounded-xl p-4 flex items-center justify-between">
+                          <div>
+                            <p className="text-white font-bold text-sm">{invite.tournament_name}</p>
+                            <p className="text-gray-400 text-xs">{invite.game} - Team vs Team</p>
+                            <p className="text-gray-500 text-xs mt-1">Team: {invite.team_name || 'Your Team'}</p>
+                          </div>
+                          <div className="flex gap-2">
+                            <Link to={`/gamer/tournaments/${invite.tournament_id}`}>
+                              <GlowButton size="sm">View</GlowButton>
+                            </Link>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  );
+                })()}
+              </TabsContent>
+            </Tabs>
+          </FloatingPanel>
+        </TabsContent>
+
         {/* Orders Tab */}
         <TabsContent value="orders">
           <FloatingPanel className="p-6">
@@ -808,16 +893,17 @@ export default function GamerProfile() {
 
       {/* Talent Application CTA (if not talent yet) */}
       {!profile?.is_talent && (
-        <FloatingPanel className="p-6 mt-6 text-center" glowBorder>
-          <Star className="w-10 h-10 text-yellow-500 mx-auto mb-3" />
-          <h3 className="text-xl font-bold text-white mb-2">Become a Talent</h3>
-          <p className="text-gray-400 text-sm mb-4 max-w-md mx-auto">
-            Are you a caster, host, analyst, or observer? Apply to join our talent roster and get booked for tournaments.
+        <div className="mt-6 relative overflow-hidden rounded-2xl border-2 border-yellow-500/40 bg-gradient-to-br from-yellow-500/10 via-zinc-900 to-red-500/10 p-8 text-center shadow-lg shadow-yellow-500/5">
+          <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-yellow-500 via-red-500 to-yellow-500" />
+          <Star className="w-14 h-14 text-yellow-400 mx-auto mb-4 drop-shadow-lg" />
+          <h3 className="text-2xl font-black text-white mb-2">JOIN THE TALENT ROSTER</h3>
+          <p className="text-gray-400 text-sm mb-6 max-w-md mx-auto">
+            Are you a caster, host, analyst, or observer? Apply to join our talent roster and get booked for tournaments. Earn EGP per event!
           </p>
-          <GlowButton onClick={() => setTalentModal(true)}>
-            <Star className="w-4 h-4" /> Apply Now
+          <GlowButton onClick={() => setTalentModal(true)} size="lg" className="bg-gradient-to-r from-yellow-600 to-red-600 hover:from-yellow-500 hover:to-red-500 text-white font-bold px-8">
+            <Star className="w-5 h-5" /> Apply as Talent
           </GlowButton>
-        </FloatingPanel>
+        </div>
       )}
 
       {/* Logout */}
@@ -915,21 +1001,17 @@ export default function GamerProfile() {
             </div>
             <div>
               <label className="text-sm text-gray-400 block mb-1">Showreel / Demo Link</label>
-              <Input
+              <UrlInput
                 value={talentForm.talent_video_link}
-                onChange={(e) => setTalentForm({ ...talentForm, talent_video_link: e.target.value })}
-                placeholder="YouTube or Twitch link"
-                className="bg-zinc-800 border-zinc-700 text-white"
+                onChange={(v) => setTalentForm({ ...talentForm, talent_video_link: v })}
+                placeholder="https://youtube.com/... or https://twitch.tv/..."
               />
             </div>
             <div>
               <label className="text-sm text-gray-400 block mb-1">Contact Number</label>
-              <Input
-                type="tel"
+              <PhoneInput
                 value={talentForm.contact_number}
-                onChange={(e) => setTalentForm({ ...talentForm, contact_number: e.target.value })}
-                placeholder="+20 ..."
-                className="bg-zinc-800 border-zinc-700 text-white"
+                onChange={(v) => setTalentForm({ ...talentForm, contact_number: v })}
               />
             </div>
             <div>
@@ -1080,20 +1162,20 @@ export default function GamerProfile() {
             </div>
             <div>
               <label className="text-xs text-gray-400 block mb-1">Contact Number</label>
-              <Input value={orgForm.contact_number} onChange={(e) => setOrgForm({ ...orgForm, contact_number: e.target.value })} placeholder="+20 ..." className="bg-zinc-800 border-zinc-700 text-white" />
+              <PhoneInput value={orgForm.contact_number} onChange={(v) => setOrgForm({ ...orgForm, contact_number: v })} />
             </div>
             <div>
               <label className="text-xs text-gray-400 block mb-1">Website</label>
-              <Input value={orgForm.website} onChange={(e) => setOrgForm({ ...orgForm, website: e.target.value })} placeholder="https://..." className="bg-zinc-800 border-zinc-700 text-white" />
+              <UrlInput value={orgForm.website} onChange={(v) => setOrgForm({ ...orgForm, website: v })} placeholder="https://yoursite.com" />
             </div>
             <div className="grid grid-cols-2 gap-2">
               <div>
                 <label className="text-xs text-gray-400 block mb-1">Facebook</label>
-                <Input value={orgForm.facebook} onChange={(e) => setOrgForm({ ...orgForm, facebook: e.target.value })} placeholder="facebook.com/..." className="bg-zinc-800 border-zinc-700 text-white" />
+                <UrlInput value={orgForm.facebook} onChange={(v) => setOrgForm({ ...orgForm, facebook: v })} placeholder="https://facebook.com/..." />
               </div>
               <div>
                 <label className="text-xs text-gray-400 block mb-1">Instagram</label>
-                <Input value={orgForm.instagram} onChange={(e) => setOrgForm({ ...orgForm, instagram: e.target.value })} placeholder="@handle" className="bg-zinc-800 border-zinc-700 text-white" />
+                <UrlInput value={orgForm.instagram} onChange={(v) => setOrgForm({ ...orgForm, instagram: v })} placeholder="https://instagram.com/..." />
               </div>
             </div>
             <GlowButton

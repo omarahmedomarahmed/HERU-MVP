@@ -18,6 +18,7 @@ const TOURNAMENT_COLUMNS = new Set([
   'radar_funding_percent','required_branding_committed','co_organizers','organizer_chat',
   'brackets','support_chat','general_chat','stream_link','tournament_log',
   'signup_banner','signup_description','signup_rules','signup_custom_fields','stream_embed_url',
+  'participant_type','player_participants',
 ]);
 
 function sanitizeTournamentData(data) {
@@ -195,7 +196,7 @@ router.post('/:id/publish', requireAuth, async (req, res) => {
     }).select().single();
 
     const updateData = {
-      status: tournament.tournament_type === 'shared' ? 'draft' : 'published',
+      status: tournament.tournament_type === 'shared' ? 'draft' : 'pending_approval',
       total_cost: costs.total,
       platform_fee: costs.platformFee,
       platform_fee_percent: costs.platformFeePercent,
@@ -489,6 +490,58 @@ router.put('/:id/brackets/:matchId', requireAuth, async (req, res) => {
 
     const { data, error } = await supabaseAdmin.from('tournaments').update({ brackets, updated_at: new Date().toISOString() }).eq('id', req.params.id).select().single();
     if (error) throw error;
+
+    // Sync this bracket match update to match_records table
+    try {
+      const { data: existingRecord } = await supabaseAdmin.from('match_records')
+        .select('id')
+        .eq('tournament_id', req.params.id)
+        .eq('bracket_match_id', matchId)
+        .single();
+
+      const matchRecordUpdate = {
+        participant1_score: score1 ?? null,
+        participant2_score: score2 ?? null,
+        winner_id: winner_id || null,
+        status: winner_id ? 'completed' : 'in_progress',
+        updated_at: new Date().toISOString(),
+      };
+
+      if (existingRecord) {
+        await supabaseAdmin.from('match_records').update(matchRecordUpdate).eq('id', existingRecord.id);
+      } else {
+        // Find the match in brackets to get participant info
+        let bracketMatch = null;
+        let roundNum = 1;
+        let matchNum = 1;
+        for (const round of brackets) {
+          for (let i = 0; i < (round.matches || []).length; i++) {
+            if (round.matches[i].id === matchId) {
+              bracketMatch = round.matches[i];
+              roundNum = round.round || round.round_number || 1;
+              matchNum = i + 1;
+              break;
+            }
+          }
+          if (bracketMatch) break;
+        }
+        if (bracketMatch) {
+          await supabaseAdmin.from('match_records').insert({
+            tournament_id: req.params.id,
+            bracket_match_id: matchId,
+            round_number: roundNum,
+            match_number: matchNum,
+            participant1_id: bracketMatch.team1 || null,
+            participant2_id: bracketMatch.team2 || null,
+            ...matchRecordUpdate,
+          });
+        }
+      }
+    } catch (syncErr) {
+      // Log but don't fail the main request if match_records sync fails
+      console.error('[bracket score sync] match_records sync error:', syncErr.message);
+    }
+
     res.json(data);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -529,6 +582,439 @@ router.put('/:id/signup-page', requireAuth, async (req, res) => {
       updated_at: new Date().toISOString(),
     }).eq('id', req.params.id).select().single();
     if (error) throw error;
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ===== 1v1 PLAYER INVITE / JOIN ROUTES =====
+
+// POST /:id/invite-player - organizer invites a player to a 1v1 tournament
+router.post('/:id/invite-player', requireAuth, requireRole('organizer', 'admin'), async (req, res) => {
+  try {
+    const { player_id, player_name, game } = req.body;
+    if (!player_id) return res.status(400).json({ error: 'player_id is required' });
+
+    const { data: tournament } = await supabaseAdmin.from('tournaments').select('organizer_id, player_invites, name').eq('id', req.params.id).single();
+    if (!tournament) return res.status(404).json({ error: 'Tournament not found' });
+    if (tournament.organizer_id !== req.user.id) return res.status(403).json({ error: 'Not authorized' });
+
+    const invite = {
+      id: crypto.randomUUID(),
+      player_id,
+      player_name: player_name || null,
+      game: game || null,
+      invited_by: req.user.id,
+      status: 'pending',
+      invited_at: new Date().toISOString(),
+    };
+
+    const playerInvites = [...(tournament.player_invites || []), invite];
+    const { data, error } = await supabaseAdmin.from('tournaments').update({
+      player_invites: playerInvites,
+      updated_at: new Date().toISOString(),
+    }).eq('id', req.params.id).select().single();
+    if (error) throw error;
+
+    // Also add invite to the gamer's tournament_invites in gamer_profiles
+    const { data: gamerProfile } = await supabaseAdmin.from('gamer_profiles').select('tournament_invites').eq('user_id', player_id).single();
+    if (gamerProfile) {
+      const gamerInvites = [...(gamerProfile.tournament_invites || []), {
+        tournament_id: req.params.id,
+        tournament_name: tournament.name,
+        invited_by: req.user.id,
+        status: 'pending',
+        invited_at: new Date().toISOString(),
+      }];
+      await supabaseAdmin.from('gamer_profiles').update({ tournament_invites: gamerInvites }).eq('user_id', player_id);
+    }
+
+    // Audit log
+    await supabaseAdmin.from('audit_log').insert({
+      action: 'player_invited',
+      entity_type: 'tournament',
+      entity_id: req.params.id,
+      actor_id: req.user.id,
+      details: { player_id, player_name, game, invite_id: invite.id },
+      created_at: new Date().toISOString(),
+    });
+
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// POST /:id/join-player - gamer joins a 1v1 tournament as a player
+router.post('/:id/join-player', requireAuth, async (req, res) => {
+  try {
+    const { game_id, rank } = req.body;
+
+    const { data: tournament } = await supabaseAdmin.from('tournaments').select('participant_type, player_participants, status, name').eq('id', req.params.id).single();
+    if (!tournament) return res.status(404).json({ error: 'Tournament not found' });
+    if (tournament.participant_type !== 'player') {
+      return res.status(400).json({ error: 'This tournament does not accept individual player signups' });
+    }
+    if (!['published', 'live'].includes(tournament.status)) {
+      return res.status(400).json({ error: 'Tournament is not open for registration' });
+    }
+
+    const existingParticipants = tournament.player_participants || [];
+    if (existingParticipants.some(p => p.user_id === req.user.id)) {
+      return res.status(400).json({ error: 'You have already joined this tournament' });
+    }
+
+    // Get gamer username
+    const { data: gamerProfile } = await supabaseAdmin.from('gamer_profiles').select('username').eq('user_id', req.user.id).single();
+
+    const participant = {
+      user_id: req.user.id,
+      username: gamerProfile?.username || null,
+      game_id: game_id || null,
+      rank: rank || null,
+      joined_at: new Date().toISOString(),
+    };
+
+    const updatedParticipants = [...existingParticipants, participant];
+    const { data, error } = await supabaseAdmin.from('tournaments').update({
+      player_participants: updatedParticipants,
+      updated_at: new Date().toISOString(),
+    }).eq('id', req.params.id).select().single();
+    if (error) throw error;
+
+    // Audit log
+    await supabaseAdmin.from('audit_log').insert({
+      action: 'player_joined',
+      entity_type: 'tournament',
+      entity_id: req.params.id,
+      actor_id: req.user.id,
+      details: { game_id, rank, username: gamerProfile?.username },
+      created_at: new Date().toISOString(),
+    });
+
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ===== MATCH RECORD ROUTES =====
+
+// GET /:id/matches - list all match records for a tournament
+router.get('/:id/matches', async (req, res) => {
+  try {
+    const { data, error } = await supabaseAdmin.from('match_records')
+      .select('*')
+      .eq('tournament_id', req.params.id)
+      .order('round_number', { ascending: true })
+      .order('match_number', { ascending: true });
+    if (error) throw error;
+    res.json(data || []);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// GET /:id/matches/:matchId - get a single match record
+router.get('/:id/matches/:matchId', async (req, res) => {
+  try {
+    const { data, error } = await supabaseAdmin.from('match_records')
+      .select('*')
+      .eq('id', req.params.matchId)
+      .eq('tournament_id', req.params.id)
+      .single();
+    if (error) throw error;
+    if (!data) return res.status(404).json({ error: 'Match record not found' });
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// POST /:id/matches - create a match record (organizer only)
+router.post('/:id/matches', requireAuth, requireRole('organizer', 'admin'), async (req, res) => {
+  try {
+    const { data: tournament } = await supabaseAdmin.from('tournaments').select('organizer_id, name').eq('id', req.params.id).single();
+    if (!tournament) return res.status(404).json({ error: 'Tournament not found' });
+    if (tournament.organizer_id !== req.user.id) return res.status(403).json({ error: 'Not authorized' });
+
+    const matchRecord = {
+      tournament_id: req.params.id,
+      round_number: req.body.round_number || 1,
+      match_number: req.body.match_number || 1,
+      bracket_match_id: req.body.bracket_match_id || null,
+      participant1_id: req.body.participant1_id || null,
+      participant1_name: req.body.participant1_name || null,
+      participant2_id: req.body.participant2_id || null,
+      participant2_name: req.body.participant2_name || null,
+      participant1_score: req.body.participant1_score || null,
+      participant2_score: req.body.participant2_score || null,
+      winner_id: req.body.winner_id || null,
+      status: req.body.status || 'pending',
+      scheduled_at: req.body.scheduled_at || null,
+      screenshots: req.body.screenshots || [],
+      player_submissions: req.body.player_submissions || [],
+      abuse_reports: [],
+      notes: req.body.notes || null,
+    };
+
+    const { data, error } = await supabaseAdmin.from('match_records').insert(matchRecord).select().single();
+    if (error) throw error;
+
+    // Audit log
+    await supabaseAdmin.from('audit_log').insert({
+      action: 'match_created',
+      entity_type: 'match_record',
+      entity_id: data.id,
+      actor_id: req.user.id,
+      details: { tournament_id: req.params.id, round_number: matchRecord.round_number, match_number: matchRecord.match_number },
+      created_at: new Date().toISOString(),
+    });
+
+    res.status(201).json(data);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// PUT /:id/matches/:matchId - update a match record
+// Organizers can update all fields; players can only submit results/screenshots via this route
+router.put('/:id/matches/:matchId', requireAuth, async (req, res) => {
+  try {
+    const { data: tournament } = await supabaseAdmin.from('tournaments').select('organizer_id').eq('id', req.params.id).single();
+    if (!tournament) return res.status(404).json({ error: 'Tournament not found' });
+
+    const { data: matchRecord } = await supabaseAdmin.from('match_records')
+      .select('*')
+      .eq('id', req.params.matchId)
+      .eq('tournament_id', req.params.id)
+      .single();
+    if (!matchRecord) return res.status(404).json({ error: 'Match record not found' });
+
+    const isOrganizer = tournament.organizer_id === req.user.id;
+    const isParticipant = matchRecord.participant1_id === req.user.id || matchRecord.participant2_id === req.user.id;
+
+    if (!isOrganizer && !isParticipant) {
+      return res.status(403).json({ error: 'Not authorized to update this match' });
+    }
+
+    let updates;
+    if (isOrganizer) {
+      // Organizer can update any field
+      updates = {
+        ...(req.body.round_number !== undefined && { round_number: req.body.round_number }),
+        ...(req.body.match_number !== undefined && { match_number: req.body.match_number }),
+        ...(req.body.participant1_id !== undefined && { participant1_id: req.body.participant1_id }),
+        ...(req.body.participant1_name !== undefined && { participant1_name: req.body.participant1_name }),
+        ...(req.body.participant2_id !== undefined && { participant2_id: req.body.participant2_id }),
+        ...(req.body.participant2_name !== undefined && { participant2_name: req.body.participant2_name }),
+        ...(req.body.participant1_score !== undefined && { participant1_score: req.body.participant1_score }),
+        ...(req.body.participant2_score !== undefined && { participant2_score: req.body.participant2_score }),
+        ...(req.body.winner_id !== undefined && { winner_id: req.body.winner_id }),
+        ...(req.body.status !== undefined && { status: req.body.status }),
+        ...(req.body.scheduled_at !== undefined && { scheduled_at: req.body.scheduled_at }),
+        ...(req.body.screenshots !== undefined && { screenshots: req.body.screenshots }),
+        ...(req.body.notes !== undefined && { notes: req.body.notes }),
+        updated_at: new Date().toISOString(),
+      };
+    } else {
+      // Player can only submit scores and screenshots
+      updates = {
+        ...(req.body.screenshots !== undefined && { screenshots: req.body.screenshots }),
+        ...(req.body.notes !== undefined && { notes: req.body.notes }),
+        updated_at: new Date().toISOString(),
+      };
+    }
+
+    const { data, error } = await supabaseAdmin.from('match_records').update(updates).eq('id', req.params.matchId).select().single();
+    if (error) throw error;
+
+    // Audit log
+    await supabaseAdmin.from('audit_log').insert({
+      action: 'match_updated',
+      entity_type: 'match_record',
+      entity_id: req.params.matchId,
+      actor_id: req.user.id,
+      details: { tournament_id: req.params.id, is_organizer: isOrganizer, fields_updated: Object.keys(updates) },
+      created_at: new Date().toISOString(),
+    });
+
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// POST /:id/matches/:matchId/submit - player submits match results
+router.post('/:id/matches/:matchId/submit', requireAuth, async (req, res) => {
+  try {
+    const { score, screenshots, notes } = req.body;
+
+    const { data: matchRecord } = await supabaseAdmin.from('match_records')
+      .select('*')
+      .eq('id', req.params.matchId)
+      .eq('tournament_id', req.params.id)
+      .single();
+    if (!matchRecord) return res.status(404).json({ error: 'Match record not found' });
+
+    const isParticipant = matchRecord.participant1_id === req.user.id || matchRecord.participant2_id === req.user.id;
+    if (!isParticipant) return res.status(403).json({ error: 'You are not a participant in this match' });
+
+    const submission = {
+      id: crypto.randomUUID(),
+      user_id: req.user.id,
+      score: score || null,
+      screenshots: screenshots || [],
+      notes: notes || null,
+      submitted_at: new Date().toISOString(),
+    };
+
+    const playerSubmissions = [...(matchRecord.player_submissions || [])];
+    // Replace existing submission from same user, or add new
+    const existingIdx = playerSubmissions.findIndex(s => s.user_id === req.user.id);
+    if (existingIdx !== -1) {
+      playerSubmissions[existingIdx] = submission;
+    } else {
+      playerSubmissions.push(submission);
+    }
+
+    const { data, error } = await supabaseAdmin.from('match_records').update({
+      player_submissions: playerSubmissions,
+      updated_at: new Date().toISOString(),
+    }).eq('id', req.params.matchId).select().single();
+    if (error) throw error;
+
+    // Audit log
+    await supabaseAdmin.from('audit_log').insert({
+      action: 'match_result_submitted',
+      entity_type: 'match_record',
+      entity_id: req.params.matchId,
+      actor_id: req.user.id,
+      details: { tournament_id: req.params.id, score, has_screenshots: (screenshots || []).length > 0 },
+      created_at: new Date().toISOString(),
+    });
+
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// POST /:id/matches/:matchId/report-abuse - report abuse on a match
+router.post('/:id/matches/:matchId/report-abuse', requireAuth, async (req, res) => {
+  try {
+    const { reason, proof_urls } = req.body;
+    if (!reason) return res.status(400).json({ error: 'reason is required' });
+
+    const { data: matchRecord } = await supabaseAdmin.from('match_records')
+      .select('*')
+      .eq('id', req.params.matchId)
+      .eq('tournament_id', req.params.id)
+      .single();
+    if (!matchRecord) return res.status(404).json({ error: 'Match record not found' });
+
+    const report = {
+      id: crypto.randomUUID(),
+      reporter_id: req.user.id,
+      reason,
+      proof_urls: proof_urls || [],
+      status: 'pending',
+      reported_at: new Date().toISOString(),
+    };
+
+    const abuseReports = [...(matchRecord.abuse_reports || []), report];
+    const { data, error } = await supabaseAdmin.from('match_records').update({
+      abuse_reports: abuseReports,
+      updated_at: new Date().toISOString(),
+    }).eq('id', req.params.matchId).select().single();
+    if (error) throw error;
+
+    // Audit log
+    await supabaseAdmin.from('audit_log').insert({
+      action: 'match_abuse_reported',
+      entity_type: 'match_record',
+      entity_id: req.params.matchId,
+      actor_id: req.user.id,
+      details: { tournament_id: req.params.id, reason, proof_count: (proof_urls || []).length, report_id: report.id },
+      created_at: new Date().toISOString(),
+    });
+
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ===== FIX: Sync bracket updates with match_records =====
+
+// PUT /:id/brackets-with-records - update brackets AND sync match_records
+// This supplements the existing PUT /:id/brackets route for cases where
+// callers want bracket changes reflected in the match_records table too.
+router.put('/:id/brackets-with-records', requireAuth, async (req, res) => {
+  try {
+    const { data: tournament } = await supabaseAdmin.from('tournaments').select('brackets, organizer_id, name').eq('id', req.params.id).single();
+    if (!tournament) return res.status(404).json({ error: 'Tournament not found' });
+    if (tournament.organizer_id !== req.user.id) return res.status(403).json({ error: 'Not authorized' });
+
+    const newBrackets = req.body.brackets;
+    if (!Array.isArray(newBrackets)) return res.status(400).json({ error: 'brackets must be an array' });
+
+    // Update the tournament brackets
+    const { data, error } = await supabaseAdmin.from('tournaments').update({
+      brackets: newBrackets,
+      updated_at: new Date().toISOString(),
+    }).eq('id', req.params.id).select().single();
+    if (error) throw error;
+
+    // Sync each bracket match to match_records via upsert
+    for (const round of newBrackets) {
+      const roundNumber = round.round || round.round_number || 1;
+      for (let i = 0; i < (round.matches || []).length; i++) {
+        const match = round.matches[i];
+        const matchRecordData = {
+          tournament_id: req.params.id,
+          bracket_match_id: match.id,
+          round_number: roundNumber,
+          match_number: i + 1,
+          participant1_id: match.team1 || match.participant1_id || null,
+          participant1_name: match.team1_name || match.participant1_name || null,
+          participant2_id: match.team2 || match.participant2_id || null,
+          participant2_name: match.team2_name || match.participant2_name || null,
+          participant1_score: match.score1 ?? match.participant1_score ?? null,
+          participant2_score: match.score2 ?? match.participant2_score ?? null,
+          winner_id: match.winner_id || null,
+          status: match.winner_id ? 'completed' : (match.team1 && match.team2 ? 'in_progress' : 'pending'),
+          updated_at: new Date().toISOString(),
+        };
+
+        if (match.id) {
+          // Check if a match_record already exists for this bracket_match_id
+          const { data: existing } = await supabaseAdmin.from('match_records')
+            .select('id')
+            .eq('tournament_id', req.params.id)
+            .eq('bracket_match_id', match.id)
+            .single();
+
+          if (existing) {
+            await supabaseAdmin.from('match_records').update(matchRecordData).eq('id', existing.id);
+          } else {
+            await supabaseAdmin.from('match_records').insert(matchRecordData);
+          }
+        }
+      }
+    }
+
+    // Audit log
+    await supabaseAdmin.from('audit_log').insert({
+      action: 'brackets_synced_with_records',
+      entity_type: 'tournament',
+      entity_id: req.params.id,
+      actor_id: req.user.id,
+      details: { round_count: newBrackets.length },
+      created_at: new Date().toISOString(),
+    });
+
     res.json(data);
   } catch (err) {
     res.status(500).json({ error: err.message });

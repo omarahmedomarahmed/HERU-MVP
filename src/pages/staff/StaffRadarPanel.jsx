@@ -165,10 +165,10 @@ export default function StaffRadarPanel() {
     }
   }, [navigate]);
 
-  // Fetch
+  // Fetch all radar listings (shared tournaments only — all statuses for staff oversight)
   const { data: rawRadar = [], isLoading } = useQuery({
     queryKey: ['staff-radar-list'],
-    queryFn: () => apiCall('/radar'),
+    queryFn: () => apiCall('/radar?status=all'),
     staleTime: 30_000,
   });
 

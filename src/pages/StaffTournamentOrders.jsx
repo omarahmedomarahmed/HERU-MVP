@@ -4,8 +4,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   Search, Filter, Trophy, DollarSign, Eye, Shield,
 } from 'lucide-react';
-import { TournamentOrder, apiCall } from '@/api/heruClient';
-import { useAuth } from '@/lib/AuthContext';
+import { apiCall } from '@/api/heruClient';
 
 const FULFILLMENT_BADGE = {
   draft:           'bg-zinc-700 text-zinc-300',
@@ -23,7 +22,7 @@ export default function StaffTournamentOrders() {
 
   const { data: tournamentOrders = [], isLoading } = useQuery({
     queryKey: ['staff-all-tournament-orders'],
-    queryFn: () => TournamentOrder.list(),
+    queryFn: () => apiCall('/tournament-orders'),
   });
 
   const filtered = useMemo(() => {

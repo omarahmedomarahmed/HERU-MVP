@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { getOrganizerSession } from '@/lib/auth-guards';
+import { useAuth } from '@/lib/AuthContext';
 import AnimatedBackground from '@/components/shared/AnimatedBackground';
 import FloatingPanel from '@/components/ui/FloatingPanel';
 import GlowButton from '@/components/ui/GlowButton';
@@ -32,42 +32,25 @@ export default function RadarDetailPage() {
   const { radar_id } = useParams();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const [session, setSession] = useState(null);
-  const [commitAmount, setCommitAmount] = useState('');
+  const { user, userProfile, isAuthenticated, isOrganizer } = useAuth();
+  const [commitPercent, setCommitPercent] = useState(null); // null = no selection, 33/66/custom number
+  const [customPercent, setCustomPercent] = useState('');
   const [chatMsg, setChatMsg] = useState('');
   const [selectedFolder, setSelectedFolder] = useState('Organizer Branding');
+  const [commitSuccess, setCommitSuccess] = useState(null); // stores { bill_number, amount, label } after success
 
-  useEffect(() => {
-    const s = getOrganizerSession();
-    setSession(s);
-  }, []);
-
-  const myOrganizerId = session?.profileId;
+  const myUserId = user?.id;
+  const orgProfile = userProfile?.organizer_profile;
 
   const { data: radar, isLoading } = useQuery({
     queryKey: ['radar-detail', radar_id],
-    queryFn: async () => {
-      const all = await SponsorshipRadar.list();
-      return all.find(r => r.id === radar_id) || null;
-    },
+    queryFn: () => SponsorshipRadar.get(radar_id),
     enabled: !!radar_id,
-  });
-
-  const { data: profile } = useQuery({
-    queryKey: ['organizer-profile-detail', session?.profileId],
-    queryFn: async () => {
-      const profiles = await OrganizerProfile.list();
-      return profiles.find(p => p.id === session.profileId) || null;
-    },
-    enabled: !!session?.profileId,
   });
 
   const { data: tournament } = useQuery({
     queryKey: ['radar-tournament', radar?.tournament_id],
-    queryFn: async () => {
-      const all = await Tournament.list();
-      return all.find(t => t.id === radar.tournament_id) || null;
-    },
+    queryFn: () => Tournament.get(radar.tournament_id),
     enabled: !!radar?.tournament_id,
   });
 
@@ -94,74 +77,32 @@ export default function RadarDetailPage() {
 
   const { data: mainOrgProfile } = useQuery({
     queryKey: ['main-org-profile', radar?.main_organizer_id],
-    queryFn: async () => {
-      const all = await OrganizerProfile.list();
-      return all.find(p => p.id === radar.main_organizer_id) || null;
-    },
+    queryFn: () => OrganizerProfile.get(radar.main_organizer_id).catch(() => null),
     enabled: !!radar?.main_organizer_id,
   });
 
   const commitMutation = useMutation({
-    mutationFn: async (amount) => {
-      const totalCost = radar.total_cost || 0;
-      const cappedAmount = Math.min(amount, radar.amount_still_needed || amount);
-      const cappedPercent = totalCost > 0 ? Math.round((cappedAmount / totalCost) * 100) : 0;
-      const existingCo = radar.co_organizers || [];
-      const newCo = {
-        organizer_id: myOrganizerId,
-        brand_name: profile?.brand_name || '',
-        brand_logo: profile?.brand_logo || '',
-        committed_amount: cappedAmount,
-        committed_percent: cappedPercent,
-        payment_status: 'pending',
-        access_granted: false,
-      };
-      const updatedCoOrgs = [...existingCo, newCo];
-      const mainContrib = radar.main_organizer_contribution || 0;
-      const totalCommitted = updatedCoOrgs.reduce((s, c) => s + (c.committed_amount || 0), 0);
-      const newFundingPercent = Math.min(100, Math.round(((mainContrib + totalCommitted) / totalCost) * 100));
-      const newAmountNeeded = Math.max(0, totalCost - mainContrib - totalCommitted);
-      await SponsorshipRadar.update(radar.id, {
-        co_organizers: updatedCoOrgs,
-        funding_percent: newFundingPercent,
-        amount_still_needed: newAmountNeeded,
-        status: newFundingPercent >= 100 ? 'fully_funded' : updatedCoOrgs.length > 0 ? 'in_progress' : 'open',
-      });
-      if (tournament) {
-        const tCoOrgs = tournament.co_organizers || [];
-        await Tournament.update(tournament.id, {
-          co_organizers: [...tCoOrgs, {
-            organizer_id: myOrganizerId,
-            brand_name: profile?.brand_name || '',
-            brand_logo: profile?.brand_logo || '',
-            commitment_amount: cappedAmount,
-            commitment_percent: cappedPercent,
-            payment_status: 'pending',
-            access_granted: false,
-            joined_at: new Date().toISOString(),
-          }],
-        });
-      }
+    mutationFn: async (percent) => {
+      return SponsorshipRadar.commit(radar.id, { percent });
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      setCommitSuccess(data);
       queryClient.invalidateQueries(['radar-detail', radar_id]);
-      setCommitAmount('');
-      navigate('/dashboard/organizer');
+      setCommitPercent(null);
+      setCustomPercent('');
+    },
+    onError: (err) => {
+      alert(err.message || 'Failed to commit');
     },
   });
 
   const chatMutation = useMutation({
     mutationFn: async (message) => {
-      const existing = tournament.organizer_chat || [];
-      const newMsg = {
-        sender_id: myOrganizerId || session?.userId,
-        sender_name: profile?.brand_name || session?.email || 'Organizer',
-        sender_role: myOrganizerId === radar?.main_organizer_id ? 'main_organizer' : 'co_organizer',
+      return Tournament.sendChat(tournament.id, {
         message,
-        timestamp: new Date().toISOString(),
-      };
-      await Tournament.update(tournament.id, {
-        organizer_chat: [...existing, newMsg],
+        sender_id: myUserId,
+        sender_name: orgProfile?.brand_name || user?.email || 'Organizer',
+        sender_role: myUserId === radar?.main_organizer_id ? 'main_organizer' : 'co_organizer',
       });
     },
     onSuccess: () => {
@@ -194,16 +135,20 @@ export default function RadarDetailPage() {
     );
   }
 
-  const isMainOrg = myOrganizerId === radar.main_organizer_id;
-  const myCoEntry = radar.co_organizers?.find(co => co.organizer_id === myOrganizerId);
+  const isMainOrg = myUserId === radar.main_organizer_id;
+  const myCoEntry = radar.co_organizers?.find(co => co.organizer_id === myUserId);
   const hasAccess = myCoEntry?.access_granted;
-  const isStaff = session?.isStaff;
-  const canChat = isMainOrg || hasAccess || isStaff;
-  const canCommit = !isMainOrg && !myCoEntry && session && radar.status !== 'fully_funded' && radar.status !== 'closed';
+  const canChat = isMainOrg || hasAccess;
+  const canCommit = isAuthenticated && isOrganizer && !isMainOrg && !myCoEntry && radar.status !== 'fully_funded' && radar.status !== 'closed';
 
-  const commitAmt = parseFloat(commitAmount) || 0;
+  // Calculate available percent remaining
   const totalCost = radar.total_cost || 0;
-  const myPercent = totalCost > 0 ? Math.round((commitAmt / totalCost) * 100) : 0;
+  const mainPercent = radar.main_organizer_percent || 33;
+  const usedPercent = mainPercent + (radar.co_organizers || []).reduce((s, co) => s + (co.percent || co.committed_percent || 0), 0);
+  const availablePercent = Math.max(0, 100 - usedPercent);
+
+  // Determine the actual percent to commit
+  const activePercent = commitPercent === 'custom' ? (parseInt(customPercent) || 0) : (commitPercent || 0);
 
   const FOLDERS = ['Organizer Branding', 'Co-Organizer Branding', 'Tournament Branding', 'Social Media'];
 
@@ -497,7 +442,7 @@ export default function RadarDetailPage() {
                         </div>
                         <div>
                           <p className="text-white text-sm font-bold">{co.brand_name}</p>
-                          <p className="text-gray-400 text-xs">{co.committed_percent}% — EGP {co.committed_amount?.toLocaleString()}</p>
+                          <p className="text-gray-400 text-xs">{co.percent || co.committed_percent}% — EGP {(co.amount || co.committed_amount)?.toLocaleString()}</p>
                         </div>
                       </div>
                       <span className={`text-xs px-2 py-0.5 rounded font-bold ${co.payment_status === 'paid' ? 'bg-green-500/20 text-green-400' : 'bg-yellow-500/20 text-yellow-400'}`}>
@@ -514,48 +459,127 @@ export default function RadarDetailPage() {
               )}
             </FloatingPanel>
 
-            {/* Commit Section */}
-            {canCommit && (
-              <FloatingPanel className="p-5" glowBorder>
-                <h2 className="text-lg font-bold text-white mb-1">Commit as Co-Organizer</h2>
-                <p className="text-gray-400 text-xs mb-4">Your brand will be featured on this tournament page</p>
-                <div className="space-y-4">
+            {/* Main organizer cannot co-organize their own tournament */}
+            {isMainOrg && (
+              <FloatingPanel className="p-5">
+                <div className="flex items-center gap-3 text-amber-400">
+                  <AlertCircle className="w-5 h-5 flex-shrink-0" />
                   <div>
-                    <label className="text-sm text-gray-400 block mb-1.5">Your Commitment Amount (EGP)</label>
-                    <Input
-                      type="number"
-                      value={commitAmount}
-                      onChange={e => setCommitAmount(e.target.value)}
-                      placeholder="e.g. 5000"
-                      className="bg-zinc-800 border-zinc-700 text-white text-lg"
-                      min={1}
-                    />
-                    <div className="mt-1.5 flex items-center gap-1 text-xs text-red-400">
-                      <TrendingUp className="w-3 h-3" />
-                      Recommended: 30%+ of total (EGP {Math.round(totalCost * 0.3).toLocaleString()})
-                    </div>
+                    <p className="font-bold text-sm">You are the main organizer</p>
+                    <p className="text-gray-400 text-xs mt-0.5">You cannot co-organize your own tournament.</p>
                   </div>
-                  {commitAmt > 0 && (
+                </div>
+              </FloatingPanel>
+            )}
+
+            {/* Commit Section */}
+            {canCommit && !commitSuccess && (
+              <FloatingPanel className="p-5" glowBorder>
+                <h2 className="text-lg font-bold text-white mb-1">Commit as {availablePercent >= 66 ? 'Co-Organizer or Sponsor' : 'Co-Organizer'}</h2>
+                <p className="text-gray-400 text-xs mb-4">Your brand will be featured on this tournament page. 33% = Co-Organizer, 66% = Sponsor.</p>
+                <div className="space-y-4">
+                  {/* Preset percentage buttons */}
+                  <div>
+                    <label className="text-sm text-gray-400 block mb-2">Choose your commitment</label>
+                    <div className="grid grid-cols-2 gap-2 mb-2">
+                      {availablePercent >= 33 && (
+                        <button
+                          onClick={() => { setCommitPercent(33); setCustomPercent(''); }}
+                          className={`rounded-xl p-3 text-center border transition-all ${commitPercent === 33 ? 'border-red-500 bg-red-500/20 text-white' : 'border-zinc-700 bg-zinc-800/50 text-gray-400 hover:border-zinc-500'}`}
+                        >
+                          <p className="text-lg font-black">33%</p>
+                          <p className="text-xs">Co-Organizer</p>
+                          <p className="text-xs text-yellow-400 font-bold mt-1">EGP {Math.round(totalCost * 0.33).toLocaleString()}</p>
+                        </button>
+                      )}
+                      {availablePercent >= 66 && (
+                        <button
+                          onClick={() => { setCommitPercent(66); setCustomPercent(''); }}
+                          className={`rounded-xl p-3 text-center border transition-all ${commitPercent === 66 ? 'border-red-500 bg-red-500/20 text-white' : 'border-zinc-700 bg-zinc-800/50 text-gray-400 hover:border-zinc-500'}`}
+                        >
+                          <p className="text-lg font-black">66%</p>
+                          <p className="text-xs">Sponsor</p>
+                          <p className="text-xs text-yellow-400 font-bold mt-1">EGP {Math.round(totalCost * 0.66).toLocaleString()}</p>
+                        </button>
+                      )}
+                    </div>
+                    {/* Custom percentage */}
+                    <button
+                      onClick={() => setCommitPercent('custom')}
+                      className={`w-full rounded-xl p-3 text-center border transition-all ${commitPercent === 'custom' ? 'border-red-500 bg-red-500/20 text-white' : 'border-zinc-700 bg-zinc-800/50 text-gray-400 hover:border-zinc-500'}`}
+                    >
+                      <p className="text-sm font-bold">Custom Percentage</p>
+                    </button>
+                    {commitPercent === 'custom' && (
+                      <div className="mt-2">
+                        <Input
+                          type="number"
+                          value={customPercent}
+                          onChange={e => setCustomPercent(e.target.value)}
+                          placeholder={`33 – ${availablePercent}`}
+                          className="bg-zinc-800 border-zinc-700 text-white"
+                          min={33}
+                          max={availablePercent}
+                        />
+                        <p className="text-xs text-gray-500 mt-1">Min 33% · Max {availablePercent}% available</p>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Summary */}
+                  {activePercent >= 33 && (
                     <div className="bg-zinc-800/50 rounded-xl p-3 text-sm space-y-1">
                       <div className="flex justify-between">
                         <span className="text-gray-400">Your share</span>
-                        <span className="text-yellow-400 font-bold">{myPercent}% — EGP {commitAmt.toLocaleString()}</span>
+                        <span className="text-yellow-400 font-bold">{activePercent}% — EGP {Math.round(totalCost * activePercent / 100).toLocaleString()}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-400">Role</span>
+                        <span className="text-white font-bold">{activePercent >= 66 ? 'Sponsor' : 'Co-Organizer'}</span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-gray-400">New funding</span>
-                        <span className="text-white font-bold">{Math.min(100, (radar.funding_percent || 0) + myPercent)}%</span>
+                        <span className="text-white font-bold">{Math.min(100, (radar.funding_percent || 0) + activePercent)}%</span>
                       </div>
                     </div>
                   )}
+
                   <GlowButton
                     className="w-full"
-                    disabled={!commitAmt || commitAmt <= 0 || commitMutation.isPending}
-                    onClick={() => commitMutation.mutate(commitAmt)}
+                    disabled={activePercent < 33 || activePercent > availablePercent || commitMutation.isPending}
+                    onClick={() => commitMutation.mutate(activePercent)}
                   >
                     {commitMutation.isPending ? 'Processing...' : 'Commit & Proceed to Billing'}
                     <ChevronRight className="w-4 h-4" />
                   </GlowButton>
-                  <p className="text-gray-600 text-xs text-center">Payment can be confirmed later in your Billing tab</p>
+                  <p className="text-gray-600 text-xs text-center">
+                    <AlertCircle className="w-3 h-3 inline mr-1" />
+                    Minimum commitment is 33% of total tournament cost
+                  </p>
+                </div>
+              </FloatingPanel>
+            )}
+
+            {/* Commit Success */}
+            {commitSuccess && (
+              <FloatingPanel className="p-5" glowBorder>
+                <div className="text-center space-y-3">
+                  <CheckCircle className="w-10 h-10 text-green-400 mx-auto" />
+                  <h2 className="text-lg font-bold text-white">Commitment Confirmed!</h2>
+                  <p className="text-gray-400 text-sm">You've committed as <span className="text-white font-bold">{commitSuccess.label}</span></p>
+                  <div className="bg-zinc-800/50 rounded-xl p-3 text-sm space-y-1">
+                    <div className="flex justify-between">
+                      <span className="text-gray-400">Amount Due</span>
+                      <span className="text-yellow-400 font-bold">EGP {commitSuccess.amount?.toLocaleString()}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-400">Bill #</span>
+                      <span className="text-white font-mono">{commitSuccess.bill_number}</span>
+                    </div>
+                  </div>
+                  <Link to="/organizer/billing">
+                    <GlowButton className="w-full mt-2">Go to Billing to Pay</GlowButton>
+                  </Link>
                 </div>
               </FloatingPanel>
             )}
@@ -569,8 +593,14 @@ export default function RadarDetailPage() {
                 </div>
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between">
+                    <span className="text-gray-400">Role</span>
+                    <span className={`font-bold ${(myCoEntry.percent || myCoEntry.committed_percent || 0) >= 66 ? 'text-purple-400' : 'text-red-400'}`}>
+                      {(myCoEntry.percent || myCoEntry.committed_percent || 0) >= 66 ? 'Sponsor' : 'Co-Organizer'}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
                     <span className="text-gray-400">Amount</span>
-                    <span className="text-yellow-400 font-bold">EGP {myCoEntry.committed_amount?.toLocaleString()} ({myCoEntry.committed_percent}%)</span>
+                    <span className="text-yellow-400 font-bold">EGP {(myCoEntry.amount || myCoEntry.committed_amount)?.toLocaleString()} ({myCoEntry.percent || myCoEntry.committed_percent}%)</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-400">Payment</span>
@@ -585,7 +615,7 @@ export default function RadarDetailPage() {
                     </span>
                   </div>
                   {!myCoEntry.access_granted && (
-                    <Link to="/dashboard/organizer" className="block mt-3">
+                    <Link to="/organizer/billing" className="block mt-3">
                       <GlowButton className="w-full" size="sm">Go to Billing to Pay</GlowButton>
                     </Link>
                   )}
@@ -594,7 +624,7 @@ export default function RadarDetailPage() {
             )}
 
             {/* Not logged in */}
-            {!session && (
+            {!isAuthenticated && (
               <FloatingPanel className="p-5" glowBorder>
                 <Lock className="w-8 h-8 text-red-400 mx-auto mb-3" />
                 <p className="text-white font-bold text-center mb-1">Sign in as Organizer</p>

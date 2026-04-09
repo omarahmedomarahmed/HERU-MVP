@@ -34,10 +34,21 @@ router.get('/:id', requireAuth, async (req, res) => {
   }
 });
 
+// Valid columns for the orders table
+const ORDER_COLUMNS = new Set([
+  'gamer_id','organizer_id','order_type','tournament_id','tournament_name',
+  'tournament_type','items','total','status','shipping_address','support_chat',
+]);
+
 // POST / - create order
 router.post('/', requireAuth, async (req, res) => {
   try {
-    const order = { ...req.body, gamer_id: req.user.id, status: 'pending' };
+    // Strip unknown fields (e.g. promo_code_used, discount_applied) to avoid DB errors
+    const clean = {};
+    for (const [key, value] of Object.entries(req.body)) {
+      if (ORDER_COLUMNS.has(key) && value !== undefined) clean[key] = value;
+    }
+    const order = { ...clean, gamer_id: req.user.id, status: 'pending' };
     const { data, error } = await supabaseAdmin.from('orders').insert(order).select().single();
     if (error) throw error;
     res.status(201).json(data);

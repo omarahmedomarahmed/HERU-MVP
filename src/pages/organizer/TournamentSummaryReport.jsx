@@ -1,0 +1,301 @@
+import React from 'react'
+import { useParams, useNavigate } from 'react-router-dom'
+import { useQuery } from '@tanstack/react-query'
+import { Tournament, TournamentOrder } from '@/api/heruClient'
+import {
+  ArrowLeft, Trophy, Users, Swords, DollarSign, Calendar,
+  Gamepad2, LayoutGrid, Shield, Loader2, AlertTriangle,
+} from 'lucide-react'
+
+const formatEGP = (n) => 'EGP ' + (n || 0).toLocaleString()
+
+const STATUS_COLORS = {
+  draft:     'bg-zinc-700 text-zinc-300',
+  published: 'bg-blue-500/20 text-blue-400',
+  live:      'bg-green-500/20 text-green-400',
+  completed: 'bg-yellow-500/20 text-yellow-400',
+}
+
+function StatCard({ icon: Icon, label, value, accent = 'text-red-400' }) {
+  return (
+    <div className="bg-[#12121f] border border-white/10 rounded-xl p-4">
+      <div className="flex items-center gap-2 mb-2">
+        <Icon className={`w-4 h-4 ${accent}`} />
+        <span className="text-xs text-gray-500 uppercase tracking-wide">{label}</span>
+      </div>
+      <p className="text-xl font-bold text-white">{value}</p>
+    </div>
+  )
+}
+
+export default function TournamentSummaryReport() {
+  const { id } = useParams()
+  const navigate = useNavigate()
+
+  const {
+    data: tournament,
+    isLoading,
+    isError,
+    error,
+  } = useQuery({
+    queryKey: ['tournament', id],
+    queryFn: () => Tournament.get(id),
+    enabled: !!id,
+  })
+
+  const { data: tournamentOrders = [] } = useQuery({
+    queryKey: ['tournament-orders', id],
+    queryFn: () => TournamentOrder.list({ tournament_id: id }),
+    enabled: !!id,
+  })
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-[#0a0a14] flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-red-400" />
+      </div>
+    )
+  }
+
+  if (isError) {
+    return (
+      <div className="min-h-screen bg-[#0a0a14] flex items-center justify-center px-4">
+        <div className="rounded-xl border border-red-500/30 bg-red-500/10 p-6 max-w-md text-center">
+          <AlertTriangle className="w-8 h-8 text-red-400 mx-auto mb-3" />
+          <p className="text-red-300 text-sm">
+            Failed to load tournament: {error?.message || 'Unknown error'}
+          </p>
+          <button
+            onClick={() => navigate('/organizer/tournaments')}
+            className="mt-4 text-sm text-red-400 hover:text-red-300 transition-colors"
+          >
+            Back to Tournaments
+          </button>
+        </div>
+      </div>
+    )
+  }
+
+  const brackets = tournament?.brackets || []
+  const teams = tournament?.teams || []
+  const coOrganizers = tournament?.co_organizers || []
+  const isShared = tournament?.tournament_type === 'shared'
+
+  // Count completed matches and derive round winners
+  const rounds = {}
+  brackets.forEach((match) => {
+    const roundKey = match.round || match.round_name || `Round ${match.round_number || '?'}`
+    if (!rounds[roundKey]) rounds[roundKey] = []
+    rounds[roundKey].push(match)
+  })
+
+  const totalMatches = brackets.length
+  const completedMatches = brackets.filter(
+    (m) => m.status === 'completed' || m.winner || m.winner_id
+  ).length
+
+  const order = Array.isArray(tournamentOrders)
+    ? tournamentOrders[0]
+    : tournamentOrders
+
+  return (
+    <div className="min-h-screen bg-[#0a0a14] text-white px-4 py-8 sm:px-6 lg:px-8 max-w-5xl mx-auto">
+      {/* Back */}
+      <button
+        onClick={() => navigate(`/organizer/tournaments/${id}/manage`)}
+        className="inline-flex items-center gap-1.5 text-sm text-gray-400 hover:text-red-400 transition-colors mb-6"
+      >
+        <ArrowLeft className="w-4 h-4" />
+        Back to Manage
+      </button>
+
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
+        <div>
+          <h1 className="text-2xl font-bold">
+            {tournament?.name || 'Tournament'}{' '}
+            <span className="text-red-400">Report</span>
+          </h1>
+          <p className="text-sm text-gray-400 mt-1">
+            Overview and results summary
+          </p>
+        </div>
+        <span
+          className={`text-xs px-3 py-1.5 rounded-full font-medium capitalize self-start ${
+            STATUS_COLORS[tournament?.status] || 'bg-zinc-700 text-zinc-400'
+          }`}
+        >
+          {tournament?.status || 'unknown'}
+        </span>
+      </div>
+
+      {/* Tournament Info */}
+      <section className="bg-[#12121f] border border-white/10 rounded-xl p-6 mb-6">
+        <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
+          <Gamepad2 className="w-5 h-5 text-red-400" />
+          Tournament Details
+        </h2>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm">
+          <div>
+            <span className="text-gray-500 block text-xs">Game</span>
+            <span className="text-white font-medium">{tournament?.game || '-'}</span>
+          </div>
+          <div>
+            <span className="text-gray-500 block text-xs">Format</span>
+            <span className="text-white font-medium">{tournament?.format || '-'}</span>
+          </div>
+          <div>
+            <span className="text-gray-500 block text-xs">Schedule</span>
+            <span className="text-white font-medium">
+              {tournament?.schedule
+                ? new Date(tournament.schedule).toLocaleDateString()
+                : '-'}
+            </span>
+          </div>
+          <div>
+            <span className="text-gray-500 block text-xs">Type</span>
+            <span className="text-white font-medium capitalize">
+              {tournament?.tournament_type || 'solo'}
+            </span>
+          </div>
+        </div>
+      </section>
+
+      {/* Key Metrics */}
+      <section className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+        <StatCard icon={Users} label="Total Teams" value={teams.length} />
+        <StatCard icon={Swords} label="Matches Played" value={`${completedMatches} / ${totalMatches}`} accent="text-blue-400" />
+        <StatCard icon={DollarSign} label="Total Cost" value={formatEGP(tournament?.total_cost)} accent="text-green-400" />
+        <StatCard icon={Trophy} label="Prize Pool" value={formatEGP(tournament?.prizepool_total)} accent="text-yellow-400" />
+      </section>
+
+      {/* Platform Fee */}
+      <section className="bg-[#12121f] border border-white/10 rounded-xl p-6 mb-6">
+        <h2 className="text-lg font-semibold mb-3 flex items-center gap-2">
+          <DollarSign className="w-5 h-5 text-green-400" />
+          Financial Summary
+        </h2>
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 text-sm">
+          <div>
+            <span className="text-gray-500 block text-xs">Items Subtotal</span>
+            <span className="text-white font-medium">
+              {formatEGP(
+                (tournament?.total_cost || 0) -
+                  (tournament?.platform_fee || 0) -
+                  (tournament?.prizepool_total || 0)
+              )}
+            </span>
+          </div>
+          <div>
+            <span className="text-gray-500 block text-xs">Prize Pool</span>
+            <span className="text-white font-medium">
+              {formatEGP(tournament?.prizepool_total)}
+            </span>
+          </div>
+          <div>
+            <span className="text-gray-500 block text-xs">Platform Fee (15%)</span>
+            <span className="text-white font-medium">
+              {formatEGP(tournament?.platform_fee)}
+            </span>
+          </div>
+        </div>
+        <div className="mt-4 pt-4 border-t border-white/10 flex items-center justify-between">
+          <span className="text-gray-400 text-sm">Grand Total</span>
+          <span className="text-xl font-bold text-red-400">
+            {formatEGP(tournament?.total_cost)}
+          </span>
+        </div>
+      </section>
+
+      {/* Bracket Results */}
+      {Object.keys(rounds).length > 0 && (
+        <section className="bg-[#12121f] border border-white/10 rounded-xl p-6 mb-6">
+          <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
+            <LayoutGrid className="w-5 h-5 text-red-400" />
+            Bracket Results
+          </h2>
+          <div className="space-y-4">
+            {Object.entries(rounds).map(([roundName, matches]) => (
+              <div key={roundName}>
+                <h3 className="text-sm font-medium text-gray-400 mb-2">{roundName}</h3>
+                <div className="space-y-2">
+                  {matches.map((match, idx) => {
+                    const team1 = match.team1_name || match.team1 || 'TBD'
+                    const team2 = match.team2_name || match.team2 || 'TBD'
+                    const score1 = match.team1_score ?? match.score1 ?? '-'
+                    const score2 = match.team2_score ?? match.score2 ?? '-'
+                    const winner = match.winner || match.winner_name || null
+                    const isComplete = match.status === 'completed' || !!winner
+
+                    return (
+                      <div
+                        key={match.id || idx}
+                        className={`flex items-center justify-between bg-[#0a0a14] border rounded-lg px-4 py-2.5 text-sm ${
+                          isComplete ? 'border-green-500/20' : 'border-white/5'
+                        }`}
+                      >
+                        <span className={`flex-1 ${winner === team1 ? 'text-green-400 font-medium' : 'text-white'}`}>
+                          {team1}
+                        </span>
+                        <span className="text-gray-500 mx-3 font-mono text-xs">
+                          {score1} - {score2}
+                        </span>
+                        <span className={`flex-1 text-right ${winner === team2 ? 'text-green-400 font-medium' : 'text-white'}`}>
+                          {team2}
+                        </span>
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* Co-Organizer Contributions (shared tournaments) */}
+      {isShared && coOrganizers.length > 0 && (
+        <section className="bg-[#12121f] border border-white/10 rounded-xl p-6 mb-6">
+          <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
+            <Shield className="w-5 h-5 text-red-400" />
+            Co-Organizer Contributions
+          </h2>
+          <div className="space-y-3">
+            {coOrganizers.map((co, i) => (
+              <div
+                key={i}
+                className="flex items-center justify-between bg-[#0a0a14] border border-white/5 rounded-lg px-4 py-3"
+              >
+                <div className="flex items-center gap-3">
+                  {co.brand_logo ? (
+                    <img
+                      src={co.brand_logo}
+                      alt=""
+                      className="w-8 h-8 rounded-lg object-cover"
+                    />
+                  ) : (
+                    <div className="w-8 h-8 rounded-lg bg-zinc-800 flex items-center justify-center">
+                      <Shield className="w-4 h-4 text-zinc-600" />
+                    </div>
+                  )}
+                  <div>
+                    <p className="text-white text-sm font-medium">{co.brand_name}</p>
+                    <p className="text-gray-500 text-xs capitalize">{co.label || 'co-organizer'}</p>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <p className="text-white text-sm font-medium">
+                    {co.commitment_percent || co.percent || 0}%
+                  </p>
+                  <p className="text-gray-500 text-xs">
+                    {formatEGP(co.amount || co.committed_amount || 0)}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+    </div>
+  )
+}

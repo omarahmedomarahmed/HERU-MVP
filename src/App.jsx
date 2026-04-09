@@ -3,7 +3,7 @@ import { QueryClientProvider } from '@tanstack/react-query'
 import { queryClientInstance } from '@/lib/query-client'
 import NavigationTracker from '@/lib/NavigationTracker'
 import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom'
-import PageNotFound from './lib/PageNotFound'
+import NotFound from './pages/NotFound'
 import { AuthProvider } from '@/lib/AuthContext'
 import { RequireGamer, RequireOrganizer, RequireStaff } from '@/lib/auth-guards'
 
@@ -43,16 +43,16 @@ import GamerNotifications from './pages/GamerNotifications'
 import Marketplace from './pages/Marketplace'
 import Cart from './pages/Cart'
 import TournamentDetails from './pages/TournamentDetails'
+import GamerArena from './pages/GamerArena'
+import GamerBilling from './pages/GamerBilling'
 
 // Organizer pages
 import OrganizerLayout from '@/components/layouts/OrganizerLayout'
 import OrganizerDashboard from './pages/OrganizerDashboard'
 import OrganizerTournaments from './pages/OrganizerTournaments'
 import TournamentBuilder from './pages/TournamentBuilder'
-import TournamentManage from './pages/TournamentManage'
-import OrganizerTournamentManage from './pages/OrganizerTournamentManage'
-import OrganizerTournamentView from './pages/OrganizerTournamentView'
-import CoOrganizerView from './pages/CoOrganizerView'
+import OrgTournamentManage from './pages/organizer/TournamentManage'
+import CoOrganizerView from './pages/organizer/CoOrganizerView'
 import OrganizerSettings from './pages/OrganizerSettings'
 import OrganizerTeams from './pages/OrganizerTeams'
 import OrganizerMessages from './pages/OrganizerMessages'
@@ -61,6 +61,7 @@ import BillDetail from './pages/BillDetail'
 import OrganizerBilling from './pages/organizer/OrganizerBilling'
 import CoOrganizedTournaments from './pages/organizer/CoOrganizedTournaments'
 import PaymentMethod from './pages/organizer/PaymentMethod'
+import TournamentSummaryReport from './pages/organizer/TournamentSummaryReport'
 
 // Staff pages
 import StaffLayout from '@/components/layouts/StaffLayout'
@@ -112,6 +113,8 @@ function App() {
 
             {/* ============ GAMER ZONE ============ */}
             <Route path="/gamer/home" element={<RequireGamer><GamerHome /></RequireGamer>} />
+            <Route path="/gamer/arena" element={<RequireGamer><GamerArena /></RequireGamer>} />
+            <Route path="/gamer/billing" element={<RequireGamer><GamerBilling /></RequireGamer>} />
             <Route path="/gamer/tournaments" element={<RequireGamer><Tournaments /></RequireGamer>} />
             <Route path="/gamer/tournaments/:id" element={<RequireGamer><TournamentDetails /></RequireGamer>} />
             <Route path="/gamer/profile" element={<RequireGamer><GamerProfile /></RequireGamer>} />
@@ -134,11 +137,12 @@ function App() {
             <Route path="/organizer/tournaments" element={<RequireOrganizer><OrganizerLayout><OrganizerTournaments /></OrganizerLayout></RequireOrganizer>} />
             <Route path="/organizer/tournaments/new" element={<RequireOrganizer><OrganizerLayout><TournamentBuilder /></OrganizerLayout></RequireOrganizer>} />
             <Route path="/organizer/tournaments/new/:id" element={<RequireOrganizer><OrganizerLayout><TournamentBuilder /></OrganizerLayout></RequireOrganizer>} />
-            <Route path="/organizer/tournaments/:id/manage" element={<RequireOrganizer><OrganizerLayout><OrganizerTournamentManage /></OrganizerLayout></RequireOrganizer>} />
-            <Route path="/organizer/tournaments/:id/manage/teams" element={<RequireOrganizer><OrganizerLayout><TournamentManage /></OrganizerLayout></RequireOrganizer>} />
-            <Route path="/organizer/tournaments/:id/manage/brackets" element={<RequireOrganizer><OrganizerLayout><OrganizerTournamentManage /></OrganizerLayout></RequireOrganizer>} />
-            <Route path="/organizer/tournaments/:id/manage/chat" element={<RequireOrganizer><OrganizerLayout><OrganizerTournamentManage /></OrganizerLayout></RequireOrganizer>} />
-            <Route path="/organizer/tournaments/:id/manage/settings" element={<RequireOrganizer><OrganizerLayout><OrganizerTournamentManage /></OrganizerLayout></RequireOrganizer>} />
+            <Route path="/organizer/tournaments/:id/report" element={<RequireOrganizer><OrganizerLayout><TournamentSummaryReport /></OrganizerLayout></RequireOrganizer>} />
+            <Route path="/organizer/tournaments/:id/manage" element={<RequireOrganizer><OrganizerLayout><OrgTournamentManage /></OrganizerLayout></RequireOrganizer>} />
+            <Route path="/organizer/tournaments/:id/manage/teams" element={<RequireOrganizer><OrganizerLayout><OrgTournamentManage defaultTab="teams" /></OrganizerLayout></RequireOrganizer>} />
+            <Route path="/organizer/tournaments/:id/manage/brackets" element={<RequireOrganizer><OrganizerLayout><OrgTournamentManage defaultTab="brackets" /></OrganizerLayout></RequireOrganizer>} />
+            <Route path="/organizer/tournaments/:id/manage/chat" element={<RequireOrganizer><OrganizerLayout><OrgTournamentManage defaultTab="chat" /></OrganizerLayout></RequireOrganizer>} />
+            <Route path="/organizer/tournaments/:id/manage/settings" element={<RequireOrganizer><OrganizerLayout><OrgTournamentManage defaultTab="report" /></OrganizerLayout></RequireOrganizer>} />
             <Route path="/organizer/tournaments/:id/view" element={<RequireOrganizer><OrganizerLayout><CoOrganizerView /></OrganizerLayout></RequireOrganizer>} />
             <Route path="/organizer/radar" element={<RequireOrganizer><OrganizerLayout><SponsorshipRadar /></OrganizerLayout></RequireOrganizer>} />
             <Route path="/organizer/radar/:radar_id" element={<RequireOrganizer><OrganizerLayout><RadarDetailPage /></OrganizerLayout></RequireOrganizer>} />
@@ -189,7 +193,7 @@ function App() {
             <Route path="/marketplace" element={<Navigate to="/gamer/marketplace" replace />} />
 
             {/* 404 */}
-            <Route path="*" element={<PageNotFound />} />
+            <Route path="*" element={<NotFound />} />
           </Routes>
         </Router>
         <Toaster />

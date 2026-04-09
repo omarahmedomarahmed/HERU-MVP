@@ -437,7 +437,15 @@ router.get('/me', requireAuth, async (req, res) => {
     const userId = req.user.id;
     const role = req.user.role;
 
-    const result = { user: req.user };
+    // Flatten user fields at top level so pages can use user.id directly
+    const result = {
+      id: userId,
+      email: req.user.email,
+      role,
+      full_name: req.user.full_name || '',
+      is_verified: req.user.is_verified || false,
+      user: req.user,
+    };
 
     if (role === 'gamer') {
       const { data: gamerProfile } = await supabaseAdmin

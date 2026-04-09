@@ -183,8 +183,10 @@ export default function StaffDashboard() {
   })
 
   // --- Derived stats ---
-  const totalRevenue = bills.reduce((sum, b) => sum + (b.platform_fee || 0), 0)
-  const totalTournaments = tournaments.length
+  // Prefer authoritative counts from the backend dashboard endpoint; fall back
+  // to client-side derivation only when the dashboard query hasn't loaded yet.
+  const totalRevenue = dashboardData?.total_platform_revenue ?? bills.reduce((sum, b) => sum + (b.platform_fee || 0), 0)
+  const totalTournaments = dashboardData?.total_tournaments ?? tournaments.length
   const totalUsers = dashboardData?.total_users ?? '--'
   const activeRadar = radarListings.filter(r => r.status === 'open' || r.status === 'in_progress').length
 

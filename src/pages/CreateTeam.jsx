@@ -9,14 +9,16 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import {
-  Users, Plus, Check, ArrowLeft, UserPlus, Palette, Image
+  Users, Plus, Check, ArrowLeft, UserPlus, Palette, Image, Upload, Loader2
 } from 'lucide-react';
 import { awardCoins, COIN_REWARDS } from '@/components/utils/coinRewards';
 import { GamerProfile, Team, apiCall } from '@/api/heruClient'
 import { useAuth } from '@/lib/AuthContext'
+import { useToast } from '@/components/ui/use-toast'
+import { uploadFile } from '@/lib/uploadFile'
 
 
-const GAMES = ['Valorant', 'CS2', 'League of Legends', 'Dota 2', 'Rocket League', 'Apex Legends', 'Fortnite', 'Call of Duty'];
+import { useGames } from '@/hooks/useGames';
 
 const COLOR_PRESETS = [
   { name: 'Red', primary: '#ff1a1a', secondary: '#0a0a0a' },
@@ -30,6 +32,7 @@ const COLOR_PRESETS = [
 ];
 
 export default function CreateTeam() {
+  const GAMES = useGames();
   const [user, setUser] = useState(null);
   const [step, setStep] = useState(1); // 1: basics, 2: branding, 3: invite
   const [teamData, setTeamData] = useState({
@@ -46,8 +49,10 @@ export default function CreateTeam() {
     contact_number: '',
   });
   const [selectedFriends, setSelectedFriends] = useState([]);
+  const [uploading, setUploading] = useState(null); // 'logo' | 'banner' | null
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { toast } = useToast();
 
   useEffect(() => {
     loadUser();
@@ -104,17 +109,29 @@ export default function CreateTeam() {
     );
   };
 
+  const handleImageUpload = async (file, field) => {
+    if (!file) return;
+    setUploading(field);
+    try {
+      const { file_url } = await uploadFile(file);
+      setTeamData(prev => ({ ...prev, [field]: file_url }));
+      toast({ title: 'Image uploaded!' });
+    } catch (err) {
+      toast({ title: 'Upload failed', description: err.message, variant: 'destructive' });
+    } finally {
+      setUploading(null);
+    }
+  };
+
   const createTeamMutation = useMutation({
     mutationFn: async () => {
-      const members = [user.id, ...selectedFriends];
-
       const team = await Team.create({
         name: teamData.name,
         description: teamData.description,
         story: teamData.story,
         logo: teamData.logo,
         leader_id: user.id,
-        members,
+        members: [user.id, ...selectedFriends],
         games: teamData.games,
         is_recruiting: teamData.is_recruiting,
         social_links: teamData.social_links,
@@ -125,31 +142,47 @@ export default function CreateTeam() {
         tournament_history: []
       });
 
-      // Update creator's profile
-      const teamIds = [...(profile.team_ids || []), team.id];
-      await GamerProfile.updateMe({ team_ids: teamIds });
+      // Update creator's profile (safely handle missing profile)
+      try {
+        const existingTeamIds = profile?.team_ids || [];
+        await GamerProfile.updateMe({ team_ids: [...existingTeamIds, team.id] });
+      } catch (e) {
+        console.warn('Could not update profile team_ids:', e);
+      }
 
       // Update invited friends' profiles
       for (const friendId of selectedFriends) {
-        const friendProfiles = await GamerProfile.list({ user_id: friendId });
-        if (friendProfiles.length > 0) {
-          const friendProfile = friendProfiles[0];
-          const friendTeamIds = [...(friendProfile.team_ids || []), team.id];
-          await GamerProfile.update(friendProfile.id, { team_ids: friendTeamIds });
+        try {
+          const friendProfiles = await GamerProfile.list({ user_id: friendId });
+          if (friendProfiles.length > 0) {
+            const friendProfile = friendProfiles[0];
+            const friendTeamIds = [...(friendProfile.team_ids || []), team.id];
+            await GamerProfile.update(friendProfile.id, { team_ids: friendTeamIds });
+          }
+        } catch (e) {
+          console.warn('Could not update friend profile:', e);
         }
       }
 
-      awardCoins(user.id, COIN_REWARDS.CREATE_TEAM, 'Created a team');
-      if (selectedFriends.length >= 5) {
-        awardCoins(user.id, COIN_REWARDS.INVITE_5_TO_TEAM, 'Invited 5 friends to team');
+      try {
+        awardCoins(user.id, COIN_REWARDS.CREATE_TEAM, 'Created a team');
+        if (selectedFriends.length >= 5) {
+          awardCoins(user.id, COIN_REWARDS.INVITE_5_TO_TEAM, 'Invited 5 friends to team');
+        }
+      } catch (e) {
+        console.warn('Could not award coins:', e);
       }
 
       return team;
     },
     onSuccess: (team) => {
       queryClient.invalidateQueries(['gamer-profile', user?.id]);
+      toast({ title: 'Team created!', description: `${team.name} is ready. You are the team leader.` });
       navigate(`/gamer/teams/${team.id}`);
-    }
+    },
+    onError: (err) => {
+      toast({ title: 'Failed to create team', description: err.message || 'Please try again.', variant: 'destructive' });
+    },
   });
 
   const cart = JSON.parse(localStorage.getItem(`cart_${user?.id}`) || '[]');
@@ -315,25 +348,41 @@ export default function CreateTeam() {
               </div>
 
               <div>
-                <label className="text-sm text-gray-400 block mb-2">Logo URL</label>
-                <Input
-                  value={teamData.logo}
-                  onChange={(e) => setTeamData({ ...teamData, logo: e.target.value })}
-                  placeholder="https://..."
-                  className="bg-zinc-800 border-zinc-700 text-white"
-                />
+                <label className="text-sm text-gray-400 block mb-2">Team Logo</label>
+                <div className="flex items-center gap-3">
+                  {teamData.logo && (
+                    <img src={teamData.logo} alt="Logo" className="w-14 h-14 rounded-lg object-cover border border-zinc-700" />
+                  )}
+                  <label className="cursor-pointer">
+                    <GlowButton variant="secondary" size="sm" asChild disabled={uploading === 'logo'}>
+                      <span>
+                        {uploading === 'logo' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+                        {uploading === 'logo' ? 'Uploading...' : 'Upload Logo'}
+                      </span>
+                    </GlowButton>
+                    <input type="file" accept="image/*" className="hidden" onChange={e => e.target.files[0] && handleImageUpload(e.target.files[0], 'logo')} />
+                  </label>
+                </div>
               </div>
 
               <div>
                 <label className="text-sm text-gray-400 block mb-2">
-                  <Image className="w-4 h-4 inline mr-1" /> Banner Image URL
+                  <Image className="w-4 h-4 inline mr-1" /> Banner Image
                 </label>
-                <Input
-                  value={teamData.banner}
-                  onChange={(e) => setTeamData({ ...teamData, banner: e.target.value })}
-                  placeholder="https://..."
-                  className="bg-zinc-800 border-zinc-700 text-white"
-                />
+                <div className="flex items-center gap-3">
+                  {teamData.banner && (
+                    <img src={teamData.banner} alt="Banner" className="h-14 w-28 rounded-lg object-cover border border-zinc-700" />
+                  )}
+                  <label className="cursor-pointer">
+                    <GlowButton variant="secondary" size="sm" asChild disabled={uploading === 'banner'}>
+                      <span>
+                        {uploading === 'banner' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+                        {uploading === 'banner' ? 'Uploading...' : 'Upload Banner'}
+                      </span>
+                    </GlowButton>
+                    <input type="file" accept="image/*" className="hidden" onChange={e => e.target.files[0] && handleImageUpload(e.target.files[0], 'banner')} />
+                  </label>
+                </div>
               </div>
 
               <div>

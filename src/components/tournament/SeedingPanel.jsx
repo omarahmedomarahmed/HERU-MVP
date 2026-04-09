@@ -90,9 +90,8 @@ export default function SeedingPanel({ tournament, confirmedTeams, onBracketsGen
     setSeeds(reordered);
   };
 
-  const allSlotsFilled = tournament.max_teams
-    ? seeds.length >= tournament.max_teams
-    : seeds.length > 1;
+  // Allow generating brackets even with fewer teams (empty slots will be TBD)
+  const allSlotsFilled = seeds.length > 0 || tournament.max_teams > 0;
 
   return (
     <div className="space-y-6">

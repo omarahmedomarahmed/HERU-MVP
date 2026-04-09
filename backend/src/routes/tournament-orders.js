@@ -8,13 +8,14 @@ const router = Router();
 // GET / - list tournament orders
 router.get('/', requireAuth, async (req, res) => {
   try {
-    const { fulfillment_status, limit = 50 } = req.query;
+    const { fulfillment_status, tournament_id, limit = 50 } = req.query;
     let query = supabaseAdmin.from('tournament_orders').select('*');
     // Staff sees all, organizer sees own
     const staffToken = req.headers['x-staff-token'];
     if (!staffToken) {
       query = query.eq('main_organizer_id', req.user.id);
     }
+    if (tournament_id) query = query.eq('tournament_id', tournament_id);
     if (fulfillment_status) query = query.eq('fulfillment_status', fulfillment_status);
     query = query.order('created_at', { ascending: false }).limit(limit);
     const { data, error } = await query;

@@ -90,9 +90,9 @@ export default function StaffUserDetail() {
     retry: 1,
   });
 
-  // Derived profile data -- the API may nest these inside the user object
-  const gamerProfile = user?.gamer_profile || null;
-  const organizerProfile = user?.organizer_profile || null;
+  // Derived profile data -- the API returns the role-specific profile as `profile`
+  const gamerProfile = user?.gamer_profile || (user?.role === 'gamer' ? user?.profile : null) || null;
+  const organizerProfile = user?.organizer_profile || (user?.role === 'organizer' ? user?.profile : null) || null;
   const userTournaments = user?.tournaments || [];
 
   // Initialize edit state when user loads

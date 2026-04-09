@@ -5,13 +5,57 @@ import { requireStaff } from '../middleware/staffGuard.js';
 
 const router = Router();
 
-// GET / - list all approvals (staff)
-router.get('/', requireAuth, requireStaff, async (req, res) => {
+// POST / - create approval request (any authenticated user)
+router.post('/', requireAuth, async (req, res) => {
   try {
-    const { status, approval_type, limit = 50 } = req.query;
+    const { approval_type, reference_id, reference_name, details, status = 'pending' } = req.body;
+    if (!approval_type || !reference_id) {
+      return res.status(400).json({ error: 'approval_type and reference_id are required' });
+    }
+
+    // Prevent duplicate pending requests of same type from same user
+    const { data: existing } = await supabaseAdmin.from('approval_requests')
+      .select('id')
+      .eq('requester_id', req.user.id)
+      .eq('approval_type', approval_type)
+      .eq('status', 'pending')
+      .limit(1);
+    if (existing && existing.length > 0) {
+      return res.status(409).json({ error: 'You already have a pending request of this type' });
+    }
+
+    const { data, error } = await supabaseAdmin.from('approval_requests').insert({
+      approval_type,
+      requester_id: req.user.id,
+      requester_name: req.body.requester_name || '',
+      requester_email: req.body.requester_email || '',
+      reference_id,
+      reference_name: reference_name || '',
+      details: details || {},
+      status,
+    }).select().single();
+    if (error) throw error;
+    res.status(201).json(data);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// GET / - list approvals (staff gets all, regular users get their own)
+router.get('/', requireAuth, async (req, res) => {
+  try {
+    const { status, approval_type, requester_id, limit = 50 } = req.query;
     let query = supabaseAdmin.from('approval_requests').select('*');
+
+    // Non-staff users can only see their own requests
+    const staffToken = req.headers['x-staff-token'];
+    if (!staffToken) {
+      query = query.eq('requester_id', requester_id || req.user.id);
+    }
+
     if (status) query = query.eq('status', status);
     if (approval_type) query = query.eq('approval_type', approval_type);
+    if (requester_id && staffToken) query = query.eq('requester_id', requester_id);
     query = query.order('created_at', { ascending: false }).limit(limit);
     const { data, error } = await query;
     if (error) throw error;
@@ -56,6 +100,21 @@ router.put('/:id/approve', requireAuth, requireStaff, async (req, res) => {
         talent_video_link: approval.details?.talent_video_link,
         updated_at: new Date().toISOString(),
       }).eq('user_id', approval.requester_id);
+
+      // Automatically create a marketplace item for the approved talent
+      const details = approval.details || {};
+      const talentUserId = details.user_id || approval.requester_id;
+      const talentType = details.talent_type || 'Live Talent';
+      const username = details.username || 'Talent';
+      await supabaseAdmin.from('marketplace_items').insert({
+        title: `${username} - ${talentType}`,
+        description: `Professional ${talentType} available for tournaments`,
+        category: 'live_talent',
+        type: talentType,
+        price: details.talent_price || 0,
+        talent_user_id: talentUserId,
+        is_active: true,
+      });
     }
 
     res.json(data);

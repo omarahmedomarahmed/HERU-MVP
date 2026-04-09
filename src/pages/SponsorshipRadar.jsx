@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { SponsorshipRadar as RadarAPI, apiCall } from '@/api/heruClient'
 import { useAuth } from '@/lib/AuthContext'
-import { Radar, Search, Trophy, Users, DollarSign, ArrowRight, X, Check, AlertCircle, TrendingUp } from 'lucide-react'
+import { Radar, Search, Trophy, Users, DollarSign, ArrowRight, X, Check, AlertCircle, TrendingUp, Zap, Star, BarChart3, Shield } from 'lucide-react'
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -113,7 +113,7 @@ function CommitModal({ radar, onClose, onConfirm, isLoading }) {
             </div>
             <div className="flex items-center justify-between text-sm">
               <span className="text-gray-400">Your Role</span>
-              <span className={`font-bold ${commitPercent >= 66 ? 'text-red-400' : 'text-red-400'}`}>
+              <span className={`font-bold ${commitPercent >= 66 ? 'text-purple-400' : 'text-red-400'}`}>
                 {commitLabel(commitPercent)}
               </span>
             </div>
@@ -298,7 +298,7 @@ function RadarCard({ radar, onCommit, isMyCommitment, myEntry }) {
             </div>
             <div className="flex items-center justify-between text-sm">
               <span className="text-gray-400">Role</span>
-              <span className={`font-bold ${myEntry.committed_percent >= 66 ? 'text-red-400' : 'text-red-400'}`}>
+              <span className={`font-bold ${myEntry.committed_percent >= 66 ? 'text-purple-400' : 'text-red-400'}`}>
                 {commitLabel(myEntry.committed_percent)}
               </span>
             </div>
@@ -361,8 +361,9 @@ export default function SponsorshipRadarPage() {
   })
 
   const myOrganizerId = orgProfile?.id || null
+  const myUserId = user?.id || null
 
-  // Fetch all radar records
+  // Fetch all radar records (no status filter — we filter client-side per tab)
   const { data: radarRecords = [], isLoading } = useQuery({
     queryKey: ['sponsorship-radar'],
     queryFn: () => RadarAPI.list(),
@@ -374,8 +375,12 @@ export default function SponsorshipRadarPage() {
   const browseRecords = radarRecords.filter(r => {
     // Only open or in_progress, not my own, not already committed
     if (r.status !== 'open' && r.status !== 'in_progress') return false
-    if (r.main_organizer_id === myOrganizerId) return false
-    if (r.co_organizers?.some(co => co.organizer_id === myOrganizerId)) return false
+    // Exclude tournaments where the user is the main organizer (check both profile ID and user ID)
+    if (r.main_organizer_id === myOrganizerId || r.main_organizer_id === myUserId) return false
+    // Exclude tournaments where user already committed (check both organizer_id fields)
+    if (r.co_organizers?.some(co =>
+      co.organizer_id === myOrganizerId || co.organizer_id === myUserId
+    )) return false
 
     // Search filter
     if (search) {
@@ -394,10 +399,13 @@ export default function SponsorshipRadarPage() {
     return true
   })
 
-  const myCommitments = radarRecords.filter(r =>
-    r.main_organizer_id !== myOrganizerId &&
-    r.co_organizers?.some(co => co.organizer_id === myOrganizerId)
-  )
+  const myCommitments = radarRecords.filter(r => {
+    const isNotMain = r.main_organizer_id !== myOrganizerId && r.main_organizer_id !== myUserId
+    const hasMyCommitment = r.co_organizers?.some(co =>
+      co.organizer_id === myOrganizerId || co.organizer_id === myUserId
+    )
+    return isNotMain && hasMyCommitment
+  })
 
   // ---------- Commit mutation ----------
 
@@ -421,30 +429,67 @@ export default function SponsorshipRadarPage() {
 
   return (
     <>
-      {/* Header */}
-      <div className="flex items-center gap-3 mb-6">
-        <div className="w-10 h-10 rounded-xl bg-red-500/10 border border-red-500/20 flex items-center justify-center">
-          <Radar className="w-5 h-5 text-red-400" />
-        </div>
-        <div>
-          <h1 className="text-2xl font-black text-white">Sponsorship Radar</h1>
-          <p className="text-gray-400 text-sm">Find tournaments to co-organize or sponsor</p>
-        </div>
-      </div>
+      {/* Hero Section */}
+      <div className="relative rounded-2xl overflow-hidden mb-8 bg-gradient-to-br from-zinc-900 via-red-950/20 to-zinc-900 border border-red-500/10">
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-red-500/5 via-transparent to-transparent" />
+        <div className="relative px-8 py-10">
+          <div className="flex items-start justify-between">
+            <div>
+              <div className="flex items-center gap-2 mb-3">
+                <div className="w-10 h-10 rounded-xl bg-red-500/10 border border-red-500/20 flex items-center justify-center">
+                  <Radar className="w-5 h-5 text-red-400" />
+                </div>
+                <span className="text-[10px] font-bold tracking-[0.2em] text-red-400 uppercase bg-red-500/10 px-2.5 py-1 rounded-full border border-red-500/20">NEW</span>
+              </div>
+              <h1 className="text-3xl md:text-4xl font-black text-white mb-2">Sponsorship Radar</h1>
+              <p className="text-gray-400 max-w-lg">
+                Co-organize tournaments with other brands, share costs, and grow your esports reach together.
+                Commit as low as 33% to become a co-organizer.
+              </p>
+            </div>
+            <div className="hidden md:flex items-center gap-3">
+              <div className="text-right">
+                <p className="text-3xl font-black text-white">{totalOpen}</p>
+                <p className="text-gray-500 text-xs">Open Now</p>
+              </div>
+            </div>
+          </div>
 
-      {/* Stats Row */}
-      <div className="grid grid-cols-3 gap-4 mb-6">
-        <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-4 text-center">
-          <p className="text-2xl font-black text-white">{totalOpen}</p>
-          <p className="text-gray-500 text-xs mt-1">Open Tournaments</p>
-        </div>
-        <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-4 text-center">
-          <p className="text-2xl font-black text-white">{myCommitments.length}</p>
-          <p className="text-gray-500 text-xs mt-1">My Commitments</p>
-        </div>
-        <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-4 text-center">
-          <p className="text-2xl font-black text-white">{totalFunded}</p>
-          <p className="text-gray-500 text-xs mt-1">Fully Funded</p>
+          {/* Success Metrics */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-8">
+            <div className="bg-black/30 backdrop-blur-sm border border-zinc-800/50 rounded-xl p-4">
+              <div className="flex items-center gap-2 mb-2">
+                <Trophy className="w-4 h-4 text-yellow-500" />
+                <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Open</span>
+              </div>
+              <p className="text-2xl font-black text-white">{totalOpen}</p>
+              <p className="text-gray-500 text-xs mt-0.5">Tournaments seeking partners</p>
+            </div>
+            <div className="bg-black/30 backdrop-blur-sm border border-zinc-800/50 rounded-xl p-4">
+              <div className="flex items-center gap-2 mb-2">
+                <Zap className="w-4 h-4 text-red-400" />
+                <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Active</span>
+              </div>
+              <p className="text-2xl font-black text-white">{myCommitments.length}</p>
+              <p className="text-gray-500 text-xs mt-0.5">Your active commitments</p>
+            </div>
+            <div className="bg-black/30 backdrop-blur-sm border border-zinc-800/50 rounded-xl p-4">
+              <div className="flex items-center gap-2 mb-2">
+                <BarChart3 className="w-4 h-4 text-green-400" />
+                <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Funded</span>
+              </div>
+              <p className="text-2xl font-black text-white">{totalFunded}</p>
+              <p className="text-gray-500 text-xs mt-0.5">Successfully funded</p>
+            </div>
+            <div className="bg-black/30 backdrop-blur-sm border border-zinc-800/50 rounded-xl p-4">
+              <div className="flex items-center gap-2 mb-2">
+                <Shield className="w-4 h-4 text-purple-400" />
+                <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Min</span>
+              </div>
+              <p className="text-2xl font-black text-white">33%</p>
+              <p className="text-gray-500 text-xs mt-0.5">Minimum commitment</p>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -548,7 +593,9 @@ export default function SponsorshipRadarPage() {
           ) : (
             <div className="grid lg:grid-cols-2 gap-5">
               {myCommitments.map(radar => {
-                const myEntry = radar.co_organizers?.find(co => co.organizer_id === myOrganizerId)
+                const myEntry = radar.co_organizers?.find(co =>
+                  co.organizer_id === myOrganizerId || co.organizer_id === myUserId
+                )
                 return (
                   <RadarCard
                     key={radar.id}

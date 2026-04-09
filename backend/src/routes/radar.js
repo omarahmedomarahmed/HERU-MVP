@@ -2,16 +2,32 @@ import { Router } from 'express';
 import { supabaseAdmin } from '../lib/supabase.js';
 import { requireAuth } from '../middleware/auth.js';
 import { requireRole } from '../middleware/roleGuard.js';
+import { requireStaff } from '../middleware/staffGuard.js';
 import { validateCommitment, commitCoOrganizer, calculateFunding, getCommitmentLabel } from '../logic/radar.js';
 import { generateBillNumber } from '../logic/billing.js';
 
 const router = Router();
 
-// GET / - list open radar entries
+// GET / - list open radar entries (shared tournaments only)
 router.get('/', async (req, res) => {
   try {
     const { status = 'open', game, limit = 50 } = req.query;
+
+    // Only include radar entries whose linked tournament is of type 'shared'
+    const { data: sharedTournaments, error: tErr } = await supabaseAdmin
+      .from('tournaments')
+      .select('id')
+      .eq('tournament_type', 'shared');
+    if (tErr) throw tErr;
+    const sharedIds = (sharedTournaments || []).map(t => t.id);
+
     let query = supabaseAdmin.from('sponsorship_radar').select('*');
+    if (sharedIds.length > 0) {
+      query = query.in('tournament_id', sharedIds);
+    } else {
+      // No shared tournaments exist — return empty list
+      return res.json([]);
+    }
     if (status !== 'all') query = query.eq('status', status);
     if (game) query = query.eq('game', game);
     query = query.order('created_at', { ascending: false }).limit(limit);
@@ -65,6 +81,17 @@ router.post('/:id/commit', requireAuth, requireRole('organizer'), async (req, re
 
     const percent = req.body.percent || req.body.commitment_percent;
     if (!percent) return res.status(400).json({ error: 'Commitment percent is required' });
+
+    // Main organizer cannot commit to their own tournament
+    if (req.user.id === radar.main_organizer_id) {
+      return res.status(400).json({ error: 'You cannot commit to your own tournament' });
+    }
+
+    // Check if already committed
+    const alreadyCommitted = (radar.co_organizers || []).find(co => co.organizer_id === req.user.id);
+    if (alreadyCommitted) {
+      return res.status(400).json({ error: 'You have already committed to this tournament' });
+    }
 
     const validation = validateCommitment(radar, percent);
     if (!validation.valid) return res.status(400).json({ error: validation.error });
@@ -148,6 +175,91 @@ router.post('/:id/commit', requireAuth, requireRole('organizer'), async (req, re
 
     res.json({ success: true, bill_number: billNumber, amount: grandTotal, label: coOrg.label });
   } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// GET /views/all - staff: get all radar views (latest 200)
+router.get('/views/all', requireAuth, requireStaff, async (req, res) => {
+  try {
+    const { data, error } = await supabaseAdmin
+      .from('radar_views')
+      .select('*')
+      .order('viewed_at', { ascending: false })
+      .limit(200);
+    if (error) {
+      // Table may not exist yet
+      if (error.code === '42P01' || error.message?.includes('does not exist')) {
+        return res.json([]);
+      }
+      throw error;
+    }
+    res.json(data || []);
+  } catch (err) {
+    if (err.code === '42P01' || err.message?.includes('does not exist')) {
+      return res.json([]);
+    }
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// POST /:id/view - record that current user viewed a radar entry
+router.post('/:id/view', requireAuth, async (req, res) => {
+  try {
+    // Fetch viewer brand name
+    let viewerBrandName = null;
+    const { data: orgProfile } = await supabaseAdmin
+      .from('organizer_profiles')
+      .select('brand_name')
+      .eq('user_id', req.user.id)
+      .single();
+    if (orgProfile) viewerBrandName = orgProfile.brand_name;
+
+    const { data, error } = await supabaseAdmin
+      .from('radar_views')
+      .insert({
+        radar_id: req.params.id,
+        viewer_id: req.user.id,
+        viewer_brand_name: viewerBrandName,
+      })
+      .select()
+      .single();
+
+    if (error) {
+      // Table may not exist yet — gracefully handle
+      if (error.code === '42P01' || error.message?.includes('does not exist')) {
+        return res.json({ success: true, note: 'radar_views table not yet created' });
+      }
+      throw error;
+    }
+    res.json(data);
+  } catch (err) {
+    if (err.code === '42P01' || err.message?.includes('does not exist')) {
+      return res.json({ success: true, note: 'radar_views table not yet created' });
+    }
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// GET /:id/views - staff: get all views for a radar entry
+router.get('/:id/views', requireAuth, requireStaff, async (req, res) => {
+  try {
+    const { data, error } = await supabaseAdmin
+      .from('radar_views')
+      .select('*')
+      .eq('radar_id', req.params.id)
+      .order('viewed_at', { ascending: false });
+    if (error) {
+      if (error.code === '42P01' || error.message?.includes('does not exist')) {
+        return res.json([]);
+      }
+      throw error;
+    }
+    res.json(data || []);
+  } catch (err) {
+    if (err.code === '42P01' || err.message?.includes('does not exist')) {
+      return res.json([]);
+    }
     res.status(500).json({ error: err.message });
   }
 });

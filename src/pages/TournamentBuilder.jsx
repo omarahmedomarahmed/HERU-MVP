@@ -19,7 +19,7 @@ import { useToast } from '@/components/ui/use-toast'
 import {
   Trophy, Gamepad2, Users, Star, Palette, MapPin, Award,
   ChevronRight, ChevronLeft, Check, Plus, X, Save, Send,
-  Eye, Megaphone, Image, Video, Share2, DollarSign, Zap, Lock, AlertCircle
+  Eye, Megaphone, Image, Video, DollarSign, Zap, Lock
 } from 'lucide-react';
 
 const STAGES = [
@@ -32,7 +32,7 @@ const STAGES = [
   { id: 'prizepool', label: 'Prizepool', icon: Award },
 ];
 
-const GAMES = ['Valorant', 'CS2', 'League of Legends', 'Dota 2', 'Rocket League', 'Apex Legends', 'Fortnite', 'Call of Duty', 'Rainbow Six Siege', 'Overwatch 2'];
+import { useGames } from '@/hooks/useGames';
 const FORMATS = ['Single Elimination', 'Double Elimination', 'Round Robin', 'Swiss', 'Best of 1', 'Best of 3', 'Best of 5'];
 
 export default function TournamentBuilder() {
@@ -43,6 +43,7 @@ export default function TournamentBuilder() {
     game: '',
     format: '',
     max_teams: 8,
+    participant_type: 'team',
     schedule: '',
     description: '',
     is_offline: false,
@@ -76,6 +77,7 @@ export default function TournamentBuilder() {
   const queryClient = useQueryClient();
   const [lastSaved, setLastSaved] = useState(null);
   const { toast } = useToast();
+  const GAMES = useGames();
 
   useEffect(() => {
     loadUser();
@@ -126,7 +128,7 @@ export default function TournamentBuilder() {
   useEffect(() => {
     if (!tournament.name || !user?.id) return;
     const interval = setInterval(() => {
-      const data = { ...tournament, organizer_id: user?.id, total_cost: calculateTotalCost(), platform_fee: calculatePlatformFee() };
+      const data = { ...tournament, organizer_id: user?.id, participant_type: tournament.participant_type || 'team', total_cost: calculateTotalCost(), platform_fee: calculatePlatformFee() };
       const save = tournamentId
         ? Tournament.update(tournamentId, data)
         : Tournament.create(data);
@@ -165,7 +167,7 @@ export default function TournamentBuilder() {
 
   const saveTournamentMutation = useMutation({
     mutationFn: async () => {
-      const data = { ...tournament, organizer_id: user?.id, total_cost: calculateTotalCost(), platform_fee: calculatePlatformFee() };
+      const data = { ...tournament, organizer_id: user?.id, participant_type: tournament.participant_type || 'team', total_cost: calculateTotalCost(), platform_fee: calculatePlatformFee() };
       if (tournamentId) {
         return Tournament.update(tournamentId, data);
       } else {
@@ -193,6 +195,7 @@ export default function TournamentBuilder() {
         ...tournament,
         organizer_id: user?.id,
         main_organizer_id: user?.id,
+        participant_type: tournament.participant_type || 'team',
         radar_funding_percent: tournament.tournament_type === 'shared' ? commitmentPercent : 100,
       };
 
@@ -201,6 +204,7 @@ export default function TournamentBuilder() {
         await Tournament.update(tId, dataToSave);
       } else {
         const created = await Tournament.create(dataToSave);
+        if (!created?.id) throw new Error('Failed to create tournament. Please try again.');
         tId = created.id;
       }
 
@@ -254,19 +258,6 @@ export default function TournamentBuilder() {
     return calculateSubtotal() + calculatePlatformFee();
   };
 
-  // Required items for shared tournaments: live_talent + production categories
-  const requiredCategories = ['live_talent', 'production'];
-  const requiredItems = marketplaceItems.filter(i => requiredCategories.includes(i.category));
-  const requiredItemIds = requiredItems.map(i => i.id);
-  const allRequiredSelected = requiredItemIds.length > 0 && requiredItemIds.every(id =>
-    tournament.branding_items?.includes(id) ||
-    tournament.production_items?.includes(id)
-  );
-
-  const sharedBrandingReady = commitmentConfirmed && allRequiredSelected;
-
-  const isBrandingStage = STAGES[currentStage]?.id === 'branding';
-  const canProceedFromBranding = tournament.tournament_type === 'solo' || sharedBrandingReady;
 
   const addTeamInvite = (teamId) => {
     if (!tournament.invited_teams?.includes(teamId)) {
@@ -343,7 +334,13 @@ export default function TournamentBuilder() {
 
             <div>
               <label className="text-sm text-gray-400 block mb-2">Game *</label>
-              <Select value={tournament.game} onValueChange={(v) => setTournament({ ...tournament, game: v })}>
+              <Select value={GAMES.includes(tournament.game) ? tournament.game : tournament.game ? '__other__' : ''} onValueChange={(v) => {
+                if (v === '__other__') {
+                  setTournament({ ...tournament, game: '' });
+                } else {
+                  setTournament({ ...tournament, game: v });
+                }
+              }}>
                 <SelectTrigger className="bg-zinc-800 border-zinc-700 text-white">
                   <SelectValue placeholder="Select game" />
                 </SelectTrigger>
@@ -351,8 +348,55 @@ export default function TournamentBuilder() {
                   {GAMES.map(game => (
                     <SelectItem key={game} value={game}>{game}</SelectItem>
                   ))}
+                  <SelectItem value="__other__">Other...</SelectItem>
                 </SelectContent>
               </Select>
+              {!GAMES.includes(tournament.game) && tournament.game !== '' && (
+                <Input
+                  value={tournament.game}
+                  onChange={(e) => setTournament({ ...tournament, game: e.target.value })}
+                  placeholder="Enter game name..."
+                  className="mt-2 bg-zinc-800 border-zinc-700 text-white"
+                />
+              )}
+              {tournament.game === '' && (
+                <Input
+                  onChange={(e) => setTournament({ ...tournament, game: e.target.value })}
+                  placeholder="Enter game name..."
+                  className="mt-2 bg-zinc-800 border-zinc-700 text-white"
+                />
+              )}
+            </div>
+
+            {/* Participant Type Toggle */}
+            <div>
+              <label className="text-sm text-gray-400 block mb-2">Participant Type</label>
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  type="button"
+                  onClick={() => setTournament(prev => ({ ...prev, participant_type: 'team' }))}
+                  className={`flex items-center justify-center gap-2 px-4 py-3 rounded-lg border-2 transition-all ${
+                    tournament.participant_type !== 'player'
+                      ? 'border-red-500 bg-red-500/10 text-white'
+                      : 'border-zinc-700 bg-zinc-800 text-gray-400 hover:border-zinc-500'
+                  }`}
+                >
+                  <Users className="w-4 h-4" />
+                  <span className="font-medium">Team vs Team</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setTournament(prev => ({ ...prev, participant_type: 'player' }))}
+                  className={`flex items-center justify-center gap-2 px-4 py-3 rounded-lg border-2 transition-all ${
+                    tournament.participant_type === 'player'
+                      ? 'border-red-500 bg-red-500/10 text-white'
+                      : 'border-zinc-700 bg-zinc-800 text-gray-400 hover:border-zinc-500'
+                  }`}
+                >
+                  <Gamepad2 className="w-4 h-4" />
+                  <span className="font-medium">1v1 (Solo Players)</span>
+                </button>
+              </div>
             </div>
 
             <div className="grid md:grid-cols-2 gap-4">
@@ -371,7 +415,9 @@ export default function TournamentBuilder() {
               </div>
 
               <div>
-                <label className="text-sm text-gray-400 block mb-2">Max Teams *</label>
+                <label className="text-sm text-gray-400 block mb-2">
+                  {tournament.participant_type === 'player' ? 'Max Players *' : 'Max Teams *'}
+                </label>
                 <Input
                   type="number"
                   value={tournament.max_teams}
@@ -531,170 +577,19 @@ export default function TournamentBuilder() {
               )}
             </FloatingPanel>
 
-            {/* Tournament Type & Funding */}
-            <FloatingPanel className="p-6" glowBorder>
-              <h3 className="text-lg font-bold text-white mb-2 flex items-center gap-2">
-                <Share2 className="w-5 h-5 text-yellow-400" />
-                Tournament Type & Funding
-              </h3>
-              <p className="text-gray-400 text-sm mb-4">How will this tournament be funded?</p>
-
-              <div className="grid md:grid-cols-2 gap-4 mb-4">
-                <GameCard 
-                  className={`p-4 cursor-pointer ${tournament.tournament_type === 'solo' ? 'border-green-500' : ''}`}
-                  onClick={() => {
-                    setTournament({ ...tournament, tournament_type: 'solo', on_radar: false });
-                    setCommitmentConfirmed(false);
-                  }}
-                >
-                  <div className="flex items-center justify-between mb-2">
-                    <h4 className="text-white font-bold flex items-center gap-2">
-                      <Trophy className="w-4 h-4 text-green-400" /> Solo Tournament
-                    </h4>
-                    {tournament.tournament_type === 'solo' && <Check className="w-5 h-5 text-green-400" />}
-                  </div>
-                  <p className="text-gray-500 text-sm">I'm funding this tournament entirely on my own.</p>
-                </GameCard>
-                <GameCard 
-                  className={`p-4 cursor-pointer ${tournament.tournament_type === 'shared' ? 'border-yellow-500' : ''}`}
-                  onClick={() => setTournament({ ...tournament, tournament_type: 'shared', on_radar: true })}
-                >
-                  <div className="flex items-center justify-between mb-2">
-                    <h4 className="text-white font-bold flex items-center gap-2">
-                      <Zap className="w-4 h-4 text-yellow-400" /> Shared Tournament
-                    </h4>
-                    {tournament.tournament_type === 'shared' && <Check className="w-5 h-5 text-yellow-400" />}
-                  </div>
-                  <p className="text-gray-500 text-sm">I want to co-organize and split costs with other organizers.</p>
-                  <span className="inline-block mt-2 text-xs bg-yellow-500/20 text-yellow-400 border border-yellow-500/30 px-2 py-0.5 rounded">Sponsorship Radar</span>
-                </GameCard>
-              </div>
-
-              {/* Shared Tournament — Commitment Flow */}
-              {tournament.tournament_type === 'shared' && (
-                <div className="space-y-6 border-t border-zinc-800 pt-5">
-                  {/* Step A — Commit your 30% */}
-                  <div className={`p-4 rounded-xl border ${commitmentConfirmed ? 'border-green-500/40 bg-green-500/5' : 'border-yellow-500/30 bg-yellow-500/5'}`}>
-                    <div className="flex items-center gap-2 mb-3">
-                      {commitmentConfirmed
-                        ? <Check className="w-5 h-5 text-green-400" />
-                        : <Lock className="w-5 h-5 text-yellow-400" />}
-                      <h4 className="text-white font-bold">Step A — Commit Your Share</h4>
-                    </div>
-                    <p className="text-gray-400 text-sm mb-4">
-                      Minimum commitment is <span className="text-yellow-300 font-bold">33%</span>. This guarantees equal share for up to 2 co-organizers at 33% each.
-                    </p>
-
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="text-gray-400 text-sm">Your commitment: <span className="text-white font-bold">{commitmentPercent}%</span></span>
-                      <span className="text-yellow-400 font-bold text-lg">EGP {commitAmount.toLocaleString()}</span>
-                    </div>
-                    <input
-                      type="range"
-                      min={33}
-                      max={100}
-                      value={commitmentPercent}
-                      onChange={(e) => {
-                        setCommitmentPercent(parseInt(e.target.value));
-                        setCommitmentConfirmed(false);
-                      }}
-                      className="w-full accent-yellow-400 mb-1"
-                      disabled={commitmentConfirmed}
-                    />
-                    <div className="flex justify-between text-xs text-gray-500 mb-4">
-                      <span>33% (min)</span>
-                      <span>100%</span>
-                    </div>
-                    <div className="p-3 bg-zinc-900 rounded-lg text-sm mb-4 space-y-1">
-                      <div className="flex justify-between">
-                        <span className="text-gray-400">Total Cost</span>
-                        <span className="text-white font-bold">EGP {totalCost.toLocaleString()}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-400">Your Share ({commitmentPercent}%)</span>
-                        <span className="text-yellow-400 font-bold">EGP {commitAmount.toLocaleString()}</span>
-                      </div>
-                      <div className="flex justify-between border-t border-zinc-800 pt-1">
-                        <span className="text-gray-400">Still Needed from Co-Organizers</span>
-                        <span className="text-red-400 font-bold">EGP {Math.max(0, totalCost - commitAmount).toLocaleString()}</span>
-                      </div>
-                    </div>
-                    {!commitmentConfirmed ? (
-                      <GlowButton className="w-full" onClick={() => setCommitmentConfirmed(true)}>
-                        <Check className="w-4 h-4" /> Commit My Share
-                      </GlowButton>
-                    ) : (
-                      <div className="flex items-center gap-2 text-green-400 text-sm font-medium">
-                        <Check className="w-4 h-4" /> Commitment confirmed — EGP {commitAmount.toLocaleString()} ({commitmentPercent}%)
-                        <button onClick={() => setCommitmentConfirmed(false)} className="ml-auto text-gray-500 hover:text-white text-xs">Edit</button>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Step B — Required Items */}
-                  <div className={`p-4 rounded-xl border ${allRequiredSelected ? 'border-green-500/40 bg-green-500/5' : 'border-zinc-700 bg-zinc-900/30'}`}>
-                    <div className="flex items-center gap-2 mb-1">
-                      {allRequiredSelected
-                        ? <Check className="w-5 h-5 text-green-400" />
-                        : <AlertCircle className="w-5 h-5 text-orange-400" />}
-                      <h4 className="text-white font-bold">Step B — Required Items for Shared Listing</h4>
-                    </div>
-                    <p className="text-gray-400 text-sm mb-4">
-                      These items are required for a shared tournament listing. All must be selected.
-                    </p>
-                    {requiredItems.length > 0 ? (
-                      <div className="grid md:grid-cols-2 gap-3">
-                        {requiredItems.map(item => {
-                          const isSelected = tournament.branding_items?.includes(item.id) || tournament.production_items?.includes(item.id);
-                          const field = item.category === 'live_talent' ? 'branding' : 'production';
-                          return (
-                            <GameCard
-                              key={item.id}
-                              className={`p-3 cursor-pointer ${isSelected ? 'border-green-500' : 'border-orange-500/40'}`}
-                              onClick={() => toggleMarketplaceItem(item.id, field)}
-                            >
-                              <div className="flex items-center justify-between">
-                                <div>
-                                  <p className="text-white font-medium text-sm">{item.title}</p>
-                                  <p className="text-gray-500 text-xs capitalize">{item.category.replace('_', ' ')}</p>
-                                </div>
-                                <div className="flex flex-col items-end gap-1">
-                                  {isSelected
-                                    ? <Check className="w-4 h-4 text-green-400" />
-                                    : <AlertCircle className="w-4 h-4 text-orange-400" />}
-                                  <span className="text-red-400 text-xs font-bold">EGP {item.price}</span>
-                                </div>
-                              </div>
-                            </GameCard>
-                          );
-                        })}
-                      </div>
-                    ) : (
-                      <p className="text-gray-500 text-sm text-center py-4">No required items found in marketplace. Add live_talent and production items first.</p>
-                    )}
-                  </div>
-
-                  {/* Ready confirmation */}
-                  {sharedBrandingReady && (
-                    <div className="p-4 bg-green-500/10 border border-green-500/30 rounded-xl flex items-start gap-3">
-                      <Check className="w-5 h-5 text-green-400 flex-shrink-0 mt-0.5" />
-                      <div>
-                        <p className="text-green-400 font-bold">You're ready to list on Sponsorship Radar!</p>
-                        <p className="text-green-300/70 text-sm mt-1">Your tournament will appear publicly after publishing. Co-organizers can commit their share on the Radar.</p>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Blocked warning if not ready */}
-                  {!sharedBrandingReady && (
-                    <div className="p-3 bg-zinc-800/50 border border-zinc-700 rounded-lg flex items-center gap-2 text-gray-400 text-sm">
-                      <Lock className="w-4 h-4 text-gray-500" />
-                      Complete Steps A & B above to unlock the next stage.
-                    </div>
+            {/* Shared Tournament Info — reminder if shared is selected at top */}
+            {tournament.tournament_type === 'shared' && (
+              <FloatingPanel className="p-4 border border-yellow-500/20">
+                <div className="flex items-center gap-2 text-yellow-400 text-sm">
+                  <Zap className="w-4 h-4" />
+                  <span className="font-medium">Shared Tournament</span>
+                  <span className="text-gray-500">— commitment set to {commitmentPercent}% above.</span>
+                  {!commitmentConfirmed && (
+                    <span className="text-orange-400 text-xs ml-auto">Lock in your commitment above before publishing.</span>
                   )}
                 </div>
-              )}
-            </FloatingPanel>
+              </FloatingPanel>
+            )}
           </div>
         );
       }
@@ -702,46 +597,65 @@ export default function TournamentBuilder() {
       case 'teams':
         return (
           <div className="space-y-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="text-lg font-bold text-white">Invite Teams</h3>
-                <p className="text-gray-400 text-sm">
-                  Selected: {tournament.invited_teams?.length || 0} / {tournament.max_teams} teams
-                </p>
-              </div>
-              <GlowButton variant="secondary" size="sm" onClick={selectAllTeams}>
-                Select All {tournament.game} Teams
-              </GlowButton>
-            </div>
-
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {allTeams.filter(t => !tournament.game || t.games?.includes(tournament.game)).map(team => (
-                <GameCard 
-                  key={team.id}
-                  className={`p-4 cursor-pointer ${tournament.invited_teams?.includes(team.id) ? 'border-red-500' : ''}`}
-                  onClick={() => tournament.invited_teams?.includes(team.id) ? removeTeamInvite(team.id) : addTeamInvite(team.id)}
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 rounded-lg bg-zinc-800 flex items-center justify-center overflow-hidden">
-                      {team.logo ? (
-                        <img src={team.logo} alt="" className="w-full h-full object-cover" />
-                      ) : (
-                        <Users className="w-6 h-6 text-red-500" />
-                      )}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <p className="text-white font-medium truncate">{team.name}</p>
-                        {tournament.invited_teams?.includes(team.id) && (
-                          <Check className="w-4 h-4 text-green-400 flex-shrink-0" />
-                        )}
-                      </div>
-                      <p className="text-gray-500 text-xs">{team.members?.length || 0} members</p>
-                    </div>
+            {tournament.participant_type === 'player' ? (
+              <>
+                <div>
+                  <h3 className="text-lg font-bold text-white">1v1 Player Registration</h3>
+                  <p className="text-gray-400 text-sm">
+                    This tournament accepts individual players. Players will register directly on the tournament page once published.
+                  </p>
+                </div>
+                <FloatingPanel className="p-6 text-center">
+                  <Gamepad2 className="w-12 h-12 text-red-500 mx-auto mb-3" />
+                  <p className="text-white font-medium mb-2">1v1 Mode Active</p>
+                  <p className="text-gray-400 text-sm mb-1">Max players: {tournament.max_teams}</p>
+                  <p className="text-gray-500 text-xs">Individual gamers will register through the public tournament page. No team invites needed.</p>
+                </FloatingPanel>
+              </>
+            ) : (
+              <>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="text-lg font-bold text-white">Invite Teams</h3>
+                    <p className="text-gray-400 text-sm">
+                      Selected: {tournament.invited_teams?.length || 0} / {tournament.max_teams} teams
+                    </p>
                   </div>
-                </GameCard>
-              ))}
-            </div>
+                  <GlowButton variant="secondary" size="sm" onClick={selectAllTeams}>
+                    Select All {tournament.game} Teams
+                  </GlowButton>
+                </div>
+
+                <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {allTeams.filter(t => !tournament.game || t.games?.includes(tournament.game)).map(team => (
+                    <GameCard
+                      key={team.id}
+                      className={`p-4 cursor-pointer ${tournament.invited_teams?.includes(team.id) ? 'border-red-500' : ''}`}
+                      onClick={() => tournament.invited_teams?.includes(team.id) ? removeTeamInvite(team.id) : addTeamInvite(team.id)}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="w-12 h-12 rounded-lg bg-zinc-800 flex items-center justify-center overflow-hidden">
+                          {team.logo ? (
+                            <img src={team.logo} alt="" className="w-full h-full object-cover" />
+                          ) : (
+                            <Users className="w-6 h-6 text-red-500" />
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <p className="text-white font-medium truncate">{team.name}</p>
+                            {tournament.invited_teams?.includes(team.id) && (
+                              <Check className="w-4 h-4 text-green-400 flex-shrink-0" />
+                            )}
+                          </div>
+                          <p className="text-gray-500 text-xs">{team.members?.length || 0} members</p>
+                        </div>
+                      </div>
+                    </GameCard>
+                  ))}
+                </div>
+              </>
+            )}
           </div>
         );
 
@@ -1022,7 +936,17 @@ export default function TournamentBuilder() {
             <Save className="w-4 h-4" /> Save Draft
           </GlowButton>
           <GlowButton
-            onClick={() => publishTournamentMutation.mutate()}
+            onClick={() => {
+              if (!profile?.brand_name) {
+                toast({
+                  title: 'Profile incomplete',
+                  description: 'Please complete your organizer profile before publishing.',
+                  variant: 'destructive',
+                });
+                return;
+              }
+              publishTournamentMutation.mutate();
+            }}
             disabled={!tournament.name || !tournament.game || publishTournamentMutation.isPending}
             className="bg-gradient-to-r from-red-600 to-red-500 hover:from-red-500 hover:to-red-400"
           >
@@ -1033,6 +957,115 @@ export default function TournamentBuilder() {
             )}
           </GlowButton>
         </div>
+      </div>
+
+      {/* Tournament Type Selection — Solo vs Shared */}
+      <div className="mb-8">
+        <div className="grid md:grid-cols-2 gap-4 mb-4">
+          <div
+            onClick={() => {
+              setTournament(prev => ({ ...prev, tournament_type: 'solo', on_radar: false }));
+              setCommitmentConfirmed(false);
+            }}
+            className={`cursor-pointer rounded-xl border-2 p-5 transition-all ${
+              tournament.tournament_type === 'solo'
+                ? 'border-green-500 bg-green-500/10 shadow-lg shadow-green-500/10'
+                : 'border-zinc-700 bg-zinc-900/50 hover:border-zinc-500'
+            }`}
+          >
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-3">
+                <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
+                  tournament.tournament_type === 'solo' ? 'bg-green-500/20' : 'bg-zinc-800'
+                }`}>
+                  <Trophy className={`w-5 h-5 ${tournament.tournament_type === 'solo' ? 'text-green-400' : 'text-gray-500'}`} />
+                </div>
+                <h3 className="text-lg font-bold text-white">Solo Tournament</h3>
+              </div>
+              {tournament.tournament_type === 'solo' && <Check className="w-6 h-6 text-green-400" />}
+            </div>
+            <p className="text-gray-400 text-sm ml-13">You fund 100% of the tournament cost.</p>
+          </div>
+
+          <div
+            onClick={() => setTournament(prev => ({ ...prev, tournament_type: 'shared', on_radar: true }))}
+            className={`cursor-pointer rounded-xl border-2 p-5 transition-all ${
+              tournament.tournament_type === 'shared'
+                ? 'border-yellow-500 bg-yellow-500/10 shadow-lg shadow-yellow-500/10'
+                : 'border-zinc-700 bg-zinc-900/50 hover:border-zinc-500'
+            }`}
+          >
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-3">
+                <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
+                  tournament.tournament_type === 'shared' ? 'bg-yellow-500/20' : 'bg-zinc-800'
+                }`}>
+                  <Zap className={`w-5 h-5 ${tournament.tournament_type === 'shared' ? 'text-yellow-400' : 'text-gray-500'}`} />
+                </div>
+                <h3 className="text-lg font-bold text-white">Shared Tournament</h3>
+              </div>
+              {tournament.tournament_type === 'shared' && <Check className="w-6 h-6 text-yellow-400" />}
+            </div>
+            <p className="text-gray-400 text-sm ml-13">Get co-organizers or sponsors. Min 33% commitment.</p>
+            <span className="inline-block mt-2 ml-13 text-xs bg-yellow-500/20 text-yellow-400 border border-yellow-500/30 px-2 py-0.5 rounded">Sponsorship Radar</span>
+          </div>
+        </div>
+
+        {/* Shared commitment slider — shown inline when shared is selected */}
+        {tournament.tournament_type === 'shared' && (
+          <div className={`rounded-xl border p-5 transition-all ${
+            commitmentConfirmed ? 'border-green-500/40 bg-green-500/5' : 'border-yellow-500/30 bg-yellow-500/5'
+          }`}>
+            <div className="flex items-center gap-2 mb-3">
+              {commitmentConfirmed
+                ? <Check className="w-5 h-5 text-green-400" />
+                : <Lock className="w-5 h-5 text-yellow-400" />}
+              <h4 className="text-white font-bold">Your Commitment</h4>
+              <span className="text-gray-500 text-xs ml-2">
+                {commitmentPercent === 33 && '2 co-organizer slots (33% each)'}
+                {commitmentPercent > 33 && commitmentPercent < 66 && `1 co-org slot (${100 - commitmentPercent}%)`}
+                {commitmentPercent === 66 && '1 sponsor slot (66%)'}
+                {commitmentPercent > 66 && commitmentPercent < 100 && `1 slot (${100 - commitmentPercent}%)`}
+                {commitmentPercent === 100 && 'No slots — effectively solo'}
+              </span>
+            </div>
+
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-gray-400 text-sm">Your commitment: <span className="text-white font-bold">{commitmentPercent}%</span></span>
+              <span className="text-yellow-400 font-bold text-lg">EGP {Math.round(calculateTotalCost() * (commitmentPercent / 100)).toLocaleString()}</span>
+            </div>
+            <input
+              type="range"
+              min={33}
+              max={100}
+              value={commitmentPercent}
+              onChange={(e) => {
+                setCommitmentPercent(parseInt(e.target.value));
+                setCommitmentConfirmed(false);
+              }}
+              className="w-full accent-yellow-400 mb-1"
+              disabled={commitmentConfirmed}
+            />
+            <div className="flex justify-between text-xs text-gray-500 mb-3">
+              <span>33% (min)</span>
+              <span>66%</span>
+              <span>100%</span>
+            </div>
+
+            <div className="flex items-center gap-3">
+              {!commitmentConfirmed ? (
+                <GlowButton size="sm" onClick={() => setCommitmentConfirmed(true)}>
+                  <Check className="w-4 h-4" /> Lock In Commitment
+                </GlowButton>
+              ) : (
+                <div className="flex items-center gap-2 text-green-400 text-sm font-medium">
+                  <Check className="w-4 h-4" /> Locked at {commitmentPercent}% — EGP {Math.round(calculateTotalCost() * (commitmentPercent / 100)).toLocaleString()}
+                  <button onClick={() => setCommitmentConfirmed(false)} className="ml-2 text-gray-500 hover:text-white text-xs underline">Edit</button>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Progress */}
@@ -1072,19 +1105,12 @@ export default function TournamentBuilder() {
             >
               <ChevronLeft className="w-4 h-4" /> Previous
             </GlowButton>
-            <div className="relative group">
-              <GlowButton
-                onClick={() => setCurrentStage(Math.min(STAGES.length - 1, currentStage + 1))}
-                disabled={currentStage === STAGES.length - 1 || (isBrandingStage && !canProceedFromBranding)}
-              >
-                Next <ChevronRight className="w-4 h-4" />
-              </GlowButton>
-              {isBrandingStage && !canProceedFromBranding && (
-                <div className="absolute bottom-full mb-2 right-0 bg-zinc-800 text-yellow-400 text-xs px-3 py-1.5 rounded-lg whitespace-nowrap border border-yellow-500/30 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
-                  Complete your commitment & required items first
-                </div>
-              )}
-            </div>
+            <GlowButton
+              onClick={() => setCurrentStage(Math.min(STAGES.length - 1, currentStage + 1))}
+              disabled={currentStage === STAGES.length - 1}
+            >
+              Next <ChevronRight className="w-4 h-4" />
+            </GlowButton>
           </div>
         </div>
 

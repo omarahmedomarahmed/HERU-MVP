@@ -14,17 +14,20 @@ import { Switch } from '@/components/ui/switch';
 import { motion } from 'framer-motion';
 import {
   Users, Trophy, MessageSquare, Send, UserPlus, Check, X, Crown,
-  Shield, Settings, ArrowLeft, Gamepad2, Edit2, Save, Trash2
+  Shield, Settings, ArrowLeft, Gamepad2, Edit2, Save, Trash2, Upload, Loader2
 } from 'lucide-react';
 import { awardCoins, COIN_REWARDS } from '@/components/utils/coinRewards';
 import { GamerProfile, Team, Tournament, apiCall } from '@/api/heruClient'
 import { useAuth } from '@/lib/AuthContext'
+import { uploadFile } from '@/lib/uploadFile'
+import { useToast } from '@/components/ui/use-toast'
 
-const GAMES = ['Valorant', 'CS2', 'League of Legends', 'Dota 2', 'Rocket League', 'Apex Legends'];
+import { useGames } from '@/hooks/useGames';
 const RANKS = ['Unranked', 'Bronze', 'Silver', 'Gold', 'Platinum', 'Diamond', 'Master', 'Grandmaster', 'Radiant', 'Global Elite'];
 const TEAM_ROLES = ['Player', 'Coach', 'Manager', 'Analyst', 'Sub', 'Content Creator'];
 
 export default function TeamDetails() {
+  const GAMES = useGames();
   const [user, setUser] = useState(null);
   const [showJoinModal, setShowJoinModal] = useState(false);
   const [showInviteFriendsModal, setShowInviteFriendsModal] = useState(false);
@@ -33,8 +36,10 @@ export default function TeamDetails() {
   const [newMessage, setNewMessage] = useState('');
   const [editingSettings, setEditingSettings] = useState(false);
   const [settingsForm, setSettingsForm] = useState({});
+  const [uploadingField, setUploadingField] = useState(null);
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { toast } = useToast();
 
   const { id: teamId } = useParams();
 
@@ -120,45 +125,39 @@ export default function TeamDetails() {
 
   const joinRequestMutation = useMutation({
     mutationFn: async () => {
-      const requests = [...(team.join_requests || []), {
-        user_id: user.id,
+      await Team.joinRequest(teamId, {
         username: profile?.username || user.full_name,
-        ...joinRequest,
-        status: 'pending',
-        requested_at: new Date().toISOString()
-      }];
-      await Team.update(teamId, { join_requests: requests });
+        message: joinRequest.game ? `Game: ${joinRequest.game}, Rank: ${joinRequest.rank || 'N/A'}` : undefined,
+      });
     },
     onSuccess: () => {
       queryClient.invalidateQueries(['team', teamId]);
       setShowJoinModal(false);
       setJoinRequest({ game: '', game_id: '', rank: '' });
+      toast({ title: 'Request sent', description: 'Your join request has been sent to the team leader.' });
+    },
+    onError: (err) => {
+      toast({ title: 'Join failed', description: err.message || 'Could not send join request.', variant: 'destructive' });
     }
   });
 
   const approveRequestMutation = useMutation({
     mutationFn: async (requestIndex) => {
       const request = team.join_requests[requestIndex];
-      const updatedRequests = [...team.join_requests];
-      updatedRequests[requestIndex] = { ...request, status: 'approved' };
-
-      const members = [...(team.members || [])];
-      if (!members.includes(request.user_id)) {
-        members.push(request.user_id);
-      }
-
-      await Team.update(teamId, { join_requests: updatedRequests, members });
+      await Team.handleJoinRequest(teamId, request.id, { status: 'approved' });
 
       // Update joiner's profile
-      const joinerProfiles = await GamerProfile.list({ user_id: request.user_id });
-      if (joinerProfiles.length > 0) {
-        const joinerProfile = joinerProfiles[0];
-        const teamIds = [...(joinerProfile.team_ids || [])];
-        if (!teamIds.includes(teamId)) {
-          teamIds.push(teamId);
-          await GamerProfile.update(joinerProfile.id, { team_ids: teamIds });
+      try {
+        const joinerProfiles = await GamerProfile.list({ user_id: request.user_id });
+        if (joinerProfiles.length > 0) {
+          const joinerProfile = joinerProfiles[0];
+          const teamIds = [...(joinerProfile.team_ids || [])];
+          if (!teamIds.includes(teamId)) {
+            teamIds.push(teamId);
+            await GamerProfile.update(joinerProfile.id, { team_ids: teamIds });
+          }
         }
-      }
+      } catch (e) { console.warn('Could not update joiner profile:', e); }
 
       awardCoins(request.user_id, COIN_REWARDS.JOIN_TEAM, 'Joined a team');
     },
@@ -167,9 +166,8 @@ export default function TeamDetails() {
 
   const rejectRequestMutation = useMutation({
     mutationFn: async (requestIndex) => {
-      const updatedRequests = [...team.join_requests];
-      updatedRequests[requestIndex] = { ...updatedRequests[requestIndex], status: 'rejected' };
-      await Team.update(teamId, { join_requests: updatedRequests });
+      const request = team.join_requests[requestIndex];
+      await Team.handleJoinRequest(teamId, request.id, { status: 'rejected' });
     },
     onSuccess: () => queryClient.invalidateQueries(['team', teamId])
   });
@@ -214,8 +212,7 @@ export default function TeamDetails() {
         message,
         timestamp: new Date().toISOString()
       };
-      const chat = [...(team.chat_messages || []), msgObj];
-      await Team.update(teamId, { chat_messages: chat });
+      await apiCall(`/teams/${teamId}/chat`, { method: 'POST', body: msgObj });
     },
     onSuccess: () => {
       queryClient.invalidateQueries(['team', teamId]);
@@ -249,8 +246,29 @@ export default function TeamDetails() {
     onSuccess: () => {
       queryClient.invalidateQueries(['team', teamId]);
       setEditingSettings(false);
+      toast({ title: 'Settings saved!' });
     }
   });
+
+  const handleTeamImageUpload = async (file, field) => {
+    if (!file) return;
+    setUploadingField(field);
+    try {
+      const { file_url } = await uploadFile(file);
+      if (field === 'logo') {
+        await Team.update(teamId, { logo: file_url });
+      } else if (field === 'banner') {
+        const images = [file_url, ...(team.images || []).slice(1)];
+        await Team.update(teamId, { images });
+      }
+      queryClient.invalidateQueries(['team', teamId]);
+      toast({ title: `${field === 'logo' ? 'Logo' : 'Banner'} updated!` });
+    } catch (err) {
+      toast({ title: 'Upload failed', description: err.message, variant: 'destructive' });
+    } finally {
+      setUploadingField(null);
+    }
+  };
 
   const cart = JSON.parse(localStorage.getItem(`cart_${user?.id}`) || '[]');
 
@@ -366,6 +384,16 @@ export default function TeamDetails() {
           <TabsTrigger value="history" className="data-[state=active]:bg-red-600 data-[state=active]:text-white text-gray-400">
             <Trophy className="w-4 h-4 mr-1" /> History
           </TabsTrigger>
+          {isMember && (
+            <TabsTrigger value="invites" className="data-[state=active]:bg-red-600 data-[state=active]:text-white text-gray-400">
+              <Trophy className="w-4 h-4 mr-1" /> Invites
+              {pendingInvites.length > 0 && (
+                <span className="ml-1 w-5 h-5 rounded-full bg-yellow-500 text-black text-xs flex items-center justify-center">
+                  {pendingInvites.length}
+                </span>
+              )}
+            </TabsTrigger>
+          )}
           {isLeader && (
             <TabsTrigger value="settings" className="data-[state=active]:bg-red-600 data-[state=active]:text-white text-gray-400">
               <Settings className="w-4 h-4 mr-1" /> Settings
@@ -396,7 +424,7 @@ export default function TeamDetails() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
-                        <p className="text-white font-bold truncate">{member.username || 'Member'}</p>
+                        <Link to={`/gamer/${member.user_id}`} className="text-white font-bold truncate hover:text-red-400 transition-colors">{member.username || 'Member'}</Link>
                         {member.user_id === team.leader_id && <Crown className="w-4 h-4 text-yellow-500 flex-shrink-0" />}
                       </div>
                       <p className="text-xs text-gray-500">
@@ -649,6 +677,75 @@ export default function TeamDetails() {
           </div>
         </TabsContent>
 
+        {/* Invites Tab */}
+        {isMember && (
+          <TabsContent value="invites">
+            {team.tournament_invites?.length > 0 ? (
+              <div className="space-y-3">
+                {team.tournament_invites.map((invite, i) => {
+                  const tournament = tournaments.find(t => t.id === invite.tournament_id);
+                  const isPending = invite.status === 'pending';
+                  return (
+                    <FloatingPanel key={i} className="p-4">
+                      <div className="flex items-center justify-between gap-4">
+                        <div className="flex-1 min-w-0">
+                          <p className="text-white font-medium">{invite.tournament_name || tournament?.name || 'Tournament Invite'}</p>
+                          <p className="text-gray-400 text-sm">{invite.game || tournament?.game || 'Unknown Game'}</p>
+                          {(invite.schedule || tournament?.schedule) && (
+                            <p className="text-gray-500 text-xs mt-1">
+                              {new Date(invite.schedule || tournament.schedule).toLocaleDateString()}
+                            </p>
+                          )}
+                          {!isPending && (
+                            <span className={`inline-block mt-1 text-xs px-2 py-0.5 rounded-full ${
+                              invite.status === 'accepted' ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'
+                            }`}>
+                              {invite.status === 'accepted' ? 'Accepted' : 'Rejected'}
+                            </span>
+                          )}
+                        </div>
+                        {isLeader && isPending && (
+                          <div className="flex gap-2 flex-shrink-0">
+                            <GlowButton size="sm" onClick={async () => {
+                              const invites = team.tournament_invites.map(inv =>
+                                inv.tournament_id === invite.tournament_id ? { ...inv, status: 'accepted' } : inv
+                              );
+                              await Team.update(teamId, { tournament_invites: invites });
+                              if (tournament) {
+                                const tournamentTeams = [...(tournament.teams || []), teamId];
+                                await Tournament.update(invite.tournament_id, { teams: tournamentTeams });
+                              }
+                              queryClient.invalidateQueries(['team', teamId]);
+                              toast({ title: 'Invite accepted', description: `Your team has joined ${invite.tournament_name || tournament?.name || 'the tournament'}.` });
+                            }}>
+                              <Check className="w-4 h-4" /> Accept
+                            </GlowButton>
+                            <GlowButton variant="ghost" size="sm" onClick={async () => {
+                              const invites = team.tournament_invites.map(inv =>
+                                inv.tournament_id === invite.tournament_id ? { ...inv, status: 'rejected' } : inv
+                              );
+                              await Team.update(teamId, { tournament_invites: invites });
+                              queryClient.invalidateQueries(['team', teamId]);
+                              toast({ title: 'Invite rejected' });
+                            }}>
+                              <X className="w-4 h-4" /> Reject
+                            </GlowButton>
+                          </div>
+                        )}
+                      </div>
+                    </FloatingPanel>
+                  );
+                })}
+              </div>
+            ) : (
+              <FloatingPanel className="p-12 text-center">
+                <Trophy className="w-16 h-16 text-zinc-700 mx-auto mb-4" />
+                <p className="text-gray-400">No tournament invites yet</p>
+              </FloatingPanel>
+            )}
+          </TabsContent>
+        )}
+
         {/* Settings Tab (Leader only) */}
         {isLeader && (
           <TabsContent value="settings">
@@ -657,6 +754,40 @@ export default function TeamDetails() {
                 <Settings className="w-5 h-5 text-gray-400" /> Team Settings
               </h3>
               <div className="space-y-4">
+                {/* Logo & Banner Upload */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-sm text-gray-400 block mb-2">Team Logo</label>
+                    <div className="flex flex-col items-center gap-2">
+                      <div className="w-16 h-16 rounded-xl bg-zinc-800 overflow-hidden flex items-center justify-center">
+                        {team.logo ? <img src={team.logo} alt="" className="w-full h-full object-cover" /> : <Users className="w-8 h-8 text-zinc-600" />}
+                      </div>
+                      <label className="cursor-pointer">
+                        <span className="flex items-center gap-1 px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 text-gray-300 text-xs rounded-lg transition-colors">
+                          {uploadingField === 'logo' ? <Loader2 className="w-3 h-3 animate-spin" /> : <Upload className="w-3 h-3" />}
+                          {uploadingField === 'logo' ? 'Uploading...' : 'Upload'}
+                        </span>
+                        <input type="file" accept="image/*" className="hidden" onChange={e => e.target.files[0] && handleTeamImageUpload(e.target.files[0], 'logo')} />
+                      </label>
+                    </div>
+                  </div>
+                  <div>
+                    <label className="text-sm text-gray-400 block mb-2">Banner Image</label>
+                    <div className="flex flex-col items-center gap-2">
+                      <div className="w-full h-16 rounded-xl bg-zinc-800 overflow-hidden flex items-center justify-center">
+                        {team.images?.[0] ? <img src={team.images[0]} alt="" className="w-full h-full object-cover" /> : <span className="text-zinc-600 text-xs">No banner</span>}
+                      </div>
+                      <label className="cursor-pointer">
+                        <span className="flex items-center gap-1 px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 text-gray-300 text-xs rounded-lg transition-colors">
+                          {uploadingField === 'banner' ? <Loader2 className="w-3 h-3 animate-spin" /> : <Upload className="w-3 h-3" />}
+                          {uploadingField === 'banner' ? 'Uploading...' : 'Upload'}
+                        </span>
+                        <input type="file" accept="image/*" className="hidden" onChange={e => e.target.files[0] && handleTeamImageUpload(e.target.files[0], 'banner')} />
+                      </label>
+                    </div>
+                  </div>
+                </div>
+
                 <div>
                   <label className="text-sm text-gray-400 block mb-1">Description</label>
                   <Input
