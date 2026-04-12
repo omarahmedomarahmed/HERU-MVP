@@ -80,9 +80,13 @@ import StaffRadarPanel from './pages/StaffRadarPanel'
 import StaffBilling from './pages/StaffBilling'
 import StaffTournamentOrders from './pages/StaffTournamentOrders'
 import StaffOrganizers from './pages/StaffOrganizers'
-import StaffRevenue from './pages/staff/StaffRevenue'
+import StaffRevenue from './pages/StaffRevenue'
 import StaffSettings from './pages/StaffSettings'
 import StaffAuditTrail from './pages/StaffAuditTrail'
+import StaffGamers from './pages/StaffGamers'
+import StaffTeams from './pages/StaffTeams'
+import StaffTournamentBuilder from './pages/StaffTournamentBuilder'
+import StaffGigRequests from './pages/StaffGigRequests'
 
 function App() {
   return (
@@ -180,6 +184,10 @@ function App() {
             <Route path="/staff/revenue" element={<RequireStaff><StaffLayout><StaffRevenue /></StaffLayout></RequireStaff>} />
             <Route path="/staff/settings" element={<RequireStaff><StaffLayout><StaffSettings /></StaffLayout></RequireStaff>} />
             <Route path="/staff/audit" element={<RequireStaff><StaffLayout><StaffAuditTrail /></StaffLayout></RequireStaff>} />
+            <Route path="/staff/gamers" element={<RequireStaff><StaffLayout><StaffGamers /></StaffLayout></RequireStaff>} />
+            <Route path="/staff/teams" element={<RequireStaff><StaffLayout><StaffTeams /></StaffLayout></RequireStaff>} />
+            <Route path="/staff/tournament-builder" element={<RequireStaff><StaffLayout><StaffTournamentBuilder /></StaffLayout></RequireStaff>} />
+            <Route path="/staff/gigs" element={<RequireStaff><StaffLayout><StaffGigRequests /></StaffLayout></RequireStaff>} />
 
             {/* ============ SHARED PAGES ============ */}
             <Route path="/bill/:bill_number" element={<SharedBillPage />} />

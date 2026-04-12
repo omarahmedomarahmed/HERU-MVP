@@ -1,339 +1,302 @@
-import React, { useState, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { format } from 'date-fns';
-import {
-  Search, Eye, DollarSign, Check, FileText, AlertTriangle, Filter,
-} from 'lucide-react';
-import { Staff, Bill } from '@/api/heruClient';
+import React, { useState } from 'react'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { Staff } from '@/api/heruClient'
+import { toast } from 'sonner'
+import { Plus, Search, Pencil, Trash2, CheckCircle, X, Receipt } from 'lucide-react'
 
-const STATUS_BADGE = {
-  paid:    'bg-green-500/20 text-green-400 border border-green-500/30',
-  unpaid:  'bg-red-500/20 text-red-400 border border-red-500/30',
-  partial: 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/30',
-  overdue: 'bg-orange-500/20 text-orange-400 border border-orange-500/30',
-};
+const STATUS_COLORS = {
+  unpaid:  'bg-yellow-500/20 text-yellow-400 border-yellow-500/30',
+  partial: 'bg-blue-500/20 text-blue-400 border-blue-500/30',
+  paid:    'bg-green-500/20 text-green-400 border-green-500/30',
+  overdue: 'bg-red-500/20 text-red-400 border-red-500/30',
+}
 
-const TYPE_BADGE = {
-  gamer:        'bg-zinc-700 text-gray-300',
-  organizer:    'bg-red-500/20 text-red-400',
-  co_organizer: 'bg-cyan-500/20 text-cyan-400',
-};
+const EMPTY_BILL = {
+  bill_number: '', bill_type: 'organizer', payer_name: '', payer_email: '',
+  grand_total: '', payment_status: 'unpaid', tournament_name: '', notes: '',
+  due_date: '', paid_amount: 0,
+}
 
 export default function StaffBilling() {
-  const navigate = useNavigate();
-  const queryClient = useQueryClient();
-  const [search, setSearch] = useState('');
-  const [statusFilter, setStatusFilter] = useState('all');
-  const [selectedBill, setSelectedBill] = useState(null);
+  const qc = useQueryClient()
+  const [search, setSearch]       = useState('')
+  const [statusF, setStatusF]     = useState('all')
+  const [editing, setEditing]     = useState(null)   // bill object
+  const [creating, setCreating]   = useState(false)
+  const [newBill, setNewBill]     = useState(EMPTY_BILL)
+  const [deleting, setDeleting]   = useState(null)
 
-  const { data: bills = [], isLoading } = useQuery({
-    queryKey: ['staff-all-bills'],
-    queryFn: () => Staff.allBills(),
-  });
+  const { data, isLoading } = useQuery({
+    queryKey: ['staff-bills', statusF],
+    queryFn: () => Staff.allBills(statusF !== 'all' ? { payment_status: statusF } : {}),
+  })
+  const bills = data?.bills || data || []
 
-  const filtered = useMemo(() => {
-    return bills.filter(b => {
-      const matchSearch = !search ||
-        b.bill_number?.toLowerCase().includes(search.toLowerCase()) ||
-        b.payer_name?.toLowerCase().includes(search.toLowerCase());
-      const matchStatus = statusFilter === 'all' || b.payment_status === statusFilter;
-      return matchSearch && matchStatus;
-    });
-  }, [bills, search, statusFilter]);
+  const saveMut = useMutation({
+    mutationFn: ({ id, body }) => Staff.updateBill(id, body),
+    onSuccess: () => { qc.invalidateQueries(['staff-bills']); setEditing(null); toast.success('Bill updated') },
+    onError: (e) => toast.error(e.message),
+  })
 
-  const stats = useMemo(() => ({
-    total: bills.reduce((s, b) => s + (b.grand_total || 0), 0),
-    paid: bills.filter(b => b.payment_status === 'paid').reduce((s, b) => s + (b.grand_total || 0), 0),
-    unpaid: bills.filter(b => b.payment_status === 'unpaid').reduce((s, b) => s + (b.grand_total || 0), 0),
-    count: bills.length,
-  }), [bills]);
+  const createMut = useMutation({
+    mutationFn: (body) => Staff.createBill(body),
+    onSuccess: () => { qc.invalidateQueries(['staff-bills']); setCreating(false); setNewBill(EMPTY_BILL); toast.success('Bill created') },
+    onError: (e) => toast.error(e.message),
+  })
 
-  const markPaidMutation = useMutation({
-    mutationFn: (bill) => Staff.updateBill(bill.id, {
-      payment_status: 'paid',
-      paid_amount: bill.grand_total,
-      paid_date: new Date().toISOString().split('T')[0],
-    }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['staff-all-bills'] });
-      setSelectedBill(null);
-    },
-  });
+  const deleteMut = useMutation({
+    mutationFn: (id) => Staff.deleteBill(id),
+    onSuccess: () => { qc.invalidateQueries(['staff-bills']); setDeleting(null); toast.success('Bill deleted') },
+    onError: (e) => toast.error(e.message),
+  })
 
-  const markUnpaidMutation = useMutation({
-    mutationFn: (bill) => Staff.updateBill(bill.id, {
-      payment_status: 'unpaid',
-      paid_amount: 0,
-      paid_date: null,
-    }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['staff-all-bills'] });
-      setSelectedBill(null);
-    },
-  });
+  const markPaidMut = useMutation({
+    mutationFn: (id) => Staff.updateBill(id, { payment_status: 'paid', paid_amount: bills.find(b=>b.id===id)?.grand_total }),
+    onSuccess: () => { qc.invalidateQueries(['staff-bills']); toast.success('Marked as paid') },
+    onError: (e) => toast.error(e.message),
+  })
 
-  const zeroOutMutation = useMutation({
-    mutationFn: (bill) => {
-      const zeroedItems = (bill.items || []).map(item => ({
-        ...item,
-        price: 0,
-        subtotal: 0,
-        original_price: item.subtotal ?? item.price ?? 0,
-      }));
-      return Staff.updateBill(bill.id, {
-        items: zeroedItems,
-        subtotal: 0,
-        platform_fee: 0,
-        tax: 0,
-        grand_total: 0,
-        payment_status: 'paid',
-        paid_amount: 0,
-        paid_date: new Date().toISOString().split('T')[0],
-        payment_method: 'staff_zeroed',
-        notes: `${bill.notes ? bill.notes + '\n' : ''}[Staff] Bill zeroed out on ${new Date().toISOString().split('T')[0]}`,
-      });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['staff-all-bills'] });
-      setSelectedBill(null);
-    },
-  });
+  const filtered = bills.filter(b => {
+    const q = search.toLowerCase()
+    return !q || (b.bill_number||'').toLowerCase().includes(q) ||
+      (b.payer_name||'').toLowerCase().includes(q) ||
+      (b.tournament_name||'').toLowerCase().includes(q)
+  })
+
+  const Field = ({ label, children }) => (
+    <div className="flex flex-col gap-1">
+      <label className="text-[11px] text-zinc-500 uppercase tracking-wider">{label}</label>
+      {children}
+    </div>
+  )
+  const inp = "bg-[#1a1a1a] border border-zinc-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-red-500/50"
 
   return (
-    <div className="space-y-6">
-      <h1 className="text-2xl font-bold text-white">
-        Master <span className="text-red-400">Billing</span>
-      </h1>
-
-      {/* Stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-5">
-          <div className="flex items-center gap-3 mb-2">
-            <DollarSign className="w-5 h-5 text-red-400" />
-            <span className="text-sm text-gray-400">Total Billed</span>
-          </div>
-          <p className="text-xl font-bold text-white">EGP {stats.total.toLocaleString()}</p>
+    <div className="space-y-5">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-xl font-bold text-white">Billing</h1>
+          <p className="text-xs text-zinc-500 mt-0.5">{filtered.length} bills</p>
         </div>
-        <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-5">
-          <div className="flex items-center gap-3 mb-2">
-            <Check className="w-5 h-5 text-green-400" />
-            <span className="text-sm text-gray-400">Paid</span>
-          </div>
-          <p className="text-xl font-bold text-green-400">EGP {stats.paid.toLocaleString()}</p>
-        </div>
-        <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-5">
-          <div className="flex items-center gap-3 mb-2">
-            <AlertTriangle className="w-5 h-5 text-red-400" />
-            <span className="text-sm text-gray-400">Unpaid</span>
-          </div>
-          <p className="text-xl font-bold text-red-400">EGP {stats.unpaid.toLocaleString()}</p>
-        </div>
-        <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-5">
-          <div className="flex items-center gap-3 mb-2">
-            <FileText className="w-5 h-5 text-gray-400" />
-            <span className="text-sm text-gray-400">Total Bills</span>
-          </div>
-          <p className="text-xl font-bold text-white">{stats.count}</p>
-        </div>
+        <button onClick={() => setCreating(true)}
+          className="flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-500 text-white text-sm font-semibold rounded-lg transition-colors">
+          <Plus size={14}/> New Bill
+        </button>
       </div>
 
       {/* Filters */}
-      <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-4">
-        <div className="flex flex-col md:flex-row gap-3">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
-            <input
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-              placeholder="Search by bill number or payer name..."
-              className="w-full pl-10 pr-4 py-2.5 bg-zinc-800 border border-zinc-700 rounded-lg text-white text-sm placeholder-gray-500 focus:outline-none focus:border-red-500"
-            />
-          </div>
-          <div className="flex items-center gap-2">
-            <Filter className="w-4 h-4 text-gray-500" />
-            {['all', 'paid', 'unpaid', 'partial', 'overdue'].map(s => (
-              <button
-                key={s}
-                onClick={() => setStatusFilter(s)}
-                className={`px-3 py-2 rounded-lg text-xs font-medium capitalize transition-colors ${
-                  statusFilter === s
-                    ? 'bg-red-600 text-white'
-                    : 'bg-zinc-800 text-gray-400 hover:text-white'
-                }`}
-              >
-                {s}
-              </button>
-            ))}
-          </div>
+      <div className="flex flex-wrap gap-2">
+        {['all','unpaid','partial','paid','overdue'].map(s => (
+          <button key={s} onClick={() => setStatusF(s)}
+            className={`px-3 py-1.5 rounded-lg text-xs font-semibold uppercase tracking-wider transition-colors
+              ${statusF===s ? 'bg-red-600 text-white' : 'bg-[#111] text-zinc-400 hover:text-white border border-zinc-800'}`}>
+            {s}
+          </button>
+        ))}
+        <div className="flex items-center gap-2 bg-[#111] border border-zinc-800 rounded-lg px-3 py-1.5 ml-auto">
+          <Search size={13} className="text-zinc-500"/>
+          <input value={search} onChange={e=>setSearch(e.target.value)}
+            placeholder="Search bills…" className="bg-transparent text-sm text-white placeholder-zinc-600 outline-none w-44"/>
         </div>
       </div>
 
       {/* Table */}
-      <div className="bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-zinc-800">
-                <th className="text-left text-gray-400 font-medium px-5 py-3">Bill Number</th>
-                <th className="text-left text-gray-400 font-medium px-5 py-3">Type</th>
-                <th className="text-left text-gray-400 font-medium px-5 py-3">Payer</th>
-                <th className="text-left text-gray-400 font-medium px-5 py-3">Tournament</th>
-                <th className="text-right text-gray-400 font-medium px-5 py-3">Amount (EGP)</th>
-                <th className="text-center text-gray-400 font-medium px-5 py-3">Status</th>
-                <th className="text-left text-gray-400 font-medium px-5 py-3">Due Date</th>
-                <th className="text-center text-gray-400 font-medium px-5 py-3">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {isLoading ? (
-                <tr>
-                  <td colSpan={8} className="text-center py-12 text-gray-500">Loading bills...</td>
+      <div className="bg-[#0e0e0e] border border-zinc-800/50 rounded-xl overflow-hidden">
+        {isLoading ? (
+          <div className="p-8 text-center text-zinc-500 text-sm">Loading…</div>
+        ) : filtered.length === 0 ? (
+          <div className="p-8 text-center text-zinc-600 text-sm">No bills found</div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-zinc-800/50">
+                  {['Bill #','Tournament','Payer','Type','Total (EGP)','Status','Due',''].map(h => (
+                    <th key={h} className="px-4 py-3 text-left text-[11px] font-bold uppercase tracking-widest text-zinc-500">{h}</th>
+                  ))}
                 </tr>
-              ) : filtered.length === 0 ? (
-                <tr>
-                  <td colSpan={8} className="text-center py-12 text-gray-500">No bills found</td>
-                </tr>
-              ) : (
-                filtered.map(bill => (
-                  <tr key={bill.id} className="border-b border-zinc-800/50 hover:bg-zinc-800/30 transition-colors">
-                    <td className="px-5 py-3 text-white font-mono text-xs">{bill.bill_number}</td>
-                    <td className="px-5 py-3">
-                      <span className={`text-xs px-2 py-1 rounded font-medium ${TYPE_BADGE[bill.bill_type] || 'bg-zinc-700 text-gray-300'}`}>
-                        {bill.bill_type?.replace('_', ' ')}
+              </thead>
+              <tbody>
+                {filtered.map(b => (
+                  <tr key={b.id} className="border-b border-zinc-800/30 hover:bg-white/[0.02] transition-colors">
+                    <td className="px-4 py-3 font-mono text-xs text-zinc-300">{b.bill_number}</td>
+                    <td className="px-4 py-3 text-zinc-300 max-w-[160px] truncate">{b.tournament_name || '—'}</td>
+                    <td className="px-4 py-3 text-zinc-300">{b.payer_name || '—'}</td>
+                    <td className="px-4 py-3">
+                      <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-zinc-800 text-zinc-400">
+                        {b.bill_type}
                       </span>
                     </td>
-                    <td className="px-5 py-3 text-gray-300">{bill.payer_name || bill.payer_email || bill.payer_id?.slice(0, 8) || '--'}</td>
-                    <td className="px-5 py-3 text-gray-400 truncate max-w-48">{bill.tournament_name || '--'}</td>
-                    <td className="px-5 py-3 text-right text-white font-bold">EGP {(bill.grand_total || 0).toLocaleString()}</td>
-                    <td className="px-5 py-3 text-center">
-                      <span className={`text-xs px-2 py-1 rounded font-medium ${STATUS_BADGE[bill.payment_status] || 'bg-zinc-700 text-gray-300'}`}>
-                        {bill.payment_status}
+                    <td className="px-4 py-3 font-mono text-white font-semibold">
+                      {Number(b.grand_total||0).toLocaleString()}
+                    </td>
+                    <td className="px-4 py-3">
+                      <span className={`px-2 py-0.5 rounded border text-[10px] font-bold uppercase tracking-wider ${STATUS_COLORS[b.payment_status]||STATUS_COLORS.unpaid}`}>
+                        {b.payment_status}
                       </span>
                     </td>
-                    <td className="px-5 py-3 text-gray-400 text-xs">
-                      {bill.due_date ? format(new Date(bill.due_date), 'MMM dd, yyyy') : '--'}
-                    </td>
-                    <td className="px-5 py-3 text-center">
-                      <div className="flex items-center justify-center gap-1.5">
-                        <button
-                          onClick={() => navigate(`/staff/billing/${bill.bill_number}`)}
-                          className="text-red-400 hover:text-red-300 transition-colors p-1"
-                          title="View bill detail"
-                        >
-                          <Eye className="w-4 h-4" />
+                    <td className="px-4 py-3 text-xs text-zinc-500">{b.due_date||'—'}</td>
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-1">
+                        {b.payment_status !== 'paid' && (
+                          <button onClick={() => markPaidMut.mutate(b.id)}
+                            title="Mark Paid" className="p-1.5 text-green-500 hover:bg-green-500/10 rounded-lg transition-colors">
+                            <CheckCircle size={14}/>
+                          </button>
+                        )}
+                        <button onClick={() => setEditing({...b})}
+                          className="p-1.5 text-zinc-400 hover:text-white hover:bg-white/5 rounded-lg transition-colors">
+                          <Pencil size={14}/>
                         </button>
-                        {bill.payment_status !== 'paid' && (
-                          <button
-                            onClick={(e) => { e.stopPropagation(); setSelectedBill(bill); }}
-                            className="text-green-400 hover:text-green-300 transition-colors p-1"
-                            title="Mark as paid"
-                          >
-                            <Check className="w-4 h-4" />
-                          </button>
-                        )}
-                        {bill.payment_status === 'paid' && (
-                          <button
-                            onClick={(e) => { e.stopPropagation(); setSelectedBill(bill); }}
-                            className="text-yellow-400 hover:text-yellow-300 transition-colors p-1"
-                            title="Mark as unpaid"
-                          >
-                            <DollarSign className="w-4 h-4" />
-                          </button>
-                        )}
+                        <button onClick={() => setDeleting(b)}
+                          className="p-1.5 text-zinc-600 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors">
+                          <Trash2 size={14}/>
+                        </button>
                       </div>
                     </td>
                   </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
 
-      {/* Bill Detail Modal */}
-      {selectedBill && (
-        <div
-          className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4"
-          onClick={() => setSelectedBill(null)}
-        >
-          <div
-            onClick={e => e.stopPropagation()}
-            className="bg-zinc-900 border border-zinc-800 rounded-xl w-full max-w-lg max-h-[80vh] overflow-y-auto p-6 space-y-4"
-          >
-            <div className="flex items-center justify-between">
-              <h2 className="text-lg font-bold text-white">{selectedBill.bill_number}</h2>
-              <button onClick={() => setSelectedBill(null)} className="text-gray-500 hover:text-white text-xl">&times;</button>
-            </div>
-            <div className="grid grid-cols-2 gap-3 text-sm">
-              <div>
-                <p className="text-gray-500 text-xs">Payer</p>
-                <p className="text-white">{selectedBill.payer_name || selectedBill.payer_email || '--'}</p>
+      {/* Edit Modal */}
+      {editing && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
+          <div className="bg-[#111] border border-zinc-700 rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto shadow-2xl">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-zinc-800">
+              <div className="flex items-center gap-2">
+                <Receipt size={16} className="text-red-400"/>
+                <span className="font-bold text-white">Edit Bill</span>
+                <span className="text-xs text-zinc-500 font-mono">{editing.bill_number}</span>
               </div>
-              <div>
-                <p className="text-gray-500 text-xs">Amount</p>
-                <p className="text-white font-bold">EGP {(selectedBill.grand_total || 0).toLocaleString()}</p>
-              </div>
-              {selectedBill.tournament_name && (
-                <div>
-                  <p className="text-gray-500 text-xs">Tournament</p>
-                  <p className="text-white">{selectedBill.tournament_name}</p>
-                </div>
-              )}
-              <div>
-                <p className="text-gray-500 text-xs">Status</p>
-                <span className={`text-xs px-2 py-1 rounded font-medium ${STATUS_BADGE[selectedBill.payment_status] || 'bg-zinc-700 text-gray-300'}`}>
-                  {selectedBill.payment_status}
-                </span>
-              </div>
-              {selectedBill.platform_fee > 0 && (
-                <div>
-                  <p className="text-gray-500 text-xs">Platform Fee</p>
-                  <p className="text-red-400 font-medium">EGP {(selectedBill.platform_fee || 0).toLocaleString()}</p>
-                </div>
-              )}
+              <button onClick={() => setEditing(null)} className="text-zinc-500 hover:text-white"><X size={18}/></button>
             </div>
-            <div className="flex flex-wrap gap-2">
-              {selectedBill.payment_status !== 'paid' && (
-                <button
-                  onClick={() => markPaidMutation.mutate(selectedBill)}
-                  disabled={markPaidMutation.isPending}
-                  className="flex-1 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm font-medium transition-colors"
-                >
-                  {markPaidMutation.isPending ? 'Updating...' : 'Mark as Paid'}
-                </button>
-              )}
-              {selectedBill.payment_status === 'paid' && (
-                <button
-                  onClick={() => markUnpaidMutation.mutate(selectedBill)}
-                  disabled={markUnpaidMutation.isPending}
-                  className="flex-1 py-2 bg-zinc-700 hover:bg-zinc-600 text-white rounded-lg text-sm font-medium transition-colors"
-                >
-                  {markUnpaidMutation.isPending ? 'Updating...' : 'Mark as Unpaid'}
-                </button>
-              )}
-              {selectedBill.grand_total > 0 && (
-                <button
-                  onClick={() => {
-                    if (window.confirm('Zero out this entire bill? All items will be set to EGP 0 and the bill marked as paid.')) {
-                      zeroOutMutation.mutate(selectedBill);
-                    }
-                  }}
-                  disabled={zeroOutMutation.isPending}
-                  className="flex-1 py-2 bg-red-600/80 hover:bg-red-600 text-white rounded-lg text-sm font-medium transition-colors"
-                >
-                  {zeroOutMutation.isPending ? 'Zeroing...' : 'Zero Out Bill'}
-                </button>
-              )}
+            <div className="p-5 space-y-3">
+              <Field label="Payer Name">
+                <input className={inp} value={editing.payer_name||''} onChange={e=>setEditing(p=>({...p,payer_name:e.target.value}))}/>
+              </Field>
+              <Field label="Payer Email">
+                <input className={inp} value={editing.payer_email||''} onChange={e=>setEditing(p=>({...p,payer_email:e.target.value}))}/>
+              </Field>
+              <div className="grid grid-cols-2 gap-3">
+                <Field label="Bill Type">
+                  <select className={inp} value={editing.bill_type||'organizer'} onChange={e=>setEditing(p=>({...p,bill_type:e.target.value}))}>
+                    <option value="gamer">gamer</option>
+                    <option value="organizer">organizer</option>
+                    <option value="co_organizer">co_organizer</option>
+                  </select>
+                </Field>
+                <Field label="Payment Status">
+                  <select className={inp} value={editing.payment_status||'unpaid'} onChange={e=>setEditing(p=>({...p,payment_status:e.target.value}))}>
+                    <option value="unpaid">unpaid</option>
+                    <option value="partial">partial</option>
+                    <option value="paid">paid</option>
+                    <option value="overdue">overdue</option>
+                  </select>
+                </Field>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <Field label="Grand Total (EGP)">
+                  <input type="number" className={inp} value={editing.grand_total||''} onChange={e=>setEditing(p=>({...p,grand_total:e.target.value}))}/>
+                </Field>
+                <Field label="Paid Amount (EGP)">
+                  <input type="number" className={inp} value={editing.paid_amount||0} onChange={e=>setEditing(p=>({...p,paid_amount:e.target.value}))}/>
+                </Field>
+              </div>
+              <Field label="Due Date">
+                <input type="date" className={inp} value={editing.due_date||''} onChange={e=>setEditing(p=>({...p,due_date:e.target.value}))}/>
+              </Field>
+              <Field label="Notes">
+                <textarea rows={2} className={inp} value={editing.notes||''} onChange={e=>setEditing(p=>({...p,notes:e.target.value}))}/>
+              </Field>
             </div>
-            {(markPaidMutation.isError || markUnpaidMutation.isError || zeroOutMutation.isError) && (
-              <p className="text-red-400 text-xs">
-                Error: {(markPaidMutation.error || markUnpaidMutation.error || zeroOutMutation.error)?.message}
-              </p>
-            )}
+            <div className="flex justify-end gap-2 px-5 py-4 border-t border-zinc-800">
+              <button onClick={() => setEditing(null)} className="px-4 py-2 text-sm text-zinc-400 hover:text-white transition-colors">Cancel</button>
+              <button onClick={() => saveMut.mutate({ id: editing.id, body: editing })}
+                disabled={saveMut.isPending}
+                className="px-4 py-2 bg-red-600 hover:bg-red-500 text-white text-sm font-semibold rounded-lg transition-colors disabled:opacity-50">
+                {saveMut.isPending ? 'Saving…' : 'Save'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Create Modal */}
+      {creating && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
+          <div className="bg-[#111] border border-zinc-700 rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto shadow-2xl">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-zinc-800">
+              <div className="flex items-center gap-2">
+                <Plus size={16} className="text-red-400"/>
+                <span className="font-bold text-white">Create Bill</span>
+              </div>
+              <button onClick={() => setCreating(false)} className="text-zinc-500 hover:text-white"><X size={18}/></button>
+            </div>
+            <div className="p-5 space-y-3">
+              <Field label="Bill Number">
+                <input className={inp} placeholder="HERU-2026-0001" value={newBill.bill_number} onChange={e=>setNewBill(p=>({...p,bill_number:e.target.value}))}/>
+              </Field>
+              <Field label="Tournament Name">
+                <input className={inp} value={newBill.tournament_name} onChange={e=>setNewBill(p=>({...p,tournament_name:e.target.value}))}/>
+              </Field>
+              <Field label="Payer Name">
+                <input className={inp} value={newBill.payer_name} onChange={e=>setNewBill(p=>({...p,payer_name:e.target.value}))}/>
+              </Field>
+              <Field label="Payer Email">
+                <input className={inp} value={newBill.payer_email} onChange={e=>setNewBill(p=>({...p,payer_email:e.target.value}))}/>
+              </Field>
+              <div className="grid grid-cols-2 gap-3">
+                <Field label="Bill Type">
+                  <select className={inp} value={newBill.bill_type} onChange={e=>setNewBill(p=>({...p,bill_type:e.target.value}))}>
+                    <option value="gamer">gamer</option>
+                    <option value="organizer">organizer</option>
+                    <option value="co_organizer">co_organizer</option>
+                  </select>
+                </Field>
+                <Field label="Grand Total (EGP)">
+                  <input type="number" className={inp} value={newBill.grand_total} onChange={e=>setNewBill(p=>({...p,grand_total:e.target.value}))}/>
+                </Field>
+              </div>
+              <Field label="Due Date">
+                <input type="date" className={inp} value={newBill.due_date} onChange={e=>setNewBill(p=>({...p,due_date:e.target.value}))}/>
+              </Field>
+              <Field label="Notes">
+                <textarea rows={2} className={inp} value={newBill.notes} onChange={e=>setNewBill(p=>({...p,notes:e.target.value}))}/>
+              </Field>
+            </div>
+            <div className="flex justify-end gap-2 px-5 py-4 border-t border-zinc-800">
+              <button onClick={() => setCreating(false)} className="px-4 py-2 text-sm text-zinc-400 hover:text-white transition-colors">Cancel</button>
+              <button onClick={() => createMut.mutate(newBill)}
+                disabled={createMut.isPending || !newBill.bill_number || !newBill.grand_total}
+                className="px-4 py-2 bg-red-600 hover:bg-red-500 text-white text-sm font-semibold rounded-lg transition-colors disabled:opacity-50">
+                {createMut.isPending ? 'Creating…' : 'Create Bill'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirm */}
+      {deleting && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
+          <div className="bg-[#111] border border-red-500/30 rounded-2xl w-full max-w-sm shadow-2xl p-6 space-y-4">
+            <h3 className="font-bold text-white">Delete Bill?</h3>
+            <p className="text-sm text-zinc-400">This will permanently delete bill <span className="text-white font-mono">{deleting.bill_number}</span>. This cannot be undone.</p>
+            <div className="flex gap-2 justify-end">
+              <button onClick={() => setDeleting(null)} className="px-4 py-2 text-sm text-zinc-400 hover:text-white">Cancel</button>
+              <button onClick={() => deleteMut.mutate(deleting.id)}
+                disabled={deleteMut.isPending}
+                className="px-4 py-2 bg-red-600 hover:bg-red-500 text-white text-sm font-semibold rounded-lg disabled:opacity-50">
+                {deleteMut.isPending ? 'Deleting…' : 'Delete'}
+              </button>
+            </div>
           </div>
         </div>
       )}
     </div>
-  );
+  )
 }

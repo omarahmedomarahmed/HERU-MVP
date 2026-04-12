@@ -507,4 +507,257 @@ router.put('/radar/:id', requireAuth, requireStaff, async (req, res) => {
   }
 });
 
+// ── GAMERS ──────────────────────────────────────────────────────────────────
+router.get('/gamers', requireAuth, requireStaff, async (req, res) => {
+  try {
+    const { search, is_talent, limit = 100, offset = 0 } = req.query;
+    let q = supabaseAdmin.from('gamer_profiles').select('*');
+    if (is_talent !== undefined) q = q.eq('is_talent', is_talent === 'true');
+    if (search) q = q.or(`username.ilike.%${search}%,bio.ilike.%${search}%`);
+    q = q.order('created_at', { ascending: false }).range(+offset, +offset + +limit - 1);
+    const { data, error } = await q;
+    if (error) throw error;
+    res.json(data || []);
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+router.put('/gamers/:id', requireAuth, requireStaff, async (req, res) => {
+  try {
+    const { data, error } = await supabaseAdmin.from('gamer_profiles')
+      .update({ ...req.body, updated_at: new Date().toISOString() })
+      .eq('id', req.params.id).select().single();
+    if (error) throw error;
+    res.json(data);
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// ── TEAMS ────────────────────────────────────────────────────────────────────
+router.get('/teams', requireAuth, requireStaff, async (req, res) => {
+  try {
+    const { search, limit = 100, offset = 0 } = req.query;
+    let q = supabaseAdmin.from('teams').select('*');
+    if (search) q = q.or(`name.ilike.%${search}%,description.ilike.%${search}%`);
+    q = q.order('created_at', { ascending: false }).range(+offset, +offset + +limit - 1);
+    const { data, error } = await q;
+    if (error) throw error;
+    res.json(data || []);
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+router.put('/teams/:id', requireAuth, requireStaff, async (req, res) => {
+  try {
+    const { data, error } = await supabaseAdmin.from('teams')
+      .update({ ...req.body, updated_at: new Date().toISOString() })
+      .eq('id', req.params.id).select().single();
+    if (error) throw error;
+    res.json(data);
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+router.delete('/teams/:id', requireAuth, requireStaff, async (req, res) => {
+  try {
+    const { error } = await supabaseAdmin.from('teams').delete().eq('id', req.params.id);
+    if (error) throw error;
+    res.json({ message: 'Team deleted' });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// ── GIG REQUESTS ─────────────────────────────────────────────────────────────
+router.get('/gigs', requireAuth, requireStaff, async (req, res) => {
+  try {
+    const { status, search, limit = 100, offset = 0 } = req.query;
+    let q = supabaseAdmin.from('gig_requests').select('*');
+    if (status) q = q.eq('status', status);
+    if (search) q = q.or(`tournament_name.ilike.%${search}%,talent_type.ilike.%${search}%`);
+    q = q.order('created_at', { ascending: false }).range(+offset, +offset + +limit - 1);
+    const { data, error } = await q;
+    if (error) throw error;
+    res.json(data || []);
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+router.put('/gigs/:id', requireAuth, requireStaff, async (req, res) => {
+  try {
+    const { data, error } = await supabaseAdmin.from('gig_requests')
+      .update({ ...req.body, updated_at: new Date().toISOString() })
+      .eq('id', req.params.id).select().single();
+    if (error) throw error;
+    res.json(data);
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// ── ORGANIZER PROFILE EDIT ───────────────────────────────────────────────────
+router.put('/organizers/:id', requireAuth, requireStaff, async (req, res) => {
+  try {
+    const { data, error } = await supabaseAdmin.from('organizer_profiles')
+      .update({ ...req.body, updated_at: new Date().toISOString() })
+      .eq('id', req.params.id).select().single();
+    if (error) throw error;
+    res.json(data);
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// ── DELETE TOURNAMENT ─────────────────────────────────────────────────────────
+router.delete('/tournaments/:id', requireAuth, requireStaff, async (req, res) => {
+  try {
+    const { error } = await supabaseAdmin.from('tournaments').delete().eq('id', req.params.id);
+    if (error) throw error;
+    res.json({ message: 'Tournament deleted' });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// ── DELETE USER ───────────────────────────────────────────────────────────────
+router.delete('/users/:id', requireAuth, requireStaff, async (req, res) => {
+  try {
+    await supabaseAdmin.from('user_profiles').delete().eq('id', req.params.id);
+    await supabaseAdmin.auth.admin.deleteUser(req.params.id);
+    res.json({ message: 'User deleted' });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// ── BILLS CRUD ────────────────────────────────────────────────────────────────
+router.post('/bills', requireAuth, requireStaff, async (req, res) => {
+  try {
+    const { data, error } = await supabaseAdmin.from('bills').insert(req.body).select().single();
+    if (error) throw error;
+    res.status(201).json(data);
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+router.delete('/bills/:id', requireAuth, requireStaff, async (req, res) => {
+  try {
+    const { error } = await supabaseAdmin.from('bills').delete().eq('id', req.params.id);
+    if (error) throw error;
+    res.json({ message: 'Bill deleted' });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// ── STAFF SESSIONS ────────────────────────────────────────────────────────────
+router.get('/sessions', requireAuth, requireStaff, async (req, res) => {
+  try {
+    const { data, error } = await supabaseAdmin.from('staff_sessions').select('*')
+      .order('created_at', { ascending: false }).limit(100);
+    if (error) throw error;
+    res.json(data || []);
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+router.delete('/sessions/:id', requireAuth, requireStaff, async (req, res) => {
+  try {
+    await supabaseAdmin.from('staff_sessions').update({ is_active: false }).eq('id', req.params.id);
+    res.json({ message: 'Session terminated' });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// ── APP SETTINGS ──────────────────────────────────────────────────────────────
+router.get('/app-settings', requireAuth, requireStaff, async (req, res) => {
+  try {
+    const { data, error } = await supabaseAdmin.from('app_settings').select('*').order('setting_key');
+    if (error) throw error;
+    res.json(data || []);
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+router.put('/app-settings/:key', requireAuth, requireStaff, async (req, res) => {
+  try {
+    const { data, error } = await supabaseAdmin.from('app_settings')
+      .upsert({ setting_key: req.params.key, ...req.body, updated_at: new Date().toISOString() }, { onConflict: 'setting_key' })
+      .select().single();
+    if (error) throw error;
+    res.json(data);
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// ── BUILD TOURNAMENT ON BEHALF ────────────────────────────────────────────────
+router.post('/tournaments/build-on-behalf', requireAuth, requireStaff, async (req, res) => {
+  try {
+    const { organizer_id, ...tournamentData } = req.body;
+    if (!organizer_id) return res.status(400).json({ error: 'organizer_id is required' });
+    const { data: orgProfile } = await supabaseAdmin.from('organizer_profiles')
+      .select('brand_name, brand_logo').eq('user_id', organizer_id).single();
+    const { data, error } = await supabaseAdmin.from('tournaments').insert({
+      ...tournamentData,
+      organizer_id,
+      main_organizer_id: organizer_id,
+      organizer_brand: orgProfile ? { name: orgProfile.brand_name, logo: orgProfile.brand_logo } : {},
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    }).select().single();
+    if (error) throw error;
+    res.status(201).json(data);
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// ── ORDERS (full list) ────────────────────────────────────────────────────────
+router.get('/orders', requireAuth, requireStaff, async (req, res) => {
+  try {
+    const { status, order_type, search, limit = 100, offset = 0 } = req.query;
+    let q = supabaseAdmin.from('orders').select('*');
+    if (status) q = q.eq('status', status);
+    if (order_type) q = q.eq('order_type', order_type);
+    q = q.order('created_at', { ascending: false }).range(+offset, +offset + +limit - 1);
+    const { data, error } = await q;
+    if (error) throw error;
+    res.json(data || []);
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+router.put('/orders/:id', requireAuth, requireStaff, async (req, res) => {
+  try {
+    const { data, error } = await supabaseAdmin.from('orders')
+      .update({ ...req.body, updated_at: new Date().toISOString() })
+      .eq('id', req.params.id).select().single();
+    if (error) throw error;
+    res.json(data);
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// ── TOURNAMENT ORDERS ─────────────────────────────────────────────────────────
+router.get('/tournament-orders', requireAuth, requireStaff, async (req, res) => {
+  try {
+    const { fulfillment_status, limit = 100, offset = 0 } = req.query;
+    let q = supabaseAdmin.from('tournament_orders').select('*');
+    if (fulfillment_status) q = q.eq('fulfillment_status', fulfillment_status);
+    q = q.order('created_at', { ascending: false }).range(+offset, +offset + +limit - 1);
+    const { data, error } = await q;
+    if (error) throw error;
+    res.json(data || []);
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+router.put('/tournament-orders/:id', requireAuth, requireStaff, async (req, res) => {
+  try {
+    const { data, error } = await supabaseAdmin.from('tournament_orders')
+      .update({ ...req.body, updated_at: new Date().toISOString() })
+      .eq('id', req.params.id).select().single();
+    if (error) throw error;
+    res.json(data);
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// ── APPROVALS ─────────────────────────────────────────────────────────────────
+router.get('/approvals', requireAuth, requireStaff, async (req, res) => {
+  try {
+    const { status, approval_type, limit = 100, offset = 0 } = req.query;
+    let q = supabaseAdmin.from('approval_requests').select('*');
+    if (status) q = q.eq('status', status);
+    if (approval_type) q = q.eq('approval_type', approval_type);
+    q = q.order('created_at', { ascending: false }).range(+offset, +offset + +limit - 1);
+    const { data, error } = await q;
+    if (error) throw error;
+    res.json(data || []);
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+router.put('/approvals/:id', requireAuth, requireStaff, async (req, res) => {
+  try {
+    const { data, error } = await supabaseAdmin.from('approval_requests')
+      .update({ ...req.body, reviewed_by: req.user.id, reviewed_at: new Date().toISOString(), updated_at: new Date().toISOString() })
+      .eq('id', req.params.id).select().single();
+    if (error) throw error;
+    res.json(data);
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
 export default router;
+

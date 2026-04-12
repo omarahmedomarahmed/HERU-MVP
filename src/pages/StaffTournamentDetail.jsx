@@ -1,563 +1,255 @@
-import React, { useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import {
-  ArrowLeft, Trophy, Users, GitBranch, ShoppingCart,
-  Calendar, MapPin, Globe, Save, CheckCircle, MessageSquare, Send,
-} from 'lucide-react';
-import { Staff, apiCall } from '@/api/heruClient';
+import React, { useState } from 'react'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useParams, useNavigate } from 'react-router-dom'
+import { Staff, Tournament } from '@/api/heruClient'
+import { toast } from 'sonner'
+import { ArrowLeft, Save, Trash2, Trophy, Users, MessageSquare, Layers, Settings, X } from 'lucide-react'
 
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
+const inp = "bg-[#1a1a1a] border border-zinc-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-red-500/50 w-full"
+const Field = ({ label, children }) => (
+  <div className="flex flex-col gap-1">
+    <label className="text-[11px] text-zinc-500 uppercase tracking-wider">{label}</label>
+    {children}
+  </div>
+)
 
-function formatEGP(value) {
-  return `EGP ${(value || 0).toLocaleString('en-EG', { minimumFractionDigits: 0 })}`;
-}
+function DetailsTab({ t, onSave }) {
+  const [form, setForm] = useState({
+    name: t.name||'', game: t.game||'', status: t.status||'draft',
+    format: t.format||'', max_teams: t.max_teams||8,
+    description: t.description||'', venue: t.venue||'',
+    is_offline: t.is_offline||false,
+    total_cost: t.total_cost||0, prizepool_total: t.prizepool_total||0,
+    platform_fee: t.platform_fee||0, stream_link: t.stream_link||'',
+  })
 
-function formatDate(dateStr) {
-  if (!dateStr) return '-';
-  return new Date(dateStr).toLocaleDateString('en-GB', {
-    day: 'numeric', month: 'short', year: 'numeric',
-  });
-}
-
-function StatusBadge({ status }) {
-  const map = {
-    draft: 'bg-gray-100 text-gray-600',
-    pending_approval: 'bg-amber-50 text-amber-700',
-    published: 'bg-red-50 text-red-700',
-    live: 'bg-emerald-50 text-emerald-700',
-    completed: 'bg-gray-100 text-gray-500',
-  };
-  const labels = {
-    pending_approval: 'Pending Approval',
-  };
   return (
-    <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium capitalize ${map[status] || 'bg-gray-100 text-gray-600'}`}>
-      {labels[status] || status || 'unknown'}
-    </span>
-  );
+    <div className="space-y-4">
+      <div className="grid grid-cols-2 gap-4">
+        <Field label="Name"><input className={inp} value={form.name} onChange={e=>setForm(p=>({...p,name:e.target.value}))}/></Field>
+        <Field label="Game"><input className={inp} value={form.game} onChange={e=>setForm(p=>({...p,game:e.target.value}))}/></Field>
+        <Field label="Status">
+          <select className={inp} value={form.status} onChange={e=>setForm(p=>({...p,status:e.target.value}))}>
+            {['draft','published','live','completed'].map(s=><option key={s} value={s}>{s}</option>)}
+          </select>
+        </Field>
+        <Field label="Format"><input className={inp} value={form.format} onChange={e=>setForm(p=>({...p,format:e.target.value}))}/></Field>
+        <Field label="Max Teams"><input type="number" className={inp} value={form.max_teams} onChange={e=>setForm(p=>({...p,max_teams:e.target.value}))}/></Field>
+        <Field label="Stream Link"><input className={inp} value={form.stream_link} onChange={e=>setForm(p=>({...p,stream_link:e.target.value}))}/></Field>
+        <Field label="Total Cost (EGP)"><input type="number" className={inp} value={form.total_cost} onChange={e=>setForm(p=>({...p,total_cost:e.target.value}))}/></Field>
+        <Field label="Platform Fee (EGP)"><input type="number" className={inp} value={form.platform_fee} onChange={e=>setForm(p=>({...p,platform_fee:e.target.value}))}/></Field>
+        <Field label="Prizepool (EGP)"><input type="number" className={inp} value={form.prizepool_total} onChange={e=>setForm(p=>({...p,prizepool_total:e.target.value}))}/></Field>
+        <Field label="Venue"><input className={inp} value={form.venue} onChange={e=>setForm(p=>({...p,venue:e.target.value}))}/></Field>
+      </div>
+      <Field label="Description">
+        <textarea rows={3} className={inp} value={form.description} onChange={e=>setForm(p=>({...p,description:e.target.value}))}/>
+      </Field>
+      <label className="flex items-center gap-2 text-sm text-zinc-400 cursor-pointer">
+        <input type="checkbox" checked={form.is_offline} onChange={e=>setForm(p=>({...p,is_offline:e.target.checked}))}
+          className="rounded border-zinc-600 bg-zinc-800"/>
+        Offline Event
+      </label>
+      <div className="flex justify-end">
+        <button onClick={() => onSave(form)}
+          className="flex items-center gap-2 px-5 py-2 bg-red-600 hover:bg-red-500 text-white text-sm font-semibold rounded-lg transition-colors">
+          <Save size={14}/> Save Changes
+        </button>
+      </div>
+    </div>
+  )
 }
 
-const TABS = [
-  { key: 'details', label: 'Details', icon: Trophy },
-  { key: 'teams', label: 'Teams', icon: Users },
-  { key: 'brackets', label: 'Brackets', icon: GitBranch },
-  { key: 'orders', label: 'Orders', icon: ShoppingCart },
-  { key: 'chat', label: 'Chat', icon: MessageSquare },
-];
+function TeamsTab({ t }) {
+  const teams = t.teams || []
+  const joinReqs = t.join_requests || []
+  return (
+    <div className="space-y-5">
+      <div className="bg-[#0e0e0e] border border-zinc-800/50 rounded-xl p-4">
+        <h3 className="text-sm font-bold text-white mb-3">Registered Teams ({teams.length})</h3>
+        {teams.length === 0
+          ? <p className="text-xs text-zinc-600">No teams registered</p>
+          : <div className="flex flex-wrap gap-2">
+              {teams.map((tid,i) => (
+                <span key={i} className="px-2.5 py-1 bg-zinc-800 text-zinc-300 text-xs font-mono rounded-lg">{tid}</span>
+              ))}
+            </div>
+        }
+      </div>
+      <div className="bg-[#0e0e0e] border border-zinc-800/50 rounded-xl p-4">
+        <h3 className="text-sm font-bold text-white mb-3">Join Requests ({joinReqs.length})</h3>
+        {joinReqs.length === 0
+          ? <p className="text-xs text-zinc-600">No pending requests</p>
+          : <div className="divide-y divide-zinc-800/30">
+              {joinReqs.map((r,i) => (
+                <div key={i} className="py-2 flex items-center justify-between">
+                  <span className="text-sm text-zinc-300">{r.team_name||r.team_id}</span>
+                  <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${r.status==='pending'?'bg-yellow-500/20 text-yellow-400':'bg-zinc-800 text-zinc-400'}`}>
+                    {r.status}
+                  </span>
+                </div>
+              ))}
+            </div>
+        }
+      </div>
+    </div>
+  )
+}
 
-const STATUS_OPTIONS = ['draft', 'pending_approval', 'published', 'live', 'completed'];
+function ChatTab({ chats, label }) {
+  const msgs = chats || []
+  return (
+    <div className="bg-[#0e0e0e] border border-zinc-800/50 rounded-xl p-4 max-h-[500px] overflow-y-auto">
+      {msgs.length === 0
+        ? <p className="text-xs text-zinc-600">No messages</p>
+        : <div className="space-y-3">
+            {msgs.map((m,i) => (
+              <div key={i} className="flex gap-3 text-sm">
+                <div className="w-7 h-7 rounded-full bg-zinc-800 shrink-0 flex items-center justify-center text-xs font-bold text-zinc-400">
+                  {(m.sender_name||m.author_name||'?')[0]?.toUpperCase()}
+                </div>
+                <div>
+                  <span className="text-zinc-300 font-semibold text-xs">{m.sender_name||m.author_name||'—'}</span>
+                  <span className="text-zinc-600 text-xs ml-2">
+                    {m.created_at ? new Date(m.created_at).toLocaleString() : m.timestamp||''}
+                  </span>
+                  <p className="text-zinc-400 text-sm mt-0.5">{m.text||m.message||m.content}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+      }
+    </div>
+  )
+}
 
-// ---------------------------------------------------------------------------
-// Main component
-// ---------------------------------------------------------------------------
+function BracketsTab({ t }) {
+  const brackets = t.brackets || []
+  return (
+    <div className="bg-[#0e0e0e] border border-zinc-800/50 rounded-xl p-4">
+      <h3 className="text-sm font-bold text-white mb-3">Brackets ({brackets.length} matches)</h3>
+      {brackets.length === 0
+        ? <p className="text-xs text-zinc-600">No brackets generated yet</p>
+        : <div className="divide-y divide-zinc-800/30">
+            {brackets.map((b,i) => (
+              <div key={i} className="py-2.5 flex items-center gap-4">
+                <span className="text-[10px] text-zinc-600 font-mono w-12">R{b.round||i+1}</span>
+                <span className="text-sm text-zinc-300 flex-1">{b.team1_name||b.team1_id||'TBD'}</span>
+                <span className="text-xs font-mono text-white">
+                  {b.score1??'—'} : {b.score2??'—'}
+                </span>
+                <span className="text-sm text-zinc-300 flex-1 text-right">{b.team2_name||b.team2_id||'TBD'}</span>
+                <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider w-20 text-center
+                  ${b.status==='complete'?'bg-green-500/20 text-green-400':b.status==='live'?'bg-yellow-500/20 text-yellow-400':'bg-zinc-800 text-zinc-400'}`}>
+                  {b.status||'pending'}
+                </span>
+              </div>
+            ))}
+          </div>
+      }
+    </div>
+  )
+}
 
 export default function StaffTournamentDetail() {
-  const { id } = useParams();
-  const navigate = useNavigate();
-  const queryClient = useQueryClient();
-  const [activeTab, setActiveTab] = useState('details');
-  const [newStatus, setNewStatus] = useState('');
-  const [editingField, setEditingField] = useState(null);
-  const [editValue, setEditValue] = useState('');
+  const { id } = useParams()
+  const navigate = useNavigate()
+  const qc = useQueryClient()
+  const [tab, setTab] = useState('details')
+  const [delConfirm, setDelConfirm] = useState(false)
 
-  React.useEffect(() => {
-    const token = localStorage.getItem('heru_staff_token');
-    const expires = localStorage.getItem('heru_staff_expires');
-    if (!token || !expires || new Date(expires) < new Date()) {
-      localStorage.removeItem('heru_staff_token');
-      localStorage.removeItem('heru_staff_expires');
-      navigate('/admin', { replace: true });
-    }
-  }, [navigate]);
+  const { data, isLoading } = useQuery({
+    queryKey: ['staff-tournament-detail', id],
+    queryFn:  () => Tournament.get(id),
+  })
+  const t = data?.tournament || data || {}
 
-  const { data: raw, isLoading } = useQuery({
-    queryKey: ['staff-tournament', id],
-    queryFn: () => apiCall('/tournaments/' + id),
-    staleTime: 30_000,
-  });
+  const saveMut = useMutation({
+    mutationFn: (body) => Staff.updateTournament(id, body),
+    onSuccess: () => { qc.invalidateQueries(['staff-tournament-detail', id]); toast.success('Tournament saved') },
+    onError: (e) => toast.error(e.message),
+  })
 
-  const tournament = raw?.data || raw || {};
+  const deleteMut = useMutation({
+    mutationFn: () => Staff.deleteTournament(id),
+    onSuccess: () => { navigate('/staff/tournaments'); toast.success('Tournament deleted') },
+    onError: (e) => toast.error(e.message),
+  })
 
-  React.useEffect(() => {
-    if (tournament.status && !newStatus) setNewStatus(tournament.status);
-  }, [tournament.status, newStatus]);
+  if (isLoading) return <div className="p-8 text-center text-zinc-500">Loading…</div>
 
-  const statusMutation = useMutation({
-    mutationFn: (status) => Staff.updateTournamentStatus(id, { status }),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['staff-tournament', id] }),
-  });
-
-  const updateFieldMutation = useMutation({
-    mutationFn: ({ field, value }) => Staff.updateTournament(id, { [field]: value }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['staff-tournament', id] });
-      setEditingField(null);
-      setEditValue('');
-    },
-  });
-
-  const startEditing = (field, currentValue) => {
-    setEditingField(field);
-    setEditValue(currentValue ?? '');
-  };
-
-  const saveField = () => {
-    if (editingField) {
-      let val = editValue;
-      if (['max_teams', 'total_cost', 'prizepool_total', 'platform_fee'].includes(editingField)) {
-        val = Number(val) || 0;
-      }
-      if (editingField === 'is_offline') {
-        val = editValue === 'true';
-      }
-      updateFieldMutation.mutate({ field: editingField, value: val });
-    }
-  };
-
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <p className="text-sm text-gray-400">Loading tournament...</p>
-      </div>
-    );
-  }
-
-  const teams = tournament.teams || [];
-  const brackets = tournament.brackets || [];
-  const coOrgs = tournament.co_organizers || [];
+  const tabs = [
+    { id:'details',  label:'Details',   icon:Settings   },
+    { id:'teams',    label:'Teams',     icon:Users      },
+    { id:'brackets', label:'Brackets',  icon:Trophy     },
+    { id:'org_chat', label:'Org Chat',  icon:MessageSquare },
+    { id:'gen_chat', label:'General Chat', icon:MessageSquare },
+    { id:'sup_chat', label:'Support Chat', icon:MessageSquare },
+    { id:'log',      label:'Log',       icon:Layers     },
+  ]
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Back */}
-        <button onClick={() => navigate('/staff/tournaments')} className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-700 mb-5 transition">
-          <ArrowLeft className="w-4 h-4" /> Back to Tournaments
+    <div className="space-y-5">
+      <div className="flex items-center gap-3">
+        <button onClick={() => navigate('/staff/tournaments')}
+          className="p-2 text-zinc-500 hover:text-white hover:bg-white/5 rounded-lg transition-colors">
+          <ArrowLeft size={16}/>
         </button>
-
-        {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
-          <div className="flex items-center gap-4">
-            <div className="w-14 h-14 rounded-xl bg-red-50 flex items-center justify-center shrink-0 overflow-hidden">
-              {tournament.tournament_image ? (
-                <img src={tournament.tournament_image} alt="" className="w-14 h-14 object-cover" />
-              ) : (
-                <Trophy className="w-6 h-6 text-red-500" />
-              )}
-            </div>
-            <div>
-              <h1 className="text-xl font-bold text-gray-900">{tournament.name || 'Untitled'}</h1>
-              <p className="text-sm text-gray-500 mt-0.5">{tournament.game || 'No game'} &middot; {tournament.format || 'TBD'}</p>
-            </div>
-          </div>
-          <StatusBadge status={tournament.status} />
+        <div className="flex-1 min-w-0">
+          <h1 className="text-xl font-bold text-white truncate">{t.name||'Tournament'}</h1>
+          <p className="text-xs text-zinc-500 font-mono">{t.id}</p>
         </div>
-
-        {/* Status changer */}
-        <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-5 mb-6">
-          <h3 className="text-sm font-semibold text-gray-700 mb-3">Change Status</h3>
-          <div className="flex items-center gap-3">
-            <select
-              value={newStatus}
-              onChange={(e) => setNewStatus(e.target.value)}
-              className="px-3 py-2 text-sm border border-gray-300 rounded-lg bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-red-500"
-            >
-              {STATUS_OPTIONS.map((s) => (
-                <option key={s} value={s}>{s === 'pending_approval' ? 'Pending Approval' : s.charAt(0).toUpperCase() + s.slice(1)}</option>
-              ))}
-            </select>
-            <button
-              onClick={() => statusMutation.mutate(newStatus)}
-              disabled={statusMutation.isPending || newStatus === tournament.status}
-              className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 disabled:opacity-40 disabled:cursor-not-allowed transition"
-            >
-              <Save className="w-4 h-4" />
-              {statusMutation.isPending ? 'Saving...' : 'Update Status'}
-            </button>
-          </div>
-          {statusMutation.isError && <p className="text-xs text-red-500 mt-2">Failed to update status.</p>}
-          {statusMutation.isSuccess && <p className="text-xs text-emerald-600 mt-2">Status updated.</p>}
-          {tournament.status === 'pending_approval' && (
-            <div className="mt-4 pt-4 border-t border-gray-100">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-amber-700">This tournament is awaiting staff approval.</p>
-                  <p className="text-xs text-gray-500 mt-0.5">Approve to make it publicly visible.</p>
-                </div>
-                <button
-                  onClick={() => statusMutation.mutate('published')}
-                  disabled={statusMutation.isPending}
-                  className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-white bg-emerald-600 rounded-lg hover:bg-emerald-700 disabled:opacity-40 disabled:cursor-not-allowed transition"
-                >
-                  <CheckCircle className="w-4 h-4" />
-                  {statusMutation.isPending ? 'Approving...' : 'Approve & Publish'}
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Tabs */}
-        <div className="flex items-center gap-1 mb-5 border-b border-gray-200">
-          {TABS.map((tab) => (
-            <button
-              key={tab.key}
-              onClick={() => setActiveTab(tab.key)}
-              className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium border-b-2 transition ${
-                activeTab === tab.key
-                  ? 'border-red-500 text-red-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700'
-              }`}
-            >
-              <tab.icon className="w-4 h-4" />
-              {tab.label}
-            </button>
-          ))}
-        </div>
-
-        {/* Tab: Details */}
-        {activeTab === 'details' && (
-          <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6 space-y-5">
-            {updateFieldMutation.isError && (
-              <p className="text-xs text-red-500 bg-red-50 rounded-lg px-3 py-2">Failed to update field.</p>
-            )}
-            {updateFieldMutation.isSuccess && (
-              <p className="text-xs text-emerald-600 bg-emerald-50 rounded-lg px-3 py-2">Field updated successfully.</p>
-            )}
-
-            <h4 className="text-sm font-semibold text-gray-700">Editable Fields</h4>
-            <div className="space-y-3">
-              {[
-                { field: 'name', label: 'Tournament Name', type: 'text' },
-                { field: 'game', label: 'Game', type: 'text' },
-                { field: 'format', label: 'Format', type: 'text' },
-                { field: 'max_teams', label: 'Max Teams', type: 'number' },
-                { field: 'schedule', label: 'Schedule', type: 'datetime-local' },
-                { field: 'description', label: 'Description', type: 'textarea' },
-                { field: 'venue', label: 'Venue', type: 'text' },
-                { field: 'stream_link', label: 'Stream Link', type: 'text' },
-                { field: 'total_cost', label: 'Total Cost (EGP)', type: 'number' },
-                { field: 'prizepool_total', label: 'Prizepool (EGP)', type: 'number' },
-                { field: 'platform_fee', label: 'Platform Fee (EGP)', type: 'number' },
-              ].map(({ field, label, type }) => (
-                <div key={field} className="flex items-start justify-between gap-4 py-2.5 border-b border-gray-50 last:border-0">
-                  <div className="flex-1 min-w-0">
-                    <p className="text-xs text-gray-500">{label}</p>
-                    {editingField === field ? (
-                      <div className="flex items-center gap-2 mt-1">
-                        {type === 'textarea' ? (
-                          <textarea
-                            value={editValue}
-                            onChange={(e) => setEditValue(e.target.value)}
-                            className="flex-1 px-2 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 resize-none"
-                            rows={3}
-                          />
-                        ) : (
-                          <input
-                            type={type === 'datetime-local' ? 'datetime-local' : type}
-                            value={editValue}
-                            onChange={(e) => setEditValue(e.target.value)}
-                            className="flex-1 px-2 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
-                          />
-                        )}
-                        <button
-                          onClick={saveField}
-                          disabled={updateFieldMutation.isPending}
-                          className="px-3 py-1.5 text-xs font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 disabled:opacity-50"
-                        >
-                          {updateFieldMutation.isPending ? 'Saving...' : 'Save'}
-                        </button>
-                        <button
-                          onClick={() => setEditingField(null)}
-                          className="px-3 py-1.5 text-xs font-medium text-gray-500 bg-gray-100 rounded-lg hover:bg-gray-200"
-                        >
-                          Cancel
-                        </button>
-                      </div>
-                    ) : (
-                      <p className="text-sm font-medium text-gray-900 mt-0.5">
-                        {type === 'number' && ['total_cost', 'prizepool_total', 'platform_fee'].includes(field)
-                          ? formatEGP(tournament[field])
-                          : field === 'schedule'
-                            ? formatDate(tournament[field])
-                            : (tournament[field] ?? '-')}
-                      </p>
-                    )}
-                  </div>
-                  {editingField !== field && (
-                    <button
-                      onClick={() => startEditing(field, field === 'schedule' && tournament[field] ? new Date(tournament[field]).toISOString().slice(0, 16) : tournament[field])}
-                      className="shrink-0 mt-3 px-2.5 py-1 text-xs text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg transition"
-                    >
-                      Edit
-                    </button>
-                  )}
-                </div>
-              ))}
-            </div>
-
-            <hr className="border-gray-100" />
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-              <InfoRow icon={Calendar} label="Schedule" value={formatDate(tournament.schedule)} />
-              <InfoRow icon={Globe} label="Type" value={tournament.tournament_type === 'shared' ? 'Shared' : 'Solo'} />
-              <InfoRow icon={Users} label="Max Teams" value={tournament.max_teams || '-'} />
-              <InfoRow icon={MapPin} label="Venue" value={tournament.is_offline ? (tournament.venue || 'Offline') : 'Online'} />
-            </div>
-            <hr className="border-gray-100" />
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <CostCard label="Items Cost" value={formatEGP(tournament.total_cost)} />
-              <CostCard label="Prizepool" value={formatEGP(tournament.prizepool_total)} />
-              <CostCard label="Platform Fee (15%)" value={formatEGP(tournament.platform_fee)} />
-            </div>
-            {coOrgs.length > 0 && (
-              <div>
-                <h4 className="text-sm font-semibold text-gray-700 mb-2">Co-Organizers</h4>
-                <div className="space-y-2">
-                  {coOrgs.map((co, i) => (
-                    <div key={i} className="flex items-center justify-between text-sm bg-gray-50 rounded-lg px-4 py-2.5">
-                      <span className="text-gray-700">{co.brand_name || co.organizer_id}</span>
-                      <span className="text-gray-500">{co.commitment_percent || 0}%</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Tab: Teams */}
-        {activeTab === 'teams' && (
-          <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-            {teams.length === 0 ? (
-              <div className="px-6 py-16 text-center text-sm text-gray-400">No teams registered.</div>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full text-left">
-                  <thead>
-                    <tr className="border-b border-gray-100">
-                      <th className="px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">#</th>
-                      <th className="px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Team ID</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-100">
-                    {teams.map((teamId, idx) => (
-                      <tr key={teamId} className="hover:bg-gray-50">
-                        <td className="px-6 py-3 text-sm text-gray-500">{idx + 1}</td>
-                        <td className="px-6 py-3 text-sm font-mono text-red-600">{teamId}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Tab: Brackets */}
-        {activeTab === 'brackets' && (
-          <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
-            {brackets.length === 0 ? (
-              <p className="text-sm text-gray-400 text-center py-10">No bracket data available.</p>
-            ) : (
-              <div className="space-y-3">
-                {brackets.map((match, idx) => (
-                  <div key={idx} className="flex items-center justify-between bg-gray-50 rounded-lg px-4 py-3">
-                    <div className="text-sm text-gray-700">
-                      <span className="font-medium">{match.team_a || 'TBD'}</span>
-                      <span className="text-gray-400 mx-2">vs</span>
-                      <span className="font-medium">{match.team_b || 'TBD'}</span>
-                    </div>
-                    <div className="text-sm text-gray-500">
-                      {match.score_a != null ? `${match.score_a} - ${match.score_b}` : 'Pending'}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Tab: Orders */}
-        {activeTab === 'orders' && <OrdersTab tournamentId={id} />}
-
-        {/* Tab: Chat */}
-        {activeTab === 'chat' && <ChatTab tournament={tournament} tournamentId={id} queryClient={queryClient} />}
-      </div>
-    </div>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// Sub-components
-// ---------------------------------------------------------------------------
-
-function InfoRow({ icon: Icon, label, value }) {
-  return (
-    <div className="flex items-start gap-3">
-      <div className="rounded-lg bg-gray-100 p-2 mt-0.5">
-        <Icon className="w-4 h-4 text-gray-500" />
-      </div>
-      <div>
-        <p className="text-xs text-gray-500">{label}</p>
-        <p className="text-sm font-medium text-gray-900">{value}</p>
-      </div>
-    </div>
-  );
-}
-
-function CostCard({ label, value }) {
-  return (
-    <div className="rounded-lg bg-gray-50 border border-gray-100 px-4 py-3">
-      <p className="text-xs text-gray-500">{label}</p>
-      <p className="text-lg font-bold text-gray-900 mt-0.5">{value}</p>
-    </div>
-  );
-}
-
-function OrdersTab({ tournamentId }) {
-  const { data: raw = [], isLoading } = useQuery({
-    queryKey: ['staff-tournament-orders', tournamentId],
-    queryFn: () => apiCall('/tournament-orders?tournament_id=' + tournamentId),
-    staleTime: 30_000,
-  });
-
-  const orders = Array.isArray(raw) ? raw : raw.data || [];
-
-  if (isLoading) return <div className="py-10 text-center text-sm text-gray-400">Loading orders...</div>;
-  if (orders.length === 0) return <div className="py-10 text-center text-sm text-gray-400">No orders for this tournament.</div>;
-
-  return (
-    <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-      <div className="overflow-x-auto">
-        <table className="w-full text-left">
-          <thead>
-            <tr className="border-b border-gray-100">
-              <th className="px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Order ID</th>
-              <th className="px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider text-right">Total</th>
-              <th className="px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Status</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-100">
-            {orders.map((o) => (
-              <tr key={o.id} className="hover:bg-gray-50">
-                <td className="px-6 py-3 text-sm font-mono text-red-600">{o.id?.slice(0, 8)}</td>
-                <td className="px-6 py-3 text-sm font-medium text-gray-900 text-right">
-                  EGP {(o.grand_total || 0).toLocaleString('en-EG')}
-                </td>
-                <td className="px-6 py-3">
-                  <span className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium capitalize bg-gray-100 text-gray-600">
-                    {(o.fulfillment_status || 'unknown').replace(/_/g, ' ')}
-                  </span>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  );
-}
-
-function ChatTab({ tournament, tournamentId, queryClient }) {
-  const [message, setMessage] = useState('');
-  const chatMessages = tournament.support_chat || [];
-  const chatEndRef = React.useRef(null);
-
-  React.useEffect(() => {
-    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [chatMessages.length]);
-
-  const sendMutation = useMutation({
-    mutationFn: (newMsg) => {
-      const updatedChat = [...chatMessages, newMsg];
-      return Staff.updateTournament(tournamentId, { support_chat: updatedChat });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['staff-tournament', tournamentId] });
-      setMessage('');
-    },
-  });
-
-  const handleSend = () => {
-    const text = message.trim();
-    if (!text) return;
-    sendMutation.mutate({
-      user_id: 'staff',
-      sender_name: 'HERU Staff',
-      message: text,
-      timestamp: new Date().toISOString(),
-    });
-  };
-
-  const handleKeyDown = (e) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      handleSend();
-    }
-  };
-
-  return (
-    <div className="bg-white rounded-xl border border-gray-200 shadow-sm flex flex-col" style={{ height: '500px' }}>
-      <div className="px-5 py-3 border-b border-gray-200">
-        <h4 className="text-sm font-semibold text-gray-700">Support Chat</h4>
-        <p className="text-xs text-gray-400">Staff-to-organizer tournament support channel</p>
+        <button onClick={() => setDelConfirm(true)}
+          className="flex items-center gap-2 px-4 py-2 bg-red-500/10 hover:bg-red-500/20 text-red-400 text-sm font-semibold rounded-lg border border-red-500/20 transition-colors">
+          <Trash2 size={14}/> Delete
+        </button>
       </div>
 
-      {/* Messages */}
-      <div className="flex-1 overflow-y-auto px-5 py-4 space-y-3">
-        {chatMessages.length === 0 ? (
-          <p className="text-sm text-gray-400 text-center py-10">No messages yet. Start the conversation.</p>
-        ) : (
-          chatMessages.map((msg, idx) => {
-            const isStaff = msg.user_id === 'staff';
-            return (
-              <div key={idx} className={`flex ${isStaff ? 'justify-end' : 'justify-start'}`}>
-                <div className={`max-w-[75%] rounded-lg px-3.5 py-2.5 ${
-                  isStaff
-                    ? 'bg-red-50 border border-red-100'
-                    : 'bg-gray-50 border border-gray-100'
-                }`}>
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className={`text-xs font-medium ${isStaff ? 'text-red-600' : 'text-gray-700'}`}>
-                      {msg.sender_name || (isStaff ? 'Staff' : 'Organizer')}
-                    </span>
-                    <span className="text-[10px] text-gray-400">
-                      {msg.timestamp ? new Date(msg.timestamp).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : ''}
-                    </span>
-                  </div>
-                  <p className="text-sm text-gray-800 whitespace-pre-wrap">{msg.message}</p>
-                </div>
-              </div>
-            );
-          })
-        )}
-        <div ref={chatEndRef} />
-      </div>
-
-      {/* Input */}
-      <div className="px-5 py-3 border-t border-gray-200">
-        {sendMutation.isError && <p className="text-xs text-red-500 mb-2">Failed to send message.</p>}
-        <div className="flex items-center gap-2">
-          <input
-            value={message}
-            onChange={(e) => setMessage(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder="Type a message..."
-            className="flex-1 px-3 py-2 text-sm border border-gray-300 rounded-lg bg-white text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
-          />
-          <button
-            onClick={handleSend}
-            disabled={!message.trim() || sendMutation.isPending}
-            className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 disabled:opacity-40 disabled:cursor-not-allowed transition"
-          >
-            <Send className="w-4 h-4" />
-            {sendMutation.isPending ? 'Sending...' : 'Send'}
+      <div className="flex gap-1 border-b border-zinc-800 overflow-x-auto">
+        {tabs.map(tb => (
+          <button key={tb.id} onClick={() => setTab(tb.id)}
+            className={`flex items-center gap-1.5 px-4 py-3 text-sm font-semibold transition-colors border-b-2 -mb-px whitespace-nowrap
+              ${tab===tb.id ? 'border-red-500 text-white' : 'border-transparent text-zinc-500 hover:text-zinc-300'}`}>
+            <tb.icon size={13}/>
+            {tb.label}
           </button>
-        </div>
+        ))}
       </div>
+
+      {tab === 'details'  && <DetailsTab t={t} onSave={saveMut.mutate}/>}
+      {tab === 'teams'    && <TeamsTab t={t}/>}
+      {tab === 'brackets' && <BracketsTab t={t}/>}
+      {tab === 'org_chat' && <ChatTab chats={t.organizer_chat} label="Organizer Chat"/>}
+      {tab === 'gen_chat' && <ChatTab chats={t.general_chat} label="General Chat"/>}
+      {tab === 'sup_chat' && <ChatTab chats={t.support_chat} label="Support Chat"/>}
+      {tab === 'log'      && (
+        <div className="bg-[#0e0e0e] border border-zinc-800/50 rounded-xl p-4 space-y-2 max-h-[500px] overflow-y-auto">
+          {(t.tournament_log||[]).length === 0
+            ? <p className="text-xs text-zinc-600">No log entries</p>
+            : (t.tournament_log||[]).map((l,i) => (
+                <div key={i} className="flex gap-3 text-xs">
+                  <span className="text-zinc-600 whitespace-nowrap">{l.timestamp ? new Date(l.timestamp).toLocaleString() : '—'}</span>
+                  <span className="text-zinc-400">{l.action||l.message||JSON.stringify(l)}</span>
+                </div>
+              ))
+          }
+        </div>
+      )}
+
+      {delConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
+          <div className="bg-[#111] border border-red-500/30 rounded-2xl w-full max-w-sm shadow-2xl p-6 space-y-4">
+            <h3 className="font-bold text-white">Delete Tournament?</h3>
+            <p className="text-sm text-zinc-400">This will permanently delete <span className="text-white">{t.name}</span> and all its data.</p>
+            <div className="flex gap-2 justify-end">
+              <button onClick={() => setDelConfirm(false)} className="px-4 py-2 text-sm text-zinc-400 hover:text-white">Cancel</button>
+              <button onClick={() => deleteMut.mutate()} disabled={deleteMut.isPending}
+                className="px-4 py-2 bg-red-600 hover:bg-red-500 text-white text-sm font-semibold rounded-lg disabled:opacity-50">
+                {deleteMut.isPending ? 'Deleting…' : 'Delete'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
-  );
+  )
 }

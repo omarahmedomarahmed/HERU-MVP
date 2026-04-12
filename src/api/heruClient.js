@@ -211,6 +211,41 @@ export const Staff = {
   allRadar:         (filters)     => apiCall(`/staff/radar${buildQuery(filters)}`),
   updateRadar:      (id, data)    => apiCall(`/staff/radar/${id}`, { method: 'PUT', body: data }),
   radarViews:       ()            => apiCall('/staff/radar-views'),
+  // Gamers
+  gamers:           (filters)     => apiCall(`/staff/gamers${buildQuery(filters)}`),
+  updateGamer:      (id, data)    => apiCall(`/staff/gamers/${id}`, { method: 'PUT', body: data }),
+  // Teams
+  teams:            (filters)     => apiCall(`/staff/teams${buildQuery(filters)}`),
+  updateTeam:       (id, data)    => apiCall(`/staff/teams/${id}`, { method: 'PUT', body: data }),
+  deleteTeam:       (id)          => apiCall(`/staff/teams/${id}`, { method: 'DELETE' }),
+  // Gigs
+  gigs:             (filters)     => apiCall(`/staff/gigs${buildQuery(filters)}`),
+  updateGig:        (id, data)    => apiCall(`/staff/gigs/${id}`, { method: 'PUT', body: data }),
+  // Organizer profiles
+  updateOrganizer:  (id, data)    => apiCall(`/staff/organizers/${id}`, { method: 'PUT', body: data }),
+  // Tournament CRUD
+  deleteTournament: (id)          => apiCall(`/staff/tournaments/${id}`, { method: 'DELETE' }),
+  buildOnBehalf:    (data)        => apiCall('/staff/tournaments/build-on-behalf', { method: 'POST', body: data }),
+  // Users
+  deleteUser:       (id)          => apiCall(`/staff/users/${id}`, { method: 'DELETE' }),
+  // Bills
+  createBill:       (data)        => apiCall('/staff/bills', { method: 'POST', body: data }),
+  deleteBill:       (id)          => apiCall(`/staff/bills/${id}`, { method: 'DELETE' }),
+  // Orders
+  allOrders:        (filters)     => apiCall(`/staff/orders${buildQuery(filters)}`),
+  updateOrder:      (id, data)    => apiCall(`/staff/orders/${id}`, { method: 'PUT', body: data }),
+  // Tournament orders
+  allTournamentOrders: (filters)  => apiCall(`/staff/tournament-orders${buildQuery(filters)}`),
+  updateTournamentOrder: (id, data) => apiCall(`/staff/tournament-orders/${id}`, { method: 'PUT', body: data }),
+  // Approvals
+  allApprovals:     (filters)     => apiCall(`/staff/approvals${buildQuery(filters)}`),
+  updateApproval:   (id, data)    => apiCall(`/staff/approvals/${id}`, { method: 'PUT', body: data }),
+  // Sessions
+  sessions:         ()            => apiCall('/staff/sessions'),
+  terminateSession: (id)          => apiCall(`/staff/sessions/${id}`, { method: 'DELETE' }),
+  // App settings
+  appSettings:      ()            => apiCall('/staff/app-settings'),
+  updateAppSetting: (key, data)   => apiCall(`/staff/app-settings/${key}`, { method: 'PUT', body: data }),
 }
 
 export const TournamentReport = {

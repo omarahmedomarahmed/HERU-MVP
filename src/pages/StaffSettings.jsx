@@ -1,266 +1,244 @@
-import React, { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import {
-  Key, Shield, Eye, EyeOff, RefreshCw, Plus,
-  User, Percent,
-} from 'lucide-react';
-import { Staff, AppSettings } from '@/api/heruClient';
-import { useAuth } from '@/lib/AuthContext';
+import React, { useState } from 'react'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { Staff } from '@/api/heruClient'
+import { toast } from 'sonner'
+import { Plus, Trash2, X, KeyRound, Settings, Monitor, ShieldOff } from 'lucide-react'
 
-export default function StaffSettings() {
-  const queryClient = useQueryClient();
+function AccessKeysTab() {
+  const qc = useQueryClient()
+  const [creating, setCreating] = useState(false)
+  const [form, setForm] = useState({ access_key: '', staff_name: '', staff_email: '', notes: '' })
 
-  // Current session info from localStorage
-  const staffName = localStorage.getItem('heru_staff_name') || 'Staff User';
-  const staffEmail = localStorage.getItem('heru_staff_email') || '--';
-
-  // Access keys
-  const { data: accessKeys = [], isLoading: keysLoading } = useQuery({
+  const { data, isLoading } = useQuery({
     queryKey: ['staff-access-keys'],
     queryFn: () => Staff.accessKeys(),
-  });
+  })
+  const keys = data?.keys || data || []
 
-  // App settings
-  const { data: settings = [], isLoading: settingsLoading } = useQuery({
-    queryKey: ['staff-app-settings'],
-    queryFn: () => AppSettings.list(),
-  });
+  const createMut = useMutation({
+    mutationFn: (body) => Staff.createAccessKey(body),
+    onSuccess: () => { qc.invalidateQueries(['staff-access-keys']); setCreating(false); setForm({ access_key:'',staff_name:'',staff_email:'',notes:'' }); toast.success('Access key created') },
+    onError: (e) => toast.error(e.message),
+  })
 
-  const platformFeeSetting = settings.find?.(s => s.setting_key === 'platform_fee_percent');
-  const [feePercent, setFeePercent] = useState('');
-  React.useEffect(() => {
-    if (platformFeeSetting) setFeePercent(platformFeeSetting.setting_value || '15');
-  }, [platformFeeSetting]);
-
-  // New key form
-  const [showNewKey, setShowNewKey] = useState(false);
-  const [newKeyForm, setNewKeyForm] = useState({ staff_name: '', staff_email: '', access_key: '' });
-  const [showKeys, setShowKeys] = useState({});
-
-  const createKeyMutation = useMutation({
-    mutationFn: (data) => Staff.createAccessKey(data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['staff-access-keys'] });
-      setShowNewKey(false);
-      setNewKeyForm({ staff_name: '', staff_email: '', access_key: '' });
-    },
-  });
-
-  const deactivateKeyMutation = useMutation({
+  const deactivateMut = useMutation({
     mutationFn: (id) => Staff.deactivateKey(id),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['staff-access-keys'] }),
-  });
+    onSuccess: () => { qc.invalidateQueries(['staff-access-keys']); toast.success('Key deactivated') },
+    onError: (e) => toast.error(e.message),
+  })
 
-  const updateFeeMutation = useMutation({
-    mutationFn: (value) => {
-      if (platformFeeSetting) {
-        return AppSettings.update(platformFeeSetting.setting_key, { setting_value: value });
-      }
-      return Promise.resolve();
-    },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['staff-app-settings'] }),
-  });
-
-  const generateRandomKey = () => {
-    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-    const key = 'HERU-STAFF-' + Array.from({ length: 3 }, () =>
-      Array.from({ length: 4 }, () => chars[Math.floor(Math.random() * chars.length)]).join('')
-    ).join('-');
-    setNewKeyForm(f => ({ ...f, access_key: key }));
-  };
-
-  const toggleShowKey = (id) => {
-    setShowKeys(prev => ({ ...prev, [id]: !prev[id] }));
-  };
+  const inp = "bg-[#1a1a1a] border border-zinc-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-red-500/50"
 
   return (
-    <div className="max-w-3xl mx-auto space-y-6">
-      <h1 className="text-2xl font-bold text-white">
-        Staff <span className="text-red-400">Settings</span>
-      </h1>
-
-      {/* Current Session Info */}
-      <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-6">
-        <h2 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
-          <User className="w-5 h-5 text-red-400" />
-          Current Session
-        </h2>
-        <div className="grid grid-cols-2 gap-4">
-          <div className="bg-zinc-800 rounded-lg p-3">
-            <p className="text-xs text-gray-500 mb-1">Staff Name</p>
-            <p className="text-white text-sm">{staffName}</p>
-          </div>
-          <div className="bg-zinc-800 rounded-lg p-3">
-            <p className="text-xs text-gray-500 mb-1">Email</p>
-            <p className="text-white text-sm">{staffEmail}</p>
-          </div>
-        </div>
-        <button
-          onClick={() => {
-            localStorage.removeItem('heru_staff_token');
-            localStorage.removeItem('heru_staff_expires');
-            localStorage.removeItem('heru_staff_name');
-            localStorage.removeItem('heru_staff_email');
-            window.location.href = '/admin';
-          }}
-          className="mt-4 w-full py-2.5 bg-zinc-800 hover:bg-zinc-700 text-gray-300 rounded-lg text-sm font-medium transition-colors"
-        >
-          Logout from Staff Area
+    <div className="space-y-4">
+      <div className="flex justify-end">
+        <button onClick={() => setCreating(true)}
+          className="flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-500 text-white text-sm font-semibold rounded-lg transition-colors">
+          <Plus size={14}/> New Key
         </button>
       </div>
 
-      {/* Staff Access Keys */}
-      <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-6">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-bold text-white flex items-center gap-2">
-            <Key className="w-5 h-5 text-red-400" />
-            Staff Access Keys
-          </h2>
-          <button
-            onClick={() => setShowNewKey(!showNewKey)}
-            className="flex items-center gap-2 px-3 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-xs font-medium transition-colors"
-          >
-            <Plus className="w-3 h-3" /> New Key
-          </button>
-        </div>
-
-        {/* New key form */}
-        {showNewKey && (
-          <div className="bg-zinc-800 rounded-lg p-4 mb-4 space-y-3">
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="text-xs text-gray-400 block mb-1">Staff Name</label>
-                <input
-                  value={newKeyForm.staff_name}
-                  onChange={e => setNewKeyForm(f => ({ ...f, staff_name: e.target.value }))}
-                  className="w-full px-3 py-2 bg-zinc-900 border border-zinc-700 rounded-lg text-white text-sm focus:outline-none focus:border-red-500"
-                  placeholder="Name"
-                />
-              </div>
-              <div>
-                <label className="text-xs text-gray-400 block mb-1">Staff Email</label>
-                <input
-                  value={newKeyForm.staff_email}
-                  onChange={e => setNewKeyForm(f => ({ ...f, staff_email: e.target.value }))}
-                  className="w-full px-3 py-2 bg-zinc-900 border border-zinc-700 rounded-lg text-white text-sm focus:outline-none focus:border-red-500"
-                  placeholder="Email"
-                />
-              </div>
-            </div>
-            <div>
-              <label className="text-xs text-gray-400 block mb-1">Access Key</label>
-              <div className="flex gap-2">
-                <input
-                  value={newKeyForm.access_key}
-                  onChange={e => setNewKeyForm(f => ({ ...f, access_key: e.target.value }))}
-                  className="flex-1 px-3 py-2 bg-zinc-900 border border-zinc-700 rounded-lg text-white text-sm font-mono focus:outline-none focus:border-red-500"
-                  placeholder="HERU-STAFF-..."
-                />
-                <button
-                  onClick={generateRandomKey}
-                  className="px-3 py-2 bg-zinc-700 hover:bg-zinc-600 text-gray-300 rounded-lg transition-colors"
-                  title="Generate random key"
-                >
-                  <RefreshCw className="w-4 h-4" />
-                </button>
-              </div>
-            </div>
-            <div className="flex justify-end gap-2">
-              <button
-                onClick={() => setShowNewKey(false)}
-                className="px-3 py-2 bg-zinc-700 text-gray-300 rounded-lg text-xs"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={() => createKeyMutation.mutate(newKeyForm)}
-                disabled={!newKeyForm.staff_name || !newKeyForm.staff_email || !newKeyForm.access_key || createKeyMutation.isPending}
-                className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-xs font-medium transition-colors disabled:opacity-50"
-              >
-                Create Key
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* Keys list */}
-        {keysLoading ? (
-          <p className="text-gray-500 text-sm">Loading keys...</p>
-        ) : (Array.isArray(accessKeys) ? accessKeys : []).length === 0 ? (
-          <p className="text-gray-500 text-sm text-center py-4">No access keys found</p>
-        ) : (
-          <div className="space-y-2">
-            {(Array.isArray(accessKeys) ? accessKeys : []).map(key => (
-              <div key={key.id} className="bg-zinc-800 rounded-lg p-3 flex items-center justify-between">
-                <div className="flex items-center gap-3 min-w-0 flex-1">
-                  <div className={`w-2 h-2 rounded-full flex-shrink-0 ${key.is_active ? 'bg-green-400' : 'bg-red-400'}`} />
-                  <div className="min-w-0">
-                    <p className="text-white text-sm font-medium">{key.staff_name}</p>
-                    <p className="text-gray-500 text-xs">{key.staff_email}</p>
-                    <div className="flex items-center gap-1 mt-1">
-                      <p className="text-gray-400 text-xs font-mono">
-                        {showKeys[key.id] ? key.access_key : '****-****-****'}
-                      </p>
-                      <button onClick={() => toggleShowKey(key.id)} className="text-gray-500 hover:text-gray-300">
-                        {showKeys[key.id] ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
-                      </button>
-                    </div>
+      <div className="bg-[#0e0e0e] border border-zinc-800/50 rounded-xl overflow-hidden">
+        {isLoading ? <div className="p-6 text-center text-zinc-500 text-sm">Loading…</div>
+        : keys.length === 0 ? <div className="p-6 text-center text-zinc-600 text-sm">No access keys</div>
+        : (
+          <div className="divide-y divide-zinc-800/30">
+            {keys.map(k => (
+              <div key={k.id} className="flex items-center gap-4 px-5 py-4">
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-0.5">
+                    <span className="font-mono text-sm text-white">{k.access_key}</span>
+                    <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider
+                      ${k.is_active ? 'bg-green-500/20 text-green-400' : 'bg-zinc-800 text-zinc-500'}`}>
+                      {k.is_active ? 'active' : 'inactive'}
+                    </span>
                   </div>
+                  <p className="text-xs text-zinc-500">
+                    {k.staff_name} &bull; {k.staff_email}
+                    {k.use_count > 0 && <span className="ml-2">Used {k.use_count}×</span>}
+                    {k.last_used_at && <span className="ml-2">Last: {new Date(k.last_used_at).toLocaleDateString()}</span>}
+                  </p>
+                  {k.notes && <p className="text-xs text-zinc-600 mt-0.5">{k.notes}</p>}
                 </div>
-                <div className="flex items-center gap-2 flex-shrink-0">
-                  {key.use_count != null && (
-                    <span className="text-xs text-gray-500">Used {key.use_count}x</span>
-                  )}
-                  {key.is_active ? (
-                    <button
-                      onClick={() => deactivateKeyMutation.mutate(key.id)}
-                      disabled={deactivateKeyMutation.isPending}
-                      className="text-xs px-2 py-1 bg-red-500/20 text-red-400 rounded hover:bg-red-500/30 transition-colors"
-                    >
-                      Deactivate
-                    </button>
-                  ) : (
-                    <span className="text-xs px-2 py-1 bg-zinc-700 text-gray-500 rounded">Inactive</span>
-                  )}
-                </div>
+                {k.is_active && (
+                  <button onClick={() => deactivateMut.mutate(k.id)}
+                    disabled={deactivateMut.isPending}
+                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-zinc-500 hover:text-red-400 hover:bg-red-500/10 rounded-lg border border-transparent hover:border-red-500/20 transition-colors">
+                    <ShieldOff size={12}/> Deactivate
+                  </button>
+                )}
               </div>
             ))}
           </div>
         )}
       </div>
 
-      {/* Platform Settings */}
-      <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-6">
-        <h2 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
-          <Percent className="w-5 h-5 text-red-400" />
-          Platform Settings
-        </h2>
-        <div className="bg-zinc-800 rounded-lg p-4">
-          <label className="text-xs text-gray-400 block mb-2">Platform Fee Percentage</label>
-          <div className="flex items-center gap-3">
-            <input
-              type="number"
-              min="0"
-              max="100"
-              step="1"
-              value={feePercent}
-              onChange={e => setFeePercent(e.target.value)}
-              className="w-24 px-3 py-2 bg-zinc-900 border border-zinc-700 rounded-lg text-white text-sm font-mono focus:outline-none focus:border-red-500"
-            />
-            <span className="text-gray-400 text-sm">%</span>
-            <button
-              onClick={() => updateFeeMutation.mutate(feePercent)}
-              disabled={updateFeeMutation.isPending || !feePercent}
-              className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-xs font-medium transition-colors disabled:opacity-50"
-            >
-              Save
-            </button>
+      {creating && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
+          <div className="bg-[#111] border border-zinc-700 rounded-2xl w-full max-w-md shadow-2xl">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-zinc-800">
+              <span className="font-bold text-white">New Access Key</span>
+              <button onClick={() => setCreating(false)} className="text-zinc-500 hover:text-white"><X size={18}/></button>
+            </div>
+            <div className="p-5 space-y-3">
+              {[
+                { label: 'Access Key', key: 'access_key', placeholder: 'HERU-STAFF-XXX-2026' },
+                { label: 'Staff Name', key: 'staff_name', placeholder: 'John Doe' },
+                { label: 'Staff Email', key: 'staff_email', placeholder: 'john@heru.gg' },
+                { label: 'Notes', key: 'notes', placeholder: 'Optional notes' },
+              ].map(f => (
+                <div key={f.key} className="flex flex-col gap-1">
+                  <label className="text-[11px] text-zinc-500 uppercase tracking-wider">{f.label}</label>
+                  <input className={inp} placeholder={f.placeholder} value={form[f.key]}
+                    onChange={e=>setForm(p=>({...p,[f.key]:e.target.value}))}/>
+                </div>
+              ))}
+            </div>
+            <div className="flex justify-end gap-2 px-5 py-4 border-t border-zinc-800">
+              <button onClick={() => setCreating(false)} className="px-4 py-2 text-sm text-zinc-400 hover:text-white">Cancel</button>
+              <button onClick={() => createMut.mutate(form)}
+                disabled={createMut.isPending || !form.access_key || !form.staff_name}
+                className="px-4 py-2 bg-red-600 hover:bg-red-500 text-white text-sm font-semibold rounded-lg disabled:opacity-50">
+                {createMut.isPending ? 'Creating…' : 'Create'}
+              </button>
+            </div>
           </div>
-          <p className="text-gray-500 text-xs mt-2">
-            Currently set to {platformFeeSetting?.setting_value || '15'}%. This fee is added on top of every tournament cost.
-          </p>
         </div>
-      </div>
+      )}
     </div>
-  );
+  )
+}
+
+function SessionsTab() {
+  const qc = useQueryClient()
+  const { data, isLoading } = useQuery({
+    queryKey: ['staff-sessions'],
+    queryFn: () => Staff.sessions(),
+  })
+  const sessions = data?.sessions || data || []
+
+  const terminateMut = useMutation({
+    mutationFn: (id) => Staff.terminateSession(id),
+    onSuccess: () => { qc.invalidateQueries(['staff-sessions']); toast.success('Session terminated') },
+    onError: (e) => toast.error(e.message),
+  })
+
+  return (
+    <div className="bg-[#0e0e0e] border border-zinc-800/50 rounded-xl overflow-hidden">
+      {isLoading ? <div className="p-6 text-center text-zinc-500 text-sm">Loading…</div>
+      : sessions.length === 0 ? <div className="p-6 text-center text-zinc-600 text-sm">No active sessions</div>
+      : (
+        <div className="divide-y divide-zinc-800/30">
+          {sessions.map(s => (
+            <div key={s.id} className="flex items-center gap-4 px-5 py-4">
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 mb-0.5">
+                  <span className="text-sm text-white font-medium">{s.staff_name||s.staff_email}</span>
+                  <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider
+                    ${s.is_active ? 'bg-green-500/20 text-green-400' : 'bg-zinc-800 text-zinc-500'}`}>
+                    {s.is_active ? 'active' : 'expired'}
+                  </span>
+                </div>
+                <p className="text-xs text-zinc-500">
+                  {s.ip_address && <span className="mr-2">IP: {s.ip_address}</span>}
+                  Started: {s.created_at ? new Date(s.created_at).toLocaleString() : '—'}
+                  {s.expires_at && <span className="ml-2">Expires: {new Date(s.expires_at).toLocaleString()}</span>}
+                </p>
+              </div>
+              {s.is_active && (
+                <button onClick={() => terminateMut.mutate(s.id)}
+                  disabled={terminateMut.isPending}
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-zinc-500 hover:text-red-400 hover:bg-red-500/10 rounded-lg border border-transparent hover:border-red-500/20 transition-colors">
+                  <Trash2 size={12}/> Terminate
+                </button>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function AppSettingsTab() {
+  const qc = useQueryClient()
+  const [editing, setEditing] = useState({})
+
+  const { data, isLoading } = useQuery({
+    queryKey: ['staff-app-settings'],
+    queryFn: () => Staff.appSettings(),
+  })
+  const settings = data?.settings || data || []
+
+  const saveMut = useMutation({
+    mutationFn: ({ key, value }) => Staff.updateAppSetting(key, { setting_value: value }),
+    onSuccess: () => { qc.invalidateQueries(['staff-app-settings']); toast.success('Setting saved') },
+    onError: (e) => toast.error(e.message),
+  })
+
+  return (
+    <div className="bg-[#0e0e0e] border border-zinc-800/50 rounded-xl overflow-hidden">
+      {isLoading ? <div className="p-6 text-center text-zinc-500 text-sm">Loading…</div>
+      : settings.length === 0 ? <div className="p-6 text-center text-zinc-600 text-sm">No settings</div>
+      : (
+        <div className="divide-y divide-zinc-800/30">
+          {settings.map(s => (
+            <div key={s.id||s.setting_key} className="flex items-center gap-4 px-5 py-4">
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-mono text-zinc-300">{s.setting_key}</p>
+                {s.description && <p className="text-xs text-zinc-600 mt-0.5">{s.description}</p>}
+              </div>
+              <div className="flex items-center gap-2">
+                <input
+                  className="bg-[#1a1a1a] border border-zinc-700 rounded-lg px-3 py-1.5 text-sm text-white focus:outline-none focus:border-red-500/50 w-48"
+                  value={editing[s.setting_key] ?? s.setting_value ?? ''}
+                  onChange={e=>setEditing(p=>({...p,[s.setting_key]:e.target.value}))}
+                />
+                <button
+                  onClick={() => saveMut.mutate({ key: s.setting_key, value: editing[s.setting_key] ?? s.setting_value })}
+                  disabled={saveMut.isPending}
+                  className="px-3 py-1.5 bg-red-600/80 hover:bg-red-500 text-white text-xs font-semibold rounded-lg transition-colors disabled:opacity-50">
+                  Save
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+export default function StaffSettings() {
+  const [tab, setTab] = useState('keys')
+
+  const tabs = [
+    { id: 'keys',     label: 'Access Keys',   icon: KeyRound  },
+    { id: 'sessions', label: 'Active Sessions',icon: Monitor   },
+    { id: 'app',      label: 'App Settings',   icon: Settings  },
+  ]
+
+  return (
+    <div className="space-y-5">
+      <div>
+        <h1 className="text-xl font-bold text-white">System Settings</h1>
+        <p className="text-xs text-zinc-500 mt-0.5">Access keys, sessions, and application configuration</p>
+      </div>
+
+      <div className="flex gap-1 border-b border-zinc-800">
+        {tabs.map(t => (
+          <button key={t.id} onClick={() => setTab(t.id)}
+            className={`flex items-center gap-2 px-4 py-3 text-sm font-semibold transition-colors border-b-2 -mb-px
+              ${tab===t.id ? 'border-red-500 text-white' : 'border-transparent text-zinc-500 hover:text-zinc-300'}`}>
+            <t.icon size={14}/>
+            {t.label}
+          </button>
+        ))}
+      </div>
+
+      {tab === 'keys'     && <AccessKeysTab/>}
+      {tab === 'sessions' && <SessionsTab/>}
+      {tab === 'app'      && <AppSettingsTab/>}
+    </div>
+  )
 }
