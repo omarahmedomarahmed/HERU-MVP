@@ -19,6 +19,7 @@ const TOURNAMENT_COLUMNS = new Set([
   'brackets','support_chat','general_chat','stream_link','tournament_log',
   'signup_banner','signup_description','signup_rules','signup_custom_fields','stream_embed_url',
   'participant_type','player_participants','gamer_participants','player_invites',
+  'prize_breakdown','prizepool_coins',
 ]);
 
 function sanitizeTournamentData(data) {
@@ -247,7 +248,7 @@ router.post('/:id/publish', requireAuth, async (req, res) => {
     }).select().single();
 
     const updateData = {
-      status: tournament.tournament_type === 'shared' ? 'draft' : 'pending_approval',
+      status: tournament.tournament_type === 'shared' ? 'published' : 'published',
       total_cost: costs.total,
       platform_fee: costs.platformFee,
       platform_fee_percent: costs.platformFeePercent,
@@ -373,15 +374,17 @@ router.post('/:id/general-chat', requireAuth, async (req, res) => {
   }
 });
 
-// POST /:id/join-request - team join request
+// POST /:id/join-request - auto-approve team registration (no organizer approval needed)
 router.post('/:id/join-request', requireAuth, async (req, res) => {
   try {
     const { data: tournament } = await supabaseAdmin.from('tournaments').select('join_requests, max_teams, teams').eq('id', req.params.id).single();
     if ((tournament.teams?.length || 0) >= (tournament.max_teams || 999)) {
       return res.status(400).json({ error: 'Tournament is full' });
     }
-    const requests = [...(tournament.join_requests || []), { ...req.body, id: crypto.randomUUID(), user_id: req.user.id, status: 'pending', created_at: new Date().toISOString() }];
-    const { data, error } = await supabaseAdmin.from('tournaments').update({ join_requests: requests }).eq('id', req.params.id).select().single();
+    const teamId = req.body.team_id;
+    const teams = [...new Set([...(tournament.teams || []), ...(teamId ? [teamId] : [])])];
+    const requests = [...(tournament.join_requests || []), { ...req.body, id: crypto.randomUUID(), user_id: req.user.id, status: 'approved', created_at: new Date().toISOString() }];
+    const { data, error } = await supabaseAdmin.from('tournaments').update({ teams, join_requests: requests, updated_at: new Date().toISOString() }).eq('id', req.params.id).select().single();
     if (error) throw error;
     res.json(data);
   } catch (err) {

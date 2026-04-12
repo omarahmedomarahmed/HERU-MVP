@@ -62,6 +62,7 @@ import OrganizerBilling from './pages/organizer/OrganizerBilling'
 import CoOrganizedTournaments from './pages/organizer/CoOrganizedTournaments'
 import PaymentMethod from './pages/organizer/PaymentMethod'
 import TournamentSummaryReport from './pages/organizer/TournamentSummaryReport'
+import TournamentReportBuilder from './pages/organizer/TournamentReportBuilder'
 
 // Staff pages
 import StaffLayout from '@/components/layouts/StaffLayout'
@@ -139,6 +140,7 @@ function App() {
             <Route path="/organizer/tournaments/new" element={<RequireOrganizer><OrganizerLayout><TournamentBuilder /></OrganizerLayout></RequireOrganizer>} />
             <Route path="/organizer/tournaments/new/:id" element={<RequireOrganizer><OrganizerLayout><TournamentBuilder /></OrganizerLayout></RequireOrganizer>} />
             <Route path="/organizer/tournaments/:id/report" element={<RequireOrganizer><OrganizerLayout><TournamentSummaryReport /></OrganizerLayout></RequireOrganizer>} />
+            <Route path="/organizer/tournaments/:id/report/build" element={<RequireOrganizer><OrganizerLayout><TournamentReportBuilder /></OrganizerLayout></RequireOrganizer>} />
             <Route path="/organizer/tournaments/:id/manage" element={<RequireOrganizer><OrganizerLayout><OrgTournamentManage /></OrganizerLayout></RequireOrganizer>} />
             <Route path="/organizer/tournaments/:id/manage/teams" element={<RequireOrganizer><OrganizerLayout><OrgTournamentManage defaultTab="teams" /></OrganizerLayout></RequireOrganizer>} />
             <Route path="/organizer/tournaments/:id/manage/brackets" element={<RequireOrganizer><OrganizerLayout><OrgTournamentManage defaultTab="brackets" /></OrganizerLayout></RequireOrganizer>} />

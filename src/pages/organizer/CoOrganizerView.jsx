@@ -10,7 +10,8 @@ import {
   Loader2, AlertTriangle, ArrowLeft, Trophy, Calendar, Gamepad2,
   Users, MapPin, Monitor, Shield, Send, MessageSquare, ChevronRight,
   DollarSign, Eye, Package, Briefcase, BarChart3, Activity,
-  TrendingUp, Clock, CheckCircle, Lock, Radio,
+  TrendingUp, Clock, CheckCircle, Lock, Radio, FileText, Star,
+  Share2, Camera, Video, Image, Globe,
 } from 'lucide-react'
 
 // ---------------------------------------------------------------------------
@@ -167,6 +168,7 @@ export default function CoOrganizerView() {
     enabled: !!id,
     staleTime: 30_000,
     refetchInterval: activeTab === 'organizer-chat' ? 10_000 : 30_000,
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   })
 
   // ---- Fetch teams ----
@@ -199,6 +201,13 @@ export default function CoOrganizerView() {
   const { data: gigs = [] } = useQuery({
     queryKey: ['tournament-gigs', id],
     queryFn: () => apiCall(`/gigs?tournament_id=${id}`),
+    enabled: !!id,
+    staleTime: 60_000,
+  })
+
+  const { data: brandReport } = useQuery({
+    queryKey: ['report', id],
+    queryFn: () => apiCall(`/tournament-reports?tournament_id=${id}`).then(r => r?.[0]),
     enabled: !!id,
     staleTime: 60_000,
   })
@@ -249,6 +258,7 @@ export default function CoOrganizerView() {
     { key: 'gig-workers', label: 'Gig Workers', icon: Briefcase },
     { key: 'gamer-chat', label: 'Gamer Chat', icon: Users },
     { key: 'organizer-chat', label: 'Internal Chat', icon: MessageSquare },
+    { key: 'report', label: 'Brand Report', icon: FileText },
   ]
 
   // ---- Loading / Error ----
@@ -664,6 +674,66 @@ export default function CoOrganizerView() {
             isSending={orgChatMutation.isPending}
             canSend={true}
           />
+        </section>
+      )}
+
+      {/* Brand Report Tab */}
+      {activeTab === 'report' && (
+        <section className="space-y-4">
+          <div className="flex items-center gap-2 mb-4">
+            <Star className="w-5 h-5 text-violet-400" />
+            <h2 className="text-xl font-black text-white">Brand Impact Report</h2>
+          </div>
+          {!brandReport ? (
+            <div className="rounded-xl border border-dashed border-violet-500/30 p-8 text-center">
+              <FileText className="w-10 h-10 text-violet-400 mx-auto mb-3" />
+              <p className="text-white font-semibold mb-1">No report published yet</p>
+              <p className="text-gray-400 text-sm">The main organizer will publish a brand impact report once the tournament is complete.</p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {brandReport.summary && (
+                <div className="rounded-xl border border-violet-500/20 bg-violet-900/10 p-5">
+                  <h3 className="text-violet-400 font-semibold text-sm mb-2">Executive Summary</h3>
+                  <p className="text-gray-300 text-sm whitespace-pre-wrap">{brandReport.summary}</p>
+                </div>
+              )}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                {brandReport.total_reach > 0 && <div className="bg-[#12121f] border border-white/10 rounded-xl p-4"><p className="text-xs text-gray-500 mb-1">Total Reach</p><p className="text-xl font-bold text-blue-400">{Number(brandReport.total_reach).toLocaleString()}</p></div>}
+                {brandReport.total_viewers > 0 && <div className="bg-[#12121f] border border-white/10 rounded-xl p-4"><p className="text-xs text-gray-500 mb-1">Live Viewers</p><p className="text-xl font-bold text-red-400">{Number(brandReport.total_viewers).toLocaleString()}</p></div>}
+                {brandReport.total_engagement > 0 && <div className="bg-[#12121f] border border-white/10 rounded-xl p-4"><p className="text-xs text-gray-500 mb-1">Engagements</p><p className="text-xl font-bold text-green-400">{Number(brandReport.total_engagement).toLocaleString()}</p></div>}
+                {brandReport.social_media_reach > 0 && <div className="bg-[#12121f] border border-white/10 rounded-xl p-4"><p className="text-xs text-gray-500 mb-1">Social Reach</p><p className="text-xl font-bold text-cyan-400">{Number(brandReport.social_media_reach).toLocaleString()}</p></div>}
+                {brandReport.photos_delivered > 0 && <div className="bg-[#12121f] border border-white/10 rounded-xl p-4"><p className="text-xs text-gray-500 mb-1">Photos</p><p className="text-xl font-bold text-yellow-400">{brandReport.photos_delivered}</p></div>}
+                {brandReport.videos_delivered > 0 && <div className="bg-[#12121f] border border-white/10 rounded-xl p-4"><p className="text-xs text-gray-500 mb-1">Videos</p><p className="text-xl font-bold text-yellow-400">{brandReport.videos_delivered}</p></div>}
+              </div>
+              {(brandReport.social_links || []).length > 0 && (
+                <div className="rounded-xl border border-white/10 bg-white/5 p-5">
+                  <h3 className="text-white font-semibold text-sm mb-3">Social Media Content</h3>
+                  <div className="space-y-2">
+                    {brandReport.social_links.map((link, i) => (
+                      <a key={i} href={link.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 text-sm text-cyan-400 hover:text-cyan-300 transition-colors">
+                        <span className="text-gray-500 w-24 flex-shrink-0">{link.platform}</span>
+                        <span className="truncate underline">{link.url}</span>
+                      </a>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {(brandReport.screenshots || []).length > 0 && (
+                <div className="rounded-xl border border-white/10 p-5">
+                  <h3 className="text-white font-semibold text-sm mb-4">Proof Screenshots</h3>
+                  <div className="grid md:grid-cols-2 gap-4">
+                    {brandReport.screenshots.map((ss, i) => (
+                      <div key={i} className="space-y-1">
+                        {ss.url && <img src={ss.url} alt={ss.caption||''} className="w-full rounded-lg border border-white/10 object-cover max-h-48" onError={e=>e.target.style.display='none'} />}
+                        <p className="text-xs text-gray-400">{ss.category}{ss.caption && ` — ${ss.caption}`}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
         </section>
       )}
     </div>

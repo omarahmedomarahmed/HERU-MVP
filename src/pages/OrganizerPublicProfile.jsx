@@ -39,7 +39,7 @@ export default function OrganizerPublicProfile() {
       <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center text-gray-400">
         <div className="text-center">
           <p className="text-lg mb-4">Organizer not found</p>
-          <Link to="/" className="text-red-400 hover:underline">← Back to Home</Link>
+          <button onClick={() => window.history.back()} className="text-red-400 hover:underline">← Back</button>
         </div>
       </div>
     );

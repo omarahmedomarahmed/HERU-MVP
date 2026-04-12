@@ -107,10 +107,21 @@ export default function RadarTournamentCard({ radar, onCommit, isSelf = false })
       )}
 
       {/* Actions */}
+      {/* Slot availability */}
+      {radar.status === 'open' && !isSelf && (
+        <div className="text-xs text-gray-400 bg-zinc-800/60 rounded-lg px-3 py-2 flex items-center gap-2">
+          <span className="font-medium text-white">
+            {radar.main_organizer_percent <= 34 ? '2 slots available (33% each)' : '1 slot available (66%)'}
+          </span>
+          <span className="text-gray-500">— co-organizer</span>
+        </div>
+      )}
+
+      {/* Actions */}
       <div className="flex gap-2">
-        <Link to={`/radar/tournament/${radar.id}`} className="flex-1">
+        <Link to={`/radar/${radar.id}`} className="flex-1">
           <GlowButton className="w-full" size="sm" variant="ghost">
-            View Full Details
+            View Tournament
           </GlowButton>
         </Link>
         {!isSelf && radar.status !== 'fully_funded' && radar.status !== 'closed' && onCommit && (

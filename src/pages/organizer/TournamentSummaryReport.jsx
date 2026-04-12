@@ -1,10 +1,12 @@
 import React from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
-import { Tournament, TournamentOrder } from '@/api/heruClient'
+import { Tournament, TournamentOrder, apiCall } from '@/api/heruClient'
 import {
   ArrowLeft, Trophy, Users, Swords, DollarSign, Calendar,
   Gamepad2, LayoutGrid, Shield, Loader2, AlertTriangle,
+  TrendingUp, Monitor, Share2, Camera, Video, Image,
+  BarChart3, Globe, Star,
 } from 'lucide-react'
 
 const formatEGP = (n) => 'EGP ' + (n || 0).toLocaleString()
@@ -46,6 +48,12 @@ export default function TournamentSummaryReport() {
   const { data: tournamentOrders = [] } = useQuery({
     queryKey: ['tournament-orders', id],
     queryFn: () => TournamentOrder.list({ tournament_id: id }),
+    enabled: !!id,
+  })
+
+  const { data: brandReport } = useQuery({
+    queryKey: ['report', id],
+    queryFn: () => apiCall(`/tournament-reports?tournament_id=${id}`).then(r => r?.[0]),
     enabled: !!id,
   })
 
@@ -295,6 +303,71 @@ export default function TournamentSummaryReport() {
             ))}
           </div>
         </section>
+      )}
+
+      {/* Brand Impact Report */}
+      {brandReport && (
+        <div className="mt-6 space-y-4">
+          <div className="flex items-center gap-2 mb-2">
+            <Star className="w-5 h-5 text-violet-400" />
+            <h2 className="text-xl font-black text-white">Brand Impact Report</h2>
+          </div>
+
+          {brandReport.summary && (
+            <div className="rounded-xl border border-violet-500/20 bg-violet-900/10 p-5">
+              <h3 className="text-violet-400 font-semibold text-sm mb-2">Executive Summary</h3>
+              <p className="text-gray-300 text-sm whitespace-pre-wrap">{brandReport.summary}</p>
+              {brandReport.key_highlights && <p className="text-gray-400 text-sm mt-3 italic">{brandReport.key_highlights}</p>}
+            </div>
+          )}
+
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            {brandReport.total_reach > 0 && <div className="bg-[#12121f] border border-white/10 rounded-xl p-4"><p className="text-xs text-gray-500 mb-1 flex items-center gap-1"><TrendingUp className="w-3 h-3" /> Total Reach</p><p className="text-xl font-bold text-blue-400">{Number(brandReport.total_reach).toLocaleString()}</p></div>}
+            {brandReport.total_viewers > 0 && <div className="bg-[#12121f] border border-white/10 rounded-xl p-4"><p className="text-xs text-gray-500 mb-1 flex items-center gap-1"><Monitor className="w-3 h-3" /> Live Viewers</p><p className="text-xl font-bold text-red-400">{Number(brandReport.total_viewers).toLocaleString()}</p></div>}
+            {brandReport.peak_viewers > 0 && <div className="bg-[#12121f] border border-white/10 rounded-xl p-4"><p className="text-xs text-gray-500 mb-1">Peak Viewers</p><p className="text-xl font-bold text-orange-400">{Number(brandReport.peak_viewers).toLocaleString()}</p></div>}
+            {brandReport.total_engagement > 0 && <div className="bg-[#12121f] border border-white/10 rounded-xl p-4"><p className="text-xs text-gray-500 mb-1 flex items-center gap-1"><BarChart3 className="w-3 h-3" /> Engagements</p><p className="text-xl font-bold text-green-400">{Number(brandReport.total_engagement).toLocaleString()}</p></div>}
+            {brandReport.social_media_reach > 0 && <div className="bg-[#12121f] border border-white/10 rounded-xl p-4"><p className="text-xs text-gray-500 mb-1 flex items-center gap-1"><Share2 className="w-3 h-3" /> Social Reach</p><p className="text-xl font-bold text-cyan-400">{Number(brandReport.social_media_reach).toLocaleString()}</p></div>}
+            {brandReport.photos_delivered > 0 && <div className="bg-[#12121f] border border-white/10 rounded-xl p-4"><p className="text-xs text-gray-500 mb-1 flex items-center gap-1"><Camera className="w-3 h-3" /> Photos</p><p className="text-xl font-bold text-yellow-400">{brandReport.photos_delivered}</p></div>}
+            {brandReport.videos_delivered > 0 && <div className="bg-[#12121f] border border-white/10 rounded-xl p-4"><p className="text-xs text-gray-500 mb-1 flex items-center gap-1"><Video className="w-3 h-3" /> Videos</p><p className="text-xl font-bold text-yellow-400">{brandReport.videos_delivered}</p></div>}
+            {brandReport.platform_signups > 0 && <div className="bg-[#12121f] border border-white/10 rounded-xl p-4"><p className="text-xs text-gray-500 mb-1 flex items-center gap-1"><Globe className="w-3 h-3" /> Platform Signups</p><p className="text-xl font-bold text-violet-400">{brandReport.platform_signups}</p></div>}
+          </div>
+
+          {(brandReport.social_links || []).length > 0 && (
+            <div className="rounded-xl border border-white/10 bg-white/5 p-5">
+              <h3 className="text-white font-semibold text-sm mb-3">Social Media Content</h3>
+              <div className="space-y-2">
+                {brandReport.social_links.map((link, i) => (
+                  <a key={i} href={link.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 text-sm text-cyan-400 hover:text-cyan-300 transition-colors">
+                    <span className="text-gray-500 w-20 flex-shrink-0">{link.platform}</span>
+                    <span className="truncate underline">{link.url}</span>
+                  </a>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {(brandReport.screenshots || []).length > 0 && (
+            <div className="rounded-xl border border-white/10 p-5">
+              <h3 className="text-white font-semibold text-sm mb-4 flex items-center gap-2"><Image className="w-4 h-4" /> Proof Screenshots</h3>
+              <div className="grid md:grid-cols-2 gap-4">
+                {brandReport.screenshots.map((ss, i) => (
+                  <div key={i} className="space-y-2">
+                    {ss.url && <img src={ss.url} alt={ss.caption || ''} className="w-full rounded-lg border border-white/10 object-cover max-h-48" onError={e => e.target.style.display='none'} />}
+                    <p className="text-xs text-gray-400">{ss.category} {ss.caption && `— ${ss.caption}`}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {!brandReport && tournament?.status === 'completed' && (
+        <div className="mt-6 rounded-xl border border-dashed border-violet-500/30 p-6 text-center">
+          <Star className="w-8 h-8 text-violet-400 mx-auto mb-3" />
+          <p className="text-white font-semibold mb-1">No brand impact report yet</p>
+          <p className="text-gray-400 text-sm">The main organizer hasn't published a brand impact report for this tournament.</p>
+        </div>
       )}
     </div>
   )

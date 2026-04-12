@@ -118,6 +118,14 @@ export default function Arena() {
     staleTime: 30_000,
   })
 
+  // Fetch all teams so brackets can resolve IDs to names
+  const { data: allTeams = [] } = useQuery({
+    queryKey: ['all-teams-arena'],
+    queryFn: () => Team.list(),
+    staleTime: 60_000,
+    enabled: !!id,
+  })
+
   // Fetch match records for this tournament
   const { data: matchRecords = [] } = useQuery({
     queryKey: ['match-records', id],
@@ -400,7 +408,7 @@ export default function Arena() {
         {activeTab === 'brackets' && (
           <div>
             {bracketMatches.length > 0 ? (
-              <BracketVisual brackets={tournament.brackets} teams={[]} readOnly />
+              <BracketVisual brackets={tournament.brackets} teams={allTeams.filter(t => tournament.teams?.includes(t.id))} allTeams={allTeams} readOnly />
             ) : (
               <div className="rounded-xl bg-white/5 border border-white/10 p-10 text-center text-gray-500">
                 <Swords className="w-10 h-10 mx-auto mb-3 opacity-40" />

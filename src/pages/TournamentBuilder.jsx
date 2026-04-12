@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
@@ -35,6 +35,25 @@ const STAGES = [
 import { useGames } from '@/hooks/useGames';
 const FORMATS = ['Single Elimination', 'Double Elimination', 'Round Robin', 'Swiss', 'Best of 1', 'Best of 3', 'Best of 5'];
 
+// Pure helper — safe to call outside component (no hooks)
+function calcSubtotal(t, items = []) {
+  let cost = 0;
+  const resolve = (id) => items.find(i => i.id === id)?.price || 0;
+  (t.talents || []).forEach(talent => { cost += talent.price || 0; });
+  (t.branding_items || []).forEach(id => { cost += resolve(id); });
+  (t.production_items || []).forEach(id => { cost += resolve(id); });
+  (t.prizepool_items || []).forEach(id => { cost += resolve(id); });
+  (t.venue_items || []).forEach(id => { cost += resolve(id); });
+  cost += t.prizepool_total || 0;
+  return cost;
+}
+
+const DEFAULT_PRIZE_BREAKDOWN = [
+  { place: 1, label: '1st Place', cash: 0, item_ids: [] },
+  { place: 2, label: '2nd Place', cash: 0, item_ids: [] },
+  { place: 3, label: '3rd Place', cash: 0, item_ids: [] },
+];
+
 export default function TournamentBuilder() {
   const [user, setUser] = useState(null);
   const [currentStage, setCurrentStage] = useState(0);
@@ -66,8 +85,12 @@ export default function TournamentBuilder() {
     tournament_type: 'solo',
     main_organizer_id: null,
     organizer_contribution: 0,
-    main_organizer_percent: 30,
+    main_organizer_percent: 33,
     on_radar: false,
+    venue_items: [],
+    player_invites: [],
+    prizepool_coins: 0,
+    prize_breakdown: DEFAULT_PRIZE_BREAKDOWN,
   });
   // Shared tournament commitment state
   const [commitmentPercent, setCommitmentPercent] = useState(33);
@@ -78,6 +101,11 @@ export default function TournamentBuilder() {
   const [lastSaved, setLastSaved] = useState(null);
   const { toast } = useToast();
   const GAMES = useGames();
+  // Ref to keep autosave closure fresh — always points to latest tournament state
+  const tournamentRef = useRef(tournament);
+  useEffect(() => { tournamentRef.current = tournament; }, [tournament]);
+  // Flag to prevent existingTournament from overwriting user edits after first load
+  const loadedRef = useRef(false);
 
   useEffect(() => {
     loadUser();
@@ -109,38 +137,74 @@ export default function TournamentBuilder() {
   });
 
   useEffect(() => {
+    if (loadedRef.current) return; // Never overwrite user edits after first load
     if (existingTournament) {
-      setTournament(existingTournament);
+      setTournament({
+        ...existingTournament,
+        // Ensure arrays are never null
+        invited_teams: existingTournament.invited_teams || [],
+        player_invites: existingTournament.player_invites || [],
+        talents: existingTournament.talents || [],
+        branding_items: existingTournament.branding_items || [],
+        production_items: existingTournament.production_items || [],
+        prizepool_items: existingTournament.prizepool_items || [],
+        venue_items: existingTournament.venue_items || [],
+        prize_breakdown: existingTournament.prize_breakdown || [
+          { place: 1, label: '1st Place', cash: 0, item_ids: [] },
+          { place: 2, label: '2nd Place', cash: 0, item_ids: [] },
+          { place: 3, label: '3rd Place', cash: 0, item_ids: [] },
+        ],
+      });
+      if (existingTournament.tournament_type === 'shared') {
+        setCommitmentPercent(existingTournament.radar_funding_percent || 33);
+        setCommitmentConfirmed(true);
+      }
+      loadedRef.current = true;
     } else if (profile) {
       setTournament(prev => ({
         ...prev,
         organizer_brand: {
-          name: profile.brand_name,
-          logo: profile.brand_logo,
+          name: profile.brand_name || '',
+          logo: profile.brand_logo || '',
           primary_color: profile.primary_color || '#ff1a1a',
-          secondary_color: profile.secondary_color || '#0a0a0a'
+          secondary_color: profile.secondary_color || '#0a0a0a',
         }
       }));
+      loadedRef.current = true;
     }
   }, [existingTournament, profile]);
 
-  // Autosave every 30 seconds when tournament has a name
+  // Autosave every 30 seconds — uses ref so closure is always fresh
+  const userRef = useRef(user);
+  useEffect(() => { userRef.current = user; }, [user]);
+  const tournamentIdRef = useRef(tournamentId);
+  useEffect(() => { tournamentIdRef.current = tournamentId; }, [tournamentId]);
+
   useEffect(() => {
-    if (!tournament.name || !user?.id) return;
     const interval = setInterval(() => {
-      const data = { ...tournament, organizer_id: user?.id, participant_type: tournament.participant_type || 'team', total_cost: calculateTotalCost(), platform_fee: calculatePlatformFee() };
-      const save = tournamentId
-        ? Tournament.update(tournamentId, data)
-        : Tournament.create(data);
+      const t = tournamentRef.current;
+      const u = userRef.current;
+      const tId = tournamentIdRef.current;
+      if (!t?.name || !u?.id) return;
+      const subtotal = calcSubtotal(t);
+      const fee = Math.round(subtotal * 0.15);
+      const data = {
+        ...t,
+        organizer_id: u.id,
+        participant_type: t.participant_type || 'team',
+        total_cost: subtotal + fee,
+        platform_fee: fee,
+      };
+      const save = tId ? Tournament.update(tId, data) : Tournament.create(data);
       save.then((result) => {
         setLastSaved(new Date());
-        if (!tournamentId && result?.id) {
+        if (!tId && result?.id) {
           navigate(`/organizer/tournaments/new/${result.id}`, { replace: true });
         }
       }).catch(() => {});
     }, 30000);
     return () => clearInterval(interval);
-  }, [tournament.name, user?.id, tournamentId]);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const { data: allTeams = [] } = useQuery({
     queryKey: ['all-teams'],
@@ -160,6 +224,12 @@ export default function TournamentBuilder() {
     },
   });
 
+  // All gamers for 1v1 player invite
+  const { data: allGamers = [] } = useQuery({
+    queryKey: ['all-gamers'],
+    queryFn: () => GamerProfile.list({}),
+  });
+
   const brandingItems = marketplaceItems.filter(i => i.category === 'branding');
   const productionItems = marketplaceItems.filter(i => i.category === 'production');
   const venueItems = marketplaceItems.filter(i => i.category === 'venue');
@@ -167,7 +237,19 @@ export default function TournamentBuilder() {
 
   const saveTournamentMutation = useMutation({
     mutationFn: async () => {
-      const data = { ...tournament, organizer_id: user?.id, participant_type: tournament.participant_type || 'team', total_cost: calculateTotalCost(), platform_fee: calculatePlatformFee() };
+      const subtotal = calculateSubtotal();
+      const fee = calculatePlatformFee();
+      const data = {
+        ...tournament,
+        organizer_id: user?.id,
+        participant_type: tournament.participant_type || 'team',
+        total_cost: subtotal + fee,
+        platform_fee: fee,
+        venue_items: tournament.venue_items || [],
+        player_invites: tournament.player_invites || [],
+        prizepool_coins: tournament.prizepool_coins || 0,
+        prize_breakdown: tournament.prize_breakdown || DEFAULT_PRIZE_BREAKDOWN,
+      };
       if (tournamentId) {
         return Tournament.update(tournamentId, data);
       } else {
@@ -180,11 +262,11 @@ export default function TournamentBuilder() {
       }
       setLastSaved(new Date());
       queryClient.invalidateQueries(['organizer-tournaments']);
-      toast({ title: 'Draft saved', description: 'Your tournament has been saved as a draft.' });
+      toast({ title: 'Draft saved', description: 'Your tournament has been saved as a draft.', duration: 5000 });
     },
     onError: (err) => {
       console.error('[save tournament]', err);
-      toast({ title: 'Save failed', description: err.message || 'Could not save tournament.', variant: 'destructive' });
+      toast({ title: 'Save failed', description: err.message || 'Could not save tournament.', variant: 'destructive', duration: 5000 });
     }
   });
 
@@ -215,47 +297,28 @@ export default function TournamentBuilder() {
       return tId;
     },
     onSuccess: () => {
-      toast({ title: 'Tournament published!', description: 'Your tournament is now live.' });
+      toast({ title: 'Tournament published!', description: 'Your tournament is now live.', duration: 5000 });
       navigate('/organizer/tournaments');
     },
     onError: (err) => {
       console.error('[publish tournament]', err);
-      toast({ title: 'Publish failed', description: err.message || 'Could not publish tournament.', variant: 'destructive' });
+      toast({ title: 'Publish failed', description: err.message || 'Could not publish tournament.', variant: 'destructive', duration: 5000 });
     }
   });
 
+  const calculateSubtotal = () => calcSubtotal(tournament, marketplaceItems);
+  const calculatePlatformFee = () => Math.round(calculateSubtotal() * 0.15);
+  const calculateTotalCost = () => calculateSubtotal() + calculatePlatformFee();
+  // kept for sidebar display only
   const calculateItemsSubtotal = () => {
     let cost = 0;
-    tournament.talents?.forEach(t => cost += t.price || 0);
-    tournament.branding_items?.forEach(id => {
-      const item = marketplaceItems.find(i => i.id === id);
-      if (item) cost += item.price || 0;
-    });
-    tournament.production_items?.forEach(id => {
-      const item = marketplaceItems.find(i => i.id === id);
-      if (item) cost += item.price || 0;
-    });
-    tournament.prizepool_items?.forEach(id => {
-      const item = marketplaceItems.find(i => i.id === id);
-      if (item) cost += item.price || 0;
-    });
-    tournament.venue_items?.forEach(id => {
-      const item = marketplaceItems.find(i => i.id === id);
-      if (item) cost += item.price || 0;
+    (tournament.talents || []).forEach(t => { cost += t.price || 0; });
+    ['branding_items','production_items','prizepool_items','venue_items'].forEach(field => {
+      (tournament[field] || []).forEach(id => {
+        cost += marketplaceItems.find(i => i.id === id)?.price || 0;
+      });
     });
     return cost;
-  };
-
-  const calculateSubtotal = () => {
-    return calculateItemsSubtotal() + (tournament.prizepool_total || 0);
-  };
-
-  const calculatePlatformFee = () => {
-    return Math.round(calculateSubtotal() * 0.15);
-  };
-
-  const calculateTotalCost = () => {
-    return calculateSubtotal() + calculatePlatformFee();
   };
 
 
@@ -594,23 +657,61 @@ export default function TournamentBuilder() {
         );
       }
 
-      case 'teams':
+      case 'teams': {
+        const isPlayer = tournament.participant_type === 'player'; // eslint-disable-line
         return (
           <div className="space-y-6">
-            {tournament.participant_type === 'player' ? (
+            {isPlayer ? (
               <>
-                <div>
-                  <h3 className="text-lg font-bold text-white">1v1 Player Registration</h3>
-                  <p className="text-gray-400 text-sm">
-                    This tournament accepts individual players. Players will register directly on the tournament page once published.
-                  </p>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="text-lg font-bold text-white">Invite Players (1v1)</h3>
+                    <p className="text-gray-400 text-sm">
+                      Invited: {tournament.player_invites?.length || 0} / {tournament.max_teams} players
+                    </p>
+                  </div>
+                  <GlowButton variant="secondary" size="sm" onClick={() => {
+                    const ids = allGamers.map(g => g.user_id).filter(Boolean);
+                    setTournament(prev => ({ ...prev, player_invites: ids.slice(0, prev.max_teams) }));
+                  }}>
+                    Invite All
+                  </GlowButton>
                 </div>
-                <FloatingPanel className="p-6 text-center">
-                  <Gamepad2 className="w-12 h-12 text-red-500 mx-auto mb-3" />
-                  <p className="text-white font-medium mb-2">1v1 Mode Active</p>
-                  <p className="text-gray-400 text-sm mb-1">Max players: {tournament.max_teams}</p>
-                  <p className="text-gray-500 text-xs">Individual gamers will register through the public tournament page. No team invites needed.</p>
-                </FloatingPanel>
+                <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {allGamers.map(gamer => {
+                    const invited = tournament.player_invites?.includes(gamer.user_id);
+                    return (
+                      <GameCard
+                        key={gamer.id}
+                        className={`p-4 cursor-pointer ${invited ? 'border-red-500' : ''}`}
+                        onClick={() => {
+                          setTournament(prev => ({
+                            ...prev,
+                            player_invites: invited
+                              ? (prev.player_invites || []).filter(id => id !== gamer.user_id)
+                              : [...(prev.player_invites || []), gamer.user_id],
+                          }));
+                        }}
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-full bg-zinc-800 flex items-center justify-center overflow-hidden flex-shrink-0">
+                            {gamer.avatar ? <img src={gamer.avatar} alt="" className="w-full h-full object-cover" /> : <Users className="w-5 h-5 text-red-400" />}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2">
+                              <p className="text-white font-medium truncate">{gamer.username || 'Player'}</p>
+                              {invited && <Check className="w-4 h-4 text-green-400 flex-shrink-0" />}
+                            </div>
+                            {gamer.is_talent && <HexBadge className="text-[10px]">{gamer.talent_type}</HexBadge>}
+                          </div>
+                        </div>
+                      </GameCard>
+                    );
+                  })}
+                  {allGamers.length === 0 && (
+                    <div className="col-span-3 text-center py-10 text-gray-500">No registered players found yet.</div>
+                  )}
+                </div>
               </>
             ) : (
               <>
@@ -625,7 +726,6 @@ export default function TournamentBuilder() {
                     Select All {tournament.game} Teams
                   </GlowButton>
                 </div>
-
                 <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
                   {allTeams.filter(t => !tournament.game || t.games?.includes(tournament.game)).map(team => (
                     <GameCard
@@ -635,29 +735,27 @@ export default function TournamentBuilder() {
                     >
                       <div className="flex items-center gap-3">
                         <div className="w-12 h-12 rounded-lg bg-zinc-800 flex items-center justify-center overflow-hidden">
-                          {team.logo ? (
-                            <img src={team.logo} alt="" className="w-full h-full object-cover" />
-                          ) : (
-                            <Users className="w-6 h-6 text-red-500" />
-                          )}
+                          {team.logo ? <img src={team.logo} alt="" className="w-full h-full object-cover" /> : <Users className="w-6 h-6 text-red-500" />}
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2">
                             <p className="text-white font-medium truncate">{team.name}</p>
-                            {tournament.invited_teams?.includes(team.id) && (
-                              <Check className="w-4 h-4 text-green-400 flex-shrink-0" />
-                            )}
+                            {tournament.invited_teams?.includes(team.id) && <Check className="w-4 h-4 text-green-400 flex-shrink-0" />}
                           </div>
                           <p className="text-gray-500 text-xs">{team.members?.length || 0} members</p>
                         </div>
                       </div>
                     </GameCard>
                   ))}
+                  {allTeams.filter(t => !tournament.game || t.games?.includes(tournament.game)).length === 0 && (
+                    <div className="col-span-3 text-center py-10 text-gray-500">No teams found for {tournament.game || 'this game'}.</div>
+                  )}
                 </div>
               </>
             )}
           </div>
         );
+      }
 
       case 'talent':
         return (
@@ -796,103 +894,124 @@ export default function TournamentBuilder() {
                         </div>
                         );
 
-      case 'prizepool':
+      case 'prizepool': {
+        const breakdown = tournament.prize_breakdown || DEFAULT_PRIZE_BREAKDOWN;
+        const updateBreakdown = (idx, field, val) => {
+          const updated = breakdown.map((b, i) => i === idx ? { ...b, [field]: val } : b);
+          setTournament(prev => ({ ...prev, prize_breakdown: updated }));
+        };
+        const totalCashBreakdown = breakdown.reduce((s, b) => s + (b.cash || 0), 0);
         return (
           <div className="space-y-6">
-            {/* Cash Prizepool */}
+            {/* Total Pool */}
             <FloatingPanel className="p-6" glowBorder>
               <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
                 <DollarSign className="w-5 h-5 text-green-500" />
-                Cash Prize Pool
+                Total Prize Pool
               </h3>
               <div className="grid md:grid-cols-2 gap-4">
                 <div>
-                  <label className="text-sm text-gray-400 block mb-2">Prize Pool Amount (EGP)</label>
-                  <Input
-                    type="number"
-                    value={tournament.prizepool_total || ''}
-                    onChange={(e) => setTournament({ ...tournament, prizepool_total: parseFloat(e.target.value) || 0 })}
-                    placeholder="5000"
-                    className="bg-zinc-800 border-zinc-700 text-white"
-                  />
+                  <label className="text-sm text-gray-400 block mb-2">Total Cash Pool (EGP)</label>
+                  <Input type="number" value={tournament.prizepool_total || ''} onChange={(e) => setTournament(prev => ({ ...prev, prizepool_total: parseFloat(e.target.value) || 0 }))} placeholder="5000" className="bg-zinc-800 border-zinc-700 text-white" />
+                  {totalCashBreakdown > 0 && (totalCashBreakdown !== (tournament.prizepool_total || 0)) && (
+                    <p className="text-xs text-yellow-400 mt-1">⚠ Breakdown total (EGP {totalCashBreakdown.toLocaleString()}) doesn't match pool total.</p>
+                  )}
                 </div>
                 <div>
                   <label className="text-sm text-gray-400 block mb-2">HERU Coins Prize Pool</label>
-                  <Input
-                    type="number"
-                    value={tournament.prizepool_coins || ''}
-                    onChange={(e) => setTournament({ ...tournament, prizepool_coins: parseInt(e.target.value) || 0 })}
-                    placeholder="1000"
-                    className="bg-zinc-800 border-zinc-700 text-white"
-                  />
+                  <Input type="number" value={tournament.prizepool_coins || ''} onChange={(e) => setTournament(prev => ({ ...prev, prizepool_coins: parseInt(e.target.value) || 0 }))} placeholder="1000" className="bg-zinc-800 border-zinc-700 text-white" />
                 </div>
               </div>
             </FloatingPanel>
 
-            <div>
-              <h3 className="text-lg font-bold text-white">Prizepool Items from Shop</h3>
-              <p className="text-gray-400 text-sm mb-4">Add physical prizes for tournament winners (click multiple times to add quantity)</p>
-            </div>
-
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {prizepoolItems.map(item => {
-                const count = tournament.prizepool_items?.filter(id => id === item.id).length || 0;
-                return (
-                  <GameCard 
-                    key={item.id}
-                    className={`p-4 cursor-pointer ${count > 0 ? 'border-red-500' : ''}`}
-                    onClick={() => {
-                      setTournament(prev => ({
-                        ...prev,
-                        prizepool_items: [...(prev.prizepool_items || []), item.id]
-                      }));
-                    }}
-                  >
-                    <div className="aspect-video bg-zinc-800 rounded-lg mb-3 overflow-hidden relative">
-                      {item.image ? (
-                        <img src={item.image} alt="" className="w-full h-full object-cover" />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center">
-                          <Award className="w-8 h-8 text-zinc-600" />
-                        </div>
-                      )}
-                      {count > 0 && (
-                        <div className="absolute top-2 right-2 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full">
-                          x{count}
-                        </div>
-                      )}
-                    </div>
-                    <div className="flex items-center justify-between mb-2">
-                      <h4 className="text-white font-bold truncate">{item.title}</h4>
-                      {count > 0 && (
-                        <button 
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            const items = [...(tournament.prizepool_items || [])];
-                            const idx = items.lastIndexOf(item.id);
-                            if (idx > -1) items.splice(idx, 1);
-                            setTournament(prev => ({ ...prev, prizepool_items: items }));
-                          }}
-                          className="text-red-400 hover:text-red-300 text-xs"
-                        >
-                          Remove
+            {/* Per-place breakdown */}
+            <FloatingPanel className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                  <Trophy className="w-5 h-5 text-yellow-400" /> Prize Breakdown by Place
+                </h3>
+                <GlowButton size="sm" variant="secondary" onClick={() => {
+                  setTournament(prev => ({
+                    ...prev,
+                    prize_breakdown: [...(prev.prize_breakdown || DEFAULT_PRIZE_BREAKDOWN), { place: (prev.prize_breakdown?.length || 3) + 1, label: `${(prev.prize_breakdown?.length || 3) + 1}th Place`, cash: 0, item_ids: [] }]
+                  }));
+                }}>
+                  <Plus className="w-3 h-3" /> Add Place
+                </GlowButton>
+              </div>
+              <div className="space-y-4">
+                {breakdown.map((prize, idx) => (
+                  <div key={idx} className="border border-zinc-700 rounded-xl p-4 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <span className={`text-lg font-black ${idx === 0 ? 'text-yellow-400' : idx === 1 ? 'text-gray-300' : idx === 2 ? 'text-amber-600' : 'text-gray-500'}`}>
+                          {idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : `#${prize.place}`}
+                        </span>
+                        <Input value={prize.label} onChange={(e) => updateBreakdown(idx, 'label', e.target.value)} className="bg-zinc-800 border-zinc-700 text-white w-36 text-sm" />
+                      </div>
+                      {idx > 2 && (
+                        <button onClick={() => setTournament(prev => ({ ...prev, prize_breakdown: prev.prize_breakdown.filter((_, i) => i !== idx) }))} className="text-red-400 hover:text-red-300">
+                          <X className="w-4 h-4" />
                         </button>
                       )}
                     </div>
-                    <p className="text-red-400 font-bold">EGP {item.price}</p>
-                  </GameCard>
-                );
-              })}
-            </div>
+                    <div className="grid md:grid-cols-2 gap-3">
+                      <div>
+                        <label className="text-xs text-gray-400 block mb-1">Cash Prize (EGP)</label>
+                        <Input type="number" value={prize.cash || ''} onChange={(e) => updateBreakdown(idx, 'cash', parseFloat(e.target.value) || 0)} placeholder="0" className="bg-zinc-800 border-zinc-700 text-white" />
+                      </div>
+                      <div>
+                        <label className="text-xs text-gray-400 block mb-1">Physical Prizes from Shop</label>
+                        <div className="flex flex-wrap gap-1">
+                          {(prize.item_ids || []).map((iid, ii) => {
+                            const item = marketplaceItems.find(m => m.id === iid);
+                            return item ? (
+                              <span key={ii} className="inline-flex items-center gap-1 text-xs bg-zinc-700 text-gray-300 px-2 py-0.5 rounded">
+                                {item.title}
+                                <button onClick={() => updateBreakdown(idx, 'item_ids', prize.item_ids.filter((_, j) => j !== ii))} className="text-red-400 ml-1"><X className="w-3 h-3" /></button>
+                              </span>
+                            ) : null;
+                          })}
+                          <select
+                            className="text-xs bg-zinc-800 border border-zinc-700 text-gray-300 px-2 py-0.5 rounded cursor-pointer"
+                            value=""
+                            onChange={(e) => { if (e.target.value) updateBreakdown(idx, 'item_ids', [...(prize.item_ids || []), e.target.value]); }}
+                          >
+                            <option value="">+ Add item</option>
+                            {prizepoolItems.map(item => (
+                              <option key={item.id} value={item.id}>{item.title} — EGP {item.price}</option>
+                            ))}
+                          </select>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </FloatingPanel>
 
-            {prizepoolItems.length === 0 && (
-              <FloatingPanel className="p-8 text-center">
-                <Award className="w-12 h-12 text-zinc-700 mx-auto mb-3" />
-                <p className="text-gray-400">No prizepool items available</p>
+            {/* Shop items for prizepool */}
+            {prizepoolItems.length > 0 && (
+              <FloatingPanel className="p-6">
+                <h3 className="text-lg font-bold text-white mb-4">Available Prize Items</h3>
+                <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-3">
+                  {prizepoolItems.map(item => (
+                    <div key={item.id} className="flex items-center gap-3 p-3 bg-zinc-800 rounded-lg border border-zinc-700">
+                      <div className="w-10 h-10 rounded bg-zinc-700 flex items-center justify-center overflow-hidden flex-shrink-0">
+                        {item.image ? <img src={item.image} alt="" className="w-full h-full object-cover" /> : <Award className="w-5 h-5 text-zinc-500" />}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-white text-sm font-medium truncate">{item.title}</p>
+                        <p className="text-red-400 text-xs font-bold">EGP {item.price}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </FloatingPanel>
             )}
           </div>
         );
+      }
 
       default:
         return null;
@@ -937,11 +1056,17 @@ export default function TournamentBuilder() {
           </GlowButton>
           <GlowButton
             onClick={() => {
-              if (!profile?.brand_name) {
+              const missing = [];
+              if (!profile?.brand_name) missing.push('Brand Name');
+              if (!profile?.brand_logo) missing.push('Brand Logo');
+              if (!profile?.full_name) missing.push('Contact Name');
+              if (!profile?.contact_number) missing.push('Contact Number');
+              if (missing.length > 0) {
                 toast({
                   title: 'Profile incomplete',
-                  description: 'Please complete your organizer profile before publishing.',
+                  description: `Please fill in these fields on your Profile page before publishing: ${missing.join(', ')}`,
                   variant: 'destructive',
+                  duration: 7000,
                 });
                 return;
               }

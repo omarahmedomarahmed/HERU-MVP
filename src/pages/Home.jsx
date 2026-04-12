@@ -12,7 +12,14 @@ export default function Home() {
   const [navOpen, setNavOpen] = useState(false);
   const [loginDropdown, setLoginDropdown] = useState(false);
   const navigate = useNavigate();
-  const { isAuthenticated, role, getDashboardPath } = useAuth();
+  const { isAuthenticated, role, getDashboardPath, loading } = useAuth();
+
+  // Redirect logged-in users instantly to their dashboard
+  useEffect(() => {
+    if (!loading && isAuthenticated) {
+      navigate(getDashboardPath(), { replace: true });
+    }
+  }, [loading, isAuthenticated]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Fetch data
   const { data: tournaments = [] } = useQuery({

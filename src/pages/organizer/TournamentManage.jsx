@@ -17,7 +17,7 @@ import {
   Shield, ArrowLeft, AlertTriangle, GripVertical,
   Play, Flag, Package, Upload, Briefcase, Eye,
   Settings, BarChart3, ListChecks, Pencil, Trash2,
-  Save, Image, X,
+  Save, Image, X, Plus,
 } from 'lucide-react'
 
 // ---------------------------------------------------------------------------
@@ -356,27 +356,46 @@ function GigWorkersTab({ tournament }) {
 function ReportTab({ tournament, navigate }) {
   if (tournament.status !== 'completed') {
     return (
-      <EmptyState
-        icon={FileText}
-        message="Tournament reports are available after the tournament is completed."
-      />
+      <div className="rounded-xl border border-yellow-500/20 bg-yellow-500/5 p-6 text-center">
+        <FileText className="w-12 h-12 text-yellow-400 mx-auto mb-4" />
+        <h3 className="text-white font-semibold text-lg mb-2">Tournament Report</h3>
+        <p className="text-gray-400 text-sm mb-4">
+          Mark this tournament as <span className="text-yellow-400 font-semibold">completed</span> to unlock the report builder and share your brand impact with all co-organizers.
+        </p>
+      </div>
     )
   }
 
   return (
-    <div className="rounded-xl border border-white/10 bg-[#1a1a2e] p-6 text-center">
-      <FileText className="w-12 h-12 text-red-400 mx-auto mb-4" />
-      <h3 className="text-white font-semibold text-lg mb-2">Tournament Report</h3>
-      <p className="text-gray-400 text-sm mb-6">
-        View the full tournament report including results, statistics, and financial summary.
-      </p>
-      <button
-        onClick={() => navigate(`/organizer/tournaments/${tournament.id}/report`)}
-        className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-gradient-to-r from-red-600 to-red-600 text-white font-medium text-sm hover:brightness-110 transition"
-      >
-        View Report
-        <ChevronRight className="w-4 h-4" />
-      </button>
+    <div className="space-y-4">
+      <div className="rounded-xl border border-violet-500/30 bg-gradient-to-br from-violet-900/20 to-[#1a1a2e] p-6">
+        <div className="flex items-center gap-3 mb-3">
+          <div className="w-10 h-10 rounded-lg bg-violet-500/20 flex items-center justify-center">
+            <FileText className="w-5 h-5 text-violet-400" />
+          </div>
+          <div>
+            <h3 className="text-white font-bold text-lg">Brand Impact Report</h3>
+            <p className="text-gray-400 text-xs">Shared with all co-organizers after completion</p>
+          </div>
+        </div>
+        <p className="text-gray-400 text-sm mb-5">
+          Build a professional marketing campaign report showing brand awareness, social media reach, live stream viewership, photo &amp; video deliverables, and more.
+        </p>
+        <div className="flex gap-3">
+          <button
+            onClick={() => navigate(`/organizer/tournaments/${tournament.id}/report/build`)}
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-gradient-to-r from-violet-600 to-violet-500 text-white font-medium text-sm hover:brightness-110 transition"
+          >
+            <Plus className="w-4 h-4" /> Build / Edit Report
+          </button>
+          <button
+            onClick={() => navigate(`/organizer/tournaments/${tournament.id}/report`)}
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg border border-white/10 text-gray-300 font-medium text-sm hover:bg-white/5 transition"
+          >
+            View Report <ChevronRight className="w-4 h-4" />
+          </button>
+        </div>
+      </div>
     </div>
   )
 }

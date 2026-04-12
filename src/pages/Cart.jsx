@@ -8,9 +8,9 @@ import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import {
   ShoppingCart, Trash2, ArrowLeft, Package, CreditCard,
-  MapPin, User, Tag, Check
+  MapPin, User, Tag, Check, Trophy, Zap
 } from 'lucide-react';
-import { Bill, GamerProfile, Order, apiCall } from '@/api/heruClient'
+import { Bill, GamerProfile, Order, Tournament, apiCall } from '@/api/heruClient'
 import { useAuth } from '@/lib/AuthContext'
 import PhoneInput from '@/components/ui/PhoneInput'
 import { useToast } from '@/components/ui/use-toast'
@@ -68,6 +68,34 @@ export default function Cart() {
     },
     enabled: !!user?.id,
   });
+
+  // Fetch live/published tournaments to cross-reference cart items with prize pools
+  const { data: activeTournaments = [] } = useQuery({
+    queryKey: ['active-tournaments-for-cart'],
+    queryFn: () => Tournament.list({ status: 'live' }),
+    staleTime: 60000,
+  });
+
+  // Build a map: marketplace item ID → list of tournaments offering it as prize
+  const prizeItemTournamentMap = React.useMemo(() => {
+    const map = {};
+    activeTournaments.forEach((t) => {
+      const breakdown = t.prize_breakdown || [];
+      breakdown.forEach((place) => {
+        (place.items || []).forEach((itemId) => {
+          if (!map[itemId]) map[itemId] = [];
+          map[itemId].push(t);
+        });
+      });
+    });
+    return map;
+  }, [activeTournaments]);
+
+  // Which cart items are also tournament prizes?
+  const cartItemsWithPrize = React.useMemo(
+    () => cart.filter((ci) => prizeItemTournamentMap[ci.id]?.length > 0),
+    [cart, prizeItemTournamentMap]
+  );
 
   const removeFromCart = (cartId) => {
     const newCart = cart.filter(item => item.cartId !== cartId);
@@ -180,6 +208,26 @@ export default function Cart() {
         )}
       </div>
 
+      {/* Prize-win notification banner */}
+      {cartItemsWithPrize.length > 0 && (
+        <div className="mb-6 rounded-xl border border-yellow-500/40 bg-yellow-500/10 p-4 flex items-start gap-3">
+          <Trophy className="w-5 h-5 text-yellow-400 flex-shrink-0 mt-0.5" />
+          <div>
+            <p className="text-yellow-300 font-bold text-sm">
+              You can WIN {cartItemsWithPrize.length === 1 ? 'an item' : 'items'} in your cart for FREE!
+            </p>
+            <p className="text-yellow-400/80 text-xs mt-1">
+              {cartItemsWithPrize.map((ci) => `"${ci.title}"`).join(', ')} {cartItemsWithPrize.length === 1 ? 'is' : 'are'} being offered as prize{cartItemsWithPrize.length > 1 ? 's' : ''} in active tournaments.
+              Join a tournament to win it instead of buying it!
+            </p>
+            <Link to="/gamer/tournaments" className="inline-flex items-center gap-1 text-yellow-400 text-xs font-bold mt-2 hover:text-yellow-300 underline underline-offset-2">
+              <Zap className="w-3 h-3" />
+              Browse Tournaments
+            </Link>
+          </div>
+        </div>
+      )}
+
       {cart.length === 0 ? (
         <FloatingPanel className="p-12 text-center">
           <ShoppingCart className="w-16 h-16 text-zinc-700 mx-auto mb-4" />
@@ -211,6 +259,18 @@ export default function Cart() {
                       <p className="text-gray-500 text-sm line-clamp-1">{item.description}</p>
                       {item.gameTag && (
                         <p className="text-yellow-400 text-xs mt-1">Game ID: {item.gameTag}</p>
+                      )}
+                      {prizeItemTournamentMap[item.id]?.length > 0 && (
+                        <div className="flex items-center gap-1 mt-1.5">
+                          <Trophy className="w-3 h-3 text-yellow-400" />
+                          <span className="text-yellow-400 text-xs font-semibold">
+                            Win this FREE in "{prizeItemTournamentMap[item.id][0].name}"
+                            {prizeItemTournamentMap[item.id].length > 1 && ` + ${prizeItemTournamentMap[item.id].length - 1} more`}
+                          </span>
+                          <Link to="/gamer/tournaments" className="text-yellow-400/70 text-xs underline ml-1 hover:text-yellow-300">
+                            Join
+                          </Link>
+                        </div>
                       )}
                       <div className="flex items-center gap-3 mt-2">
                         <p className="text-red-400 font-bold">EGP {((item.price || 0) * (item.quantity || 1)).toLocaleString()}</p>

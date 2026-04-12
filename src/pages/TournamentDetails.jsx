@@ -605,7 +605,7 @@ export default function TournamentDetails() {
               <Award className="w-5 h-5 text-yellow-500" /> Tournament Brackets
             </h2>
             {tournament.brackets?.length > 0 ? (
-              <BracketVisual brackets={tournament.brackets} teams={teams} onInviteClick={() => {}} onSelectWinner={() => {}} />
+              <BracketVisual brackets={tournament.brackets} teams={teams} allTeams={teams} onInviteClick={() => {}} onSelectWinner={() => {}} />
             ) : (
               <div className="text-center py-12">
                 <Award className="w-16 h-16 text-zinc-700 mx-auto mb-4" />

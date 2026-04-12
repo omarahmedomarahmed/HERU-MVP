@@ -51,6 +51,7 @@ export default function OrganizerSettings() {
     description: '',
     bio: '',
     brand_logo: '',
+    brand_banner: '',
     primary_color: '#ff1a1a',
     secondary_color: '#0a0a0a',
     full_name: '',
@@ -65,6 +66,18 @@ export default function OrganizerSettings() {
     },
     featured_games: [],
   });
+  const [bannerUploading, setBannerUploading] = useState(false);
+  const bannerInputRef = useRef(null);
+
+  // Compute required-field completeness for the builder warning
+  const REQUIRED_FIELDS = [
+    { key: 'brand_name', label: 'Brand Name' },
+    { key: 'brand_logo', label: 'Brand Logo' },
+    { key: 'brand_banner', label: 'Brand Default Banner' },
+    { key: 'full_name', label: 'Contact Name' },
+    { key: 'contact_number', label: 'Contact Number' },
+  ];
+  const missingRequired = REQUIRED_FIELDS.filter(f => !form[f.key]).map(f => f.label);
 
   // ---- Load profile ----
   const { data: profile, isLoading } = useQuery({
@@ -79,6 +92,7 @@ export default function OrganizerSettings() {
         description: profile.description || '',
         bio: profile.bio || '',
         brand_logo: profile.brand_logo || '',
+        brand_banner: profile.brand_banner || '',
         primary_color: profile.primary_color || '#ff1a1a',
         secondary_color: profile.secondary_color || '#0a0a0a',
         full_name: profile.full_name || '',
@@ -129,6 +143,20 @@ export default function OrganizerSettings() {
     }
   };
 
+  const handleBannerUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setBannerUploading(true);
+    try {
+      const { file_url } = await uploadFile(file);
+      set('brand_banner', file_url);
+    } catch (err) {
+      console.error('Banner upload failed:', err);
+    } finally {
+      setBannerUploading(false);
+    }
+  };
+
   const toggleGame = (game) => {
     setForm((prev) => {
       const current = prev.featured_games;
@@ -176,6 +204,14 @@ export default function OrganizerSettings() {
         </button>
       </div>
 
+      {/* Required fields warning */}
+      {missingRequired.length > 0 && (
+        <div className="mb-6 bg-yellow-500/10 border border-yellow-500/30 rounded-xl p-4">
+          <p className="text-yellow-400 font-semibold text-sm mb-1">⚠ Profile incomplete — required to publish tournaments</p>
+          <p className="text-yellow-300/80 text-xs">Missing: <span className="font-bold">{missingRequired.join(', ')}</span></p>
+        </div>
+      )}
+
       {/* Success toast */}
       {saveSuccess && (
         <div className="mb-6 bg-green-500/20 border border-green-500/40 rounded-xl p-3 text-green-400 flex items-center gap-2 text-sm">
@@ -199,7 +235,7 @@ export default function OrganizerSettings() {
           </h2>
           <div className="space-y-5">
             <div>
-              <label className="text-sm text-gray-400 block mb-2">Brand Name</label>
+              <label className="text-sm text-gray-400 block mb-2">Brand Name <span className="text-red-400 text-xs">*required</span></label>
               <Input
                 value={form.brand_name}
                 onChange={(e) => set('brand_name', e.target.value)}
@@ -274,6 +310,38 @@ export default function OrganizerSettings() {
           </div>
         </section>
 
+        {/* ───────────── Brand Banner ───────────── */}
+        <section className="bg-zinc-900 border border-zinc-800 rounded-xl p-6">
+          <h2 className="text-lg font-bold text-white mb-1 flex items-center gap-2">
+            <ImageIcon className="w-5 h-5 text-red-500" />
+            Brand Default Banner <span className="text-xs text-red-400 font-normal ml-1">required</span>
+          </h2>
+          <p className="text-gray-500 text-xs mb-5">Used as the default tournament background when no cover image is set</p>
+          {form.brand_banner && (
+            <div className="w-full h-28 rounded-xl overflow-hidden mb-4 border border-zinc-700">
+              <img src={form.brand_banner} alt="Banner" className="w-full h-full object-cover" />
+            </div>
+          )}
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={() => bannerInputRef.current?.click()}
+              disabled={bannerUploading}
+              className="flex items-center gap-2 px-4 py-2 bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-white text-sm rounded-lg transition-colors disabled:opacity-50"
+            >
+              {bannerUploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+              {bannerUploading ? 'Uploading...' : 'Upload Banner'}
+            </button>
+            <input ref={bannerInputRef} type="file" accept="image/*" className="hidden" onChange={handleBannerUpload} />
+            <Input
+              value={form.brand_banner}
+              onChange={(e) => set('brand_banner', e.target.value)}
+              placeholder="or paste image URL..."
+              className="bg-zinc-800 border-zinc-700 text-white flex-1 text-sm"
+            />
+          </div>
+        </section>
+
         {/* ───────────── Brand Colors ───────────── */}
         <section className="bg-zinc-900 border border-zinc-800 rounded-xl p-6">
           <h2 className="text-lg font-bold text-white mb-5 flex items-center gap-2">
@@ -338,7 +406,7 @@ export default function OrganizerSettings() {
           <div className="space-y-5">
             <div className="grid sm:grid-cols-2 gap-5">
               <div>
-                <label className="text-sm text-gray-400 block mb-2">Full Name</label>
+                <label className="text-sm text-gray-400 block mb-2">Contact Name <span className="text-red-400 text-xs">*required</span></label>
                 <Input
                   value={form.full_name}
                   onChange={(e) => set('full_name', e.target.value)}
@@ -357,7 +425,7 @@ export default function OrganizerSettings() {
             </div>
             <div className="grid sm:grid-cols-2 gap-5">
               <div>
-                <label className="text-sm text-gray-400 block mb-2">Contact Number</label>
+                <label className="text-sm text-gray-400 block mb-2">Contact Number <span className="text-red-400 text-xs">*required</span></label>
                 <Input
                   value={form.contact_number}
                   onChange={(e) => set('contact_number', e.target.value)}
