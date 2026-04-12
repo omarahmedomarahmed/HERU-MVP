@@ -32,8 +32,8 @@ export async function requireStaff(req, res, next) {
       return res.status(401).json({ error: 'Staff session expired' });
     }
 
-    // Verify session belongs to the authenticated user
-    if (req.user && session.user_id !== req.user.id) {
+    // req.user must exist (requireAuth must run before requireStaff)
+    if (!req.user || session.user_id !== req.user.id) {
       return res.status(403).json({ error: 'Staff session does not match authenticated user' });
     }
 

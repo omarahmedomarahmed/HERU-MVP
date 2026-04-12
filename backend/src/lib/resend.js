@@ -78,7 +78,7 @@ export async function sendBillNotification(bill) {
           </tr>
         </table>
         <p>
-          <a href="${process.env.CORS_ORIGIN || 'https://heru.gg'}/bill/${bill.bill_number}"
+          <a href="https://heru.gg/bill/${bill.bill_number}"
              style="display: inline-block; background: #ff1a1a; color: #fff; padding: 12px 24px;
                     text-decoration: none; border-radius: 6px; font-weight: 600;">
             View Invoice
@@ -125,7 +125,7 @@ export async function sendTournamentNotification(tournament, type, recipients) {
       <div style="padding: 24px; background: #ffffff;">
         ${bodies[type] || `<p>Update for tournament: ${tournament.name}</p>`}
         <p>
-          <a href="${process.env.CORS_ORIGIN || 'https://heru.gg'}/tournaments/${tournament.id}"
+          <a href="https://heru.gg/tournaments/${tournament.id}"
              style="display: inline-block; background: #ff1a1a; color: #fff; padding: 12px 24px;
                     text-decoration: none; border-radius: 6px; font-weight: 600;">
             View Tournament

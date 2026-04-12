@@ -57,10 +57,27 @@ router.post('/', requireAuth, async (req, res) => {
   }
 });
 
-// PUT /:id - update order
+// Allowed fields for order updates (prevent mass assignment)
+const ORDER_UPDATE_COLUMNS = new Set(['status', 'shipping_address', 'support_chat']);
+
+// PUT /:id - update order (only owner can update, only safe fields)
 router.put('/:id', requireAuth, async (req, res) => {
   try {
-    const { data, error } = await supabaseAdmin.from('orders').update({ ...req.body, updated_at: new Date().toISOString() }).eq('id', req.params.id).select().single();
+    // Ownership check — must own the order
+    const { data: existing, error: fetchError } = await supabaseAdmin
+      .from('orders').select('gamer_id, organizer_id').eq('id', req.params.id).single();
+    if (fetchError || !existing) return res.status(404).json({ error: 'Order not found' });
+    if (existing.gamer_id !== req.user.id && existing.organizer_id !== req.user.id) {
+      return res.status(403).json({ error: 'Not authorized' });
+    }
+    // Whitelist fields
+    const clean = {};
+    for (const [key, value] of Object.entries(req.body)) {
+      if (ORDER_UPDATE_COLUMNS.has(key)) clean[key] = value;
+    }
+    const { data, error } = await supabaseAdmin.from('orders')
+      .update({ ...clean, updated_at: new Date().toISOString() })
+      .eq('id', req.params.id).select().single();
     if (error) throw error;
     res.json(data);
   } catch (err) {

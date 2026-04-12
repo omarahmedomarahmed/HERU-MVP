@@ -4,6 +4,7 @@ import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
 import rateLimit from 'express-rate-limit';
+import crypto from 'crypto';
 import { supabaseAdmin } from './src/lib/supabase.js';
 
 import authRoutes from './src/routes/auth.js';
@@ -37,12 +38,47 @@ const PORT = process.env.PORT || 3001;
 // Trust Nginx reverse proxy (required for express-rate-limit behind Nginx)
 app.set('trust proxy', 1);
 
+// Disable x-powered-by header (Helmet also does this but explicit is better)
+app.disable('x-powered-by');
+
 // ---------------------------------------------------------------------------
 // Global middleware
 // ---------------------------------------------------------------------------
 
-app.use(helmet());
-app.use(morgan(process.env.NODE_ENV === 'production' ? 'combined' : 'dev'));
+// Assign a unique request ID for tracing and audit logs
+app.use((req, _res, next) => {
+  req.requestId = crypto.randomBytes(8).toString('hex');
+  next();
+});
+
+app.use(helmet({
+  // Helmet CSP here is a fallback; Nginx sets the authoritative CSP header
+  contentSecurityPolicy: process.env.NODE_ENV === 'production' ? {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
+      styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
+      fontSrc: ["'self'", 'https://fonts.gstatic.com'],
+      imgSrc: ["'self'", 'data:', 'blob:', 'https://*.supabase.co'],
+      connectSrc: ["'self'", 'https://*.supabase.co', 'wss://*.supabase.co'],
+      frameSrc: ["'none'"],
+      objectSrc: ["'none'"],
+    },
+  } : false,
+  hsts: process.env.NODE_ENV === 'production' ? {
+    maxAge: 31536000,
+    includeSubDomains: true,
+    preload: true,
+  } : false,
+}));
+
+// In production, strip Authorization header from Morgan logs to avoid logging tokens
+app.use(morgan(
+  process.env.NODE_ENV === 'production' ? 'combined' : 'dev',
+  process.env.NODE_ENV === 'production' ? {
+    skip: (req) => req.path.startsWith('/api/auth'),
+  } : {}
+));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 
@@ -53,21 +89,23 @@ app.use(
   })
 );
 
-// Strict rate limiter for auth endpoints (prevent brute force)
+// Strict rate limiter for auth/register (prevent brute force & account enumeration)
 const authLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 30, // 30 login attempts per 15 minutes
+  windowMs: 15 * 60 * 1000,   // 15 minutes
+  max: 10,                     // 10 attempts per IP per window
   standardHeaders: true,
   legacyHeaders: false,
-  message: { error: 'Too many login attempts, please try again later.' },
+  skipSuccessfulRequests: true, // Only count failed attempts
+  message: { error: 'Too many login attempts, please try again in 15 minutes.' },
 });
 app.use('/api/auth/login', authLimiter);
 app.use('/api/auth/staff/login', authLimiter);
+app.use('/api/auth/register', authLimiter);
 
-// General rate limiter — generous to avoid cascading 429s on page loads
+// General rate limiter
 const limiter = rateLimit({
   windowMs: 1 * 60 * 1000, // 1 minute window
-  max: 300, // 300 requests per minute per IP
+  max: 200,                  // 200 req/min per IP
   standardHeaders: true,
   legacyHeaders: false,
   message: { error: 'Too many requests, please try again later.' },

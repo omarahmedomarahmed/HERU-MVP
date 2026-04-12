@@ -7,6 +7,19 @@ import { requireAuth } from '../middleware/auth.js';
 const router = Router();
 
 // ---------------------------------------------------------------------------
+// Input validation helpers
+// ---------------------------------------------------------------------------
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+function validateEmailPassword(email, password) {
+  if (!email || !password) return 'Email and password are required';
+  if (!EMAIL_REGEX.test(email)) return 'Invalid email format';
+  if (password.length < 8) return 'Password must be at least 8 characters';
+  if (password.length > 128) return 'Password is too long';
+  return null;
+}
+
+// ---------------------------------------------------------------------------
 // Separate client for signInWithPassword.
 // NEVER call signInWithPassword on supabaseAdmin — it contaminates the
 // service-role client's internal session, making subsequent DB queries use the
@@ -24,10 +37,8 @@ function createAuthClient() {
 router.post('/register/gamer', async (req, res) => {
   try {
     const { email, password, full_name, username } = req.body;
-
-    if (!email || !password) {
-      return res.status(400).json({ error: 'Email and password are required' });
-    }
+    const validationError = validateEmailPassword(email, password);
+    if (validationError) return res.status(400).json({ error: validationError });
 
     // Create auth user
     const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
@@ -106,10 +117,8 @@ router.post('/register/gamer', async (req, res) => {
 router.post('/register/organizer', async (req, res) => {
   try {
     const { email, password, full_name, brand_name, location } = req.body;
-
-    if (!email || !password) {
-      return res.status(400).json({ error: 'Email and password are required' });
-    }
+    const validationError = validateEmailPassword(email, password);
+    if (validationError) return res.status(400).json({ error: validationError });
 
     // Create auth user
     const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
@@ -187,10 +196,8 @@ router.post('/register/organizer', async (req, res) => {
 router.post('/login', async (req, res) => {
   try {
     const { email, password } = req.body;
-
-    if (!email || !password) {
-      return res.status(400).json({ error: 'Email and password are required' });
-    }
+    const validationError = validateEmailPassword(email, password);
+    if (validationError) return res.status(400).json({ error: validationError });
 
     const authClient = createAuthClient();
     const { data, error } = await authClient.auth.signInWithPassword({
@@ -256,7 +263,7 @@ router.post('/staff/login', async (req, res) => {
     });
 
     if (authError) {
-      return res.status(401).json({ error: 'Invalid email or password', step: 'auth' });
+      return res.status(401).json({ error: 'Invalid credentials' });
     }
 
     const user = authData.user;
@@ -269,12 +276,12 @@ router.post('/staff/login', async (req, res) => {
       .single();
 
     if (profileError) {
-      console.error('[staff/login] profile lookup error:', profileError);
-      return res.status(500).json({ error: 'Failed to verify admin role', step: 'role_check', detail: profileError.message });
+      console.error('[staff/login] profile lookup error');
+      return res.status(500).json({ error: 'Authentication failed' });
     }
 
     if (profile?.role !== 'admin') {
-      return res.status(403).json({ error: 'Access denied. Admin privileges required.', step: 'role_check' });
+      return res.status(403).json({ error: 'Invalid credentials' });
     }
 
     // 2b. Validate StaffAccessKey
@@ -286,7 +293,7 @@ router.post('/staff/login', async (req, res) => {
       .single();
 
     if (keyError || !keyRecord) {
-      return res.status(403).json({ error: 'Invalid or inactive staff access key', step: 'access_key' });
+      return res.status(403).json({ error: 'Invalid credentials' });
     }
 
     // Update key usage stats
@@ -315,8 +322,8 @@ router.post('/staff/login', async (req, res) => {
       .single();
 
     if (sessionError) {
-      console.error('[staff/login] session creation error:', sessionError);
-      return res.status(500).json({ error: 'Failed to create staff session', step: 'session_insert', detail: sessionError.message });
+      console.error('[staff/login] session creation error');
+      return res.status(500).json({ error: 'Authentication failed' });
     }
 
     res.json({

@@ -44,10 +44,27 @@ router.post('/', requireAuth, async (req, res) => {
   }
 });
 
-// PUT /:id - update (accept/reject/complete)
+// Allowed fields for gig updates (prevent mass assignment)
+const GIG_UPDATE_COLUMNS = new Set(['status', 'notes', 'chat', 'file_library']);
+
+// PUT /:id - update (organizer or talent only, whitelisted fields)
 router.put('/:id', requireAuth, async (req, res) => {
   try {
-    const { data, error } = await supabaseAdmin.from('gig_requests').update({ ...req.body, updated_at: new Date().toISOString() }).eq('id', req.params.id).select().single();
+    // Ownership check
+    const { data: existing, error: fetchError } = await supabaseAdmin
+      .from('gig_requests').select('talent_user_id, organizer_id').eq('id', req.params.id).single();
+    if (fetchError || !existing) return res.status(404).json({ error: 'Gig not found' });
+    if (existing.talent_user_id !== req.user.id && existing.organizer_id !== req.user.id) {
+      return res.status(403).json({ error: 'Not authorized' });
+    }
+    // Whitelist fields
+    const clean = {};
+    for (const [key, value] of Object.entries(req.body)) {
+      if (GIG_UPDATE_COLUMNS.has(key)) clean[key] = value;
+    }
+    const { data, error } = await supabaseAdmin.from('gig_requests')
+      .update({ ...clean, updated_at: new Date().toISOString() })
+      .eq('id', req.params.id).select().single();
     if (error) throw error;
     res.json(data);
   } catch (err) {
