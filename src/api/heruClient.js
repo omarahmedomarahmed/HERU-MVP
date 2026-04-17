@@ -274,6 +274,24 @@ export const TeamMember = {
     apiCall(`/teams/${teamId}/members/${userId}/role`, { method: 'PUT', body: { role, custom_role: customRole } }),
 }
 
+export const Connect = {
+  status:         ()              => apiCall('/connect/status'),
+  discordAuthUrl: ()              => apiCall('/connect/discord/auth').then(d => d.url),
+  disconnectDiscord: ()           => apiCall('/connect/discord', { method: 'DELETE' }),
+  botInstallUrl:  ()              => apiCall('/connect/bot-install-url').then(d => d.url),
+  riotAccounts:   ()              => apiCall('/connect/riot/accounts'),
+  linkRiot:       (data)          => apiCall('/connect/riot/link', { method: 'POST', body: data }),
+  removeRiot:     (id)            => apiCall(`/connect/riot/${id}`, { method: 'DELETE' }),
+  syncRiot:       (id)            => apiCall(`/connect/riot/${id}/sync`, { method: 'POST' }),
+  updateRiot:     (id, data)      => apiCall(`/connect/riot/${id}`, { method: 'PATCH', body: data }),
+}
+
+export const AiAgent = {
+  sendMessage:    (data)          => apiCall('/ai-agent/message', { method: 'POST', body: data }),
+  getSession:     ()              => apiCall('/ai-agent/session'),
+  clearSession:   ()              => apiCall('/ai-agent/session', { method: 'DELETE' }),
+}
+
 // ---------------------------------------------------------------------------
 // Raw API call export for custom one-off requests
 // ---------------------------------------------------------------------------
