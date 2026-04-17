@@ -45,6 +45,8 @@ import Cart from './pages/Cart'
 import TournamentDetails from './pages/TournamentDetails'
 import Arena from './pages/gamer/Arena'
 import GamerBilling from './pages/GamerBilling'
+import ConnectedAccounts from './pages/gamer/ConnectedAccounts'
+import AiAgent from './pages/gamer/AiAgent'
 
 // Organizer pages
 import OrganizerLayout from '@/components/layouts/OrganizerLayout'
@@ -136,6 +138,8 @@ function App() {
             <Route path="/gamer/notifications" element={<RequireGamer><GamerNotifications /></RequireGamer>} />
             <Route path="/gamer/marketplace" element={<RequireGamer><Marketplace /></RequireGamer>} />
             <Route path="/gamer/cart" element={<RequireGamer><Cart /></RequireGamer>} />
+            <Route path="/gamer/connect" element={<RequireGamer><ConnectedAccounts /></RequireGamer>} />
+            <Route path="/gamer/ai-agent" element={<RequireGamer><AiAgent /></RequireGamer>} />
             <Route path="/gamer/:id" element={<GamerProfileView />} />
 
             {/* ============ ORGANIZER ZONE ============ */}
