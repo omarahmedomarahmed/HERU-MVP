@@ -31,6 +31,9 @@ import matchRecordRoutes from './src/routes/match-records.js';
 import auditRoutes from './src/routes/audit.js';
 import promoRoutes from './src/routes/promos.js';
 import gameRoutes from './src/routes/games.js';
+import connectRoutes from './src/routes/connect.js';
+import aiAgentRoutes from './src/routes/ai-agent.js';
+import botRoutes from './src/routes/bot.js';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -152,6 +155,9 @@ app.use('/api/match-records', matchRecordRoutes);
 app.use('/api/audit', auditRoutes);
 app.use('/api/promos', promoRoutes);
 app.use('/api/games', gameRoutes);
+app.use('/api/connect', connectRoutes);
+app.use('/api/ai-agent', aiAgentRoutes);
+app.use('/api/bot', botRoutes);
 
 // ---------------------------------------------------------------------------
 // 404 handler
