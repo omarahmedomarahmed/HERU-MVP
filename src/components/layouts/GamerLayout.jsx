@@ -26,9 +26,15 @@ export default function GamerLayout({ children, user, profile, cartCount = 0, no
     { icon: Trophy, label: 'Tournaments', path: '/gamer/tournaments' },
     { icon: Users, label: 'Teams', path: '/gamer/teams' },
     { icon: ShoppingBag, label: 'Shop', path: '/gamer/marketplace' },
+    { icon: Link2, label: 'Connect', path: '/gamer/profile', search: 'tab=connect' },
   ];
 
-  const isActive = (path) => location.pathname === path || location.pathname.startsWith(path + '/');
+  const isActive = (path, search) => {
+    if (search) {
+      return location.pathname === path && location.search.includes(search);
+    }
+    return location.pathname === path || location.pathname.startsWith(path + '/');
+  };
 
   const navigate = useNavigate();
   const { logout } = useAuth();
@@ -63,12 +69,12 @@ export default function GamerLayout({ children, user, profile, cartCount = 0, no
             <nav className="hidden lg:flex items-center gap-1">
               {navItems.map((item) => (
                 <Link
-                  key={item.path}
-                  to={item.path}
+                  key={item.path + (item.search || '')}
+                  to={item.search ? `${item.path}?${item.search}` : item.path}
                   className={`
                     flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold
                     transition-all duration-200
-                    ${isActive(item.path)
+                    ${isActive(item.path, item.search)
                       ? item.prominent
                         ? 'bg-gradient-to-r from-red-600 to-red-700 text-white shadow-lg shadow-red-900/40 border border-red-500'
                         : 'bg-red-500/20 text-red-400 border border-red-500/30'
@@ -214,12 +220,12 @@ export default function GamerLayout({ children, user, profile, cartCount = 0, no
               <nav className="p-4 space-y-1">
                 {navItems.map((item) => (
                   <Link
-                    key={item.path}
-                    to={item.path}
+                    key={item.path + (item.search || '')}
+                    to={item.search ? `${item.path}?${item.search}` : item.path}
                     onClick={() => setMobileMenuOpen(false)}
                     className={`
                       flex items-center gap-3 px-4 py-3 rounded-xl font-medium
-                      ${isActive(item.path)
+                      ${isActive(item.path, item.search)
                         ? item.prominent
                           ? 'bg-gradient-to-r from-red-600 to-red-700 text-white shadow-lg'
                           : 'bg-red-500/20 text-red-400'
@@ -231,7 +237,7 @@ export default function GamerLayout({ children, user, profile, cartCount = 0, no
                   >
                     <item.icon className="w-5 h-5" />
                     {item.label}
-                    {item.prominent && !isActive(item.path) && (
+                    {item.prominent && !isActive(item.path, item.search) && (
                       <span className="ml-auto text-[10px] font-bold text-red-500 bg-red-500/10 px-1.5 py-0.5 rounded">BATTLE</span>
                     )}
                   </Link>
@@ -254,7 +260,7 @@ export default function GamerLayout({ children, user, profile, cartCount = 0, no
                     My Orders
                   </Link>
                   <Link
-                    to={'/gamer/connect'}
+                    to={'/gamer/profile?tab=connect'}
                     onClick={() => setMobileMenuOpen(false)}
                     className="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-400 hover:text-white hover:bg-white/5"
                   >

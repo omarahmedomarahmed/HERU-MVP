@@ -12,12 +12,17 @@ const FRONTEND = process.env.HERU_FRONTEND_URL || 'https://heru.gg';
 if (!TOKEN) { console.error('DISCORD_BOT_TOKEN not set'); process.exit(1); }
 if (!APP_ID) { console.error('DISCORD_APPLICATION_ID not set'); process.exit(1); }
 
-// Register slash commands
+// Register slash commands — guild-scoped when DISCORD_GUILD_ID is set (instant)
+// otherwise global (up to 1 hour propagation)
 const rest = new REST({ version: '10' }).setToken(TOKEN);
 async function registerCommands() {
   try {
-    await rest.put(Routes.applicationCommands(APP_ID), { body: commandDefinitions });
-    console.log('[bot] Slash commands registered');
+    const guildId = process.env.DISCORD_GUILD_ID;
+    const route = guildId
+      ? Routes.applicationGuildCommands(APP_ID, guildId)
+      : Routes.applicationCommands(APP_ID);
+    await rest.put(route, { body: commandDefinitions });
+    console.log(`[bot] Slash commands registered (${guildId ? `guild ${guildId}` : 'global'})`);
   } catch (err) {
     console.error('[bot] Failed to register commands:', err.message);
   }
@@ -27,7 +32,7 @@ const client = new Client({
   intents: [
     GatewayIntentBits.Guilds,
     GatewayIntentBits.GuildMessages,
-    GatewayIntentBits.MessageContent,
+    // MessageContent is a privileged intent not needed for slash commands
     GatewayIntentBits.DirectMessages,
   ],
 });
@@ -54,7 +59,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
 
       case 'heru-join': {
         const url = `${FRONTEND}/auth/gamer/register?via=discord`;
-        await interaction.editReply({ content: `👾 **Join HERU.gg**\n\nCreate your HERU gamer account:\n${url}\n\nAlready have one? Link your Discord at ${FRONTEND}/gamer/connect` });
+        await interaction.editReply({ content: `👾 **Join HERU.gg**\n\nCreate your HERU gamer account:\n${url}\n\nAlready have one? Link your Discord at ${FRONTEND}/gamer/profile?tab=connect` });
         break;
       }
 
@@ -73,7 +78,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
         const data = await heruClient.getProfileByDiscord(user.id);
         const accounts = (data.riotAccounts || []).filter(a => a.game_key === game);
         if (accounts.length === 0) {
-          await interaction.editReply({ content: `No ${game === 'lol' ? 'League of Legends' : 'Valorant'} accounts linked. Go to ${FRONTEND}/gamer/connect to link your Riot account.` });
+          await interaction.editReply({ content: `No ${game === 'lol' ? 'League of Legends' : 'Valorant'} accounts linked. Go to ${FRONTEND}/gamer/profile?tab=connect to link your Riot account.` });
           break;
         }
         const lines = accounts.map(a => {
@@ -201,7 +206,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
   } catch (err) {
     console.error(`[bot] Command error (${commandName}):`, err.message);
     const errMsg = err.message.includes('linked') || err.message.includes('account')
-      ? `${err.message} — Visit ${FRONTEND}/gamer/connect`
+      ? `${err.message} — Visit ${FRONTEND}/gamer/profile?tab=connect`
       : `Something went wrong. Try again or visit ${FRONTEND}`;
     await interaction.editReply({ content: `❌ ${errMsg}` }).catch(() => {});
   }

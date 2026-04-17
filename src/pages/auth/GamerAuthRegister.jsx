@@ -69,7 +69,19 @@ export default function GamerAuthRegister() {
             <CheckCircle className="w-8 h-8 text-green-400" />
           </div>
           <h2 className="text-2xl font-black text-white mb-2">Account Created!</h2>
-          <p className="text-gray-400">Redirecting to sign in...</p>
+          <p className="text-gray-400 mb-6">Redirecting to sign in...</p>
+          <div className="p-4 bg-yellow-500/10 border border-yellow-500/30 rounded-xl text-left">
+            <p className="text-yellow-400 font-bold text-sm mb-1">⚔ Connect Your Riot Account</p>
+            <p className="text-gray-400 text-xs mb-3">
+              Link your League of Legends or Valorant account to show your rank and compete in HERU tournaments.
+            </p>
+            <Link
+              to="/gamer/profile?tab=connect"
+              className="inline-block px-4 py-2 bg-yellow-500/20 hover:bg-yellow-500/30 border border-yellow-500/40 text-yellow-300 text-xs font-bold rounded-lg transition-colors"
+            >
+              Link Riot Account →
+            </Link>
+          </div>
         </FloatingPanel>
       </div>
     );

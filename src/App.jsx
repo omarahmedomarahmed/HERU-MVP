@@ -138,7 +138,7 @@ function App() {
             <Route path="/gamer/notifications" element={<RequireGamer><GamerNotifications /></RequireGamer>} />
             <Route path="/gamer/marketplace" element={<RequireGamer><Marketplace /></RequireGamer>} />
             <Route path="/gamer/cart" element={<RequireGamer><Cart /></RequireGamer>} />
-            <Route path="/gamer/connect" element={<RequireGamer><ConnectedAccounts /></RequireGamer>} />
+            <Route path="/gamer/connect" element={<Navigate to="/gamer/profile?tab=connect" replace />} />
             <Route path="/gamer/ai-agent" element={<RequireGamer><AiAgent /></RequireGamer>} />
             <Route path="/gamer/:id" element={<GamerProfileView />} />
 

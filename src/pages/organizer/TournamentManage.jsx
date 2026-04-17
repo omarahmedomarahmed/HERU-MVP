@@ -3,6 +3,8 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '@/lib/AuthContext'
 import { Tournament, Team, Deliverable, GigRequest, apiCall } from '@/api/heruClient'
+
+const riotApi = (path, opts = {}) => apiCall(`/riot-tournament${path}`, opts)
 import { uploadFile } from '@/lib/uploadFile'
 import { useToast } from '@/components/ui/use-toast'
 import BracketVisual from '@/components/tournament/BracketVisual'
@@ -17,7 +19,7 @@ import {
   Shield, ArrowLeft, AlertTriangle, GripVertical,
   Play, Flag, Package, Upload, Briefcase, Eye,
   Settings, BarChart3, ListChecks, Pencil, Trash2,
-  Save, Image, X, Plus,
+  Save, Image, X, Plus, Zap, Copy, ExternalLink,
 } from 'lucide-react'
 
 // ---------------------------------------------------------------------------
@@ -69,12 +71,18 @@ const TABS = [
   { id: 'teams',         label: 'Teams',         icon: Users },
   { id: 'seeding',       label: 'Seeding',       icon: GripVertical },
   { id: 'brackets',      label: 'Brackets',      icon: GitBranch },
+  { id: 'riot',          label: 'Riot API',       icon: Zap, riotOnly: true },
   { id: 'deliverables',  label: 'Deliverables',  icon: Package },
   { id: 'gig-workers',   label: 'Gig Workers',   icon: Briefcase },
   { id: 'chat',          label: 'Chat',          icon: MessageSquare },
   { id: 'report',        label: 'Report',        icon: FileText },
   { id: 'settings',      label: 'Quick Edit',    icon: Pencil },
 ]
+
+const LOL_GAMES = ['League of Legends', 'lol', 'LoL']
+const VAL_GAMES = ['Valorant', 'valorant', 'VALORANT']
+const isLolTournament = (t) => LOL_GAMES.some(g => t?.game?.toLowerCase().includes(g.toLowerCase()))
+const isValTournament = (t) => VAL_GAMES.some(g => t?.game?.toLowerCase().includes(g.toLowerCase()))
 
 // ---------------------------------------------------------------------------
 // Overview Tab
@@ -759,9 +767,11 @@ export default function TournamentManage({ defaultTab = 'overview' }) {
     )
   }
 
-  // Filter visible tabs based on status
+  // Filter visible tabs based on status and game
+  const isRiotGame = isLolTournament(tournament) || isValTournament(tournament)
   const visibleTabs = TABS.filter((t) => {
     if (t.id === 'report' && tournament.status !== 'completed') return false
+    if (t.riotOnly && !isRiotGame) return false
     return true
   })
 
@@ -876,6 +886,9 @@ export default function TournamentManage({ defaultTab = 'overview' }) {
               canEdit={true}
             />
           )}
+          {activeTab === 'riot' && (
+            <RiotIntegrationTab tournament={tournament} queryClient={queryClient} />
+          )}
           {activeTab === 'deliverables' && (
             <DeliverablesTab tournament={tournament} queryClient={queryClient} />
           )}
@@ -896,6 +909,280 @@ export default function TournamentManage({ defaultTab = 'overview' }) {
           )}
         </div>
       </div>
+    </div>
+  )
+}
+
+// ---------------------------------------------------------------------------
+// Riot Integration Tab
+// ---------------------------------------------------------------------------
+
+function RiotIntegrationTab({ tournament, queryClient }) {
+  const { toast } = useToast()
+  const [setupLoading, setSetupLoading] = useState(false)
+  const [codeLoading, setCodeLoading] = useState({})
+  const [lobbyLoading, setLobbyLoading] = useState({})
+  const [resultLoading, setResultLoading] = useState({})
+  const [lobbyData, setLobbyData] = useState({})
+  const [valMatchInputs, setValMatchInputs] = useState({})
+  const [spectatorData, setSpectatorData] = useState({})
+  const [spectatorLoading, setSpectatorLoading] = useState({})
+  const [copiedCode, setCopiedCode] = useState(null)
+
+  const isLol = isLolTournament(tournament)
+  const isVal = isValTournament(tournament)
+
+  const { data: matches = [] } = useQuery({
+    queryKey: ['tournament-matches', tournament.id],
+    queryFn: () => Tournament.getMatches(tournament.id),
+    enabled: !!tournament.id,
+  })
+
+  const handleSetup = async () => {
+    setSetupLoading(true)
+    try {
+      const result = await riotApi(`/${tournament.id}/setup`, { method: 'POST', body: {} })
+      queryClient.invalidateQueries({ queryKey: ['tournament', tournament.id] })
+      toast({ title: 'Riot tournament created!', description: `Provider ID: ${result.riot_provider_id} · Tournament ID: ${result.riot_tournament_id}` })
+    } catch (err) {
+      toast({ title: 'Setup failed', description: err.message, variant: 'destructive' })
+    } finally {
+      setSetupLoading(false)
+    }
+  }
+
+  const handleGenerateCode = async (matchId) => {
+    setCodeLoading(l => ({ ...l, [matchId]: true }))
+    try {
+      const result = await riotApi(`/${tournament.id}/match/${matchId}/code`, { method: 'POST', body: { teamSize: 5, pickType: 'TOURNAMENT_DRAFT', spectatorType: 'ALL' } })
+      queryClient.invalidateQueries({ queryKey: ['tournament-matches', tournament.id] })
+      toast({ title: 'Tournament code generated!', description: result.code })
+    } catch (err) {
+      toast({ title: 'Failed to generate code', description: err.message, variant: 'destructive' })
+    } finally {
+      setCodeLoading(l => ({ ...l, [matchId]: false }))
+    }
+  }
+
+  const handleCheckLobby = async (matchId) => {
+    setLobbyLoading(l => ({ ...l, [matchId]: true }))
+    try {
+      const result = await riotApi(`/${tournament.id}/match/${matchId}/lobby`)
+      setLobbyData(d => ({ ...d, [matchId]: result }))
+    } catch (err) {
+      toast({ title: 'Lobby check failed', description: err.message, variant: 'destructive' })
+    } finally {
+      setLobbyLoading(l => ({ ...l, [matchId]: false }))
+    }
+  }
+
+  const handleGetResult = async (matchId, valMatchId = null) => {
+    setResultLoading(l => ({ ...l, [matchId]: true }))
+    try {
+      const qs = valMatchId ? `?val_match_id=${valMatchId}` : ''
+      await riotApi(`/${tournament.id}/match/${matchId}/result${qs}`)
+      queryClient.invalidateQueries({ queryKey: ['tournament-matches', tournament.id] })
+      toast({ title: 'Match result fetched!', description: 'Match data saved to database.' })
+    } catch (err) {
+      toast({ title: 'Result lookup failed', description: err.message, variant: 'destructive' })
+    } finally {
+      setResultLoading(l => ({ ...l, [matchId]: false }))
+    }
+  }
+
+  const handleSpectate = async (puuid, platform, matchId) => {
+    setSpectatorLoading(l => ({ ...l, [matchId]: true }))
+    try {
+      const result = await riotApi(`/spectate/${puuid}/${platform || 'euw1'}`)
+      setSpectatorData(d => ({ ...d, [matchId]: result }))
+    } catch (err) {
+      toast({ title: 'Spectate failed', description: err.message, variant: 'destructive' })
+    } finally {
+      setSpectatorLoading(l => ({ ...l, [matchId]: false }))
+    }
+  }
+
+  const copyCode = (code) => {
+    navigator.clipboard.writeText(code).catch(() => {})
+    setCopiedCode(code)
+    setTimeout(() => setCopiedCode(null), 2000)
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Setup Section */}
+      {isLol && (
+        <div className="rounded-xl border border-yellow-500/20 bg-yellow-500/5 p-5">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <h3 className="text-white font-bold flex items-center gap-2">
+                <Zap className="w-4 h-4 text-yellow-400" />
+                Riot Tournament Setup (LoL)
+              </h3>
+              <p className="text-gray-400 text-sm mt-1">
+                Register this tournament with Riot Games API to generate lobby codes for matches.
+                {process.env.NODE_ENV === 'development' && (
+                  <span className="text-yellow-500 ml-1">(Using Tournament Stub API in dev)</span>
+                )}
+              </p>
+              {tournament.riot_tournament_id && (
+                <div className="mt-2 flex items-center gap-4 text-xs text-gray-500 font-mono">
+                  <span>Provider: <span className="text-green-400">{tournament.riot_provider_id}</span></span>
+                  <span>Tournament: <span className="text-green-400">{tournament.riot_tournament_id}</span></span>
+                  <span>Region: <span className="text-white">{tournament.riot_region || 'EUW'}</span></span>
+                </div>
+              )}
+            </div>
+            <button
+              onClick={handleSetup}
+              disabled={setupLoading}
+              className="flex-shrink-0 flex items-center gap-2 px-4 py-2 bg-yellow-500/20 hover:bg-yellow-500/30 border border-yellow-500/40 text-yellow-300 text-sm font-bold rounded-xl transition-colors disabled:opacity-60"
+            >
+              {setupLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Zap className="w-4 h-4" />}
+              {tournament.riot_tournament_id ? 'Re-Setup' : 'Setup Riot Integration'}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {isVal && (
+        <div className="rounded-xl border border-red-500/20 bg-red-500/5 p-4">
+          <p className="text-gray-400 text-sm">
+            <span className="text-red-400 font-bold">Valorant:</span> No official tournament lobby API.
+            Use match ID lookup below to verify results. Players self-report match IDs from the in-game career page.
+          </p>
+        </div>
+      )}
+
+      {/* Match Codes */}
+      {matches.length > 0 ? (
+        <div className="space-y-3">
+          <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider">Match Codes & Results</h3>
+          {matches.map((match) => {
+            const lobby = lobbyData[match.id]
+            const spectator = spectatorData[match.id]
+            const isCallbackReceived = match.riot_callback_received
+            return (
+              <div key={match.id} className="rounded-xl border border-white/10 bg-[#1a1a2e] p-4 space-y-3">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <p className="text-white font-bold text-sm">
+                      {match.team1_name || match.team1_id?.slice(0, 8) || 'TBD'}
+                      {' vs '}
+                      {match.team2_name || match.team2_id?.slice(0, 8) || 'TBD'}
+                    </p>
+                    <p className="text-gray-500 text-xs">
+                      Round {match.round || '?'} · Match {match.match_index || '?'}
+                      {isCallbackReceived && (
+                        <span className="ml-2 text-green-400 font-bold">✓ Riot callback received</span>
+                      )}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    {isLol && tournament.riot_tournament_id && !match.riot_tournament_code && (
+                      <button
+                        onClick={() => handleGenerateCode(match.id)}
+                        disabled={codeLoading[match.id]}
+                        className="flex items-center gap-1.5 px-3 py-1.5 bg-yellow-500/20 hover:bg-yellow-500/30 border border-yellow-500/30 text-yellow-300 text-xs font-bold rounded-lg transition-colors disabled:opacity-60"
+                      >
+                        {codeLoading[match.id] ? <Loader2 className="w-3 h-3 animate-spin" /> : <Plus className="w-3 h-3" />}
+                        Generate Code
+                      </button>
+                    )}
+                    {match.riot_tournament_code && (
+                      <button
+                        onClick={() => handleCheckLobby(match.id)}
+                        disabled={lobbyLoading[match.id]}
+                        className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-500/20 hover:bg-blue-500/30 border border-blue-500/30 text-blue-300 text-xs font-bold rounded-lg transition-colors disabled:opacity-60"
+                      >
+                        {lobbyLoading[match.id] ? <Loader2 className="w-3 h-3 animate-spin" /> : <Eye className="w-3 h-3" />}
+                        Check Lobby
+                      </button>
+                    )}
+                    {(match.riot_game_id || match.val_match_id) && (
+                      <button
+                        onClick={() => handleGetResult(match.id)}
+                        disabled={resultLoading[match.id]}
+                        className="flex items-center gap-1.5 px-3 py-1.5 bg-green-500/20 hover:bg-green-500/30 border border-green-500/30 text-green-300 text-xs font-bold rounded-lg transition-colors disabled:opacity-60"
+                      >
+                        {resultLoading[match.id] ? <Loader2 className="w-3 h-3 animate-spin" /> : <BarChart3 className="w-3 h-3" />}
+                        Fetch Result
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                {/* Tournament Code */}
+                {match.riot_tournament_code && (
+                  <div className="flex items-center gap-2 p-3 bg-zinc-900/60 rounded-lg border border-zinc-700/50">
+                    <p className="text-xs text-gray-500 flex-shrink-0">Lobby Code:</p>
+                    <code className="text-yellow-300 text-xs font-mono flex-1 truncate">{match.riot_tournament_code}</code>
+                    <button
+                      onClick={() => copyCode(match.riot_tournament_code)}
+                      className="flex items-center gap-1 text-xs text-gray-500 hover:text-white transition-colors flex-shrink-0"
+                    >
+                      <Copy className="w-3.5 h-3.5" />
+                      {copiedCode === match.riot_tournament_code ? 'Copied!' : 'Copy'}
+                    </button>
+                  </div>
+                )}
+
+                {/* Lobby Events */}
+                {lobby?.eventList?.length > 0 && (
+                  <div className="p-3 bg-zinc-900/60 rounded-lg border border-zinc-700/50">
+                    <p className="text-xs font-bold text-gray-400 mb-2">Lobby Events ({lobby.eventList.length})</p>
+                    <div className="space-y-1 max-h-32 overflow-y-auto">
+                      {lobby.eventList.map((ev, i) => (
+                        <div key={i} className="text-xs text-gray-400 flex items-center gap-2">
+                          <span className="text-green-400">{ev.eventType}</span>
+                          <span className="font-mono truncate">{ev.summonerId}</span>
+                          <span className="text-gray-600">{new Date(ev.timestamp).toLocaleTimeString()}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Valorant match ID input */}
+                {isVal && (
+                  <div className="flex items-center gap-2">
+                    <input
+                      value={valMatchInputs[match.id] || ''}
+                      onChange={(e) => setValMatchInputs(v => ({ ...v, [match.id]: e.target.value }))}
+                      placeholder="Paste Valorant Match ID..."
+                      className="flex-1 bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-1.5 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-red-500"
+                    />
+                    <button
+                      onClick={() => handleGetResult(match.id, valMatchInputs[match.id])}
+                      disabled={!valMatchInputs[match.id] || resultLoading[match.id]}
+                      className="flex items-center gap-1.5 px-3 py-1.5 bg-red-500/20 hover:bg-red-500/30 border border-red-500/30 text-red-300 text-xs font-bold rounded-lg transition-colors disabled:opacity-60"
+                    >
+                      {resultLoading[match.id] ? <Loader2 className="w-3 h-3 animate-spin" /> : <ExternalLink className="w-3 h-3" />}
+                      Lookup
+                    </button>
+                  </div>
+                )}
+
+                {/* Callback status */}
+                {match.riot_callback_received && match.riot_callback_data && (
+                  <div className="p-3 bg-green-500/10 border border-green-500/20 rounded-lg">
+                    <p className="text-xs font-bold text-green-400 mb-1">✓ Game Complete (Riot callback received)</p>
+                    <p className="text-xs text-gray-400">
+                      Game ID: <span className="font-mono text-white">{match.riot_game_id}</span>
+                      {match.riot_callback_data?.gameMode && ` · Mode: ${match.riot_callback_data.gameMode}`}
+                    </p>
+                  </div>
+                )}
+              </div>
+            )
+          })}
+        </div>
+      ) : (
+        <div className="text-center py-12 text-gray-500">
+          <GitBranch className="w-10 h-10 mx-auto mb-3 opacity-40" />
+          <p className="text-sm">No matches found. Generate brackets first, then use Riot API here.</p>
+        </div>
+      )}
     </div>
   )
 }
