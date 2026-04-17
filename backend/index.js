@@ -34,6 +34,7 @@ import gameRoutes from './src/routes/games.js';
 import connectRoutes from './src/routes/connect.js';
 import aiAgentRoutes from './src/routes/ai-agent.js';
 import botRoutes from './src/routes/bot.js';
+import riotTournamentRoutes from './src/routes/riot-tournament.js';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -158,6 +159,7 @@ app.use('/api/games', gameRoutes);
 app.use('/api/connect', connectRoutes);
 app.use('/api/ai-agent', aiAgentRoutes);
 app.use('/api/bot', botRoutes);
+app.use('/api/riot-tournament', riotTournamentRoutes);
 
 // ---------------------------------------------------------------------------
 // 404 handler

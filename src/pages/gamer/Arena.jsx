@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '@/lib/AuthContext'
-import { Tournament, Team, apiCall } from '@/api/heruClient'
+import { Tournament, Team, Connect, apiCall } from '@/api/heruClient'
 import { useToast } from '@/components/ui/use-toast'
 import BracketVisual from '@/components/tournament/BracketVisual'
 import {
@@ -805,6 +805,13 @@ function SeedingRoom({ tournament, myTeam, is1v1, onViewBrackets }) {
 }
 
 // ── Arena Hub: Landing page showing the gamer's active tournaments ────────────
+const RANK_TIER_COLOR = {
+  IRON: 'text-gray-400', BRONZE: 'text-orange-600', SILVER: 'text-gray-300',
+  GOLD: 'text-yellow-400', PLATINUM: 'text-cyan-300', EMERALD: 'text-emerald-400',
+  DIAMOND: 'text-blue-400', MASTER: 'text-purple-400',
+  GRANDMASTER: 'text-red-400', CHALLENGER: 'text-yellow-300',
+}
+
 function ArenaHub({ userId, navigate }) {
   const { data: myTournaments = [], isLoading } = useQuery({
     queryKey: ['my-arena', userId],
@@ -812,6 +819,14 @@ function ArenaHub({ userId, navigate }) {
     enabled: !!userId,
     staleTime: 30_000,
   })
+
+  const { data: connectStatus } = useQuery({
+    queryKey: ['connect-status', userId],
+    queryFn: () => Connect.status(),
+    enabled: !!userId,
+    staleTime: 60_000,
+  })
+  const riotAccounts = connectStatus?.riot || []
 
   const statusColor = (s) => {
     if (s === 'live') return 'text-red-400 bg-red-500/20 border-red-500/30'
@@ -854,6 +869,43 @@ function ArenaHub({ userId, navigate }) {
         </div>
 
         <div className="max-w-4xl mx-auto px-4 pt-6">
+          {/* Riot Account Badges */}
+          {riotAccounts.length > 0 ? (
+            <div className="flex flex-wrap gap-2 mb-5">
+              {riotAccounts.map(acc => {
+                const rankColor = RANK_TIER_COLOR[acc.rank_tier] || 'text-gray-400'
+                return (
+                  <div key={acc.id} className="flex items-center gap-2 px-3 py-1.5 bg-white/5 border border-white/10 rounded-lg">
+                    {acc.game_key === 'lol' && acc.profile_icon_id && (
+                      <img
+                        src={`https://ddragon.leagueoflegends.com/cdn/16.8.1/img/profileicon/${acc.profile_icon_id}.png`}
+                        alt=""
+                        className="w-6 h-6 rounded-full border border-zinc-700"
+                      />
+                    )}
+                    <span className="text-white text-xs font-bold">{acc.game_name}#{acc.tag_line}</span>
+                    {acc.rank_tier && (
+                      <span className={`text-xs font-bold ${rankColor}`}>
+                        {acc.rank_tier} {acc.rank_division || ''}
+                      </span>
+                    )}
+                    <span className="text-gray-600 text-xs uppercase">{acc.game_key}</span>
+                  </div>
+                )
+              })}
+            </div>
+          ) : (
+            <div className="mb-5 p-3 bg-yellow-500/5 border border-yellow-500/20 rounded-xl flex items-center justify-between gap-3">
+              <p className="text-gray-500 text-xs">⚔ Link your Riot account to show your rank and compete in LoL/Valorant tournaments.</p>
+              <button
+                onClick={() => navigate('/gamer/profile?tab=connect')}
+                className="text-xs font-bold text-yellow-400 hover:text-yellow-300 transition whitespace-nowrap flex-shrink-0"
+              >
+                Connect →
+              </button>
+            </div>
+          )}
+
           {isLoading ? (
             <div className="flex items-center justify-center py-20">
               <Loader2 className="w-8 h-8 animate-spin text-red-400" />

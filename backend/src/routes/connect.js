@@ -25,7 +25,16 @@ router.get('/status', requireAuth, async (req, res) => {
   }
 });
 
-// GET /api/connect/discord/auth
+// GET /api/connect/discord/auth-url — returns JSON so frontend can redirect
+router.get('/discord/auth-url', requireAuth, (req, res) => {
+  const state = Buffer.from(JSON.stringify({
+    userId: req.user.id,
+    nonce: crypto.randomBytes(16).toString('hex'),
+  })).toString('base64url');
+  res.json({ url: discord.getOAuthUrl(state) });
+});
+
+// GET /api/connect/discord/auth — legacy browser-redirect flow
 router.get('/discord/auth', requireAuth, (req, res) => {
   const state = Buffer.from(JSON.stringify({
     userId: req.user.id,
@@ -37,17 +46,18 @@ router.get('/discord/auth', requireAuth, (req, res) => {
 // GET /api/connect/discord/callback
 router.get('/discord/callback', async (req, res) => {
   const frontendBase = process.env.CORS_ORIGIN || 'http://localhost:5173';
+  const connectTab = `${frontendBase}/gamer/profile?tab=connect`;
   try {
     const { code, state, error } = req.query;
-    if (error) return res.redirect(`${frontendBase}/gamer/connect?error=${error}`);
-    if (!code || !state) return res.redirect(`${frontendBase}/gamer/connect?error=missing_params`);
+    if (error) return res.redirect(`${connectTab}&error=${error}`);
+    if (!code || !state) return res.redirect(`${connectTab}&error=missing_params`);
 
     let stateData;
     try { stateData = JSON.parse(Buffer.from(state, 'base64url').toString()); }
-    catch { return res.redirect(`${frontendBase}/gamer/connect?error=invalid_state`); }
+    catch { return res.redirect(`${connectTab}&error=invalid_state`); }
 
     const { userId } = stateData;
-    if (!userId) return res.redirect(`${frontendBase}/gamer/connect?error=invalid_state`);
+    if (!userId) return res.redirect(`${connectTab}&error=invalid_state`);
 
     const tokens = await discord.exchangeCode(code);
     const discordUser = await discord.getMe(tokens.access_token);
@@ -74,10 +84,10 @@ router.get('/discord/callback', async (req, res) => {
       updated_at: new Date().toISOString(),
     }, { onConflict: 'user_id,platform' });
 
-    res.redirect(`${frontendBase}/gamer/connect?discord=connected`);
+    res.redirect(`${connectTab}&discord=connected`);
   } catch (err) {
     console.error('[connect/discord/callback]', err.message);
-    res.redirect(`${frontendBase}/gamer/connect?error=discord_failed`);
+    res.redirect(`${connectTab}&error=discord_failed`);
   }
 });
 
@@ -147,6 +157,27 @@ router.post('/riot/link', requireAuth, async (req, res) => {
     }).select().single();
 
     if (error) throw error;
+
+    // Auto-populate gamer profile username + avatar on first ever Riot link
+    const { count: totalRiot } = await supabaseAdmin
+      .from('riot_accounts').select('id', { count: 'exact', head: true }).eq('user_id', req.user.id);
+    if (totalRiot === 1) {
+      const { data: gamerProfile } = await supabaseAdmin
+        .from('gamer_profiles').select('id,username,avatar').eq('user_id', req.user.id).single();
+      if (gamerProfile && (!gamerProfile.username || !gamerProfile.avatar)) {
+        const updates = {};
+        if (!gamerProfile.username) updates.username = newAccount.game_name;
+        if (!gamerProfile.avatar && newAccount.profile_icon_id) {
+          updates.avatar = `https://ddragon.leagueoflegends.com/cdn/16.8.1/img/profileicon/${newAccount.profile_icon_id}.png`;
+        }
+        if (Object.keys(updates).length > 0) {
+          updates.updated_at = new Date().toISOString();
+          await supabaseAdmin.from('gamer_profiles').update(updates).eq('user_id', req.user.id);
+          newAccount._profile_updated = updates;
+        }
+      }
+    }
+
     res.status(201).json(newAccount);
   } catch (err) {
     console.error('[connect/riot/link]', err.message);

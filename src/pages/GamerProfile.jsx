@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import GamerLayout from '@/components/layouts/GamerLayout.jsx';
 import FloatingPanel from '@/components/ui/FloatingPanel';
@@ -12,7 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { motion } from 'framer-motion';
-import { GamerProfile as GamerProfileAPI, Order, Team, Achievement, ApprovalRequest, apiCall } from '@/api/heruClient'
+import { GamerProfile as GamerProfileAPI, Order, Team, Achievement, ApprovalRequest, Connect, apiCall } from '@/api/heruClient'
 import { useAuth } from '@/lib/AuthContext'
 import { uploadFile } from '@/lib/uploadFile'
 import PhoneInput from '@/components/ui/PhoneInput'
@@ -23,7 +23,8 @@ import {
   User, Edit2, Save, X, Gamepad2, Users, Star,
   Package, Plus, Trash2, LogOut, Briefcase, Trophy,
   Swords, TrendingUp, Crown, Shield, Medal, Award,
-  Target, Lock, ShoppingBag, DollarSign, CreditCard, Bell, ChevronRight
+  Target, Lock, ShoppingBag, DollarSign, CreditCard, Bell, ChevronRight,
+  Link2, RefreshCw, Eye, EyeOff, CheckCircle2, AlertCircle, MessageSquare
 } from 'lucide-react';
 
 // Achievement icon mapping
@@ -55,6 +56,8 @@ const RARITY_GLOW = {
 export default function GamerProfile() {
   const { logout } = useAuth();
   const { toast } = useToast();
+  const [searchParams] = useSearchParams();
+  const defaultTab = searchParams.get('tab') || 'games';
   const [user, setUser] = useState(null);
   const [editing, setEditing] = useState(false);
   const [addGameModal, setAddGameModal] = useState(false);
@@ -473,7 +476,7 @@ export default function GamerProfile() {
       </FloatingPanel>
 
       {/* Main Tabs */}
-      <Tabs defaultValue="games" className="space-y-6">
+      <Tabs defaultValue={defaultTab} className="space-y-6">
         <TabsList className="bg-zinc-900 border border-zinc-800 p-1">
           <TabsTrigger value="games" className="data-[state=active]:bg-red-600 data-[state=active]:text-white text-gray-400">
             <Gamepad2 className="w-4 h-4 mr-1.5" /> Games
@@ -500,6 +503,9 @@ export default function GamerProfile() {
           </TabsTrigger>
           <TabsTrigger value="billing" className="data-[state=active]:bg-red-600 data-[state=active]:text-white text-gray-400">
             <DollarSign className="w-4 h-4 mr-1.5" /> Billing
+          </TabsTrigger>
+          <TabsTrigger value="connect" className="data-[state=active]:bg-red-600 data-[state=active]:text-white text-gray-400">
+            <Link2 className="w-4 h-4 mr-1.5" /> Connect
           </TabsTrigger>
         </TabsList>
 
@@ -916,6 +922,11 @@ export default function GamerProfile() {
             </h2>
             <BillingTab userId={user?.id} />
           </FloatingPanel>
+        </TabsContent>
+
+        {/* HERU Connect Tab */}
+        <TabsContent value="connect">
+          <ConnectTab userId={user?.id} profile={profile} queryClient={queryClient} />
         </TabsContent>
       </Tabs>
 
@@ -1334,6 +1345,424 @@ function TournamentInvitesTab({ userId, profile }) {
           Join teams or compete in tournaments to see invites here.
         </p>
       )}
+    </div>
+  );
+}
+
+// ─── RANK TIER COLORS ────────────────────────────────────────────────────────
+const RANK_COLORS = {
+  IRON: 'text-gray-400 bg-gray-500/20',
+  BRONZE: 'text-orange-700 bg-orange-900/20',
+  SILVER: 'text-gray-300 bg-gray-500/20',
+  GOLD: 'text-yellow-400 bg-yellow-500/20',
+  PLATINUM: 'text-cyan-300 bg-cyan-500/20',
+  EMERALD: 'text-emerald-400 bg-emerald-500/20',
+  DIAMOND: 'text-blue-400 bg-blue-500/20',
+  MASTER: 'text-purple-400 bg-purple-500/20',
+  GRANDMASTER: 'text-red-400 bg-red-500/20',
+  CHALLENGER: 'text-yellow-300 bg-yellow-400/20',
+};
+
+// ─── HERU Connect Sub-Component ──────────────────────────────────────────────
+function ConnectTab({ userId, profile, queryClient }) {
+  const [linkModal, setLinkModal] = useState(null); // null | 'lol' | 'valorant'
+  const [linkForm, setLinkForm] = useState({ gameName: '', tagLine: '', region: 'euw1' });
+  const [linkError, setLinkError] = useState('');
+  const [syncing, setSyncing] = useState({});
+  const [discordConnecting, setDiscordConnecting] = useState(false);
+  const { toast } = useToast();
+
+  const { data: connectStatus, refetch: refetchStatus } = useQuery({
+    queryKey: ['connect-status', userId],
+    queryFn: () => Connect.status(),
+    enabled: !!userId,
+    staleTime: 30000,
+  });
+
+  const discordAccounts = connectStatus?.discord || [];
+  const riotAccounts = connectStatus?.riot || [];
+  const hasDiscord = discordAccounts.some(a => a.platform === 'discord' && a.is_active);
+
+  const linkRiotMutation = useMutation({
+    mutationFn: async (data) => Connect.linkRiot(data),
+    onSuccess: () => {
+      setLinkModal(null);
+      setLinkForm({ gameName: '', tagLine: '', region: 'euw1' });
+      setLinkError('');
+      refetchStatus();
+      queryClient.invalidateQueries(['gamer-profile', userId]);
+      toast({ title: 'Riot account linked!', description: 'Your account has been linked successfully.' });
+    },
+    onError: (err) => {
+      setLinkError(err.message || 'Failed to link account');
+    },
+  });
+
+  const removeRiotMutation = useMutation({
+    mutationFn: (id) => Connect.removeRiot(id),
+    onSuccess: () => { refetchStatus(); toast({ title: 'Account removed' }); },
+  });
+
+  const disconnectDiscordMutation = useMutation({
+    mutationFn: () => Connect.disconnectDiscord(),
+    onSuccess: () => { refetchStatus(); toast({ title: 'Discord disconnected' }); },
+  });
+
+  const handleDiscordConnect = async () => {
+    setDiscordConnecting(true);
+    try {
+      const url = await Connect.discordAuthUrl();
+      window.location.href = url;
+    } catch (err) {
+      toast({ title: 'Discord connect failed', description: err.message, variant: 'destructive' });
+      setDiscordConnecting(false);
+    }
+  };
+
+  const handleSync = async (id) => {
+    setSyncing(s => ({ ...s, [id]: true }));
+    try {
+      await Connect.syncRiot(id);
+      refetchStatus();
+      toast({ title: 'Account synced!' });
+    } catch (err) {
+      toast({ title: 'Sync failed', description: err.message, variant: 'destructive' });
+    } finally {
+      setSyncing(s => ({ ...s, [id]: false }));
+    }
+  };
+
+  const handleTogglePublic = async (id, is_public) => {
+    try {
+      await Connect.updateRiot(id, { is_public: !is_public });
+      refetchStatus();
+    } catch (err) {
+      toast({ title: 'Update failed', description: err.message, variant: 'destructive' });
+    }
+  };
+
+  const LOL_REGIONS = [
+    { value: 'euw1', label: 'EUW (Europe West)' },
+    { value: 'eun1', label: 'EUNE (Europe Nordic)' },
+    { value: 'me1', label: 'ME (Middle East / MENA)' },
+    { value: 'na1', label: 'NA (North America)' },
+    { value: 'kr', label: 'KR (Korea)' },
+    { value: 'br1', label: 'BR (Brazil)' },
+    { value: 'tr1', label: 'TR (Turkey)' },
+  ];
+
+  const lolAccounts = riotAccounts.filter(a => a.game_key === 'lol');
+  const valAccounts = riotAccounts.filter(a => a.game_key === 'valorant');
+
+  return (
+    <div className="space-y-6">
+      {/* ── Discord Section ─────────────────────────────────── */}
+      <FloatingPanel className="p-6">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-xl font-bold text-white flex items-center gap-2">
+            <MessageSquare className="w-5 h-5 text-indigo-400" />
+            Discord
+          </h2>
+          {hasDiscord ? (
+            <span className="flex items-center gap-1.5 text-green-400 text-sm font-bold">
+              <CheckCircle2 className="w-4 h-4" /> Connected
+            </span>
+          ) : (
+            <span className="flex items-center gap-1.5 text-gray-500 text-sm">
+              <AlertCircle className="w-4 h-4" /> Not connected
+            </span>
+          )}
+        </div>
+
+        {hasDiscord ? (
+          <div className="space-y-3">
+            {discordAccounts.filter(a => a.platform === 'discord' && a.is_active).map(acc => (
+              <div key={acc.id} className="flex items-center gap-3 p-4 bg-indigo-500/10 border border-indigo-500/20 rounded-xl">
+                {acc.platform_avatar ? (
+                  <img src={acc.platform_avatar} alt="" className="w-10 h-10 rounded-full" />
+                ) : (
+                  <div className="w-10 h-10 rounded-full bg-indigo-600 flex items-center justify-center">
+                    <MessageSquare className="w-5 h-5 text-white" />
+                  </div>
+                )}
+                <div className="flex-1 min-w-0">
+                  <p className="text-white font-bold truncate">{acc.platform_username}</p>
+                  {acc.last_synced_at && (
+                    <p className="text-gray-500 text-xs">
+                      Synced {new Date(acc.last_synced_at).toLocaleDateString()}
+                    </p>
+                  )}
+                </div>
+                <button
+                  onClick={() => disconnectDiscordMutation.mutate()}
+                  className="text-xs text-red-400 hover:text-red-300 font-medium px-3 py-1 rounded border border-red-500/30 hover:bg-red-500/10 transition-colors"
+                >
+                  Disconnect
+                </button>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-6">
+            <div className="w-16 h-16 rounded-full bg-indigo-600/20 flex items-center justify-center mx-auto mb-4">
+              <MessageSquare className="w-8 h-8 text-indigo-400" />
+            </div>
+            <p className="text-gray-400 text-sm mb-4">
+              Connect your Discord account to join tournament servers automatically and receive notifications.
+            </p>
+            <button
+              onClick={handleDiscordConnect}
+              disabled={discordConnecting}
+              className="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-60 text-white font-bold rounded-xl transition-colors flex items-center gap-2 mx-auto"
+            >
+              {discordConnecting ? (
+                <><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> Redirecting...</>
+              ) : (
+                <><MessageSquare className="w-4 h-4" /> Connect Discord</>
+              )}
+            </button>
+          </div>
+        )}
+      </FloatingPanel>
+
+      {/* ── League of Legends Section ──────────────────────── */}
+      <FloatingPanel className="p-6">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-xl font-bold text-white flex items-center gap-2">
+            <Swords className="w-5 h-5 text-yellow-400" />
+            League of Legends
+          </h2>
+          <button
+            onClick={() => { setLinkModal('lol'); setLinkError(''); setLinkForm({ gameName: '', tagLine: '', region: 'euw1' }); }}
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-yellow-500/10 border border-yellow-500/30 text-yellow-400 hover:bg-yellow-500/20 rounded-lg text-sm font-bold transition-colors"
+          >
+            <Plus className="w-4 h-4" /> Link Account
+          </button>
+        </div>
+
+        {lolAccounts.length === 0 ? (
+          <div className="text-center py-8 text-gray-500">
+            <Swords className="w-12 h-12 mx-auto mb-3 text-zinc-700" />
+            <p className="text-sm mb-1">No LoL accounts linked</p>
+            <p className="text-xs text-gray-600">Link your Riot ID to show your rank and compete in HERU tournaments</p>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {lolAccounts.map(acc => {
+              const rankColor = RANK_COLORS[acc.rank_tier] || 'text-gray-400 bg-gray-500/20';
+              return (
+                <div key={acc.id} className="p-4 bg-zinc-800/50 rounded-xl border border-zinc-700/30 hover:border-yellow-500/20 transition-colors">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex items-center gap-3 flex-1 min-w-0">
+                      {acc.profile_icon_id ? (
+                        <img
+                          src={`https://ddragon.leagueoflegends.com/cdn/16.8.1/img/profileicon/${acc.profile_icon_id}.png`}
+                          alt=""
+                          className="w-12 h-12 rounded-xl border border-zinc-700"
+                        />
+                      ) : (
+                        <div className="w-12 h-12 rounded-xl bg-zinc-700 flex items-center justify-center">
+                          <Swords className="w-6 h-6 text-yellow-400" />
+                        </div>
+                      )}
+                      <div className="min-w-0">
+                        <p className="text-white font-bold truncate">{acc.game_name}#{acc.tag_line}</p>
+                        <p className="text-gray-500 text-xs">{acc.region?.toUpperCase()} · Level {acc.summoner_level || '?'}</p>
+                        <div className="flex items-center gap-2 mt-1 flex-wrap">
+                          {acc.rank_tier ? (
+                            <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${rankColor}`}>
+                              {acc.rank_tier} {acc.rank_division} {acc.rank_lp ? `· ${acc.rank_lp} LP` : ''}
+                            </span>
+                          ) : (
+                            <span className="text-xs text-gray-600">Unranked</span>
+                          )}
+                          {acc.wins > 0 && (
+                            <span className="text-xs text-gray-500">{acc.wins}W {acc.losses}L</span>
+                          )}
+                          {acc.is_primary && (
+                            <span className="text-xs text-red-400 bg-red-500/10 px-2 py-0.5 rounded-full font-bold">PRIMARY</span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-1.5 flex-shrink-0">
+                      <button
+                        onClick={() => handleTogglePublic(acc.id, acc.is_public)}
+                        title={acc.is_public ? 'Make private' : 'Make public'}
+                        className="p-2 text-gray-500 hover:text-white rounded-lg hover:bg-zinc-700 transition-colors"
+                      >
+                        {acc.is_public ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
+                      </button>
+                      <button
+                        onClick={() => handleSync(acc.id)}
+                        disabled={syncing[acc.id]}
+                        title="Sync stats"
+                        className="p-2 text-gray-500 hover:text-blue-400 rounded-lg hover:bg-zinc-700 transition-colors"
+                      >
+                        <RefreshCw className={`w-4 h-4 ${syncing[acc.id] ? 'animate-spin text-blue-400' : ''}`} />
+                      </button>
+                      <button
+                        onClick={() => removeRiotMutation.mutate(acc.id)}
+                        title="Remove account"
+                        className="p-2 text-gray-500 hover:text-red-400 rounded-lg hover:bg-zinc-700 transition-colors"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </FloatingPanel>
+
+      {/* ── Valorant Section ───────────────────────────────── */}
+      <FloatingPanel className="p-6">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-xl font-bold text-white flex items-center gap-2">
+            <Target className="w-5 h-5 text-red-400" />
+            Valorant
+          </h2>
+          <button
+            onClick={() => { setLinkModal('valorant'); setLinkError(''); setLinkForm({ gameName: '', tagLine: '', region: 'euw1' }); }}
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-red-500/10 border border-red-500/30 text-red-400 hover:bg-red-500/20 rounded-lg text-sm font-bold transition-colors"
+          >
+            <Plus className="w-4 h-4" /> Link Account
+          </button>
+        </div>
+
+        {valAccounts.length === 0 ? (
+          <div className="text-center py-8 text-gray-500">
+            <Target className="w-12 h-12 mx-auto mb-3 text-zinc-700" />
+            <p className="text-sm mb-1">No Valorant accounts linked</p>
+            <p className="text-xs text-gray-600">Link your Riot ID to compete in HERU Valorant tournaments</p>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {valAccounts.map(acc => (
+              <div key={acc.id} className="p-4 bg-zinc-800/50 rounded-xl border border-zinc-700/30 hover:border-red-500/20 transition-colors">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex items-center gap-3 flex-1 min-w-0">
+                    <div className="w-12 h-12 rounded-xl bg-red-900/30 border border-red-500/20 flex items-center justify-center">
+                      <Target className="w-6 h-6 text-red-400" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-white font-bold truncate">{acc.game_name}#{acc.tag_line}</p>
+                      <p className="text-gray-500 text-xs">{acc.region?.toUpperCase()}</p>
+                      <div className="flex items-center gap-2 mt-1 flex-wrap">
+                        {acc.val_rank_tier ? (
+                          <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-red-500/20 text-red-300">
+                            {acc.val_rank_tier} {acc.val_rank_rating ? `· ${acc.val_rank_rating} RR` : ''}
+                          </span>
+                        ) : (
+                          <span className="text-xs text-gray-600">Rank not available</span>
+                        )}
+                        {acc.is_primary && (
+                          <span className="text-xs text-red-400 bg-red-500/10 px-2 py-0.5 rounded-full font-bold">PRIMARY</span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-1.5 flex-shrink-0">
+                    <button
+                      onClick={() => handleTogglePublic(acc.id, acc.is_public)}
+                      title={acc.is_public ? 'Make private' : 'Make public'}
+                      className="p-2 text-gray-500 hover:text-white rounded-lg hover:bg-zinc-700 transition-colors"
+                    >
+                      {acc.is_public ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
+                    </button>
+                    <button
+                      onClick={() => handleSync(acc.id)}
+                      disabled={syncing[acc.id]}
+                      title="Sync stats"
+                      className="p-2 text-gray-500 hover:text-blue-400 rounded-lg hover:bg-zinc-700 transition-colors"
+                    >
+                      <RefreshCw className={`w-4 h-4 ${syncing[acc.id] ? 'animate-spin text-blue-400' : ''}`} />
+                    </button>
+                    <button
+                      onClick={() => removeRiotMutation.mutate(acc.id)}
+                      title="Remove account"
+                      className="p-2 text-gray-500 hover:text-red-400 rounded-lg hover:bg-zinc-700 transition-colors"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </FloatingPanel>
+
+      {/* ── Link Riot Account Modal ────────────────────────── */}
+      <Dialog open={!!linkModal} onOpenChange={() => { setLinkModal(null); setLinkError(''); }}>
+        <DialogContent className="bg-zinc-900 border-zinc-800 text-white max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              {linkModal === 'lol'
+                ? <><Swords className="w-5 h-5 text-yellow-400" /> Link League of Legends Account</>
+                : <><Target className="w-5 h-5 text-red-400" /> Link Valorant Account</>
+              }
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <p className="text-gray-400 text-sm">
+              Enter your Riot ID exactly as it appears in-game (e.g. <span className="text-white font-mono">PlayerName#EUW</span>).
+            </p>
+            <div>
+              <label className="text-xs text-gray-400 block mb-1">Game Name</label>
+              <Input
+                value={linkForm.gameName}
+                onChange={(e) => setLinkForm({ ...linkForm, gameName: e.target.value })}
+                placeholder="PlayerName"
+                className="bg-zinc-800 border-zinc-700 text-white"
+              />
+            </div>
+            <div>
+              <label className="text-xs text-gray-400 block mb-1">Tag Line</label>
+              <div className="flex items-center gap-2">
+                <span className="text-gray-500 font-bold">#</span>
+                <Input
+                  value={linkForm.tagLine}
+                  onChange={(e) => setLinkForm({ ...linkForm, tagLine: e.target.value.replace('#', '') })}
+                  placeholder="EUW"
+                  className="bg-zinc-800 border-zinc-700 text-white"
+                />
+              </div>
+            </div>
+            <div>
+              <label className="text-xs text-gray-400 block mb-1">Region</label>
+              <select
+                value={linkForm.region}
+                onChange={(e) => setLinkForm({ ...linkForm, region: e.target.value })}
+                className="w-full bg-zinc-800 border border-zinc-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-red-500"
+              >
+                {LOL_REGIONS.map(r => (
+                  <option key={r.value} value={r.value}>{r.label}</option>
+                ))}
+              </select>
+            </div>
+            {linkError && (
+              <div className="flex items-start gap-2 p-3 bg-red-500/10 border border-red-500/30 rounded-lg">
+                <AlertCircle className="w-4 h-4 text-red-400 flex-shrink-0 mt-0.5" />
+                <p className="text-red-400 text-sm">{linkError}</p>
+              </div>
+            )}
+            <GlowButton
+              className="w-full"
+              onClick={() => linkRiotMutation.mutate({ ...linkForm, game: linkModal })}
+              disabled={!linkForm.gameName || !linkForm.tagLine || linkRiotMutation.isPending}
+            >
+              {linkRiotMutation.isPending ? (
+                <><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> Linking...</>
+              ) : (
+                <><Link2 className="w-4 h-4" /> Link Account</>
+              )}
+            </GlowButton>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

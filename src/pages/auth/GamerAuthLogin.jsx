@@ -132,6 +132,22 @@ export default function GamerAuthLogin() {
             </GlowButton>
           </form>
 
+          {/* Optional Riot connect prompt */}
+          <div className="mt-4 p-3 bg-yellow-500/5 border border-yellow-500/20 rounded-xl flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2 min-w-0">
+              <span className="text-yellow-400 text-lg flex-shrink-0">⚔</span>
+              <p className="text-gray-400 text-xs">
+                After login, connect your Riot account to show your rank and join tournaments.
+              </p>
+            </div>
+            <Link
+              to="/gamer/profile?tab=connect"
+              className="text-xs font-bold text-yellow-400 hover:text-yellow-300 transition-colors whitespace-nowrap flex-shrink-0"
+            >
+              Learn More →
+            </Link>
+          </div>
+
           <div className="border-t border-zinc-700/50 pt-5 mt-6 space-y-3 text-center">
             <p className="text-gray-500 text-sm">
               Don't have an account?{' '}
