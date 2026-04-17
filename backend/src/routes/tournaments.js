@@ -19,7 +19,11 @@ const TOURNAMENT_COLUMNS = new Set([
   'brackets','support_chat','general_chat','stream_link','tournament_log',
   'signup_banner','signup_description','signup_rules','signup_custom_fields','stream_embed_url',
   'participant_type','player_participants','gamer_participants','player_invites',
-  'prize_breakdown','prizepool_coins',
+  'gamer_invites','prize_breakdown','prizepool_coins',
+  // Riot integration (015_riot_tournament.sql)
+  'riot_provider_id','riot_tournament_id','riot_region',
+  // Valorant (016_schema_fixes.sql)
+  'val_map_pool','val_act_id',
 ]);
 
 function sanitizeTournamentData(data) {
