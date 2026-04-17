@@ -11,7 +11,7 @@ import { useAuth } from '@/lib/AuthContext'
 import {
   Home, Trophy, Users, ShoppingBag, User, Bell,
   ShoppingCart, Menu, X, LogOut, Package, LayoutDashboard,
-  Swords, Wallet
+  Swords, Wallet, Link2, Bot
 } from 'lucide-react';
 
 export default function GamerLayout({ children, user, profile, cartCount = 0, notificationCount = 0 }) {
@@ -252,6 +252,22 @@ export default function GamerLayout({ children, user, profile, cartCount = 0, no
                   >
                     <Package className="w-5 h-5" />
                     My Orders
+                  </Link>
+                  <Link
+                    to={'/gamer/connect'}
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-400 hover:text-white hover:bg-white/5"
+                  >
+                    <Link2 className="w-5 h-5" />
+                    Connected Accounts
+                  </Link>
+                  <Link
+                    to={'/gamer/ai-agent'}
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-400 hover:text-white hover:bg-white/5"
+                  >
+                    <Bot className="w-5 h-5" />
+                    AI Assistant
                   </Link>
                   <Link
                     to={'/gamer/profile'}
