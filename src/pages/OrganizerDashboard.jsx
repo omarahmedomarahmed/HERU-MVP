@@ -17,8 +17,10 @@ import {
   BarChart3,
   Clock,
   Users,
+  Bot,
+  ExternalLink,
 } from 'lucide-react'
-import { Tournament, SponsorshipRadar, Bill, OrganizerProfile, apiCall } from '@/api/heruClient'
+import { Tournament, SponsorshipRadar, Bill, OrganizerProfile, Connect, apiCall } from '@/api/heruClient'
 import { useAuth } from '@/lib/AuthContext'
 
 // ---------------------------------------------------------------------------
@@ -175,6 +177,65 @@ function LoadingBlock() {
 }
 
 // ---------------------------------------------------------------------------
+// Discord Bot Card
+// ---------------------------------------------------------------------------
+
+function DiscordBotCard() {
+  const [installUrl, setInstallUrl] = React.useState(null)
+  const [loading, setLoading] = React.useState(false)
+
+  async function handleGetInstallUrl() {
+    setLoading(true)
+    try {
+      const url = await Connect.botInstallUrl()
+      setInstallUrl(url)
+      window.open(url, '_blank', 'noopener,noreferrer')
+    } catch {
+      // fallback — open Discord OAuth directly
+      window.open(
+        `https://discord.com/api/oauth2/authorize?client_id=${import.meta.env.VITE_DISCORD_APPLICATION_ID || '1494378715709313064'}&permissions=277025770560&scope=bot+applications.commands`,
+        '_blank',
+        'noopener,noreferrer'
+      )
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <section className="rounded-xl border border-indigo-500/30 bg-gradient-to-br from-indigo-950/40 to-zinc-900/50 p-5">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-indigo-600/20 border border-indigo-500/30">
+          <Bot className="h-6 w-6 text-indigo-400" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <h3 className="font-bold text-white text-lg">Add HERU Bot to Your Discord Server</h3>
+          <p className="text-gray-400 text-sm mt-0.5">
+            Let your community browse tournaments, join via Discord, and get live updates — all without leaving Discord.
+          </p>
+          <ul className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-500">
+            <li className="flex items-center gap-1"><span className="text-indigo-400">✦</span> Natural language tournament builder</li>
+            <li className="flex items-center gap-1"><span className="text-indigo-400">✦</span> Live bracket + score announcements</li>
+            <li className="flex items-center gap-1"><span className="text-indigo-400">✦</span> Gamers join with one Discord click</li>
+          </ul>
+        </div>
+        <button
+          onClick={handleGetInstallUrl}
+          disabled={loading}
+          className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white font-semibold text-sm transition-colors shrink-0"
+        >
+          {loading ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <ExternalLink className="h-4 w-4" />
+          )}
+          Add to Discord
+        </button>
+      </div>
+    </section>
+  )
+}
+
 // Main component
 // ---------------------------------------------------------------------------
 
@@ -422,6 +483,9 @@ export default function OrganizerDashboard() {
           )}
         </section>
       </div>
+
+      {/* ---- Add HERU Bot to Discord ---- */}
+      <DiscordBotCard />
 
       {/* ---- Recent Messages ---- */}
       <section className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-5">
