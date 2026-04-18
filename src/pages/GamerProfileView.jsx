@@ -379,10 +379,15 @@ export default function GamerProfileView() {
       {/* Top Bar */}
       <header className="sticky top-0 z-50 bg-[#0a0a0a]/95 backdrop-blur-xl border-b border-zinc-800/50">
         <div className="max-w-4xl mx-auto px-6 py-3 flex items-center justify-between">
-          <Link to="/" className="text-zinc-400 hover:text-white transition-colors flex items-center gap-2 text-sm font-medium">
-            <ArrowLeft className="w-4 h-4" />
-            Back
-          </Link>
+          <div className="flex items-center gap-3">
+            <Link to="/" className="text-zinc-400 hover:text-white transition-colors flex items-center gap-2 text-sm font-medium">
+              <ArrowLeft className="w-4 h-4" />
+              Back
+            </Link>
+            <Link to="/" className="flex items-center gap-1.5 ml-1">
+              <span className="text-white font-black text-lg tracking-tight leading-none">HERU<span className="text-red-500">.</span>gg</span>
+            </Link>
+          </div>
           {isOwnProfile ? (
             <Link
               to="/gamer/profile"
