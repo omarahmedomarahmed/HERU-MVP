@@ -30,7 +30,7 @@ export default function BracketVisual({ brackets, teams, onInviteClick, onSelect
                `ROUND ${round.round}`}
             </h4>
             <div className="flex flex-col gap-8">
-              {round.matches.map((match, matchIdx) => (
+              {(round.matches || []).map((match, matchIdx) => (
                 <div key={matchIdx} className="relative">
                   {/* Match Container */}
                   <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-4 w-64 space-y-2">
