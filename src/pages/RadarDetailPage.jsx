@@ -268,7 +268,7 @@ export default function RadarDetailPage() {
                   <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-3">Invited Teams ({teams.length})</h3>
                   <div className="flex flex-wrap gap-2">
                     {teams.map(team => (
-                      <Link key={team.id} to={`/team/${team.id}`} className="flex items-center gap-2 bg-zinc-800 hover:bg-zinc-700 rounded-lg px-3 py-2 transition-colors">
+                      <Link key={team.id} to={`/teams/${team.id}`} className="flex items-center gap-2 bg-zinc-800 hover:bg-zinc-700 rounded-lg px-3 py-2 transition-colors">
                         {team.logo && <img src={team.logo} alt="" className="w-5 h-5 rounded object-cover" />}
                         <span className="text-white text-sm font-medium">{team.name}</span>
                       </Link>
