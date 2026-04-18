@@ -24,7 +24,8 @@ export default function BracketVisual({ brackets, teams, onInviteClick, onSelect
         {brackets.map((round, roundIdx) => (
           <div key={roundIdx} className="flex flex-col gap-4">
             <h4 className="text-white font-bold text-center mb-4">
-              {round.round === brackets.length ? 'FINALS' :
+              {round.label ? round.label.toUpperCase() :
+               round.round === brackets.length ? 'FINALS' :
                round.round === brackets.length - 1 ? 'SEMI-FINALS' :
                round.round === 1 ? 'ROUND 1' :
                `ROUND ${round.round}`}
