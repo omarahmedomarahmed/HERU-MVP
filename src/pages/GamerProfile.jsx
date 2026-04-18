@@ -24,7 +24,8 @@ import {
   Package, Plus, Trash2, LogOut, Briefcase, Trophy,
   Swords, TrendingUp, Crown, Shield, Medal, Award,
   Target, Lock, ShoppingBag, DollarSign, CreditCard, Bell, ChevronRight,
-  Link2, RefreshCw, Eye, EyeOff, CheckCircle2, AlertCircle, MessageSquare
+  Link2, RefreshCw, Eye, EyeOff, CheckCircle2, AlertCircle, MessageSquare,
+  ChevronDown, ChevronUp, Zap, ExternalLink
 } from 'lucide-react';
 
 // Achievement icon mapping
@@ -63,6 +64,204 @@ const RIOT_RANK_TIER_BG = {
   GOLD: 'bg-yellow-400/20', PLATINUM: 'bg-teal-300/20', EMERALD: 'bg-emerald-400/20',
   DIAMOND: 'bg-blue-300/20', MASTER: 'bg-purple-400/20', GRANDMASTER: 'bg-red-400/20', CHALLENGER: 'bg-cyan-300/20',
 };
+
+const RANK_TIER_COLORS = {
+  IRON: 'text-zinc-400', BRONZE: 'text-amber-600', SILVER: 'text-slate-300',
+  GOLD: 'text-yellow-400', PLATINUM: 'text-teal-300', EMERALD: 'text-emerald-400',
+  DIAMOND: 'text-blue-300', MASTER: 'text-purple-400', GRANDMASTER: 'text-red-400', CHALLENGER: 'text-cyan-300',
+};
+
+function MatchHistoryRow({ match, gameKey }) {
+  const win = match.win || match.result === 'Win';
+  const kills = match.kills ?? match.k ?? '?';
+  const deaths = match.deaths ?? match.d ?? '?';
+  const assists = match.assists ?? match.a ?? '?';
+  const champion = match.champion || match.agent || match.character || '';
+  const duration = match.game_duration
+    ? `${Math.floor(match.game_duration / 60)}m ${match.game_duration % 60}s`
+    : '';
+  return (
+    <div className={`flex items-center gap-3 px-3 py-2 rounded-lg border text-xs ${win ? 'border-emerald-500/20 bg-emerald-500/5' : 'border-red-500/20 bg-red-500/5'}`}>
+      <span className={`font-bold w-8 ${win ? 'text-emerald-400' : 'text-red-400'}`}>{win ? 'WIN' : 'LOSS'}</span>
+      {champion && <span className="text-gray-300 font-medium truncate max-w-[80px]">{champion}</span>}
+      <span className="text-gray-400 font-mono">{kills}/{deaths}/{assists}</span>
+      {duration && <span className="text-gray-600 ml-auto">{duration}</span>}
+    </div>
+  );
+}
+
+function RiotAccountsPanel({ accounts, onSync, onTogglePublic }) {
+  const [expanded, setExpanded] = useState(null);
+  const [syncing, setSyncing] = useState(null);
+  const navigate = useNavigate();
+
+  if (accounts.length === 0) {
+    return (
+      <div className="mt-6 pt-6 border-t border-zinc-800">
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider flex items-center gap-2">
+            <Gamepad2 className="w-4 h-4 text-red-500" /> Gaming Accounts
+          </h3>
+        </div>
+        <div className="flex flex-col items-center gap-3 py-6 text-center">
+          <div className="w-12 h-12 rounded-full bg-red-500/10 border border-red-500/20 flex items-center justify-center">
+            <Link2 className="w-5 h-5 text-red-400" />
+          </div>
+          <p className="text-gray-400 text-sm">No gaming accounts linked yet</p>
+          <button
+            onClick={() => navigate('/gamer/profile/connected-accounts')}
+            className="px-4 py-2 bg-red-600 hover:bg-red-500 text-white text-sm font-bold rounded-lg transition-colors flex items-center gap-2"
+          >
+            <Link2 className="w-4 h-4" /> Link Riot Account
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="mt-6 pt-6 border-t border-zinc-800">
+      <div className="flex items-center justify-between mb-3">
+        <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider flex items-center gap-2">
+          <Gamepad2 className="w-4 h-4 text-red-500" /> Gaming Accounts ({accounts.length})
+        </h3>
+        <button
+          onClick={() => navigate('/gamer/profile/connected-accounts')}
+          className="text-xs text-red-400 hover:text-red-300 flex items-center gap-1 transition-colors"
+        >
+          <Link2 className="w-3 h-3" /> Link Another
+        </button>
+      </div>
+
+      <div className="space-y-2">
+        {accounts.map((acc) => {
+          const tier = (acc.rank_tier || '').toUpperCase();
+          const tierColor = RANK_TIER_COLORS[tier] || 'text-gray-400';
+          const isLoL = acc.game_key === 'lol';
+          const isOpen = expanded === acc.id;
+          const totalGames = (acc.wins || 0) + (acc.losses || 0);
+          const wr = totalGames > 0 ? Math.round((acc.wins / totalGames) * 100) : null;
+          const matchHistory = Array.isArray(acc.match_history_cache) ? acc.match_history_cache.slice(0, 5) : [];
+          const masteries = Array.isArray(acc.champion_masteries) ? acc.champion_masteries.slice(0, 3) : [];
+
+          return (
+            <div key={acc.id} className="rounded-xl border border-zinc-800 bg-zinc-900/50 overflow-hidden">
+              <button
+                className="w-full flex items-center gap-3 p-3 hover:bg-zinc-800/50 transition-colors text-left"
+                onClick={() => setExpanded(isOpen ? null : acc.id)}
+              >
+                {isLoL && acc.profile_icon_id ? (
+                  <img
+                    src={`https://ddragon.leagueoflegends.com/cdn/16.8.1/img/profileicon/${acc.profile_icon_id}.png`}
+                    alt=""
+                    className="w-10 h-10 rounded-full border border-zinc-700"
+                    onError={e => e.target.style.display = 'none'}
+                  />
+                ) : (
+                  <div className={`w-10 h-10 rounded-full flex items-center justify-center font-black text-sm border ${isLoL ? 'bg-amber-500/10 border-amber-500/30 text-amber-400' : 'bg-red-500/10 border-red-500/30 text-red-400'}`}>
+                    {isLoL ? 'LoL' : 'VAL'}
+                  </div>
+                )}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-white font-bold text-sm font-mono">{acc.game_name}<span className="text-gray-500">#{acc.tag_line}</span></span>
+                    {acc.is_primary && <span className="text-xs bg-yellow-500/15 text-yellow-400 border border-yellow-500/20 px-1.5 py-0.5 rounded-full">Primary</span>}
+                    {!acc.is_public && <span className="text-xs bg-zinc-700 text-gray-400 px-1.5 py-0.5 rounded-full">Private</span>}
+                  </div>
+                  <div className="flex items-center gap-2 mt-0.5 text-xs text-gray-500">
+                    <span>{isLoL ? 'League of Legends' : 'Valorant'}</span>
+                    <span>•</span>
+                    <span>{acc.region?.toUpperCase()}</span>
+                    {tier && <><span>•</span><span className={`font-bold ${tierColor}`}>{tier} {acc.rank_division || ''}</span></>}
+                    {wr !== null && <><span>•</span><span className={wr >= 50 ? 'text-emerald-400' : 'text-red-400'}>{wr}% WR</span></>}
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  <button
+                    onClick={async (e) => { e.stopPropagation(); setSyncing(acc.id); await onSync(acc.id); setSyncing(null); }}
+                    disabled={syncing === acc.id}
+                    className="text-xs text-blue-400 hover:text-blue-300 p-1.5 rounded hover:bg-blue-500/10 transition"
+                    title="Sync stats"
+                  >
+                    <RefreshCw className={`w-3.5 h-3.5 ${syncing === acc.id ? 'animate-spin' : ''}`} />
+                  </button>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); onTogglePublic(acc.id, !acc.is_public); }}
+                    className="text-xs text-gray-400 hover:text-gray-300 p-1.5 rounded hover:bg-zinc-700 transition"
+                    title={acc.is_public ? 'Make private' : 'Make public'}
+                  >
+                    {acc.is_public ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
+                  </button>
+                  {isOpen ? <ChevronUp className="w-4 h-4 text-gray-500" /> : <ChevronDown className="w-4 h-4 text-gray-500" />}
+                </div>
+              </button>
+
+              {isOpen && (
+                <div className="px-3 pb-3 border-t border-zinc-800 space-y-3 pt-3">
+                  {/* Stats row */}
+                  {isLoL && (
+                    <div className="grid grid-cols-4 gap-2">
+                      {[
+                        { label: 'Level', value: acc.summoner_level || '—' },
+                        { label: 'Wins', value: acc.wins ?? '—', color: 'text-emerald-400' },
+                        { label: 'Losses', value: acc.losses ?? '—', color: 'text-red-400' },
+                        { label: 'LP', value: acc.rank_lp != null ? `${acc.rank_lp} LP` : '—' },
+                      ].map(s => (
+                        <div key={s.label} className="text-center p-2 bg-zinc-800/60 rounded-lg">
+                          <p className={`text-base font-black ${s.color || 'text-white'}`}>{s.value}</p>
+                          <p className="text-xs text-gray-500 uppercase">{s.label}</p>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Top champion masteries */}
+                  {masteries.length > 0 && (
+                    <div>
+                      <p className="text-xs text-gray-500 uppercase font-bold mb-2 flex items-center gap-1"><Star className="w-3 h-3 text-yellow-500" /> Top Champions</p>
+                      <div className="flex gap-2">
+                        {masteries.map((m, i) => (
+                          <div key={i} className="flex flex-col items-center gap-1">
+                            <img
+                              src={`https://ddragon.leagueoflegends.com/cdn/16.8.1/img/champion/${m.champion_name || m.name}.png`}
+                              alt={m.champion_name || m.name}
+                              className="w-10 h-10 rounded-lg border border-zinc-700"
+                              onError={e => { e.target.src = ''; e.target.className = 'hidden'; }}
+                            />
+                            <span className="text-xs text-gray-400 truncate w-12 text-center">{m.champion_name || m.name}</span>
+                            <span className="text-xs text-yellow-500 font-bold">{m.champion_level ? `M${m.champion_level}` : ''}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Match history */}
+                  {matchHistory.length > 0 ? (
+                    <div>
+                      <p className="text-xs text-gray-500 uppercase font-bold mb-2 flex items-center gap-1"><Swords className="w-3 h-3 text-red-400" /> Recent Matches</p>
+                      <div className="space-y-1">
+                        {matchHistory.map((m, i) => (
+                          <MatchHistoryRow key={i} match={m} gameKey={acc.game_key} />
+                        ))}
+                      </div>
+                    </div>
+                  ) : (
+                    <p className="text-xs text-gray-600 text-center py-2">No match history cached yet — sync to load</p>
+                  )}
+
+                  {acc.last_synced_at && (
+                    <p className="text-xs text-gray-600 text-right">Last synced {new Date(acc.last_synced_at).toLocaleDateString()}</p>
+                  )}
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
 
 export default function GamerProfile() {
   const { logout } = useAuth();
@@ -148,14 +347,13 @@ export default function GamerProfile() {
     queryFn: () => Achievement.list(),
   });
 
-  // Fetch own Riot accounts for stats display in achievements/profile
-  const { data: ownConnectStatus } = useQuery({
-    queryKey: ['connect-status-own', user?.id],
-    queryFn: () => Connect.status(),
+  // Fetch own Riot accounts with full data (match history, masteries)
+  const { data: ownRiotAccounts = [], refetch: refetchRiot } = useQuery({
+    queryKey: ['riot-accounts-full', user?.id],
+    queryFn: () => Connect.riotAccounts(),
     enabled: !!user?.id,
     staleTime: 60_000,
   });
-  const ownRiotAccounts = ownConnectStatus?.riot || [];
 
   const [editForm, setEditForm] = useState({});
 
@@ -367,7 +565,7 @@ export default function GamerProfile() {
           </label>
         </div>
 
-        <div className="p-6 flex flex-col md:flex-row gap-6" style={{ marginTop: '-3rem' }}>
+        <div className="relative z-10 p-6 flex flex-col md:flex-row gap-6" style={{ marginTop: '-3rem' }}>
           {/* Avatar */}
           <div className="relative flex-shrink-0">
             <div className="w-32 h-32 rounded-2xl bg-gradient-to-br from-red-600/30 to-zinc-800 flex items-center justify-center overflow-hidden ring-4 ring-zinc-900 border-2 border-zinc-700">
@@ -493,56 +691,19 @@ export default function GamerProfile() {
           </div>
         </div>
 
-        {/* Stats Bar */}
+        {/* Riot Gaming Accounts Section */}
         {!editing && (
-          <div className="mt-6 pt-6 border-t border-zinc-800 space-y-3">
-            {/* Riot rank badges row */}
-            {ownRiotAccounts.length > 0 && (
-              <div className="flex flex-wrap gap-2 pb-3">
-                {ownRiotAccounts.map(acc => {
-                  const tier = (acc.rank_tier || '').toUpperCase();
-                  const tierColor = RIOT_RANK_TIER_COLORS[tier] || 'text-gray-400';
-                  const tierBg = RIOT_RANK_TIER_BG[tier] || 'bg-gray-500/10';
-                  return (
-                    <div key={acc.id} className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-zinc-700/50 ${tierBg}`}>
-                      {acc.profile_icon_id && (
-                        <img src={`https://ddragon.leagueoflegends.com/cdn/16.8.1/img/profileicon/${acc.profile_icon_id}.png`} alt="" className="w-5 h-5 rounded-full" />
-                      )}
-                      <span className="text-white text-xs font-mono">{acc.game_name}#{acc.tag_line}</span>
-                      {tier && <span className={`text-xs font-black ${tierColor}`}>{tier}</span>}
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-            <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
-              <div className="text-center p-3 bg-zinc-800/40 rounded-lg">
-                <Swords className="w-4 h-4 text-red-500 mx-auto mb-1" />
-                <p className="text-xl font-black text-white">{stats?.total_matches || 0}</p>
-                <p className="text-xs text-gray-500 uppercase">Matches</p>
-              </div>
-              <div className="text-center p-3 bg-zinc-800/40 rounded-lg">
-                <Trophy className="w-4 h-4 text-yellow-500 mx-auto mb-1" />
-                <p className="text-xl font-black text-white">{stats?.total_wins || 0}</p>
-                <p className="text-xs text-gray-500 uppercase">Wins</p>
-              </div>
-              <div className="text-center p-3 bg-zinc-800/40 rounded-lg">
-                <TrendingUp className="w-4 h-4 text-green-500 mx-auto mb-1" />
-                <p className="text-xl font-black text-white">{stats?.win_rate || 0}%</p>
-                <p className="text-xs text-gray-500 uppercase">Win Rate</p>
-              </div>
-              <div className="text-center p-3 bg-zinc-800/40 rounded-lg">
-                <Users className="w-4 h-4 text-red-500 mx-auto mb-1" />
-                <p className="text-xl font-black text-white">{stats?.teams_count || teams.length}</p>
-                <p className="text-xs text-gray-500 uppercase">Teams</p>
-              </div>
-              <div className="text-center p-3 bg-zinc-800/40 rounded-lg col-span-2 sm:col-span-1">
-                <Medal className="w-4 h-4 text-red-500 mx-auto mb-1" />
-                <p className="text-xl font-black text-white">{earnedAchievements.length}</p>
-                <p className="text-xs text-gray-500 uppercase">Badges</p>
-              </div>
-            </div>
-          </div>
+          <RiotAccountsPanel
+            accounts={ownRiotAccounts}
+            onSync={async (id) => {
+              await Connect.syncRiot(id);
+              refetchRiot();
+            }}
+            onTogglePublic={async (id, isPublic) => {
+              await Connect.updateRiot(id, { is_public: isPublic });
+              refetchRiot();
+            }}
+          />
         )}
       </FloatingPanel>
 

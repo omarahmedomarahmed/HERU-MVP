@@ -763,17 +763,14 @@ router.post('/:id/join-player', requireAuth, async (req, res) => {
 
     const { data: tournament } = await supabaseAdmin.from('tournaments').select('participant_type, player_participants, status, name').eq('id', req.params.id).single();
     if (!tournament) return res.status(404).json({ error: 'Tournament not found' });
-    const soloTypes = ['player', '1v1', 'solo'];
-    if (!soloTypes.includes(tournament.participant_type)) {
-      return res.status(400).json({ error: 'This tournament does not accept individual player signups' });
-    }
     if (!['published', 'live'].includes(tournament.status)) {
       return res.status(400).json({ error: 'Tournament is not open for registration' });
     }
 
-    const existingParticipants = tournament.player_participants || [];
+    const existingParticipants = Array.isArray(tournament.player_participants) ? tournament.player_participants : [];
     if (existingParticipants.some(p => p.user_id === req.user.id)) {
-      return res.status(400).json({ error: 'You have already joined this tournament' });
+      // Idempotent — already joined, just return success so frontend can proceed to arena
+      return res.json({ already_joined: true, message: 'Already registered' });
     }
 
     // Get gamer username

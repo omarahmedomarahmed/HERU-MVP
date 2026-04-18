@@ -148,6 +148,7 @@ export default function Arena() {
   // Find my bracket match (from tournament.brackets, even before match_records are created)
   const myBracketMatch = (() => {
     if (!myTeam?.id && !user?.id) return null
+    if (!tournament) return null
     for (const round of (tournament.brackets || [])) {
       const matches = Array.isArray(round?.matches) ? round.matches : (Array.isArray(round) ? round : [])
       for (const m of matches) {

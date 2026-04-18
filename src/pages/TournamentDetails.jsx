@@ -49,6 +49,8 @@ export default function TournamentDetails() {
     queryKey: ['tournament', tournamentId],
     queryFn: () => Tournament.get(tournamentId),
     enabled: !!tournamentId,
+    refetchInterval: 15_000,
+    staleTime: 10_000,
   });
 
   // ── Teams already in tournament ────────────────────────────────────────────
@@ -100,8 +102,8 @@ export default function TournamentDetails() {
   const joinAsPlayerMutation = useMutation({
     mutationFn: ({ gameId, rank }) =>
       Tournament.joinAsPlayer(tournamentId, { game_id: gameId, rank }),
-    onSuccess: () => {
-      toast({ title: 'Joined!', description: 'Registered. Taking you to the Arena…' });
+    onSuccess: (data) => {
+      toast({ title: data?.already_joined ? 'Already registered!' : 'Joined!', description: 'Taking you to the Arena…' });
       queryClient.invalidateQueries(['tournament', tournamentId]);
       setShow1v1Modal(false);
       setTimeout(() => navigate(`/gamer/arena/${tournamentId}`), 700);

@@ -8,6 +8,7 @@ import {
 } from 'lucide-react'
 import { GamerProfile, Team, Connect, Badge } from '@/api/heruClient'
 import { useAuth } from '@/lib/AuthContext'
+import HeruLogo from '@/components/shared/HeruLogo'
 
 // ---------------------------------------------------------------------------
 // Riot helpers
@@ -385,7 +386,7 @@ export default function GamerProfileView() {
               Back
             </Link>
             <Link to="/" className="flex items-center gap-1.5 ml-1">
-              <span className="text-white font-black text-lg tracking-tight leading-none">HERU<span className="text-red-500">.</span>gg</span>
+              <HeruLogo className="h-7" />
             </Link>
           </div>
           {isOwnProfile ? (
@@ -477,13 +478,28 @@ export default function GamerProfileView() {
             </div>
           </div>
 
-          {/* Stats Row */}
-          <div className="relative mt-8 flex flex-wrap items-center justify-center sm:justify-start gap-3">
-            <StatBox label="Teams" value={teams.length} icon={Users} />
-            <StatBox label="Accounts" value={riotAccounts.length || gamesCount} icon={Gamepad2} />
-            <StatBox label="Ranked W" value={riotWins || tournamentsPlayed} icon={Swords} />
-            <StatBox label="Ranked L" value={riotLosses || tournamentsWon} icon={Trophy} />
-          </div>
+          {/* Quick rank badges row */}
+          {riotAccounts.length > 0 && (
+            <div className="relative mt-6 flex flex-wrap gap-2">
+              {riotAccounts.map(acc => {
+                const tier = (acc.rank_tier || acc.val_rank_tier || '').toUpperCase();
+                const isLoL = acc.game_key === 'lol';
+                const wins = acc.wins || 0;
+                const losses = acc.losses || 0;
+                const wr = wins + losses > 0 ? Math.round(wins / (wins + losses) * 100) : null;
+                return (
+                  <div key={acc.id} className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-zinc-700/50 bg-zinc-800/50 text-xs">
+                    {isLoL && acc.profile_icon_id && (
+                      <img src={`https://ddragon.leagueoflegends.com/cdn/16.8.1/img/profileicon/${acc.profile_icon_id}.png`} alt="" className="w-5 h-5 rounded-full" onError={e => e.target.style.display='none'} />
+                    )}
+                    <span className="text-white font-mono">{acc.game_name}#{acc.tag_line}</span>
+                    {tier && <span className="font-black text-yellow-400">{tier}</span>}
+                    {wr !== null && <span className={wr >= 50 ? 'text-emerald-400' : 'text-red-400'}>{wr}%WR</span>}
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
 
         {/* ---------- Riot Ranked Accounts ---------- */}
