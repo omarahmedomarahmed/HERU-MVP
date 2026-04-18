@@ -4,7 +4,7 @@ import { useQuery } from '@tanstack/react-query'
 import {
   User, ArrowLeft, Gamepad2, Users, Star, Mic, Video,
   Trophy, Swords, Shield, Calendar, ExternalLink,
-  Pencil, LogIn, ChevronDown, ChevronUp, Flame, Zap,
+  Pencil, LogIn, ChevronDown, ChevronUp, Flame, Zap, MessageSquare,
 } from 'lucide-react'
 import { GamerProfile, Team, Connect, Badge } from '@/api/heruClient'
 import { useAuth } from '@/lib/AuthContext'
@@ -318,6 +318,13 @@ export default function GamerProfileView() {
     enabled: !!profileData?.user_id,
   })
 
+  // Fetch public Discord
+  const { data: discordPublic } = useQuery({
+    queryKey: ['public-discord', profileData?.user_id],
+    queryFn: () => Connect.publicDiscord(profileData.user_id),
+    enabled: !!profileData?.user_id,
+  })
+
   // Fetch gamer badges
   const { data: gamerBadges = [] } = useQuery({
     queryKey: ['gamer-badges', profileData?.user_id],
@@ -451,6 +458,15 @@ export default function GamerProfileView() {
                 </div>
               )}
 
+              {discordPublic && (
+                <div className="flex items-center gap-1.5 mb-3 justify-center sm:justify-start">
+                  <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-indigo-500/10 border border-indigo-500/30 text-xs text-indigo-300 font-medium">
+                    <MessageSquare className="w-3.5 h-3.5" />
+                    <span>{discordPublic.platform_username}</span>
+                  </div>
+                </div>
+              )}
+
               {profileData.bio && (
                 <p className="text-zinc-400 text-sm leading-relaxed max-w-lg mb-4">{profileData.bio}</p>
               )}
@@ -536,33 +552,18 @@ export default function GamerProfileView() {
 
         {/* ---------- Content Grid ---------- */}
         <div className="grid lg:grid-cols-2 gap-6">
-          {/* Games & Ranks (manual entries) */}
-          {(profileData.games?.length > 0) && (
-            <section className="rounded-2xl bg-zinc-900/50 border border-zinc-800/50 p-6">
-              <h2 className="text-lg font-bold text-white flex items-center gap-2 mb-5">
-                <Gamepad2 className="w-5 h-5 text-red-500" />
-                Other Games
-              </h2>
-              <div className="space-y-2.5">
-                {profileData.games?.map((game, i) => (
-                  <GameRow key={i} game={game} />
-                ))}
-              </div>
-            </section>
-          )}
-
           {/* Teams */}
-          <section className={`rounded-2xl bg-zinc-900/50 border border-zinc-800/50 p-6 ${!profileData.games?.length ? 'lg:col-span-2' : ''}`}>
+          <section className="rounded-2xl bg-zinc-900/50 border border-zinc-800/50 p-6 lg:col-span-2">
             <h2 className="text-lg font-bold text-white flex items-center gap-2 mb-5">
               <Shield className="w-5 h-5 text-red-500" />
               Teams
             </h2>
-            <div className={`space-y-2.5 ${!profileData.games?.length ? 'grid sm:grid-cols-2 gap-2.5 space-y-0' : ''}`}>
+            <div className="grid sm:grid-cols-2 gap-2.5">
               {teams.map((team) => (
                 <TeamCard key={team.id} team={team} />
               ))}
               {teams.length === 0 && (
-                <p className="text-zinc-600 text-center py-8 text-sm">Not in any teams yet</p>
+                <p className="text-zinc-600 py-8 text-sm col-span-2 text-center">Not in any teams yet</p>
               )}
             </div>
           </section>

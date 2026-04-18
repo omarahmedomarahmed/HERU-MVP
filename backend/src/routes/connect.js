@@ -117,6 +117,24 @@ router.get('/riot/accounts', requireAuth, async (req, res) => {
   }
 });
 
+// GET /api/connect/discord/public/:userId — public Discord username for any user
+router.get('/discord/public/:userId', async (req, res) => {
+  try {
+    const { data, error } = await supabaseAdmin
+      .from('connected_accounts')
+      .select('platform_username,platform_avatar')
+      .eq('user_id', req.params.userId)
+      .eq('platform', 'discord')
+      .eq('is_active', true)
+      .limit(1)
+      .single();
+    if (error && error.code !== 'PGRST116') throw error;
+    res.json(data || null);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // GET /api/connect/riot/public/:userId — public Riot accounts for any user (for profiles, team pages)
 router.get('/riot/public/:userId', async (req, res) => {
   try {

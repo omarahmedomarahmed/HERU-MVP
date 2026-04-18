@@ -225,8 +225,9 @@ router.put('/:id/members/:userId/role', requireAuth, async (req, res) => {
     if (team.leader_id !== req.user.id) return res.status(403).json({ error: 'Only team leader can change roles' });
 
     const { role, custom_role } = req.body;
-    const validRoles = ['player', 'coach', 'manager', 'analyst', 'substitute', 'custom'];
-    if (!validRoles.includes(role)) return res.status(400).json({ error: `Invalid role. Must be one of: ${validRoles.join(', ')}` });
+    const validRoles = ['player', 'coach', 'manager', 'analyst', 'substitute', 'sub', 'content creator', 'custom'];
+    const normalizedRole = (role || '').toLowerCase();
+    if (!validRoles.includes(normalizedRole)) return res.status(400).json({ error: `Invalid role. Must be one of: ${validRoles.join(', ')}` });
 
     // Upsert the team_members record
     const { data, error } = await supabaseAdmin
@@ -234,8 +235,8 @@ router.put('/:id/members/:userId/role', requireAuth, async (req, res) => {
       .upsert({
         team_id: req.params.id,
         user_id: req.params.userId,
-        role,
-        custom_role: role === 'custom' ? custom_role : null,
+        role: normalizedRole,
+        custom_role: normalizedRole === 'custom' ? custom_role : null,
       }, { onConflict: 'team_id,user_id' })
       .select()
       .single();

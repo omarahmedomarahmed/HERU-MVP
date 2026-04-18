@@ -179,15 +179,19 @@ export default function TeamDetails() {
 
   const updateRoleMutation = useMutation({
     mutationFn: async ({ userId, role }) => {
-      await apiCall(`/teams/${teamId}/members/${userId}/role`, {
+      return apiCall(`/teams/${teamId}/members/${userId}/role`, {
         method: 'PUT',
-        body: { role },
+        body: { role: role.toLowerCase() },
       });
     },
-    onSuccess: () => {
+    onSuccess: (_, { role }) => {
       queryClient.invalidateQueries(['team-members', teamId]);
       setShowRoleModal(null);
-    }
+      toast({ title: 'Role updated', description: `Member set to ${role}` });
+    },
+    onError: (err) => {
+      toast({ title: 'Failed to update role', description: err.message, variant: 'destructive' });
+    },
   });
 
   const removeMemberMutation = useMutation({
@@ -434,7 +438,7 @@ export default function TeamDetails() {
                       </div>
                       <p className="text-xs text-gray-500">
                         <span className="px-1.5 py-0.5 bg-zinc-800 rounded text-gray-400">
-                          {member.role || 'Player'}
+                          {member.role ? member.role.charAt(0).toUpperCase() + member.role.slice(1) : 'Player'}
                         </span>
                       </p>
                       {member.games?.length > 0 && (

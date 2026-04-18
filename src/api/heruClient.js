@@ -281,6 +281,7 @@ export const Connect = {
   botInstallUrl:       ()         => apiCall('/connect/bot-install-url').then(d => d.url),
   riotAccounts:        ()         => apiCall('/connect/riot/accounts'),
   publicRiotAccounts:  (userId)   => apiCall(`/connect/riot/public/${userId}`),
+  publicDiscord:       (userId)   => apiCall(`/connect/discord/public/${userId}`),
   publicRiotBatch:     (userIds)  => apiCall('/connect/riot/public-batch', { method: 'POST', body: { user_ids: userIds } }),
   linkRiot:            (data)     => apiCall('/connect/riot/link', { method: 'POST', body: data }),
   removeRiot:          (id)       => apiCall(`/connect/riot/${id}`, { method: 'DELETE' }),
