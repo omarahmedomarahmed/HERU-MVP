@@ -180,7 +180,7 @@ function LoadingBlock() {
 // Discord Bot Card
 // ---------------------------------------------------------------------------
 
-function DiscordBotCard() {
+function DiscordBotCard({ inline = false }) {
   const [installUrl, setInstallUrl] = React.useState(null)
   const [loading, setLoading] = React.useState(false)
 
@@ -201,6 +201,14 @@ function DiscordBotCard() {
       setLoading(false)
     }
   }
+
+  if (inline) return (
+    <button onClick={handleGetInstallUrl} disabled={loading}
+      className="flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white font-semibold text-sm transition-colors shrink-0 whitespace-nowrap">
+      {loading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ExternalLink className="h-3.5 w-3.5" />}
+      Add Bot
+    </button>
+  )
 
   return (
     <section className="rounded-xl border border-indigo-500/30 bg-gradient-to-br from-indigo-950/40 to-zinc-900/50 p-5">
@@ -323,6 +331,16 @@ export default function OrganizerDashboard() {
           Welcome back, <span className="text-red-500">{brandName}</span>
         </h1>
         <p className="mt-1 text-gray-400">{todayStr}</p>
+      </div>
+
+      {/* ---- HERU Bot Nudge Banner ---- */}
+      <div className="flex items-center gap-4 rounded-xl border border-indigo-500/40 bg-gradient-to-r from-indigo-950/60 to-zinc-900/60 px-5 py-3">
+        <Bot className="h-7 w-7 text-indigo-400 shrink-0" />
+        <div className="flex-1 min-w-0">
+          <p className="text-white font-bold text-sm">Add HERU Bot to your Discord server</p>
+          <p className="text-indigo-400/70 text-xs">Build tournaments, announce brackets, and let gamers join — all through Discord commands.</p>
+        </div>
+        <DiscordBotCard inline />
       </div>
 
       {/* ---- Quick Stats ---- */}
