@@ -234,6 +234,11 @@ export default function CoOrganizerView() {
   )
   const commitmentPercent = myCoOrgEntry?.commitment_percent || myCoOrgEntry?.percent || 0
   const commitmentAmount = myCoOrgEntry?.commitment_amount || myCoOrgEntry?.amount || 0
+  const hasPaymentAccess = myCoOrgEntry?.access_granted === true
+  const myCoOrgName = myCoOrgEntry?.brand_name || myCoOrgEntry?.organizer_name || 'Co-Organizer'
+  const mainOrgBrand = tournament?.organizer_brand || {}
+  const mainOrgName = mainOrgBrand?.name || mainOrgBrand?.brand_name || 'Main Organizer'
+  const mainOrgLogo = mainOrgBrand?.logo || mainOrgBrand?.brand_logo
 
   // Engagement metrics (derived)
   const totalTeams = teamIds.length
@@ -249,17 +254,18 @@ export default function CoOrganizerView() {
   const confirmedDeliverables = deliverableItems.filter(i => i.status === 'confirmed').length
   const fulfilledDeliverables = deliverableItems.filter(i => i.status === 'fulfilled').length
 
-  // ---- Tabs ----
-  const tabs = [
-    { key: 'overview', label: 'Overview', icon: Eye },
-    { key: 'engagement', label: 'Engagement', icon: BarChart3 },
-    { key: 'brackets', label: 'Brackets', icon: Trophy },
-    { key: 'deliverables', label: 'Deliverables', icon: Package },
-    { key: 'gig-workers', label: 'Gig Workers', icon: Briefcase },
-    { key: 'gamer-chat', label: 'Gamer Chat', icon: Users },
-    { key: 'organizer-chat', label: 'Internal Chat', icon: MessageSquare },
-    { key: 'report', label: 'Brand Report', icon: FileText },
+  // ---- Tabs — gate access behind payment ----
+  const allTabs = [
+    { key: 'overview', label: 'Overview', icon: Eye, requiresPayment: false },
+    { key: 'organizer-chat', label: 'Internal Chat', icon: MessageSquare, requiresPayment: false },
+    { key: 'deliverables', label: 'Deliverables', icon: Package, requiresPayment: false },
+    { key: 'gig-workers', label: 'Gig Workers', icon: Briefcase, requiresPayment: false },
+    { key: 'engagement', label: 'Engagement', icon: BarChart3, requiresPayment: true },
+    { key: 'brackets', label: 'Brackets', icon: Trophy, requiresPayment: true },
+    { key: 'gamer-chat', label: 'Gamer Chat', icon: Users, requiresPayment: true },
+    { key: 'report', label: 'Brand Report', icon: FileText, requiresPayment: true },
   ]
+  const tabs = hasPaymentAccess ? allTabs : allTabs.filter(t => !t.requiresPayment)
 
   // ---- Loading / Error ----
   if (isLoading) {
@@ -301,31 +307,51 @@ export default function CoOrganizerView() {
       </button>
 
       {/* ------ Co-organizer banner ------ */}
-      <div className="rounded-xl border border-red-500/30 bg-red-500/10 p-4 mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-        <div className="flex items-center gap-3">
-          <Shield className="w-5 h-5 text-red-400 shrink-0" />
-          <div>
-            <p className="text-white font-medium text-sm">
-              You are a {commitmentPercent >= 66 ? 'sponsor' : 'co-organizer'} of this tournament
-            </p>
-            <p className="text-xs text-gray-400 mt-0.5">
-              You can view all tournament data and participate in internal chat.
-            </p>
+      <div className={`rounded-xl border p-4 mb-6 ${hasPaymentAccess ? 'border-violet-500/30 bg-violet-500/10' : 'border-yellow-500/30 bg-yellow-500/10'}`}>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div className="flex items-center gap-3">
+            {myCoOrgEntry?.brand_logo ? (
+              <img src={myCoOrgEntry.brand_logo} alt="" className="w-10 h-10 rounded-lg object-cover border border-white/10" />
+            ) : (
+              <Shield className={`w-5 h-5 shrink-0 ${hasPaymentAccess ? 'text-violet-400' : 'text-yellow-400'}`} />
+            )}
+            <div>
+              <p className="text-white font-bold text-sm">
+                {myCoOrgName} · {commitmentPercent >= 66 ? 'Sponsor' : 'Co-Organizer'}
+              </p>
+              <p className="text-xs text-gray-400 mt-0.5">
+                {hasPaymentAccess
+                  ? 'Full access granted — you can view all tournament details.'
+                  : 'Pay your invoice to unlock full tournament access. Chat and deliverables are available now.'}
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-4 shrink-0">
+            {mainOrgLogo && (
+              <div className="flex items-center gap-2">
+                <img src={mainOrgLogo} alt="" className="w-8 h-8 rounded object-cover border border-white/10" />
+                <span className="text-xs text-gray-500">{mainOrgName}</span>
+              </div>
+            )}
+            {commitmentPercent > 0 && (
+              <>
+                <div className="w-px h-8 bg-white/10" />
+                <div className="text-right">
+                  <p className="text-xs text-gray-500">Your Share</p>
+                  <p className="text-sm font-semibold text-violet-300">{commitmentPercent}% · {formatEGP(commitmentAmount)}</p>
+                </div>
+              </>
+            )}
+            {!hasPaymentAccess && (
+              <button
+                onClick={() => navigate('/organizer/billing')}
+                className="px-3 py-1.5 bg-yellow-500 text-black text-xs font-bold rounded-lg hover:bg-yellow-400 transition-colors"
+              >
+                Pay Invoice →
+              </button>
+            )}
           </div>
         </div>
-        {commitmentPercent > 0 && (
-          <div className="flex items-center gap-4 shrink-0">
-            <div className="text-right">
-              <p className="text-xs text-gray-500">Your Commitment</p>
-              <p className="text-sm font-semibold text-red-300">{commitmentPercent}%</p>
-            </div>
-            <div className="w-px h-8 bg-white/10" />
-            <div className="text-right">
-              <p className="text-xs text-gray-500">Amount</p>
-              <p className="text-sm font-semibold text-white">{formatEGP(commitmentAmount)}</p>
-            </div>
-          </div>
-        )}
       </div>
 
       {/* ------ Page Header ------ */}
@@ -380,6 +406,23 @@ export default function CoOrganizerView() {
       </div>
 
       {/* ------ Tab Content ------ */}
+
+      {/* Payment gate for locked tabs */}
+      {allTabs.find(t => t.key === activeTab)?.requiresPayment && !hasPaymentAccess && (
+        <div className="flex flex-col items-center justify-center py-20 rounded-xl border border-yellow-500/20 bg-yellow-500/5">
+          <Lock className="w-12 h-12 text-yellow-400 mb-3 opacity-70" />
+          <h3 className="text-white font-bold text-lg mb-1">Access Locked</h3>
+          <p className="text-gray-400 text-sm text-center max-w-sm mb-4">
+            Complete your invoice payment to unlock full tournament access including brackets, engagement data, and gamer chat.
+          </p>
+          <button
+            onClick={() => navigate('/organizer/billing')}
+            className="px-4 py-2 bg-yellow-500 text-black text-sm font-bold rounded-lg hover:bg-yellow-400 transition-colors"
+          >
+            Go to Billing
+          </button>
+        </div>
+      )}
 
       {/* Overview Tab */}
       {activeTab === 'overview' && (
