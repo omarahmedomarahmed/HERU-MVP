@@ -342,6 +342,26 @@ router.post('/:id/publish', requireAuth, async (req, res) => {
 
     const { data: updated, error } = await supabaseAdmin.from('tournaments').update(updateData).eq('id', req.params.id).select().single();
     if (error) throw error;
+
+    // Push invite to each invited team's tournament_invites array
+    const invitedTeamIds = tournament.invited_teams || [];
+    if (invitedTeamIds.length > 0) {
+      const { data: teams } = await supabaseAdmin.from('teams').select('id,tournament_invites').in('id', invitedTeamIds);
+      await Promise.all((teams || []).map(async (team) => {
+        const existing = (team.tournament_invites || []);
+        if (existing.some(inv => inv.tournament_id === tournament.id)) return;
+        const newInvites = [...existing, {
+          tournament_id: tournament.id,
+          tournament_name: tournament.name,
+          game: tournament.game,
+          schedule: tournament.schedule,
+          status: 'pending',
+          invited_at: new Date().toISOString(),
+        }];
+        await supabaseAdmin.from('teams').update({ tournament_invites: newInvites }).eq('id', team.id);
+      }));
+    }
+
     res.json(updated);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -494,7 +514,7 @@ router.post('/:id/team-chat/:teamId', requireAuth, async (req, res) => {
 // POST /:id/invite-team - invite a team to tournament
 router.post('/:id/invite-team', requireAuth, async (req, res) => {
   try {
-    const { data: tournament } = await supabaseAdmin.from('tournaments').select('organizer_id, invited_teams, teams, max_teams').eq('id', req.params.id).single();
+    const { data: tournament } = await supabaseAdmin.from('tournaments').select('organizer_id, invited_teams, teams, max_teams, name, game, schedule').eq('id', req.params.id).single();
     if (!tournament) return res.status(404).json({ error: 'Tournament not found' });
     if (tournament.organizer_id !== req.user.id) return res.status(403).json({ error: 'Not authorized' });
 
@@ -507,10 +527,17 @@ router.post('/:id/invite-team', requireAuth, async (req, res) => {
     const { data, error } = await supabaseAdmin.from('tournaments').update({ invited_teams: invited, updated_at: new Date().toISOString() }).eq('id', req.params.id).select().single();
     if (error) throw error;
 
-    // Also add invite to the team's tournament_invites
+    // Push invite to team's tournament_invites with full context
     const { data: team } = await supabaseAdmin.from('teams').select('tournament_invites').eq('id', team_id).single();
     if (team) {
-      const invites = [...(team.tournament_invites || []), { tournament_id: req.params.id, invited_at: new Date().toISOString(), status: 'pending' }];
+      const invites = [...(team.tournament_invites || []), {
+        tournament_id: req.params.id,
+        tournament_name: tournament.name,
+        game: tournament.game,
+        schedule: tournament.schedule,
+        status: 'pending',
+        invited_at: new Date().toISOString(),
+      }];
       await supabaseAdmin.from('teams').update({ tournament_invites: invites }).eq('id', team_id);
     }
 
