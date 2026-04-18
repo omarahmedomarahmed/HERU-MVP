@@ -12,7 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { motion } from 'framer-motion';
-import { GamerProfile as GamerProfileAPI, Order, Team, Achievement, ApprovalRequest, Connect, apiCall } from '@/api/heruClient'
+import { GamerProfile as GamerProfileAPI, Order, Team, Achievement, ApprovalRequest, Connect, GigRequest, apiCall } from '@/api/heruClient'
 import { useAuth } from '@/lib/AuthContext'
 import { uploadFile } from '@/lib/uploadFile'
 import PhoneInput from '@/components/ui/PhoneInput'
@@ -924,6 +924,11 @@ export default function GamerProfile() {
               <Star className="w-4 h-4 mr-1.5" /> Talent
             </TabsTrigger>
           )}
+          {profile?.is_talent && (
+            <TabsTrigger value="gigs" className="data-[state=active]:bg-red-600 data-[state=active]:text-white text-gray-400">
+              <Briefcase className="w-4 h-4 mr-1.5" /> Gigs
+            </TabsTrigger>
+          )}
           <TabsTrigger value="billing" className="data-[state=active]:bg-red-600 data-[state=active]:text-white text-gray-400">
             <DollarSign className="w-4 h-4 mr-1.5" /> Billing
           </TabsTrigger>
@@ -1251,6 +1256,13 @@ export default function GamerProfile() {
                 </div>
               )}
             </FloatingPanel>
+          </TabsContent>
+        )}
+
+        {/* Gigs Tab — talent only */}
+        {profile?.is_talent && (
+          <TabsContent value="gigs">
+            <GigsTab userId={user?.id} profile={profile} />
           </TabsContent>
         )}
 
@@ -1600,6 +1612,97 @@ export default function GamerProfile() {
 }
 
 // ─── Tournament Invites Sub-Component ────────────────────────────────────────
+const GIG_STATUS_STYLE = {
+  pending:   'bg-yellow-500/20 text-yellow-300 border-yellow-500/30',
+  accepted:  'bg-green-500/20 text-green-300 border-green-500/30',
+  rejected:  'bg-red-500/20 text-red-400 border-red-500/30',
+  completed: 'bg-blue-500/20 text-blue-300 border-blue-500/30',
+};
+
+function GigsTab({ userId }) {
+  const { data: gigs = [], isLoading } = useQuery({
+    queryKey: ['my-gigs', userId],
+    queryFn: () => GigRequest.list({ talent_user_id: userId }),
+    enabled: !!userId,
+  });
+
+  if (isLoading) return (
+    <FloatingPanel className="p-8 text-center">
+      <div className="w-6 h-6 border-2 border-red-500 border-t-transparent rounded-full animate-spin mx-auto mb-2" />
+      <p className="text-gray-400 text-sm">Loading gigs…</p>
+    </FloatingPanel>
+  );
+
+  if (!gigs.length) return (
+    <FloatingPanel className="p-12 text-center">
+      <Briefcase className="w-14 h-14 text-zinc-700 mx-auto mb-4" />
+      <p className="text-white font-bold text-lg mb-1">No gig requests yet</p>
+      <p className="text-gray-400 text-sm">When organizers book you for a tournament, your gigs will appear here.</p>
+    </FloatingPanel>
+  );
+
+  const active = gigs.filter(g => ['pending', 'accepted'].includes(g.status));
+  const past   = gigs.filter(g => ['rejected', 'completed'].includes(g.status));
+
+  return (
+    <div className="space-y-6">
+      {active.length > 0 && (
+        <div>
+          <h3 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-3 flex items-center gap-2">
+            <Zap className="w-4 h-4 text-yellow-400" /> Active Gigs
+          </h3>
+          <div className="space-y-3">
+            {active.map(gig => (
+              <FloatingPanel key={gig.id} className="p-4">
+                <div className="flex items-start justify-between gap-4">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className={`text-xs px-2 py-0.5 rounded-full border font-medium ${GIG_STATUS_STYLE[gig.status] || GIG_STATUS_STYLE.pending}`}>
+                        {gig.status}
+                      </span>
+                      <span className="text-xs text-gray-500 capitalize">{gig.talent_type}</span>
+                    </div>
+                    <p className="text-white font-bold truncate">{gig.tournament_name || 'Unnamed Tournament'}</p>
+                    <p className="text-gray-400 text-sm">
+                      {gig.organizer_brand || 'Organizer'} · <span className="text-green-400 font-medium">EGP {(gig.price || 0).toLocaleString()}</span>
+                    </p>
+                    {gig.notes && <p className="text-gray-500 text-xs mt-1 truncate">{gig.notes}</p>}
+                  </div>
+                  <Link to={`/gamer/gigs/${gig.id}`} className="flex-shrink-0">
+                    <GlowButton size="sm" variant="secondary">
+                      <ExternalLink className="w-3.5 h-3.5" /> View
+                    </GlowButton>
+                  </Link>
+                </div>
+              </FloatingPanel>
+            ))}
+          </div>
+        </div>
+      )}
+      {past.length > 0 && (
+        <div>
+          <h3 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-3">Past Gigs</h3>
+          <div className="space-y-2">
+            {past.map(gig => (
+              <FloatingPanel key={gig.id} className="p-3 opacity-70">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-white text-sm font-medium truncate">{gig.tournament_name || 'Tournament'}</p>
+                    <p className="text-gray-500 text-xs">{gig.organizer_brand} · EGP {(gig.price || 0).toLocaleString()}</p>
+                  </div>
+                  <span className={`text-xs px-2 py-0.5 rounded-full border ${GIG_STATUS_STYLE[gig.status]}`}>
+                    {gig.status}
+                  </span>
+                </div>
+              </FloatingPanel>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function TournamentInvitesTab({ userId, profile }) {
   const { data: tournaments = [], isLoading } = useQuery({
     queryKey: ['gamer-tournament-invites', userId],

@@ -41,22 +41,14 @@ export function calculateTournamentCost(tournament) {
   };
 }
 
-/**
- * Generate single-elimination brackets for N teams.
- * Returns an array of rounds, each containing match objects.
- */
-export function generateBrackets(teams = []) {
+function makeSingleElimination(teams) {
   const n = teams.length;
   if (n < 2) return [];
-
-  // Pad to next power of 2
   const size = Math.pow(2, Math.ceil(Math.log2(n)));
   const padded = [...teams];
-  while (padded.length < size) padded.push(null); // BYE slots
-
+  while (padded.length < size) padded.push(null);
   const rounds = [];
   let currentTeams = padded;
-
   let roundNum = 1;
   while (currentTeams.length > 1) {
     const matches = [];
@@ -77,13 +69,130 @@ export function generateBrackets(teams = []) {
       });
     }
     rounds.push({ round: roundNum, matches });
-
-    // Advance winners (or placeholders) to next round
     currentTeams = matches.map((m) => m.winner || null);
     roundNum++;
   }
-
   return rounds;
+}
+
+function makeRoundRobin(teams) {
+  const n = teams.length;
+  if (n < 2) return [];
+  const list = n % 2 === 0 ? [...teams] : [...teams, null]; // null = bye
+  const numRounds = list.length - 1;
+  const half = list.length / 2;
+  const rounds = [];
+  const rotation = list.slice(1);
+  for (let r = 0; r < numRounds; r++) {
+    const current = [list[0], ...rotation];
+    const matches = [];
+    for (let i = 0; i < half; i++) {
+      const team1 = current[i];
+      const team2 = current[list.length - 1 - i];
+      if (!team1 && !team2) continue;
+      matches.push({
+        id: `R${r + 1}-M${i + 1}`,
+        round: r + 1,
+        match_number: i + 1,
+        team1: team1 || null,
+        team2: team2 || null,
+        score1: null,
+        score2: null,
+        winner: null,
+        status: (!team1 || !team2) ? 'bye' : 'pending',
+      });
+    }
+    rounds.push({ round: r + 1, label: `Round ${r + 1}`, matches });
+    rotation.push(rotation.shift()); // rotate
+  }
+  return rounds;
+}
+
+function makeSwiss(teams) {
+  const n = teams.length;
+  if (n < 2) return [];
+  // Swiss: ceil(log2(n)) rounds, first round random pairing
+  const numRounds = Math.ceil(Math.log2(n));
+  const rounds = [];
+  // Round 1: sequential pairing
+  const r1matches = [];
+  for (let i = 0; i < n; i += 2) {
+    r1matches.push({
+      id: `R1-M${Math.floor(i / 2) + 1}`,
+      round: 1,
+      match_number: Math.floor(i / 2) + 1,
+      team1: teams[i] || null,
+      team2: teams[i + 1] || null,
+      score1: null, score2: null, winner: null,
+      status: teams[i + 1] ? 'pending' : 'bye',
+    });
+  }
+  rounds.push({ round: 1, label: 'Swiss Round 1', matches: r1matches });
+  // Subsequent rounds are TBD until results are entered
+  for (let r = 2; r <= numRounds; r++) {
+    const count = Math.floor(n / 2);
+    const matches = Array.from({ length: count }, (_, i) => ({
+      id: `R${r}-M${i + 1}`,
+      round: r,
+      match_number: i + 1,
+      team1: null, team2: null,
+      score1: null, score2: null, winner: null,
+      status: 'tbd',
+    }));
+    rounds.push({ round: r, label: `Swiss Round ${r}`, matches });
+  }
+  return rounds;
+}
+
+function makeDoubleElimination(teams) {
+  // Winners bracket (same as SE) + skeleton losers bracket
+  const wb = makeSingleElimination(teams).map(r => ({ ...r, label: `Winners R${r.round}`, bracket: 'winners' }));
+  const losersRounds = wb.length - 1;
+  const lb = [];
+  for (let r = 1; r <= losersRounds; r++) {
+    const matchCount = Math.max(1, Math.floor(teams.length / Math.pow(2, r + 1)));
+    lb.push({
+      round: wb.length + r,
+      label: `Losers R${r}`,
+      bracket: 'losers',
+      matches: Array.from({ length: matchCount }, (_, i) => ({
+        id: `LB-R${r}-M${i + 1}`,
+        round: wb.length + r,
+        match_number: i + 1,
+        team1: null, team2: null,
+        score1: null, score2: null, winner: null,
+        status: 'tbd',
+      })),
+    });
+  }
+  // Grand Final
+  lb.push({
+    round: wb.length + losersRounds + 1,
+    label: 'Grand Final',
+    bracket: 'grand_final',
+    matches: [{
+      id: 'GF-M1', round: wb.length + losersRounds + 1, match_number: 1,
+      team1: null, team2: null, score1: null, score2: null, winner: null, status: 'tbd',
+    }],
+  });
+  return [...wb, ...lb];
+}
+
+/**
+ * Generate brackets for any supported format.
+ * format: 'single_elimination' | 'double_elimination' | 'round_robin' | 'swiss' | 'points'
+ */
+export function generateBrackets(teams = [], format = 'single_elimination') {
+  const n = teams.length;
+  if (n < 2) return [];
+  switch (format) {
+    case 'double_elimination': return makeDoubleElimination(teams);
+    case 'round_robin':
+    case 'points': return makeRoundRobin(teams);
+    case 'swiss': return makeSwiss(teams);
+    case 'single_elimination':
+    default: return makeSingleElimination(teams);
+  }
 }
 
 /**
