@@ -1,7 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
 import { Bot, Send, Trash2, Loader2, User, ChevronDown } from 'lucide-react';
-import { AiAgent } from '@/api/heruClient';
-
 const API_BASE = import.meta.env.VITE_API_URL || '/api';
 
 async function apiFetch(path, options = {}) {
