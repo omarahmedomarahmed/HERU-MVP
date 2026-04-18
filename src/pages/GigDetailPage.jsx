@@ -14,7 +14,7 @@ import {
 import { format } from 'date-fns';
 import { GamerProfile, GigRequest, Team, Tournament, apiCall } from '@/api/heruClient'
 import { useAuth } from '@/lib/AuthContext'
-import { uploadFile } from '@/lib/uploadFile'
+import { uploadFile as uploadFileUtil } from '@/lib/uploadFile'
 
 
 const STATUS_COLORS = {
@@ -93,7 +93,7 @@ export default function GigDetailPage() {
 
   const uploadFile = async (file) => {
     setUploading(true);
-    const { file_url } = await uploadFile(file);
+    const { file_url } = await uploadFileUtil(file);
     const newFile = {
       name: file.name,
       url: file_url,
