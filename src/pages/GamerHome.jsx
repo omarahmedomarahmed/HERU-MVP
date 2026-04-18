@@ -295,7 +295,7 @@ export default function GamerHome() {
                     </div>
                     <div className="p-4">
                       <h3 className="text-white font-bold text-lg mb-2 truncate">{tournament.name}</h3>
-                      <div className="flex items-center gap-4 text-sm text-gray-400">
+                      <div className="flex items-center gap-4 text-sm text-gray-400 mb-2">
                         <span className="flex items-center gap-1">
                           <Users className="w-4 h-4" />
                           {tournament.teams?.length || 0}/{tournament.max_teams || '∞'}
@@ -305,6 +305,21 @@ export default function GamerHome() {
                           {tournament.format || 'TBD'}
                         </span>
                       </div>
+                      {(tournament.organizer_brand || (tournament.co_organizers || []).length > 0) && (
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          {(tournament.organizer_brand?.logo || tournament.organizer_brand?.brand_logo) && (
+                            <img
+                              src={tournament.organizer_brand.logo || tournament.organizer_brand.brand_logo}
+                              title={tournament.organizer_brand.name || tournament.organizer_brand.brand_name}
+                              className="w-6 h-6 rounded object-cover border border-white/10"
+                            />
+                          )}
+                          {(tournament.co_organizers || []).filter(co => co.brand_logo).map((co, i) => (
+                            <img key={i} src={co.brand_logo} title={co.brand_name}
+                              className="w-6 h-6 rounded object-cover border border-white/10 opacity-80" />
+                          ))}
+                        </div>
+                      )}
                     </div>
                   </GameCard>
                 </Link>
