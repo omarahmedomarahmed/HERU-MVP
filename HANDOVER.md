@@ -1,8 +1,8 @@
 # HERU.gg — Complete Project Handover Document
 
-**Last updated:** April 17, 2026  
-**Branch:** `claude/add-oauth-discord-bot-cDDza`  
-**Status:** All code complete and pushed. Manual setup steps required before going live.
+**Last updated:** April 18, 2026  
+**Branch:** `main` (production-ready)  
+**Status:** All code complete and pushed to main. Manual setup steps required before going live.
 
 ---
 
@@ -205,14 +205,13 @@ You should see "Registered 11 commands."
 
 On the VPS:
 ```bash
-cd /var/www/heru
-git pull origin claude/add-oauth-discord-bot-cDDza
+cd /var/www/heru.gg
+git pull origin main
 npm install
 cd backend && npm install && cd ..
 cd bot && npm install && cd ..
 npm run build
-pm2 restart heru-backend
-pm2 restart heru-bot
+pm2 restart all
 pm2 save
 ```
 
@@ -307,4 +306,4 @@ Or click **"Add to Discord"** from the Organizer Dashboard on HERU.gg (once depl
 
 ---
 
-*Built April 17, 2026. Branch: `claude/add-oauth-discord-bot-cDDza`*
+*Built April 17–18, 2026. Branch: `main` (production-ready)*
