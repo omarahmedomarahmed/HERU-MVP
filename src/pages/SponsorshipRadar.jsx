@@ -189,8 +189,12 @@ function RadarCard({ radar, onCommit, isMyCommitment, myEntry }) {
   const amountNeeded = radar.amount_still_needed || 0
   const brandName = radar.main_organizer_brand?.name || radar.main_organizer_brand?.brand_name || 'Unknown'
 
+  const accentColor = radar.status === 'fully_funded' ? '#22c55e' : radar.status === 'in_progress' ? '#ef4444' : '#f59e0b';
   return (
-    <div className="bg-zinc-900 border border-zinc-800 rounded-2xl overflow-hidden hover:border-zinc-700 transition-all group">
+    <div className="bg-zinc-900 border border-zinc-800 rounded-2xl overflow-hidden hover:border-zinc-700 transition-all group relative"
+      style={{ boxShadow: `0 0 0 0px ${accentColor}` }}>
+      {/* Accent top border */}
+      <div className="h-0.5 w-full" style={{ background: `linear-gradient(90deg, ${accentColor}66, ${accentColor}, ${accentColor}66)` }} />
       {/* Card Header */}
       <div className="p-5 pb-4">
         <div className="flex items-start justify-between gap-3">
@@ -429,66 +433,59 @@ export default function SponsorshipRadarPage() {
 
   return (
     <>
-      {/* Hero Section */}
-      <div className="relative rounded-2xl overflow-hidden mb-8 bg-gradient-to-br from-zinc-900 via-red-950/20 to-zinc-900 border border-red-500/10">
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-red-500/5 via-transparent to-transparent" />
-        <div className="relative px-8 py-10">
-          <div className="flex items-start justify-between">
-            <div>
-              <div className="flex items-center gap-2 mb-3">
-                <div className="w-10 h-10 rounded-xl bg-red-500/10 border border-red-500/20 flex items-center justify-center">
-                  <Radar className="w-5 h-5 text-red-400" />
-                </div>
-                <span className="text-[10px] font-bold tracking-[0.2em] text-red-400 uppercase bg-red-500/10 px-2.5 py-1 rounded-full border border-red-500/20">NEW</span>
-              </div>
-              <h1 className="text-3xl md:text-4xl font-black text-white mb-2">Sponsorship Radar</h1>
-              <p className="text-gray-400 max-w-lg">
-                Co-organize tournaments with other brands, share costs, and grow your esports reach together.
-                Commit as low as 33% to become a co-organizer.
-              </p>
-            </div>
-            <div className="hidden md:flex items-center gap-3">
-              <div className="text-right">
-                <p className="text-3xl font-black text-white">{totalOpen}</p>
-                <p className="text-gray-500 text-xs">Open Now</p>
-              </div>
-            </div>
+      {/* Hero Section — glorified landing */}
+      <div className="relative rounded-2xl overflow-hidden mb-8 bg-black border border-red-500/20">
+        {/* Animated grid background */}
+        <div className="absolute inset-0" style={{backgroundImage:'linear-gradient(rgba(255,26,26,0.03) 1px,transparent 1px),linear-gradient(90deg,rgba(255,26,26,0.03) 1px,transparent 1px)',backgroundSize:'40px 40px'}} />
+        <div className="absolute inset-0 bg-gradient-to-br from-red-950/30 via-transparent to-purple-950/20" />
+        <div className="absolute top-0 right-0 w-96 h-96 bg-red-500/5 rounded-full blur-3xl" />
+        <div className="absolute bottom-0 left-0 w-64 h-64 bg-purple-500/5 rounded-full blur-3xl" />
+
+        <div className="relative px-8 py-12">
+          {/* Badge */}
+          <div className="inline-flex items-center gap-2 mb-5 px-3 py-1.5 rounded-full border border-red-500/30 bg-red-500/10">
+            <span className="w-1.5 h-1.5 rounded-full bg-red-400 animate-pulse" />
+            <span className="text-[10px] font-bold tracking-[0.2em] text-red-400 uppercase">{totalOpen} TOURNAMENTS LIVE NOW</span>
           </div>
 
-          {/* Success Metrics */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-8">
-            <div className="bg-black/30 backdrop-blur-sm border border-zinc-800/50 rounded-xl p-4">
-              <div className="flex items-center gap-2 mb-2">
-                <Trophy className="w-4 h-4 text-yellow-500" />
-                <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Open</span>
+          <h1 className="text-4xl md:text-6xl font-black text-white mb-4 leading-tight">
+            Sponsorship<br />
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-red-400 to-red-600">Radar</span>
+          </h1>
+          <p className="text-gray-400 text-lg max-w-xl mb-8">
+            Co-organize tournaments with top brands across MENA. Split costs, share the spotlight, grow your reach.
+            Commit from as low as <span className="text-white font-bold">33%</span>.
+          </p>
+
+          {/* How it works */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
+            {[
+              { step: '01', icon: <Search className="w-5 h-5" />, title: 'Browse', desc: 'Find open tournaments seeking co-organizers', color: 'text-red-400 bg-red-500/10 border-red-500/20' },
+              { step: '02', icon: <DollarSign className="w-5 h-5" />, title: 'Commit', desc: 'Lock in 33% or 66% to become Co-Org or Sponsor', color: 'text-amber-400 bg-amber-500/10 border-amber-500/20' },
+              { step: '03', icon: <Trophy className="w-5 h-5" />, title: 'Activate', desc: 'Pay invoice → get tournament access + co-brand logo', color: 'text-green-400 bg-green-500/10 border-green-500/20' },
+            ].map(({ step, icon, title, desc, color }) => (
+              <div key={step} className="bg-black/40 backdrop-blur-sm border border-zinc-800 rounded-xl p-4 flex gap-3">
+                <div className={`w-10 h-10 rounded-lg border flex items-center justify-center shrink-0 ${color}`}>
+                  {icon}
+                </div>
+                <div>
+                  <p className="text-[10px] text-gray-600 font-bold mb-0.5">STEP {step}</p>
+                  <p className="text-white font-bold text-sm">{title}</p>
+                  <p className="text-gray-500 text-xs mt-0.5">{desc}</p>
+                </div>
               </div>
-              <p className="text-2xl font-black text-white">{totalOpen}</p>
-              <p className="text-gray-500 text-xs mt-0.5">Tournaments seeking partners</p>
-            </div>
-            <div className="bg-black/30 backdrop-blur-sm border border-zinc-800/50 rounded-xl p-4">
-              <div className="flex items-center gap-2 mb-2">
-                <Zap className="w-4 h-4 text-red-400" />
-                <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Active</span>
-              </div>
-              <p className="text-2xl font-black text-white">{myCommitments.length}</p>
-              <p className="text-gray-500 text-xs mt-0.5">Your active commitments</p>
-            </div>
-            <div className="bg-black/30 backdrop-blur-sm border border-zinc-800/50 rounded-xl p-4">
-              <div className="flex items-center gap-2 mb-2">
-                <BarChart3 className="w-4 h-4 text-green-400" />
-                <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Funded</span>
-              </div>
-              <p className="text-2xl font-black text-white">{totalFunded}</p>
-              <p className="text-gray-500 text-xs mt-0.5">Successfully funded</p>
-            </div>
-            <div className="bg-black/30 backdrop-blur-sm border border-zinc-800/50 rounded-xl p-4">
-              <div className="flex items-center gap-2 mb-2">
-                <Shield className="w-4 h-4 text-purple-400" />
-                <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Min</span>
-              </div>
-              <p className="text-2xl font-black text-white">33%</p>
-              <p className="text-gray-500 text-xs mt-0.5">Minimum commitment</p>
-            </div>
+            ))}
+          </div>
+
+          {/* Stats row */}
+          <div className="flex flex-wrap gap-6">
+            <div><p className="text-3xl font-black text-white">{totalOpen}</p><p className="text-gray-500 text-xs uppercase tracking-wider">Open Now</p></div>
+            <div className="w-px bg-zinc-800 self-stretch" />
+            <div><p className="text-3xl font-black text-white">{totalFunded}</p><p className="text-gray-500 text-xs uppercase tracking-wider">Funded</p></div>
+            <div className="w-px bg-zinc-800 self-stretch" />
+            <div><p className="text-3xl font-black text-white">{myCommitments.length}</p><p className="text-gray-500 text-xs uppercase tracking-wider">My Active</p></div>
+            <div className="w-px bg-zinc-800 self-stretch" />
+            <div><p className="text-3xl font-black text-red-400">33%</p><p className="text-gray-500 text-xs uppercase tracking-wider">Min Commit</p></div>
           </div>
         </div>
       </div>
