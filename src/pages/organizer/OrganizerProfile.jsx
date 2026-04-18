@@ -6,9 +6,10 @@ import { OrganizerProfile as OrganizerProfileAPI, apiCall } from '@/api/heruClie
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { useToast } from '@/components/ui/use-toast'
+import { uploadFile } from '@/lib/uploadFile'
 import {
   User, Save, Shield, CheckCircle, Clock, AlertTriangle,
-  Loader2, Image, MapPin, Palette, Globe, Gamepad2, X, Plus,
+  Loader2, Image, MapPin, Palette, Globe, Gamepad2, X, Plus, Upload,
 } from 'lucide-react'
 
 // ---------------------------------------------------------------------------
@@ -85,6 +86,7 @@ export default function OrganizerProfilePage() {
   // ---- Form state ----
   const [brandName, setBrandName] = useState('')
   const [brandLogo, setBrandLogo] = useState('')
+  const [logoUploading, setLogoUploading] = useState(false)
   const [primaryColor, setPrimaryColor] = useState('#ff1a1a')
   const [secondaryColor, setSecondaryColor] = useState('#0a0a0a')
   const [description, setDescription] = useState('')
@@ -261,28 +263,46 @@ export default function OrganizerProfilePage() {
               </div>
             </div>
 
-            {/* Brand Logo URL */}
+            {/* Brand Logo */}
             <div className="md:col-span-2">
-              <FieldLabel htmlFor="brandLogo">Brand Logo URL</FieldLabel>
-              <div className="flex items-center gap-4">
-                <div className="relative flex-1">
-                  <Image className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
+              <FieldLabel htmlFor="brandLogo">Brand Logo</FieldLabel>
+              <div className="flex items-center gap-3">
+                {brandLogo ? (
+                  <img
+                    src={brandLogo}
+                    alt="Logo preview"
+                    className="w-14 h-14 rounded-lg object-cover border border-white/10 flex-shrink-0"
+                    onError={(e) => { e.target.style.display = 'none' }}
+                  />
+                ) : (
+                  <div className="w-14 h-14 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center flex-shrink-0">
+                    <Image className="w-5 h-5 text-gray-500" />
+                  </div>
+                )}
+                <div className="flex-1 space-y-2">
+                  <label className="flex items-center gap-2 cursor-pointer px-3 py-2 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 transition-colors w-fit">
+                    {logoUploading ? <Loader2 className="w-4 h-4 animate-spin text-gray-400" /> : <Upload className="w-4 h-4 text-gray-400" />}
+                    <span className="text-sm text-gray-300">{logoUploading ? 'Uploading...' : 'Upload Logo'}</span>
+                    <input type="file" accept="image/*" className="hidden" disabled={logoUploading} onChange={async (e) => {
+                      const file = e.target.files?.[0];
+                      if (!file) return;
+                      setLogoUploading(true);
+                      try {
+                        const { file_url } = await uploadFile(file);
+                        setBrandLogo(file_url);
+                      } catch (err) {
+                        toast({ title: 'Upload failed', description: err.message, variant: 'destructive' });
+                      } finally { setLogoUploading(false); }
+                    }} />
+                  </label>
                   <Input
                     id="brandLogo"
                     value={brandLogo}
                     onChange={(e) => setBrandLogo(e.target.value)}
-                    placeholder="https://example.com/logo.png"
-                    className="pl-9 bg-white/5 border-white/10 text-white placeholder:text-gray-500 focus-visible:ring-red-500"
+                    placeholder="Or paste image URL"
+                    className="bg-white/5 border-white/10 text-white placeholder:text-gray-500 focus-visible:ring-red-500 text-xs"
                   />
                 </div>
-                {brandLogo && (
-                  <img
-                    src={brandLogo}
-                    alt="Logo preview"
-                    className="w-10 h-10 rounded-lg object-cover border border-white/10"
-                    onError={(e) => { e.target.style.display = 'none' }}
-                  />
-                )}
               </div>
             </div>
 
