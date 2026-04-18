@@ -283,6 +283,27 @@ export default function Arena() {
               )}
             </p>
           )}
+          {/* Organizer logos */}
+          {(tournament.organizer_brand || (tournament.co_organizers || []).length > 0) && (
+            <div className="flex items-center gap-2 mt-2 flex-wrap">
+              {(tournament.organizer_brand?.logo || tournament.organizer_brand?.brand_logo) && (
+                <img
+                  src={tournament.organizer_brand.logo || tournament.organizer_brand.brand_logo}
+                  alt={tournament.organizer_brand.name || tournament.organizer_brand.brand_name}
+                  title={tournament.organizer_brand.name || tournament.organizer_brand.brand_name}
+                  className="w-6 h-6 rounded object-cover border border-white/20"
+                />
+              )}
+              {(tournament.co_organizers || []).filter(co => co.brand_logo).map((co, i) => (
+                <img key={i}
+                  src={co.brand_logo}
+                  alt={co.brand_name}
+                  title={co.brand_name}
+                  className="w-6 h-6 rounded object-cover border border-white/20 opacity-80"
+                />
+              ))}
+            </div>
+          )}
         </div>
         <button onClick={() => navigate(-1)} className="absolute top-4 left-4 p-2 rounded-full bg-black/50 text-white hover:bg-black/80 transition">
           <ArrowLeft className="w-4 h-4" />
