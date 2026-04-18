@@ -52,60 +52,71 @@ export default function StaffMessages() {
     retry: 1,
   });
 
-  // Build thread list from response or fallback
+  // Build thread list from backend response { tournament_chats, gig_chats, radar_chats }
   const threads = useMemo(() => {
     if (Array.isArray(rawMessages)) return rawMessages;
     if (rawMessages?.threads) return rawMessages.threads;
+    if (!rawMessages) return [];
 
-    // Fallback: build from tournaments and orders if backend returns them
     const result = [];
-    const tournaments = rawMessages?.tournaments || [];
-    const orders = rawMessages?.orders || [];
 
-    tournaments.forEach((t) => {
-      if (t.support_chat?.length > 0) {
-        const last = t.support_chat[t.support_chat.length - 1];
+    (rawMessages.tournament_chats || []).forEach((t) => {
+      const chatSets = [
+        { key: 'support_chat', label: 'Tournament Support' },
+        { key: 'organizer_chat', label: 'Organizer Chat' },
+        { key: 'general_chat', label: 'General Chat' },
+      ];
+      chatSets.forEach(({ key, label }) => {
+        const chat = t[key];
+        if (chat?.length > 0) {
+          const last = chat[chat.length - 1];
+          result.push({
+            id: `${key}-${t.tournament_id}`,
+            source: 'tournament',
+            sourceLabel: label,
+            name: t.tournament_name || 'Unnamed Tournament',
+            lastMessage: last.message || last.text || '',
+            lastSender: last.sender_name || last.sender_role || last.user_id?.slice(0, 8) || 'Unknown',
+            timestamp: last.timestamp || last.created_at,
+            messageCount: chat.length,
+            link: `/staff/tournaments/${t.tournament_id}`,
+          });
+        }
+      });
+    });
+
+    (rawMessages.gig_chats || []).forEach((g) => {
+      const chat = g.chat;
+      if (chat?.length > 0) {
+        const last = chat[chat.length - 1];
         result.push({
-          id: `tournament-support-${t.id}`,
-          source: 'tournament',
-          sourceLabel: 'Tournament Support',
-          name: t.name || 'Unnamed Tournament',
-          lastMessage: last.message || '',
-          lastSender: last.sender_name || last.sender_role || 'Unknown',
-          timestamp: last.timestamp,
-          messageCount: t.support_chat.length,
-          link: `/staff/tournaments/${t.id}`,
-        });
-      }
-      if (t.organizer_chat?.length > 0) {
-        const last = t.organizer_chat[t.organizer_chat.length - 1];
-        result.push({
-          id: `tournament-org-${t.id}`,
-          source: 'tournament',
-          sourceLabel: 'Organizer Chat',
-          name: t.name || 'Unnamed Tournament',
-          lastMessage: last.message || '',
-          lastSender: last.sender_name || last.sender_role || 'Unknown',
-          timestamp: last.timestamp,
-          messageCount: t.organizer_chat.length,
-          link: `/staff/tournaments/${t.id}`,
+          id: `gig-${g.gig_id}`,
+          source: 'gig',
+          sourceLabel: `Gig: ${g.talent_type || 'Talent'}`,
+          name: g.tournament_name || 'Gig Request',
+          lastMessage: last.message || last.text || '',
+          lastSender: last.sender_name || last.user_id?.slice(0, 8) || 'Unknown',
+          timestamp: last.timestamp || last.created_at,
+          messageCount: chat.length,
+          link: `/staff/orders/gig/${g.gig_id}`,
         });
       }
     });
 
-    orders.forEach((o) => {
-      if (o.support_chat?.length > 0) {
-        const last = o.support_chat[o.support_chat.length - 1];
+    (rawMessages.radar_chats || []).forEach((r) => {
+      const chat = r.chat;
+      if (chat?.length > 0) {
+        const last = chat[chat.length - 1];
         result.push({
-          id: `order-support-${o.id}`,
-          source: 'order',
-          sourceLabel: 'Order Support',
-          name: `Order #${(o.id || '').slice(0, 8)}`,
-          lastMessage: last.message || '',
-          lastSender: last.sender_name || last.sender_role || 'Unknown',
-          timestamp: last.timestamp,
-          messageCount: o.support_chat.length,
-          link: `/staff/orders/${o.id}`,
+          id: `radar-${r.radar_id}`,
+          source: 'radar',
+          sourceLabel: 'Radar Chat',
+          name: r.tournament_name || 'Radar Listing',
+          lastMessage: last.message || last.text || '',
+          lastSender: last.sender_name || last.user_id?.slice(0, 8) || 'Unknown',
+          timestamp: last.timestamp || last.created_at,
+          messageCount: chat.length,
+          link: `/staff/radar`,
         });
       }
     });
@@ -130,7 +141,8 @@ export default function StaffMessages() {
   }, [threads, sourceFilter, searchQuery]);
 
   const tournamentCount = threads.filter((t) => t.source === 'tournament').length;
-  const orderCount = threads.filter((t) => t.source === 'order').length;
+  const gigCount = threads.filter((t) => t.source === 'gig').length;
+  const radarCount = threads.filter((t) => t.source === 'radar').length;
 
   return (
     <StaffLayout>
@@ -173,8 +185,8 @@ export default function StaffMessages() {
                 <ShoppingBag className="w-5 h-5 text-green-600" />
               </div>
               <div>
-                <p className="text-2xl font-bold text-gray-900">{orderCount}</p>
-                <p className="text-xs text-gray-500">Order Chats</p>
+                <p className="text-2xl font-bold text-gray-900">{gigCount + radarCount}</p>
+                <p className="text-xs text-gray-500">Gig & Radar Chats</p>
               </div>
             </div>
           </div>
@@ -197,6 +209,8 @@ export default function StaffMessages() {
               {[
                 { value: 'all', label: 'All' },
                 { value: 'tournament', label: 'Tournaments' },
+                { value: 'gig', label: 'Gigs' },
+                { value: 'radar', label: 'Radar' },
                 { value: 'order', label: 'Orders' },
               ].map((opt) => (
                 <button
