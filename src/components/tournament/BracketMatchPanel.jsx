@@ -3,7 +3,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import FloatingPanel from '@/components/ui/FloatingPanel';
 import GlowButton from '@/components/ui/GlowButton';
 import { Input } from '@/components/ui/input';
-import { Trophy, RotateCcw, CheckCircle, Clock, Circle, X, MessageSquare, AlertTriangle, Image, Send, Flag } from 'lucide-react';
+import { Trophy, RotateCcw, CheckCircle, Clock, Circle, X, MessageSquare, AlertTriangle, Image, Send, Flag, Radio, Link2, ExternalLink } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Tournament } from '@/api/heruClient'
 
@@ -20,6 +20,7 @@ function MatchDetailModal({ match, roundIdx, matchIdx, teams, canEdit, onUpdate,
   const [s1, setS1] = useState(match.score1 ?? '');
   const [s2, setS2] = useState(match.score2 ?? '');
   const [chatMsg, setChatMsg] = useState('');
+  const [streamLink, setStreamLink] = useState(match.stream_link || '');
   const [activeSection, setActiveSection] = useState('scores');
 
   const team1 = getTeamById(match.team1, teams);
@@ -39,6 +40,7 @@ function MatchDetailModal({ match, roundIdx, matchIdx, teams, canEdit, onUpdate,
 
   const sectionTabs = [
     { id: 'scores', label: 'Scores', icon: Trophy },
+    { id: 'stream', label: 'Stream', icon: Radio },
     { id: 'submissions', label: 'Submissions', icon: Image },
     { id: 'chat', label: 'Chat', icon: MessageSquare, count: matchChat.length },
     { id: 'reports', label: 'Reports', icon: AlertTriangle, count: abuseReports.length },
@@ -200,6 +202,51 @@ function MatchDetailModal({ match, roundIdx, matchIdx, teams, canEdit, onUpdate,
                     {getTeamById(match.winner, teams)?.name || 'Winner'} won this match
                   </p>
                 </div>
+              )}
+            </div>
+          )}
+
+          {/* Stream Section */}
+          {activeSection === 'stream' && (
+            <div className="space-y-4">
+              <p className="text-xs text-gray-400">
+                Add a stream link so spectators can watch this match live from the tournament brackets page.
+              </p>
+              {match.stream_link && (
+                <a
+                  href={match.stream_link}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-2 p-3 rounded-lg bg-red-500/10 border border-red-500/30 text-red-400 text-sm hover:bg-red-500/20 transition-colors"
+                >
+                  <Radio className="w-4 h-4 animate-pulse" />
+                  <span className="flex-1 truncate">{match.stream_link}</span>
+                  <ExternalLink className="w-4 h-4 shrink-0" />
+                </a>
+              )}
+              {canEdit ? (
+                <>
+                  <div>
+                    <label className="text-xs text-gray-400 block mb-1">Stream URL (Twitch, YouTube, etc.)</label>
+                    <Input
+                      value={streamLink}
+                      onChange={(e) => setStreamLink(e.target.value)}
+                      placeholder="https://twitch.tv/..."
+                      className="bg-zinc-800 border-zinc-700 text-white text-sm"
+                    />
+                  </div>
+                  <div className="flex gap-2">
+                    <GlowButton
+                      className="flex-1"
+                      onClick={() => onUpdate({ stream_link: streamLink.trim() || null })}
+                    >
+                      <Link2 className="w-4 h-4" />
+                      {streamLink.trim() ? 'Save Stream Link' : 'Clear Stream Link'}
+                    </GlowButton>
+                  </div>
+                </>
+              ) : !match.stream_link && (
+                <div className="text-center py-8 text-gray-500 text-sm">No stream link set for this match.</div>
               )}
             </div>
           )}
@@ -373,7 +420,14 @@ function MatchCard({ match, roundIdx, matchIdx, teams, canEdit, onUpdate, onRese
     >
       {/* Header */}
       <div className="flex items-center justify-between">
-        <span className="text-gray-500 text-xs font-bold">Match {matchIdx + 1}</span>
+        <div className="flex items-center gap-2">
+          <span className="text-gray-500 text-xs font-bold">Match {matchIdx + 1}</span>
+          {match.stream_link && (
+            <span className="flex items-center gap-1 text-[10px] text-red-400 bg-red-500/10 border border-red-500/30 px-1.5 py-0.5 rounded-full font-bold">
+              <Radio className="w-2.5 h-2.5 animate-pulse" /> LIVE
+            </span>
+          )}
+        </div>
         <div className="flex items-center gap-2">
           <span className="text-[10px] text-gray-600">Click to manage</span>
           <div className={cn("flex items-center gap-1 text-xs", statusBadge.color)}>
