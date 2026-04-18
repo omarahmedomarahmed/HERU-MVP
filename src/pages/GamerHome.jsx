@@ -9,13 +9,14 @@ import HexBadge from '@/components/ui/HexBadge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { motion } from 'framer-motion';
-import { GamerProfile, MarketplaceItem, Team, Tournament, Achievement, apiCall } from '@/api/heruClient'
+import { GamerProfile, MarketplaceItem, Team, Tournament, Achievement, Connect, apiCall } from '@/api/heruClient'
 import { useAuth } from '@/lib/AuthContext'
 
 import {
   Trophy, Users, ShoppingBag, Star, Swords, TrendingUp,
   Target, Award, Play, ArrowRight, ShoppingCart,
-  Gamepad2, Shield, Crown, Medal, Clock, ChevronRight
+  Gamepad2, Shield, Crown, Medal, Clock, ChevronRight,
+  RefreshCw, ChevronDown, ChevronUp
 } from 'lucide-react';
 
 export default function GamerHome() {
@@ -48,12 +49,15 @@ export default function GamerHome() {
     enabled: !!user?.id,
   });
 
-  // Fetch gamer stats
-  const { data: stats } = useQuery({
-    queryKey: ['gamer-stats', user?.id],
-    queryFn: () => GamerProfile.stats(user.id),
+  // Fetch Riot accounts for hero section
+  const { data: riotAccounts = [], refetch: refetchRiot } = useQuery({
+    queryKey: ['riot-accounts-home', user?.id],
+    queryFn: () => Connect.riotAccounts(),
     enabled: !!user?.id,
+    staleTime: 60_000,
   });
+  const [activeRiotId, setActiveRiotId] = useState(null);
+  const activeRiot = riotAccounts.find(a => a.id === activeRiotId) || riotAccounts[0];
 
   // Fetch earned achievements
   const { data: earnedAchievements = [] } = useQuery({
@@ -158,28 +162,79 @@ export default function GamerHome() {
                 </div>
               </div>
 
-              {/* Stats Cards */}
-              <div className="grid grid-cols-2 gap-3 w-full lg:w-auto lg:min-w-[320px]">
-                <FloatingPanel className="p-4 text-center">
-                  <Swords className="w-5 h-5 text-red-500 mx-auto mb-1" />
-                  <p className="text-2xl font-black text-white">{stats?.total_matches || 0}</p>
-                  <p className="text-xs text-gray-500 uppercase tracking-wider">Matches</p>
-                </FloatingPanel>
-                <FloatingPanel className="p-4 text-center">
-                  <Trophy className="w-5 h-5 text-yellow-500 mx-auto mb-1" />
-                  <p className="text-2xl font-black text-white">{stats?.total_wins || 0}</p>
-                  <p className="text-xs text-gray-500 uppercase tracking-wider">Wins</p>
-                </FloatingPanel>
-                <FloatingPanel className="p-4 text-center">
-                  <TrendingUp className="w-5 h-5 text-green-500 mx-auto mb-1" />
-                  <p className="text-2xl font-black text-white">{stats?.win_rate || 0}%</p>
-                  <p className="text-xs text-gray-500 uppercase tracking-wider">Win Rate</p>
-                </FloatingPanel>
-                <FloatingPanel className="p-4 text-center">
-                  <Medal className="w-5 h-5 text-red-500 mx-auto mb-1" />
-                  <p className="text-2xl font-black text-white">{earnedAchievements.length}</p>
-                  <p className="text-xs text-gray-500 uppercase tracking-wider">Badges</p>
-                </FloatingPanel>
+              {/* Game Account Live Panel */}
+              <div className="w-full lg:w-auto lg:min-w-[360px]">
+                {riotAccounts.length === 0 ? (
+                  <FloatingPanel className="p-5 text-center">
+                    <Gamepad2 className="w-8 h-8 text-zinc-600 mx-auto mb-2" />
+                    <p className="text-gray-400 text-sm font-medium mb-3">No gaming accounts linked</p>
+                    <Link to="/gamer/profile/connected-accounts">
+                      <GlowButton size="sm"><Gamepad2 className="w-4 h-4" /> Link Riot Account</GlowButton>
+                    </Link>
+                  </FloatingPanel>
+                ) : (
+                  <FloatingPanel className="p-4 space-y-3">
+                    {/* Account switcher */}
+                    {riotAccounts.length > 1 && (
+                      <div className="flex gap-1.5 flex-wrap">
+                        {riotAccounts.map(a => (
+                          <button key={a.id} onClick={() => setActiveRiotId(a.id)}
+                            className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-colors ${(activeRiotId||riotAccounts[0]?.id)===a.id ? 'bg-red-600 text-white' : 'bg-zinc-800 text-gray-400 hover:bg-zinc-700'}`}>
+                            {a.game_name}#{a.tag_line}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                    {activeRiot && (
+                      <>
+                        {/* Account header */}
+                        <div className="flex items-center gap-3">
+                          {activeRiot.game_key === 'lol' && activeRiot.profile_icon_id ? (
+                            <img src={`https://ddragon.leagueoflegends.com/cdn/16.8.1/img/profileicon/${activeRiot.profile_icon_id}.png`}
+                              alt="" className="w-12 h-12 rounded-xl border border-zinc-700" onError={e => e.target.style.display='none'} />
+                          ) : (
+                            <div className="w-12 h-12 rounded-xl bg-zinc-800 border border-zinc-700 flex items-center justify-center font-black text-gray-400 text-sm">
+                              {activeRiot.game_key === 'lol' ? 'LoL' : 'VAL'}
+                            </div>
+                          )}
+                          <div className="flex-1 min-w-0">
+                            <p className="text-white font-black font-mono text-sm">{activeRiot.game_name}<span className="text-gray-500">#{activeRiot.tag_line}</span></p>
+                            <div className="flex items-center gap-2 text-xs mt-0.5">
+                              {activeRiot.rank_tier && <span className="font-bold" style={{color:{IRON:'#9ca3af',BRONZE:'#b45309',SILVER:'#94a3b8',GOLD:'#eab308',PLATINUM:'#14b8a6',EMERALD:'#10b981',DIAMOND:'#60a5fa',MASTER:'#a855f7',GRANDMASTER:'#ef4444',CHALLENGER:'#06b6d4'}[activeRiot.rank_tier]||'#fff'}}>{activeRiot.rank_tier} {activeRiot.rank_division||''}</span>}
+                              {(activeRiot.wins||activeRiot.losses) ? <span className="text-gray-500">{activeRiot.wins||0}W {activeRiot.losses||0}L</span> : null}
+                            </div>
+                          </div>
+                          <button onClick={() => refetchRiot()} className="p-1.5 rounded-lg bg-zinc-800 text-blue-400 hover:text-blue-300 border border-zinc-700">
+                            <RefreshCw className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                        {/* Recent matches */}
+                        <div>
+                          <p className="text-xs text-gray-600 uppercase font-bold mb-2">Recent Matches</p>
+                          {Array.isArray(activeRiot.match_history_cache) && activeRiot.match_history_cache.length > 0 ? (
+                            <div className="space-y-1">
+                              {activeRiot.match_history_cache.slice(0, 5).map((m, i) => {
+                                const win = m.win || m.result === 'Win';
+                                const k=m.kills??'?'; const d=m.deaths??'?'; const a=m.assists??'?';
+                                const champ = m.champion || m.agent || '';
+                                return (
+                                  <div key={i} className={`flex items-center gap-2.5 px-3 py-2 rounded-lg border text-xs ${win?'border-emerald-500/20 bg-emerald-500/5':'border-red-500/20 bg-red-500/5'}`}>
+                                    <span className={`font-black w-7 ${win?'text-emerald-400':'text-red-400'}`}>{win?'W':'L'}</span>
+                                    {champ && <img src={`https://ddragon.leagueoflegends.com/cdn/16.8.1/img/champion/${champ}.png`} alt={champ} className="w-6 h-6 rounded border border-zinc-700" onError={e=>e.target.style.display='none'} />}
+                                    <span className="text-white font-medium flex-1 truncate">{champ||'Unknown'}</span>
+                                    <span className="text-gray-400 font-mono">{k}/{d}/{a}</span>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          ) : (
+                            <p className="text-xs text-gray-700 text-center py-3">Sync your account to load matches</p>
+                          )}
+                        </div>
+                      </>
+                    )}
+                  </FloatingPanel>
+                )}
               </div>
             </div>
           </motion.div>
