@@ -549,8 +549,8 @@ export default function GamerProfile() {
           <TabsTrigger value="achievements" className="data-[state=active]:bg-red-600 data-[state=active]:text-white text-gray-400">
             <Award className="w-4 h-4 mr-1.5" /> Badges
           </TabsTrigger>
-          <TabsTrigger value="invites" className="data-[state=active]:bg-red-600 data-[state=active]:text-white text-gray-400">
-            <Trophy className="w-4 h-4 mr-1.5" /> Invites
+          <TabsTrigger value="tournaments" className="data-[state=active]:bg-red-600 data-[state=active]:text-white text-gray-400">
+            <Bell className="w-4 h-4 mr-1.5" /> Invites
           </TabsTrigger>
           <TabsTrigger value="orders" className="data-[state=active]:bg-red-600 data-[state=active]:text-white text-gray-400">
             <Package className="w-4 h-4 mr-1.5" /> Orders
@@ -560,9 +560,6 @@ export default function GamerProfile() {
               <Star className="w-4 h-4 mr-1.5" /> Talent
             </TabsTrigger>
           )}
-          <TabsTrigger value="tournaments" className="data-[state=active]:bg-red-600 data-[state=active]:text-white text-gray-400">
-            <Bell className="w-4 h-4 mr-1.5" /> Invites
-          </TabsTrigger>
           <TabsTrigger value="billing" className="data-[state=active]:bg-red-600 data-[state=active]:text-white text-gray-400">
             <DollarSign className="w-4 h-4 mr-1.5" /> Billing
           </TabsTrigger>
@@ -764,82 +761,6 @@ export default function GamerProfile() {
               </div>
             </FloatingPanel>
           )}
-        </TabsContent>
-
-        {/* Tournament Invites Tab */}
-        <TabsContent value="invites">
-          <FloatingPanel className="p-6">
-            <h2 className="text-xl font-bold text-white flex items-center gap-2 mb-4">
-              <Trophy className="w-5 h-5 text-red-500" /> Tournament Requests
-            </h2>
-            <Tabs defaultValue="1v1" className="space-y-4">
-              <TabsList className="bg-zinc-800 border border-zinc-700 p-0.5">
-                <TabsTrigger value="1v1" className="data-[state=active]:bg-red-600 data-[state=active]:text-white text-gray-400 text-xs">
-                  <Swords className="w-3.5 h-3.5 mr-1" /> 1v1 Invites
-                </TabsTrigger>
-                <TabsTrigger value="team" className="data-[state=active]:bg-red-600 data-[state=active]:text-white text-gray-400 text-xs">
-                  <Users className="w-3.5 h-3.5 mr-1" /> Team Invites
-                </TabsTrigger>
-              </TabsList>
-
-              <TabsContent value="1v1">
-                {(profile?.tournament_invites || []).filter(i => i.type === '1v1').length === 0 ? (
-                  <div className="text-center py-8 text-gray-500">
-                    <Swords className="w-10 h-10 mx-auto mb-2 text-zinc-700" />
-                    <p className="text-sm">No 1v1 tournament invites yet</p>
-                  </div>
-                ) : (
-                  <div className="space-y-3">
-                    {(profile?.tournament_invites || []).filter(i => i.type === '1v1').map((invite, idx) => (
-                      <div key={idx} className="bg-zinc-800/50 border border-zinc-700 rounded-xl p-4 flex items-center justify-between">
-                        <div>
-                          <p className="text-white font-bold text-sm">{invite.tournament_name}</p>
-                          <p className="text-gray-400 text-xs">{invite.game} - {invite.format || '1v1'}</p>
-                          <p className="text-gray-500 text-xs mt-1">From: {invite.organizer_name || 'Organizer'}</p>
-                        </div>
-                        <div className="flex gap-2">
-                          <Link to={`/gamer/tournaments/${invite.tournament_id}`}>
-                            <GlowButton size="sm">View</GlowButton>
-                          </Link>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </TabsContent>
-
-              <TabsContent value="team">
-                {(() => {
-                  const teamInvites = (profile?.tournament_invites || []).filter(i => i.type !== '1v1');
-                  // Also check team tournament_invites from teams the user leads
-                  return teamInvites.length === 0 ? (
-                    <div className="text-center py-8 text-gray-500">
-                      <Users className="w-10 h-10 mx-auto mb-2 text-zinc-700" />
-                      <p className="text-sm">No team tournament invites yet</p>
-                      <p className="text-xs text-gray-600 mt-1">Team leaders receive invites for their teams</p>
-                    </div>
-                  ) : (
-                    <div className="space-y-3">
-                      {teamInvites.map((invite, idx) => (
-                        <div key={idx} className="bg-zinc-800/50 border border-zinc-700 rounded-xl p-4 flex items-center justify-between">
-                          <div>
-                            <p className="text-white font-bold text-sm">{invite.tournament_name}</p>
-                            <p className="text-gray-400 text-xs">{invite.game} - Team vs Team</p>
-                            <p className="text-gray-500 text-xs mt-1">Team: {invite.team_name || 'Your Team'}</p>
-                          </div>
-                          <div className="flex gap-2">
-                            <Link to={`/gamer/tournaments/${invite.tournament_id}`}>
-                              <GlowButton size="sm">View</GlowButton>
-                            </Link>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  );
-                })()}
-              </TabsContent>
-            </Tabs>
-          </FloatingPanel>
         </TabsContent>
 
         {/* Orders Tab */}
