@@ -6,7 +6,7 @@ import { apiCall } from '@/api/heruClient'
 import {
   Radio, Search, Gamepad2, Calendar, ChevronRight,
   Loader2, Shield, Filter, Users, Trophy, Zap,
-  Star, TrendingUp, Award, Target
+  Star, TrendingUp, Award, Target, CheckCircle
 } from 'lucide-react'
 
 const fmtEGP = (n) => 'EGP ' + (n || 0).toLocaleString()
@@ -322,6 +322,7 @@ function RadarHeader() {
 export default function OrganizerRadar() {
   const navigate = useNavigate()
   const { user } = useAuth()
+  const [activeTab, setActiveTab] = useState('browse')
   const [gameFilter, setGameFilter] = useState('all')
   const [searchQuery, setSearchQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState('open')
@@ -333,7 +334,23 @@ export default function OrganizerRadar() {
     staleTime: 30_000,
   })
 
+  // Fetch ALL radar listings to find ones where user is co-organizer
+  const { data: allRadarData = [] } = useQuery({
+    queryKey: ['radar-all-listings'],
+    queryFn: () => apiCall('/radar?status=all&limit=200'),
+    enabled: !!user,
+    staleTime: 60_000,
+  })
+
   const allListings = Array.isArray(radarData) ? radarData : (radarData?.data || [])
+  const allRadarListings = Array.isArray(allRadarData) ? allRadarData : (allRadarData?.data || [])
+
+  // My commitments = listings where I'm in co_organizers
+  const myCommitments = useMemo(() => {
+    return allRadarListings.filter(l =>
+      (l.co_organizers || []).some(co => co.organizer_id === user?.id)
+    )
+  }, [allRadarListings, user?.id])
 
   const gameOptions = useMemo(() => {
     const games = [...new Set(allListings.map(l => l.game).filter(Boolean))].sort()
@@ -363,6 +380,74 @@ export default function OrganizerRadar() {
 
         <RadarHeader />
 
+        {/* Tab Switcher */}
+        <div className="flex gap-1 mb-6 border-b border-white/10">
+          <button
+            onClick={() => setActiveTab('browse')}
+            className={`px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${activeTab === 'browse' ? 'border-violet-500 text-white' : 'border-transparent text-gray-500 hover:text-gray-300'}`}
+          >
+            Browse Radar
+          </button>
+          <button
+            onClick={() => setActiveTab('commitments')}
+            className={`px-4 py-2.5 text-sm font-medium border-b-2 transition-colors flex items-center gap-1.5 ${activeTab === 'commitments' ? 'border-violet-500 text-white' : 'border-transparent text-gray-500 hover:text-gray-300'}`}
+          >
+            My Commitments
+            {myCommitments.length > 0 && (
+              <span className="text-[10px] bg-violet-500/30 text-violet-300 px-1.5 py-0.5 rounded-full font-bold">{myCommitments.length}</span>
+            )}
+          </button>
+        </div>
+
+        {/* My Commitments Tab */}
+        {activeTab === 'commitments' && (
+          <div className="space-y-4">
+            {myCommitments.length === 0 ? (
+              <div className="flex flex-col items-center py-20 text-gray-500">
+                <Shield className="w-12 h-12 mb-3 opacity-30" />
+                <p className="text-sm font-medium">No commitments yet</p>
+                <p className="text-xs text-gray-600 mt-1">Commit to a tournament from the Browse tab</p>
+                <button onClick={() => setActiveTab('browse')} className="mt-4 text-violet-400 text-sm hover:text-violet-300 transition-colors">Browse Radar →</button>
+              </div>
+            ) : (
+              myCommitments.map(listing => {
+                const myEntry = (listing.co_organizers || []).find(co => co.organizer_id === user?.id)
+                const mainBrand = listing.main_organizer_brand?.name || listing.main_organizer_brand?.brand_name || 'Main Organizer'
+                return (
+                  <div key={listing.id} className="rounded-xl border border-violet-500/20 bg-[#1a1a2e] p-5 hover:border-violet-500/40 transition-all cursor-pointer" onClick={() => navigate(`/organizer/radar/${listing.id}`)}>
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="text-[10px] px-2 py-0.5 rounded-full bg-violet-500/20 text-violet-300 border border-violet-500/30 font-bold uppercase">
+                            {myEntry?.label || 'Co-Organizer'}
+                          </span>
+                          <StatusBadge status={listing.status} />
+                        </div>
+                        <h3 className="text-white font-bold text-sm truncate">{listing.tournament_name}</h3>
+                        <p className="text-gray-500 text-xs mt-0.5">{listing.game} · by {mainBrand}</p>
+                      </div>
+                      <div className="text-right shrink-0">
+                        <p className="text-violet-400 font-black text-lg">{myEntry?.percent || 0}%</p>
+                        <p className="text-gray-500 text-xs">{fmtEGP(myEntry?.amount || 0)}</p>
+                        {myEntry?.access_granted ? (
+                          <span className="text-[10px] text-green-400 font-bold flex items-center gap-1 justify-end mt-1">
+                            <CheckCircle className="w-3 h-3" /> Access Granted
+                          </span>
+                        ) : (
+                          <span className="text-[10px] text-yellow-400 mt-1 block">Awaiting Payment</span>
+                        )}
+                      </div>
+                    </div>
+                    <FundingBar percent={listing.funding_percent} />
+                  </div>
+                )
+              })
+            )}
+          </div>
+        )}
+
+        {activeTab === 'browse' && (
+        <>
         {/* Filters */}
         <div className="flex flex-col sm:flex-row gap-3 mb-6">
           <div className="relative flex-1">
@@ -464,6 +549,8 @@ export default function OrganizerRadar() {
               </>
             )}
           </>
+        )}
+        </>
         )}
       </div>
     </div>

@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/lib/AuthContext';
-import AnimatedBackground from '@/components/shared/AnimatedBackground';
 import FloatingPanel from '@/components/ui/FloatingPanel';
 import GlowButton from '@/components/ui/GlowButton';
 import FundingBar from '@/components/radar/FundingBar';
@@ -113,17 +112,15 @@ export default function RadarDetailPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#0a0a0a]">
-        <AnimatedBackground />
-        <div className="animate-spin w-10 h-10 border-2 border-red-500 border-t-transparent rounded-full" />
+      <div className="flex items-center justify-center py-20">
+        <div className="animate-spin w-10 h-10 border-2 border-violet-500 border-t-transparent rounded-full" />
       </div>
     );
   }
 
   if (!radar) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#0a0a0a]">
-        <AnimatedBackground />
+      <div className="flex items-center justify-center py-20">
         <FloatingPanel className="p-12 text-center">
           <Trophy className="w-16 h-16 text-zinc-700 mx-auto mb-4" />
           <h3 className="text-xl text-white font-bold">Radar listing not found</h3>
@@ -153,14 +150,11 @@ export default function RadarDetailPage() {
   const FOLDERS = ['Organizer Branding', 'Co-Organizer Branding', 'Tournament Branding', 'Social Media'];
 
   return (
-    <div className="min-h-screen bg-[#0a0a0a] text-white">
-      <AnimatedBackground />
-      <div className="relative z-10 max-w-6xl mx-auto px-4 py-8">
-
-        {/* Back */}
-        <button onClick={() => navigate(-1)} className="flex items-center gap-2 text-gray-400 hover:text-white mb-6 transition-colors">
-          <ArrowLeft className="w-4 h-4" /> Back to Radar
-        </button>
+    <div className="max-w-6xl mx-auto px-4 py-8">
+      {/* Back */}
+      <button onClick={() => navigate(-1)} className="flex items-center gap-2 text-gray-400 hover:text-white mb-6 transition-colors">
+        <ArrowLeft className="w-4 h-4" /> Back to Radar
+      </button>
 
         {/* ── BANNER ── */}
         <div className="relative rounded-2xl overflow-hidden mb-8 h-64 bg-zinc-900">
@@ -659,7 +653,6 @@ export default function RadarDetailPage() {
             )}
           </div>
         </div>
-      </div>
     </div>
   );
 }

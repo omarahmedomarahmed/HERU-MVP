@@ -133,7 +133,9 @@ router.post('/', requireAuth, requireRole('organizer', 'admin'), async (req, res
       status: 'draft',
       organizer_brand: req.body.organizer_brand || {
         name: orgProfile?.brand_name || '',
+        brand_name: orgProfile?.brand_name || '',
         logo: orgProfile?.brand_logo || '',
+        brand_logo: orgProfile?.brand_logo || '',
         location: orgProfile?.location || '',
         is_verified: orgProfile?.is_verified || false,
         organizer_id: req.user.id,
