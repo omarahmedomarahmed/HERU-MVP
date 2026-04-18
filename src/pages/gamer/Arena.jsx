@@ -9,11 +9,18 @@ import {
   Trophy, Users, MessageSquare, Send, ArrowLeft, Upload, Flag,
   AlertTriangle, CheckCircle2, Clock, Play, Shield, Gamepad2,
   Calendar, MapPin, Radio, ChevronRight, Loader2, Camera, X,
-  Swords, Star, Info, Zap, Search,
+  Swords, Star, Info, Zap, Search, Copy,
 } from 'lucide-react'
 import GamerLayout from '@/components/layouts/GamerLayout.jsx'
 
 const formatEGP = (n) => 'EGP ' + (Number(n) || 0).toLocaleString()
+
+const RANK_TIER_COLOR = {
+  IRON: 'text-gray-400', BRONZE: 'text-orange-600', SILVER: 'text-gray-300',
+  GOLD: 'text-yellow-400', PLATINUM: 'text-cyan-300', EMERALD: 'text-emerald-400',
+  DIAMOND: 'text-blue-400', MASTER: 'text-purple-400',
+  GRANDMASTER: 'text-red-400', CHALLENGER: 'text-yellow-300',
+}
 
 function StatusBadge({ status }) {
   const map = {
@@ -85,6 +92,254 @@ function ChatPanel({ messages = [], onSend, isSending, placeholder = 'Send a mes
   )
 }
 
+function TeamRiotPanel({ title, team, riotAccounts = [], highlight = false }) {
+  const gameIcon = { lol: '⚔️', valorant: '🎯' }
+  return (
+    <div className={`rounded-xl border p-3 ${highlight ? 'border-red-500/30 bg-red-500/5' : 'border-white/10 bg-white/5'}`}>
+      <p className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">{title}</p>
+      <p className="text-sm font-bold text-white mb-3 truncate">{team?.name || '—'}</p>
+      {riotAccounts.length === 0 ? (
+        <p className="text-[11px] text-gray-600 italic">No linked Riot accounts</p>
+      ) : (
+        <div className="space-y-2">
+          {riotAccounts.slice(0, 5).map(acc => (
+            <div key={acc.id} className="flex items-center gap-2">
+              {acc.profile_icon_id ? (
+                <img
+                  src={`https://ddragon.leagueoflegends.com/cdn/16.8.1/img/profileicon/${acc.profile_icon_id}.png`}
+                  alt=""
+                  className="w-7 h-7 rounded-full border border-zinc-700 shrink-0"
+                />
+              ) : (
+                <div className="w-7 h-7 rounded-full bg-zinc-800 flex items-center justify-center shrink-0 text-sm">
+                  {gameIcon[acc.game_key] || '🎮'}
+                </div>
+              )}
+              <div className="min-w-0">
+                <p className="text-white text-xs font-bold truncate">{acc.game_name}#{acc.tag_line}</p>
+                {acc.rank_tier ? (
+                  <p className={`text-[10px] font-bold ${RANK_TIER_COLOR[acc.rank_tier] || 'text-gray-400'}`}>
+                    {acc.rank_tier} {acc.rank_division || ''}{acc.rank_lp ? ` · ${acc.rank_lp}LP` : ''}
+                  </p>
+                ) : (
+                  <p className="text-[10px] text-gray-600">Unranked</p>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function MatchDetail({ match, myTeam, allTeams, user, isParticipant, onReport }) {
+  const { toast } = useToast()
+  const queryClient = useQueryClient()
+  const [submitForm, setSubmitForm] = useState({ score: '', screenshot_url: '', notes: '' })
+  const [copied, setCopied] = useState(false)
+
+  const side = match.team1_id === myTeam?.id || match.player1_id === user?.id ? 'team1' : 'team2'
+  const oppSide = side === 'team1' ? 'team2' : 'team1'
+  const oppTeamId = match[`${oppSide}_id`]
+  const team1 = allTeams.find(t => t.id === match.team1_id) || (side === 'team1' ? myTeam : null)
+  const team2 = allTeams.find(t => t.id === match.team2_id) || (side === 'team2' ? myTeam : null)
+  const oppTeam = side === 'team1' ? team2 : team1
+
+  const { data: oppRiot = [] } = useQuery({
+    queryKey: ['riot-batch', oppTeamId, oppTeam?.members?.join(',')],
+    queryFn: () => Connect.publicRiotBatch(oppTeam?.members || []),
+    enabled: !!(oppTeam?.members?.length),
+    staleTime: 60_000,
+  })
+  const { data: myRiot = [] } = useQuery({
+    queryKey: ['riot-batch', myTeam?.id, myTeam?.members?.join(',')],
+    queryFn: () => Connect.publicRiotBatch(myTeam?.members || []),
+    enabled: !!(myTeam?.members?.length),
+    staleTime: 60_000,
+  })
+
+  const submitMutation = useMutation({
+    mutationFn: (data) => apiCall(`/match-records/${match.id}/submit`, { method: 'POST', body: data }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['match-records'] })
+      toast({ title: 'Result submitted!', description: 'Waiting for opponent to confirm.' })
+    },
+    onError: (err) => toast({ title: 'Submit failed', description: err.message, variant: 'destructive' }),
+  })
+
+  const chatMutation = useMutation({
+    mutationFn: (message) => apiCall(`/match-records/${match.id}/chat`, {
+      method: 'POST',
+      body: { message, sender_name: user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Player' },
+    }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['match-records'] }),
+  })
+
+  const mySubmission = match[`${side}_submission`]
+  const isMyTurn = !mySubmission?.submitted_at
+
+  const copyCode = () => {
+    navigator.clipboard.writeText(match.riot_tournament_code).catch(() => {})
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
+
+  return (
+    <div className="space-y-4">
+      {/* Match header */}
+      <div className="rounded-xl bg-white/5 border border-white/10 p-4">
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="font-bold text-white flex items-center gap-2">
+            <Swords className="w-4 h-4 text-red-400" /> Match {match.match_id || match.id.slice(0, 8)}
+          </h3>
+          <StatusBadge status={match.status} />
+        </div>
+        <div className="grid grid-cols-3 gap-4 text-center">
+          <div className={`rounded-lg p-3 border ${side === 'team1' ? 'bg-red-500/10 border-red-500/20' : 'bg-white/5 border-white/10'}`}>
+            <p className="text-xs text-gray-400 mb-1 truncate">{side === 'team1' && '⚔️ '}{team1?.name || 'Team 1'}</p>
+            <p className="text-2xl font-bold text-white">{match.team1_score}</p>
+          </div>
+          <div className="flex items-center justify-center">
+            <span className="text-gray-500 font-bold text-lg">VS</span>
+          </div>
+          <div className={`rounded-lg p-3 border ${side === 'team2' ? 'bg-red-500/10 border-red-500/20' : 'bg-white/5 border-white/10'}`}>
+            <p className="text-xs text-gray-400 mb-1 truncate">{side === 'team2' && '⚔️ '}{team2?.name || 'Team 2'}</p>
+            <p className="text-2xl font-bold text-white">{match.team2_score}</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Riot Tournament Code */}
+      {match.riot_tournament_code && (
+        <div className="rounded-xl bg-blue-500/10 border border-blue-500/30 p-4">
+          <h3 className="text-xs font-bold text-blue-400 uppercase tracking-wider mb-2 flex items-center gap-2">
+            <Gamepad2 className="w-3.5 h-3.5" /> Riot Tournament Code
+          </h3>
+          <div className="flex items-center gap-2">
+            <code className="flex-1 font-mono text-sm text-white bg-black/30 px-3 py-2 rounded-lg break-all select-all">
+              {match.riot_tournament_code}
+            </code>
+            <button onClick={copyCode}
+              className="p-2 rounded-lg bg-blue-600/30 text-blue-300 hover:bg-blue-600/50 transition shrink-0" title="Copy code">
+              {copied ? <CheckCircle2 className="w-4 h-4 text-green-400" /> : <Copy className="w-4 h-4" />}
+            </button>
+          </div>
+          <p className="text-[11px] text-gray-500 mt-2">
+            In LoL client: Play → Custom Game → Tournament Draft → Enter Code
+          </p>
+        </div>
+      )}
+
+      {/* Team Riot stats */}
+      <div className="grid grid-cols-2 gap-3">
+        <TeamRiotPanel
+          title={side === 'team1' ? '⚔️ Your Team' : 'Team 1'}
+          team={team1}
+          riotAccounts={side === 'team1' ? myRiot : oppRiot}
+          highlight={side === 'team1'}
+        />
+        <TeamRiotPanel
+          title={side === 'team2' ? '⚔️ Your Team' : 'Team 2'}
+          team={team2}
+          riotAccounts={side === 'team2' ? myRiot : oppRiot}
+          highlight={side === 'team2'}
+        />
+      </div>
+
+      {/* Match stats badge if recorded */}
+      {match.status === 'completed' && (match.riot_match_id || match.val_match_id) && (
+        <div className="rounded-xl bg-white/5 border border-white/10 px-4 py-3 flex items-center gap-3">
+          <Star className="w-4 h-4 text-yellow-400 shrink-0" />
+          <div>
+            <p className="text-xs font-bold text-gray-300">Riot Match Recorded</p>
+            <p className="text-[11px] text-gray-500 font-mono">{match.riot_match_id || match.val_match_id}</p>
+          </div>
+        </div>
+      )}
+
+      {/* Submit result */}
+      {isParticipant && match.status !== 'completed' && (
+        <div className="rounded-xl bg-white/5 border border-white/10 p-4">
+          <h3 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-3">
+            {isMyTurn ? 'Submit Your Result' : '✅ Waiting for opponent'}
+          </h3>
+          {isMyTurn ? (
+            <div className="space-y-3">
+              <div>
+                <label className="text-xs text-gray-400 mb-1 block">Your Score</label>
+                <input type="number" min="0"
+                  value={submitForm.score}
+                  onChange={e => setSubmitForm(f => ({ ...f, score: e.target.value }))}
+                  className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-red-500/50"
+                  placeholder="e.g. 13"
+                />
+              </div>
+              <div>
+                <label className="text-xs text-gray-400 mb-1 block">Screenshot URL (proof)</label>
+                <input type="url"
+                  value={submitForm.screenshot_url}
+                  onChange={e => setSubmitForm(f => ({ ...f, screenshot_url: e.target.value }))}
+                  className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-red-500/50"
+                  placeholder="https://..."
+                />
+              </div>
+              <div>
+                <label className="text-xs text-gray-400 mb-1 block">Notes (optional)</label>
+                <textarea rows={2}
+                  value={submitForm.notes}
+                  onChange={e => setSubmitForm(f => ({ ...f, notes: e.target.value }))}
+                  className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-red-500/50 resize-none"
+                  placeholder="Any notes about the match..."
+                />
+              </div>
+              <button
+                onClick={() => submitMutation.mutate({
+                  team_side: side,
+                  score: Number(submitForm.score),
+                  screenshot_url: submitForm.screenshot_url,
+                  notes: submitForm.notes,
+                })}
+                disabled={!submitForm.score || submitMutation.isPending}
+                className="w-full py-2 rounded-lg bg-red-600 text-white text-sm font-medium hover:bg-red-500 disabled:opacity-40 transition flex items-center justify-center gap-2"
+              >
+                {submitMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
+                Submit Result
+              </button>
+            </div>
+          ) : (
+            <div className="text-center py-4 text-green-400 text-sm flex items-center justify-center gap-2">
+              <CheckCircle2 className="w-5 h-5" />
+              You submitted: score {mySubmission.score}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Match chat */}
+      <div className="rounded-xl bg-white/5 border border-white/10 overflow-hidden">
+        <div className="px-4 py-3 border-b border-white/10 flex items-center justify-between">
+          <h3 className="text-sm font-semibold text-gray-300 flex items-center gap-2">
+            <MessageSquare className="w-4 h-4 text-red-400" /> Match Chat
+          </h3>
+          {isParticipant && (
+            <button onClick={onReport}
+              className="text-xs text-red-400 hover:text-red-300 flex items-center gap-1 transition">
+              <Flag className="w-3.5 h-3.5" /> Report
+            </button>
+          )}
+        </div>
+        <ChatPanel
+          messages={match.chat || []}
+          onSend={(msg) => chatMutation.mutate(msg)}
+          isSending={chatMutation.isPending}
+          placeholder="Chat with teams..."
+        />
+      </div>
+    </div>
+  )
+}
+
 export default function Arena() {
   const { id } = useParams()
   const navigate = useNavigate()
@@ -93,9 +348,9 @@ export default function Arena() {
   const { toast } = useToast()
   const [activeTab, setActiveTab] = useState('overview')
   const [activeMatchId, setActiveMatchId] = useState(null)
-  const [submitForm, setSubmitForm] = useState({ score: '', screenshot_url: '', notes: '' })
   const [reportForm, setReportForm] = useState({ reason: '', screenshot_url: '' })
   const [showReportModal, setShowReportModal] = useState(false)
+  const [reportMatchId, setReportMatchId] = useState(null)
 
   // Fetch tournament
   const { data: tournament, isLoading } = useQuery({
@@ -145,28 +400,9 @@ export default function Arena() {
     ? (myActiveMatch.team1_id === myTeam?.id || myActiveMatch.player1_id === user?.id ? 'team1' : 'team2')
     : null
 
-  // Submit match result
-  const submitMutation = useMutation({
-    mutationFn: (data) => apiCall(`/match-records/${activeMatchId}/submit`, { method: 'POST', body: data }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['match-records', id] })
-      toast({ title: 'Result submitted!', description: 'Waiting for opponent to confirm.' })
-    },
-    onError: (err) => toast({ title: 'Submit failed', description: err.message, variant: 'destructive' }),
-  })
-
-  // Send match chat
-  const chatMutation = useMutation({
-    mutationFn: ({ matchId, message }) => apiCall(`/match-records/${matchId}/chat`, {
-      method: 'POST',
-      body: { message, sender_name: user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Player' },
-    }),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['match-records', id] }),
-  })
-
   // Report abuse
   const reportMutation = useMutation({
-    mutationFn: (data) => apiCall(`/match-records/${activeMatchId}/report`, { method: 'POST', body: data }),
+    mutationFn: (data) => apiCall(`/match-records/${reportMatchId}/report`, { method: 'POST', body: data }),
     onSuccess: () => {
       setShowReportModal(false)
       toast({ title: 'Report submitted', description: 'Staff will review this match.' })
@@ -420,26 +656,33 @@ export default function Arena() {
             {matchRecords.length > 0 && (
               <div className="mt-6 space-y-3">
                 <h3 className="text-sm font-semibold text-gray-400 uppercase tracking-wider">Match Results</h3>
-                {matchRecords.map((mr) => (
-                  <div key={mr.id} className={`rounded-xl border p-4 cursor-pointer transition hover:border-red-500/30 ${
-                    myActiveMatch?.id === mr.id ? 'border-red-500/50 bg-red-500/5' : 'border-white/10 bg-white/5'
-                  }`} onClick={() => { setActiveMatchId(mr.id); setActiveTab('my-match') }}>
-                    <div className="flex items-center justify-between gap-3">
-                      <div className="flex items-center gap-2 min-w-0">
-                        <Swords className="w-4 h-4 text-red-400 shrink-0" />
-                        <span className="text-sm font-medium truncate">
-                          {mr.team1_id?.slice(0, 8) || 'Team 1'} vs {mr.team2_id?.slice(0, 8) || 'Team 2'}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-2 shrink-0">
-                        {mr.status === 'completed' && (
-                          <span className="text-sm font-bold text-white">{mr.team1_score} – {mr.team2_score}</span>
-                        )}
-                        <StatusBadge status={mr.status} />
+                {matchRecords.map((mr) => {
+                  const t1 = allTeams.find(t => t.id === mr.team1_id)
+                  const t2 = allTeams.find(t => t.id === mr.team2_id)
+                  return (
+                    <div key={mr.id} className={`rounded-xl border p-4 cursor-pointer transition hover:border-red-500/30 ${
+                      myActiveMatch?.id === mr.id ? 'border-red-500/50 bg-red-500/5' : 'border-white/10 bg-white/5'
+                    }`} onClick={() => { setActiveMatchId(mr.id); setActiveTab('my-match') }}>
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <Swords className="w-4 h-4 text-red-400 shrink-0" />
+                          <span className="text-sm font-medium truncate">
+                            {t1?.name || mr.team1_id?.slice(0, 8) || 'Team 1'} vs {t2?.name || mr.team2_id?.slice(0, 8) || 'Team 2'}
+                          </span>
+                          {mr.riot_tournament_code && (
+                            <span className="text-[10px] text-blue-400 bg-blue-500/10 border border-blue-500/20 px-1.5 py-0.5 rounded font-mono shrink-0">CODE</span>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2 shrink-0">
+                          {mr.status === 'completed' && (
+                            <span className="text-sm font-bold text-white">{mr.team1_score} – {mr.team2_score}</span>
+                          )}
+                          <StatusBadge status={mr.status} />
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  )
+                })}
               </div>
             )}
           </div>
@@ -473,118 +716,15 @@ export default function Arena() {
                   </div>
                 )
               }
-              const side = match.team1_id === myTeam?.id || match.player1_id === user?.id ? 'team1' : 'team2'
-              const mySubmission = match[`${side}_submission`]
-              const oppSubmission = match[side === 'team1' ? 'team2_submission' : 'team1_submission']
-              const isMyTurn = !mySubmission?.submitted_at
-
               return (
-                <div className="space-y-4">
-                  {/* Match header */}
-                  <div className="rounded-xl bg-white/5 border border-white/10 p-4">
-                    <div className="flex items-center justify-between mb-3">
-                      <h3 className="font-bold text-white flex items-center gap-2">
-                        <Swords className="w-4 h-4 text-red-400" /> Match {match.match_id || match.id.slice(0, 8)}
-                      </h3>
-                      <StatusBadge status={match.status} />
-                    </div>
-                    <div className="grid grid-cols-3 gap-4 text-center">
-                      <div className="rounded-lg bg-red-500/10 border border-red-500/20 p-3">
-                        <p className="text-xs text-gray-400 mb-1">{side === 'team1' ? '⚔️ You' : 'Opponent'}</p>
-                        <p className="text-2xl font-bold text-white">{match.team1_score}</p>
-                      </div>
-                      <div className="flex items-center justify-center">
-                        <span className="text-gray-500 font-bold text-lg">VS</span>
-                      </div>
-                      <div className="rounded-lg bg-gray-500/10 border border-gray-500/20 p-3">
-                        <p className="text-xs text-gray-400 mb-1">{side === 'team2' ? '⚔️ You' : 'Opponent'}</p>
-                        <p className="text-2xl font-bold text-white">{match.team2_score}</p>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Submit result (only if participant and not yet submitted) */}
-                  {isParticipant && match.status !== 'completed' && (
-                    <div className="rounded-xl bg-white/5 border border-white/10 p-4">
-                      <h3 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-3">
-                        {isMyTurn ? 'Submit Your Result' : '✅ Waiting for opponent'}
-                      </h3>
-                      {isMyTurn ? (
-                        <div className="space-y-3">
-                          <div>
-                            <label className="text-xs text-gray-400 mb-1 block">Your Score</label>
-                            <input type="number" min="0"
-                              value={submitForm.score}
-                              onChange={e => setSubmitForm(f => ({ ...f, score: e.target.value }))}
-                              className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-red-500/50"
-                              placeholder="e.g. 13"
-                            />
-                          </div>
-                          <div>
-                            <label className="text-xs text-gray-400 mb-1 block">Screenshot URL (proof)</label>
-                            <input type="url"
-                              value={submitForm.screenshot_url}
-                              onChange={e => setSubmitForm(f => ({ ...f, screenshot_url: e.target.value }))}
-                              className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-red-500/50"
-                              placeholder="https://..."
-                            />
-                          </div>
-                          <div>
-                            <label className="text-xs text-gray-400 mb-1 block">Notes (optional)</label>
-                            <textarea rows={2}
-                              value={submitForm.notes}
-                              onChange={e => setSubmitForm(f => ({ ...f, notes: e.target.value }))}
-                              className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-red-500/50 resize-none"
-                              placeholder="Any notes about the match..."
-                            />
-                          </div>
-                          <button
-                            onClick={() => {
-                              setActiveMatchId(match.id)
-                              submitMutation.mutate({
-                                team_side: side,
-                                score: Number(submitForm.score),
-                                screenshot_url: submitForm.screenshot_url,
-                                notes: submitForm.notes,
-                              })
-                            }}
-                            disabled={!submitForm.score || submitMutation.isPending}
-                            className="w-full py-2 rounded-lg bg-red-600 text-white text-sm font-medium hover:bg-red-500 disabled:opacity-40 transition flex items-center justify-center gap-2"
-                          >
-                            {submitMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
-                            Submit Result
-                          </button>
-                        </div>
-                      ) : (
-                        <div className="text-center py-4 text-green-400 text-sm flex items-center justify-center gap-2">
-                          <CheckCircle2 className="w-5 h-5" />
-                          You submitted: score {mySubmission.score}
-                        </div>
-                      )}
-                    </div>
-                  )}
-
-                  {/* Match chat */}
-                  <div className="rounded-xl bg-white/5 border border-white/10 overflow-hidden">
-                    <div className="px-4 py-3 border-b border-white/10 flex items-center justify-between">
-                      <h3 className="text-sm font-semibold text-gray-300 flex items-center gap-2">
-                        <MessageSquare className="w-4 h-4 text-red-400" /> Match Chat
-                      </h3>
-                      {isParticipant && (
-                        <button onClick={() => setShowReportModal(true)}
-                          className="text-xs text-red-400 hover:text-red-300 flex items-center gap-1 transition">
-                          <Flag className="w-3.5 h-3.5" /> Report
-                        </button>
-                      )}
-                    </div>
-                    <ChatPanel
-                      messages={match.chat || []}
-                      onSend={(msg) => chatMutation.mutate({ matchId: match.id, message: msg })}
-                      isSending={chatMutation.isPending}
-                      placeholder="Chat with teams..."
-                    />
-                  </div>
-                </div>
+                <MatchDetail
+                  match={match}
+                  myTeam={myTeam}
+                  allTeams={allTeams}
+                  user={user}
+                  isParticipant={isParticipant}
+                  onReport={() => { setReportMatchId(match.id); setShowReportModal(true) }}
+                />
               )
             })()}
           </div>
@@ -805,13 +945,6 @@ function SeedingRoom({ tournament, myTeam, is1v1, onViewBrackets }) {
 }
 
 // ── Arena Hub: Landing page showing the gamer's active tournaments ────────────
-const RANK_TIER_COLOR = {
-  IRON: 'text-gray-400', BRONZE: 'text-orange-600', SILVER: 'text-gray-300',
-  GOLD: 'text-yellow-400', PLATINUM: 'text-cyan-300', EMERALD: 'text-emerald-400',
-  DIAMOND: 'text-blue-400', MASTER: 'text-purple-400',
-  GRANDMASTER: 'text-red-400', CHALLENGER: 'text-yellow-300',
-}
-
 function ArenaHub({ userId, navigate }) {
   const { data: myTournaments = [], isLoading } = useQuery({
     queryKey: ['my-arena', userId],
