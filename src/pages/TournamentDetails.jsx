@@ -345,17 +345,24 @@ export default function TournamentDetails() {
               )}
             </div>
             <h1 className="text-3xl md:text-4xl font-black text-white mb-2">{tournament.name}</h1>
-            {tournament.organizer_brand?.name && (
-              <Link
-                to={`/organizer/${tournament.organizer_id}`}
-                className="text-gray-400 hover:text-white transition-colors inline-flex items-center gap-2 mt-1"
-              >
-                {tournament.organizer_brand?.logo && (
-                  <img src={tournament.organizer_brand.logo} alt="" className="w-5 h-5 rounded object-cover" />
-                )}
-                by {tournament.organizer_brand.name}
-              </Link>
-            )}
+            {/* Organizer + Co-organizer logos */}
+            <div className="flex items-center gap-2 mt-1 flex-wrap">
+              {tournament.organizer_brand && (
+                <Link to={`/organizer/${tournament.organizer_id}`} className="flex items-center gap-1.5 text-gray-400 hover:text-white transition-colors">
+                  {(tournament.organizer_brand.logo || tournament.organizer_brand.brand_logo) && (
+                    <img src={tournament.organizer_brand.logo || tournament.organizer_brand.brand_logo} alt="" className="w-6 h-6 rounded object-cover border border-white/10" />
+                  )}
+                  <span className="text-sm">{tournament.organizer_brand.name || tournament.organizer_brand.brand_name}</span>
+                </Link>
+              )}
+              {(tournament.co_organizers || []).filter(co => co.brand_name || co.brand_logo).map((co, i) => (
+                <span key={i} className="flex items-center gap-1.5 text-gray-500 text-sm">
+                  <span className="text-gray-600">·</span>
+                  {co.brand_logo && <img src={co.brand_logo} alt="" className="w-6 h-6 rounded object-cover border border-white/10" />}
+                  {co.brand_name}
+                </span>
+              ))}
+            </div>
           </div>
 
           {/* Header action buttons */}
