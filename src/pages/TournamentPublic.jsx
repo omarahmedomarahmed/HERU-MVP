@@ -125,10 +125,9 @@ export default function TournamentPublic() {
         body: { game_id: gameId, rank: playerRank },
       }),
     onSuccess: () => {
-      toast({ title: 'You\'re in!', description: 'Redirecting to your Arena...' });
       queryClient.invalidateQueries(['tournament-public', id]);
       setShow1v1Modal(false);
-      setTimeout(() => navigate(`/gamer/arena/${id}`), 800);
+      setTimeout(() => navigate(`/gamer/arena/${id}`), 500);
     },
     onError: (err) => {
       toast({ title: 'Failed to join', description: err.message, variant: 'destructive' });
