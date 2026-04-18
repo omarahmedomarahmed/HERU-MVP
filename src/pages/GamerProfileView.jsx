@@ -6,7 +6,7 @@ import {
   Trophy, Swords, Shield, Calendar, ExternalLink,
   Pencil, LogIn, ChevronDown, ChevronUp, Flame, Zap,
 } from 'lucide-react'
-import { GamerProfile, Team, Connect } from '@/api/heruClient'
+import { GamerProfile, Team, Connect, Badge } from '@/api/heruClient'
 import { useAuth } from '@/lib/AuthContext'
 
 // ---------------------------------------------------------------------------
@@ -317,6 +317,13 @@ export default function GamerProfileView() {
     enabled: !!profileData?.user_id,
   })
 
+  // Fetch gamer badges
+  const { data: gamerBadges = [] } = useQuery({
+    queryKey: ['gamer-badges', profileData?.user_id],
+    queryFn: () => Badge.userBadges(profileData.user_id),
+    enabled: !!profileData?.user_id,
+  })
+
   // Check if viewing own profile
   const isOwnProfile = authUser && profileData && (
     authUser.id === profileData.user_id || authUser.id === profileData.id
@@ -420,6 +427,23 @@ export default function GamerProfileView() {
                 </h1>
                 {profileData.is_talent && <TalentBadge type={profileData.talent_type} />}
               </div>
+
+              {/* Badges */}
+              {gamerBadges.length > 0 && (
+                <div className="flex flex-wrap gap-1.5 mb-3">
+                  {gamerBadges.map(gb => (
+                    <span
+                      key={gb.id}
+                      title={gb.badge?.description || gb.badge?.name}
+                      className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full border text-[11px] font-bold"
+                      style={{ color: gb.badge?.color || '#ff1a1a', borderColor: `${gb.badge?.color || '#ff1a1a'}50`, backgroundColor: `${gb.badge?.color || '#ff1a1a'}15` }}
+                    >
+                      {gb.badge?.icon && <span>{gb.badge.icon}</span>}
+                      {gb.badge?.name}
+                    </span>
+                  ))}
+                </div>
+              )}
 
               {profileData.bio && (
                 <p className="text-zinc-400 text-sm leading-relaxed max-w-lg mb-4">{profileData.bio}</p>

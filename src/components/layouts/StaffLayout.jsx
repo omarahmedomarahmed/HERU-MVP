@@ -7,6 +7,7 @@ import {
   CreditCard, ShoppingBag, Radar, Settings, Menu, X, LogOut,
   TrendingUp, Shield, Bell, Gamepad2, UsersRound, Briefcase,
   FileText, ScrollText, KeyRound, Layers, Receipt, Hammer, ChevronDown,
+  Award, MapPin,
 } from 'lucide-react'
 
 const NAV = [
@@ -44,6 +45,8 @@ const NAV = [
     items: [
       { to: '/staff/approvals', icon: CheckCircle,   text: 'Approvals' },
       { to: '/staff/messages',  icon: MessageSquare, text: 'Messages'  },
+      { to: '/staff/badges',    icon: Award,         text: 'Badges'    },
+      { to: '/staff/venues',    icon: MapPin,        text: 'Venues'    },
     ],
   },
   {

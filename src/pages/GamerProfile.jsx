@@ -12,7 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { motion } from 'framer-motion';
-import { GamerProfile as GamerProfileAPI, Order, Team, Achievement, ApprovalRequest, Connect, apiCall } from '@/api/heruClient'
+import { GamerProfile as GamerProfileAPI, Order, Team, Achievement, ApprovalRequest, Connect, Badge, apiCall } from '@/api/heruClient'
 import { useAuth } from '@/lib/AuthContext'
 import { uploadFile } from '@/lib/uploadFile'
 import PhoneInput from '@/components/ui/PhoneInput'
@@ -135,6 +135,13 @@ export default function GamerProfile() {
   const { data: allAchievements = [] } = useQuery({
     queryKey: ['achievements-all'],
     queryFn: () => Achievement.list(),
+  });
+
+  // Fetch HERU badges awarded to this gamer
+  const { data: heruBadges = [] } = useQuery({
+    queryKey: ['heru-badges', user?.id],
+    queryFn: () => Badge.userBadges(user.id),
+    enabled: !!user?.id,
   });
 
   // Riot account link modal state (shared between Games tab and Connect tab)
@@ -736,6 +743,27 @@ export default function GamerProfile() {
               </div>
             )}
           </FloatingPanel>
+
+          {/* HERU Badges awarded by staff / organizers */}
+          {heruBadges.length > 0 && (
+            <FloatingPanel className="p-6 mt-4">
+              <h2 className="text-xl font-bold text-white flex items-center gap-2 mb-4">
+                <Star className="w-5 h-5 text-amber-400" />
+                HERU Badges
+              </h2>
+              <div className="flex flex-wrap gap-3">
+                {heruBadges.map(gb => (
+                  <div key={gb.id} className="flex items-center gap-2 px-3 py-2 rounded-xl border" style={{ borderColor: `${gb.badge?.color || '#ff1a1a'}40`, backgroundColor: `${gb.badge?.color || '#ff1a1a'}10` }}>
+                    <span className="text-xl">{gb.badge?.icon || '🏅'}</span>
+                    <div>
+                      <p className="text-white text-sm font-bold">{gb.badge?.name}</p>
+                      {gb.badge?.description && <p className="text-zinc-500 text-xs">{gb.badge.description}</p>}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </FloatingPanel>
+          )}
         </TabsContent>
 
         {/* Tournament Invites Tab */}

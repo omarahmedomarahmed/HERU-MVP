@@ -5,7 +5,7 @@ import HeruLogo from '@/components/shared/HeruLogo'
 import {
   LayoutDashboard, Trophy, Plus, Radar, CreditCard, Share2,
   MessageSquare, User, Menu, X, LogOut, ChevronLeft, ChevronRight,
-  Zap, Bell, Search, Settings,
+  Zap, Bell, Search, Settings, Building2,
 } from 'lucide-react'
 
 const NAV_SECTIONS = [
@@ -34,6 +34,12 @@ const NAV_SECTIONS = [
     label: 'Communication',
     items: [
       { to: '/organizer/messages', icon: MessageSquare, text: 'Messages' },
+    ],
+  },
+  {
+    label: 'Marketplace',
+    items: [
+      { to: '/organizer/venues', icon: Building2, text: 'Submit Venue' },
     ],
   },
   {

@@ -65,6 +65,7 @@ import CoOrganizedTournaments from './pages/organizer/CoOrganizedTournaments'
 import PaymentMethod from './pages/organizer/PaymentMethod'
 import TournamentSummaryReport from './pages/organizer/TournamentSummaryReport'
 import TournamentReportBuilder from './pages/organizer/TournamentReportBuilder'
+import VenueSubmissions from './pages/organizer/VenueSubmissions'
 
 // Staff pages
 import StaffLayout from '@/components/layouts/StaffLayout'
@@ -84,6 +85,8 @@ import StaffTournamentOrders from './pages/StaffTournamentOrders'
 import StaffOrganizers from './pages/StaffOrganizers'
 import StaffRevenue from './pages/StaffRevenue'
 import StaffSettings from './pages/StaffSettings'
+import StaffBadges from './pages/staff/StaffBadges'
+import StaffVenues from './pages/staff/StaffVenues'
 import StaffAuditTrail from './pages/StaffAuditTrail'
 import StaffGamers from './pages/StaffGamers'
 import StaffTeams from './pages/StaffTeams'
@@ -164,6 +167,7 @@ function App() {
             <Route path="/organizer/teams" element={<RequireOrganizer><OrganizerLayout><OrganizerTeams /></OrganizerLayout></RequireOrganizer>} />
             <Route path="/organizer/messages" element={<RequireOrganizer><OrganizerLayout><OrganizerMessages /></OrganizerLayout></RequireOrganizer>} />
             <Route path="/organizer/profile" element={<RequireOrganizer><OrganizerLayout><OrganizerSettings /></OrganizerLayout></RequireOrganizer>} />
+            <Route path="/organizer/venues" element={<RequireOrganizer><VenueSubmissions /></RequireOrganizer>} />
 
             {/* ============ STAFF ZONE ============ */}
             <Route path="/staff/dashboard" element={<RequireStaff><StaffLayout><StaffDashboard /></StaffLayout></RequireStaff>} />
@@ -187,6 +191,8 @@ function App() {
             <Route path="/staff/organizers" element={<RequireStaff><StaffLayout><StaffOrganizers /></StaffLayout></RequireStaff>} />
             <Route path="/staff/revenue" element={<RequireStaff><StaffLayout><StaffRevenue /></StaffLayout></RequireStaff>} />
             <Route path="/staff/settings" element={<RequireStaff><StaffLayout><StaffSettings /></StaffLayout></RequireStaff>} />
+            <Route path="/staff/badges" element={<RequireStaff><StaffLayout><StaffBadges /></StaffLayout></RequireStaff>} />
+            <Route path="/staff/venues" element={<RequireStaff><StaffLayout><StaffVenues /></StaffLayout></RequireStaff>} />
             <Route path="/staff/audit" element={<RequireStaff><StaffLayout><StaffAuditTrail /></StaffLayout></RequireStaff>} />
             <Route path="/staff/gamers" element={<RequireStaff><StaffLayout><StaffGamers /></StaffLayout></RequireStaff>} />
             <Route path="/staff/teams" element={<RequireStaff><StaffLayout><StaffTeams /></StaffLayout></RequireStaff>} />
