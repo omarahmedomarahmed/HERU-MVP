@@ -603,9 +603,63 @@ export default function TournamentDetails() {
           <FloatingPanel className="p-6">
             <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
               <Award className="w-5 h-5 text-yellow-500" /> Tournament Brackets
+              {tournament.status === 'live' && (
+                <span className="ml-2 flex items-center gap-1 text-xs font-bold text-red-400 bg-red-500/20 border border-red-500/30 px-2 py-0.5 rounded-full">
+                  <span className="w-1.5 h-1.5 rounded-full bg-red-400 animate-pulse" /> LIVE
+                </span>
+              )}
             </h2>
             {tournament.brackets?.length > 0 ? (
-              <BracketVisual brackets={tournament.brackets} teams={teams} allTeams={teams} onInviteClick={() => {}} onSelectWinner={() => {}} />
+              <>
+                <BracketVisual
+                  brackets={tournament.brackets}
+                  teams={teams}
+                  allTeams={teams}
+                  onInviteClick={() => {}}
+                  onSelectWinner={() => {}}
+                  readOnly
+                />
+                {/* Match stream links */}
+                {tournament.brackets.some(round =>
+                  (Array.isArray(round?.matches) ? round.matches : (Array.isArray(round) ? round : [])).some(m => m.stream_link)
+                ) && (
+                  <div className="mt-6 space-y-3">
+                    <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider flex items-center gap-2">
+                      <Radio className="w-4 h-4 text-red-400" /> Live Match Streams
+                    </h3>
+                    {tournament.brackets.map((round, rIdx) => {
+                      const matches = Array.isArray(round?.matches) ? round.matches : (Array.isArray(round) ? round : [])
+                      return matches.filter(m => m.stream_link).map((m, mIdx) => {
+                        const t1 = teams.find(t => t.id === m.team1)
+                        const t2 = teams.find(t => t.id === m.team2)
+                        return (
+                          <a
+                            key={`${rIdx}-${mIdx}`}
+                            href={m.stream_link}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center justify-between p-3 bg-red-500/10 border border-red-500/20 rounded-xl hover:bg-red-500/20 transition group"
+                          >
+                            <div className="flex items-center gap-3">
+                              <div className="w-2 h-2 rounded-full bg-red-400 animate-pulse" />
+                              <div>
+                                <p className="text-white text-sm font-bold">
+                                  {t1?.name || 'TBD'} vs {t2?.name || 'TBD'}
+                                </p>
+                                <p className="text-gray-500 text-xs">Round {rIdx + 1} · Match {mIdx + 1}</p>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2 text-red-400 group-hover:text-red-300">
+                              <Play className="w-4 h-4" />
+                              <span className="text-xs font-bold">Watch Live</span>
+                            </div>
+                          </a>
+                        )
+                      })
+                    })}
+                  </div>
+                )}
+              </>
             ) : (
               <div className="text-center py-12">
                 <Award className="w-16 h-16 text-zinc-700 mx-auto mb-4" />

@@ -163,24 +163,55 @@ router.delete('/:id/members/:memberId', requireAuth, async (req, res) => {
   }
 });
 
-// GET /:id/members - list team members with roles
+// GET /:id/members - list team members with roles + gamer profile data
 router.get('/:id/members', async (req, res) => {
   try {
-    const { data, error } = await supabaseAdmin
+    // Always use teams.members array as source of truth, then enrich with profiles
+    const { data: team, error: teamErr } = await supabaseAdmin
+      .from('teams')
+      .select('members, leader_id')
+      .eq('id', req.params.id)
+      .single();
+    if (teamErr || !team) return res.json([]);
+
+    const memberIds = team.members || [];
+    if (memberIds.length === 0) return res.json([]);
+
+    // Fetch gamer profiles for all member IDs
+    const { data: profiles } = await supabaseAdmin
+      .from('gamer_profiles')
+      .select('user_id, username, avatar, bio, games, is_talent, talent_type')
+      .in('user_id', memberIds);
+
+    // Fetch roles from team_members table (best effort)
+    const { data: roleRows } = await supabaseAdmin
       .from('team_members')
-      .select('*')
+      .select('user_id, role, custom_role')
       .eq('team_id', req.params.id)
-      .order('joined_at');
-    if (error) {
-      // team_members table may not exist — fall back to team.members array
-      if (error.code === '42P01' || error.message?.includes('relation') || error.message?.includes('does not exist')) {
-        const { data: team } = await supabaseAdmin.from('teams').select('members, leader_id').eq('id', req.params.id).single();
-        if (!team) return res.json([]);
-        return res.json((team.members || []).map(uid => ({ team_id: req.params.id, user_id: uid, role: uid === team.leader_id ? 'leader' : 'player' })));
-      }
-      throw error;
-    }
-    res.json(data || []);
+      .in('user_id', memberIds)
+      .catch(() => ({ data: [] }));
+
+    const roleMap = {};
+    for (const r of (roleRows || [])) roleMap[r.user_id] = r;
+
+    const members = memberIds.map(uid => {
+      const profile = profiles?.find(p => p.user_id === uid) || {};
+      const roleRow = roleMap[uid];
+      return {
+        user_id: uid,
+        username: profile.username || null,
+        avatar: profile.avatar || null,
+        bio: profile.bio || null,
+        games: profile.games || [],
+        is_talent: profile.is_talent || false,
+        talent_type: profile.talent_type || null,
+        role: roleRow?.role || (uid === team.leader_id ? 'leader' : 'player'),
+        custom_role: roleRow?.custom_role || null,
+        is_leader: uid === team.leader_id,
+      };
+    });
+
+    res.json(members);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
