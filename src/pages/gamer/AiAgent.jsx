@@ -1,10 +1,13 @@
 import { useState, useEffect, useRef } from 'react';
 import { Bot, Send, Trash2, Loader2, User, ChevronDown } from 'lucide-react';
+import { AiAgent } from '@/api/heruClient';
 
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+const API_BASE = import.meta.env.VITE_API_URL || '/api';
 
 async function apiFetch(path, options = {}) {
-  const token = localStorage.getItem('heru_token');
+  const { supabase } = await import('@/lib/supabase');
+  const { data: { session } } = await supabase.auth.getSession();
+  const token = session?.access_token;
   const res = await fetch(`${API_BASE}${path}`, {
     ...options,
     headers: {
