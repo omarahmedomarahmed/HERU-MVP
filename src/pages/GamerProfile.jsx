@@ -90,28 +90,26 @@ function MatchHistoryRow({ match, gameKey }) {
   );
 }
 
+const TIER_HEX = { IRON:'#9ca3af',BRONZE:'#b45309',SILVER:'#94a3b8',GOLD:'#eab308',PLATINUM:'#14b8a6',EMERALD:'#10b981',DIAMOND:'#60a5fa',MASTER:'#a855f7',GRANDMASTER:'#ef4444',CHALLENGER:'#06b6d4' };
+
 function RiotAccountsPanel({ accounts, onSync, onTogglePublic }) {
-  const [expanded, setExpanded] = useState(null);
+  const [expanded, setExpanded] = useState(accounts[0]?.id || null);
   const [syncing, setSyncing] = useState(null);
   const navigate = useNavigate();
 
   if (accounts.length === 0) {
     return (
       <div className="mt-6 pt-6 border-t border-zinc-800">
-        <div className="flex items-center justify-between mb-3">
-          <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider flex items-center gap-2">
-            <Gamepad2 className="w-4 h-4 text-red-500" /> Gaming Accounts
-          </h3>
-        </div>
-        <div className="flex flex-col items-center gap-3 py-6 text-center">
-          <div className="w-12 h-12 rounded-full bg-red-500/10 border border-red-500/20 flex items-center justify-center">
-            <Link2 className="w-5 h-5 text-red-400" />
+        <div className="relative overflow-hidden rounded-2xl border border-dashed border-zinc-700 bg-gradient-to-br from-zinc-900 via-zinc-900 to-red-950/20 p-10 flex flex-col items-center text-center gap-4">
+          <div className="w-20 h-20 rounded-full bg-gradient-to-br from-red-600/20 to-zinc-800 border border-red-500/30 flex items-center justify-center">
+            <Gamepad2 className="w-9 h-9 text-red-400" />
           </div>
-          <p className="text-gray-400 text-sm">No gaming accounts linked yet</p>
-          <button
-            onClick={() => navigate('/gamer/profile/connected-accounts')}
-            className="px-4 py-2 bg-red-600 hover:bg-red-500 text-white text-sm font-bold rounded-lg transition-colors flex items-center gap-2"
-          >
+          <div>
+            <h3 className="text-xl font-black text-white mb-1">Link Your Gaming Account</h3>
+            <p className="text-gray-400 text-sm max-w-xs">Connect your Riot account to display your rank, champions, and full match history here.</p>
+          </div>
+          <button onClick={() => navigate('/gamer/profile/connected-accounts')}
+            className="px-6 py-3 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-500 hover:to-red-600 text-white font-bold rounded-xl transition-all flex items-center gap-2 shadow-lg shadow-red-500/20">
             <Link2 className="w-4 h-4" /> Link Riot Account
           </button>
         </div>
@@ -119,146 +117,325 @@ function RiotAccountsPanel({ accounts, onSync, onTogglePublic }) {
     );
   }
 
+  const acc = accounts.find(a => a.id === expanded) || accounts[0];
+
   return (
     <div className="mt-6 pt-6 border-t border-zinc-800">
-      <div className="flex items-center justify-between mb-3">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-4">
         <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider flex items-center gap-2">
-          <Gamepad2 className="w-4 h-4 text-red-500" /> Gaming Accounts ({accounts.length})
+          <Gamepad2 className="w-4 h-4 text-red-500" /> Gaming Accounts
         </h3>
-        <button
-          onClick={() => navigate('/gamer/profile/connected-accounts')}
-          className="text-xs text-red-400 hover:text-red-300 flex items-center gap-1 transition-colors"
-        >
-          <Link2 className="w-3 h-3" /> Link Another
+        <button onClick={() => navigate('/gamer/profile/connected-accounts')}
+          className="text-xs text-red-400 hover:text-red-300 flex items-center gap-1.5 transition-colors px-2.5 py-1.5 rounded-lg hover:bg-red-500/10 border border-transparent hover:border-red-500/20">
+          <Link2 className="w-3 h-3" /> + Add Account
         </button>
       </div>
 
-      <div className="space-y-2">
-        {accounts.map((acc) => {
-          const tier = (acc.rank_tier || '').toUpperCase();
-          const tierColor = RANK_TIER_COLORS[tier] || 'text-gray-400';
-          const isLoL = acc.game_key === 'lol';
-          const isOpen = expanded === acc.id;
-          const totalGames = (acc.wins || 0) + (acc.losses || 0);
-          const wr = totalGames > 0 ? Math.round((acc.wins / totalGames) * 100) : null;
-          const matchHistory = Array.isArray(acc.match_history_cache) ? acc.match_history_cache.slice(0, 5) : [];
-          const masteries = Array.isArray(acc.champion_masteries) ? acc.champion_masteries.slice(0, 3) : [];
-
+      {/* Account selector tabs */}
+      <div className="flex gap-2 flex-wrap mb-4">
+        {accounts.map(a => {
+          const tier = (a.rank_tier || '').toUpperCase();
+          const tierHex = TIER_HEX[tier] || '#6b7280';
+          const isLoL = a.game_key === 'lol';
+          const isActive = expanded === a.id;
           return (
-            <div key={acc.id} className="rounded-xl border border-zinc-800 bg-zinc-900/50 overflow-hidden">
-              <button
-                className="w-full flex items-center gap-3 p-3 hover:bg-zinc-800/50 transition-colors text-left"
-                onClick={() => setExpanded(isOpen ? null : acc.id)}
-              >
-                {isLoL && acc.profile_icon_id ? (
-                  <img
-                    src={`https://ddragon.leagueoflegends.com/cdn/16.8.1/img/profileicon/${acc.profile_icon_id}.png`}
-                    alt=""
-                    className="w-10 h-10 rounded-full border border-zinc-700"
-                    onError={e => e.target.style.display = 'none'}
-                  />
-                ) : (
-                  <div className={`w-10 h-10 rounded-full flex items-center justify-center font-black text-sm border ${isLoL ? 'bg-amber-500/10 border-amber-500/30 text-amber-400' : 'bg-red-500/10 border-red-500/30 text-red-400'}`}>
-                    {isLoL ? 'LoL' : 'VAL'}
-                  </div>
-                )}
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className="text-white font-bold text-sm font-mono">{acc.game_name}<span className="text-gray-500">#{acc.tag_line}</span></span>
-                    {acc.is_primary && <span className="text-xs bg-yellow-500/15 text-yellow-400 border border-yellow-500/20 px-1.5 py-0.5 rounded-full">Primary</span>}
-                    {!acc.is_public && <span className="text-xs bg-zinc-700 text-gray-400 px-1.5 py-0.5 rounded-full">Private</span>}
-                  </div>
-                  <div className="flex items-center gap-2 mt-0.5 text-xs text-gray-500">
-                    <span>{isLoL ? 'League of Legends' : 'Valorant'}</span>
-                    <span>•</span>
-                    <span>{acc.region?.toUpperCase()}</span>
-                    {tier && <><span>•</span><span className={`font-bold ${tierColor}`}>{tier} {acc.rank_division || ''}</span></>}
-                    {wr !== null && <><span>•</span><span className={wr >= 50 ? 'text-emerald-400' : 'text-red-400'}>{wr}% WR</span></>}
-                  </div>
-                </div>
-                <div className="flex items-center gap-2 flex-shrink-0">
-                  <button
-                    onClick={async (e) => { e.stopPropagation(); setSyncing(acc.id); await onSync(acc.id); setSyncing(null); }}
-                    disabled={syncing === acc.id}
-                    className="text-xs text-blue-400 hover:text-blue-300 p-1.5 rounded hover:bg-blue-500/10 transition"
-                    title="Sync stats"
-                  >
-                    <RefreshCw className={`w-3.5 h-3.5 ${syncing === acc.id ? 'animate-spin' : ''}`} />
-                  </button>
-                  <button
-                    onClick={(e) => { e.stopPropagation(); onTogglePublic(acc.id, !acc.is_public); }}
-                    className="text-xs text-gray-400 hover:text-gray-300 p-1.5 rounded hover:bg-zinc-700 transition"
-                    title={acc.is_public ? 'Make private' : 'Make public'}
-                  >
-                    {acc.is_public ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
-                  </button>
-                  {isOpen ? <ChevronUp className="w-4 h-4 text-gray-500" /> : <ChevronDown className="w-4 h-4 text-gray-500" />}
-                </div>
-              </button>
-
-              {isOpen && (
-                <div className="px-3 pb-3 border-t border-zinc-800 space-y-3 pt-3">
-                  {/* Stats row */}
-                  {isLoL && (
-                    <div className="grid grid-cols-4 gap-2">
-                      {[
-                        { label: 'Level', value: acc.summoner_level || '—' },
-                        { label: 'Wins', value: acc.wins ?? '—', color: 'text-emerald-400' },
-                        { label: 'Losses', value: acc.losses ?? '—', color: 'text-red-400' },
-                        { label: 'LP', value: acc.rank_lp != null ? `${acc.rank_lp} LP` : '—' },
-                      ].map(s => (
-                        <div key={s.label} className="text-center p-2 bg-zinc-800/60 rounded-lg">
-                          <p className={`text-base font-black ${s.color || 'text-white'}`}>{s.value}</p>
-                          <p className="text-xs text-gray-500 uppercase">{s.label}</p>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-
-                  {/* Top champion masteries */}
-                  {masteries.length > 0 && (
-                    <div>
-                      <p className="text-xs text-gray-500 uppercase font-bold mb-2 flex items-center gap-1"><Star className="w-3 h-3 text-yellow-500" /> Top Champions</p>
-                      <div className="flex gap-2">
-                        {masteries.map((m, i) => (
-                          <div key={i} className="flex flex-col items-center gap-1">
-                            <img
-                              src={`https://ddragon.leagueoflegends.com/cdn/16.8.1/img/champion/${m.champion_name || m.name}.png`}
-                              alt={m.champion_name || m.name}
-                              className="w-10 h-10 rounded-lg border border-zinc-700"
-                              onError={e => { e.target.src = ''; e.target.className = 'hidden'; }}
-                            />
-                            <span className="text-xs text-gray-400 truncate w-12 text-center">{m.champion_name || m.name}</span>
-                            <span className="text-xs text-yellow-500 font-bold">{m.champion_level ? `M${m.champion_level}` : ''}</span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Match history */}
-                  {matchHistory.length > 0 ? (
-                    <div>
-                      <p className="text-xs text-gray-500 uppercase font-bold mb-2 flex items-center gap-1"><Swords className="w-3 h-3 text-red-400" /> Recent Matches</p>
-                      <div className="space-y-1">
-                        {matchHistory.map((m, i) => (
-                          <MatchHistoryRow key={i} match={m} gameKey={acc.game_key} />
-                        ))}
-                      </div>
-                    </div>
-                  ) : (
-                    <p className="text-xs text-gray-600 text-center py-2">No match history cached yet — sync to load</p>
-                  )}
-
-                  {acc.last_synced_at && (
-                    <p className="text-xs text-gray-600 text-right">Last synced {new Date(acc.last_synced_at).toLocaleDateString()}</p>
-                  )}
-                </div>
+            <button key={a.id} onClick={() => setExpanded(a.id)}
+              className={`flex items-center gap-2 px-3 py-2 rounded-xl border text-sm transition-all ${isActive ? 'border-red-500/50 bg-red-500/10' : 'border-zinc-700 bg-zinc-800/50 hover:border-zinc-600'}`}>
+              {isLoL && a.profile_icon_id ? (
+                <img src={`https://ddragon.leagueoflegends.com/cdn/16.8.1/img/profileicon/${a.profile_icon_id}.png`} alt="" className="w-7 h-7 rounded-full" onError={e => e.target.style.display='none'} />
+              ) : (
+                <div className="w-7 h-7 rounded-full bg-zinc-700 flex items-center justify-center text-xs font-black text-gray-300">{isLoL ? 'L' : 'V'}</div>
               )}
-            </div>
+              <div className="text-left">
+                <p className="text-white font-mono text-xs font-bold leading-none">{a.game_name}#{a.tag_line}</p>
+                {tier && <p className="text-xs font-bold leading-none mt-0.5" style={{ color: tierHex }}>{tier}</p>}
+              </div>
+              {!a.is_public && <EyeOff className="w-3 h-3 text-gray-600" />}
+            </button>
           );
         })}
       </div>
+
+      {/* Active account card */}
+      {acc && (
+        <div className="rounded-2xl border border-zinc-700/50 overflow-hidden bg-gradient-to-br from-zinc-900 via-zinc-900 to-zinc-800/50">
+          {/* Card hero */}
+          <div className="relative p-5 pb-4" style={{ background: `linear-gradient(135deg, ${TIER_HEX[(acc.rank_tier||'').toUpperCase()] || '#1f1f1f'}18 0%, transparent 60%)` }}>
+            <div className="flex items-start gap-4">
+              {acc.game_key === 'lol' && acc.profile_icon_id ? (
+                <div className="relative">
+                  <img src={`https://ddragon.leagueoflegends.com/cdn/16.8.1/img/profileicon/${acc.profile_icon_id}.png`} alt=""
+                    className="w-20 h-20 rounded-2xl border-2 border-zinc-600 shadow-xl" onError={e => e.target.style.display='none'} />
+                  {acc.summoner_level && <span className="absolute -bottom-2 left-1/2 -translate-x-1/2 text-xs bg-zinc-800 border border-zinc-600 text-gray-300 font-bold px-2 py-0.5 rounded-full whitespace-nowrap">Lv {acc.summoner_level}</span>}
+                </div>
+              ) : (
+                <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-red-900/40 to-zinc-800 border border-zinc-600 flex items-center justify-center">
+                  <span className="text-2xl font-black text-red-400">{acc.game_key === 'lol' ? 'LoL' : 'VAL'}</span>
+                </div>
+              )}
+              <div className="flex-1 min-w-0">
+                <div className="flex items-start justify-between gap-2">
+                  <div>
+                    <h4 className="text-xl font-black text-white font-mono">{acc.game_name}<span className="text-gray-500 text-base">#{acc.tag_line}</span></h4>
+                    <p className="text-gray-500 text-xs mt-0.5">{acc.game_key === 'lol' ? 'League of Legends' : 'Valorant'} · {acc.region?.toUpperCase()}</p>
+                    {acc.rank_tier && (
+                      <p className="font-black text-lg mt-1" style={{ color: TIER_HEX[acc.rank_tier.toUpperCase()] || '#fff' }}>
+                        {acc.rank_tier} {acc.rank_division || ''} {acc.rank_lp != null ? <span className="text-gray-400 font-normal text-sm">· {acc.rank_lp} LP</span> : ''}
+                      </p>
+                    )}
+                  </div>
+                  <div className="flex gap-1.5">
+                    <button onClick={() => { setSyncing(acc.id); onSync(acc.id).finally(() => setSyncing(null)); }} disabled={syncing === acc.id}
+                      className="p-2 rounded-lg bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-blue-400 hover:text-blue-300 transition" title="Sync">
+                      <RefreshCw className={`w-3.5 h-3.5 ${syncing === acc.id ? 'animate-spin' : ''}`} />
+                    </button>
+                    <button onClick={() => onTogglePublic(acc.id, !acc.is_public)}
+                      className="p-2 rounded-lg bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-gray-400 hover:text-gray-300 transition" title={acc.is_public ? 'Make private' : 'Make public'}>
+                      {acc.is_public ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
+                    </button>
+                  </div>
+                </div>
+                {/* W/L row */}
+                {(acc.wins || acc.losses) ? (
+                  <div className="flex items-center gap-3 mt-2 text-sm">
+                    <span className="text-emerald-400 font-bold">{acc.wins || 0}W</span>
+                    <span className="text-red-400 font-bold">{acc.losses || 0}L</span>
+                    {(acc.wins||0)+(acc.losses||0) > 0 && (
+                      <span className={`font-bold ${Math.round((acc.wins||0)/((acc.wins||0)+(acc.losses||0))*100)>=50?'text-emerald-400':'text-red-400'}`}>
+                        {Math.round((acc.wins||0)/((acc.wins||0)+(acc.losses||0))*100)}% WR
+                      </span>
+                    )}
+                    {acc.hot_streak && <span className="text-orange-400 text-xs font-bold flex items-center gap-0.5">🔥 Hot Streak</span>}
+                  </div>
+                ) : null}
+              </div>
+            </div>
+          </div>
+
+          {/* Champion masteries */}
+          {Array.isArray(acc.champion_masteries) && acc.champion_masteries.length > 0 && (
+            <div className="px-5 pb-4 border-t border-zinc-800/50 pt-4">
+              <p className="text-xs text-gray-500 uppercase font-bold mb-3 flex items-center gap-1.5"><Star className="w-3.5 h-3.5 text-yellow-500" /> Top Champions</p>
+              <div className="flex gap-3 flex-wrap">
+                {acc.champion_masteries.slice(0, 7).map((m, i) => (
+                  <div key={i} className="flex flex-col items-center gap-1">
+                    <div className="relative">
+                      <img src={`https://ddragon.leagueoflegends.com/cdn/16.8.1/img/champion/${m.champion_name||m.name}.png`}
+                        alt={m.champion_name||m.name} className="w-12 h-12 rounded-xl border border-zinc-700 shadow-md"
+                        onError={e => e.target.style.display='none'} />
+                      {m.champion_level && <span className="absolute -bottom-1 -right-1 text-[10px] bg-yellow-500 text-black font-black px-1 rounded-full">M{m.champion_level}</span>}
+                    </div>
+                    <span className="text-xs text-gray-400 text-center max-w-[48px] truncate">{m.champion_name||m.name}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Match history */}
+          <div className="px-5 pb-5 border-t border-zinc-800/50 pt-4">
+            <p className="text-xs text-gray-500 uppercase font-bold mb-3 flex items-center gap-1.5"><Swords className="w-3.5 h-3.5 text-red-400" /> Recent Matches</p>
+            {Array.isArray(acc.match_history_cache) && acc.match_history_cache.length > 0 ? (
+              <div className="space-y-1.5">
+                {acc.match_history_cache.slice(0, 8).map((m, i) => {
+                  const win = m.win || m.result === 'Win';
+                  const k=m.kills??m.k??'?'; const d=m.deaths??m.d??'?'; const a2=m.assists??m.a??'?';
+                  const champ = m.champion || m.agent || '';
+                  const dur = m.game_duration ? `${Math.floor(m.game_duration/60)}m` : '';
+                  return (
+                    <div key={i} className={`flex items-center gap-3 px-3 py-2.5 rounded-xl border text-sm ${win?'border-emerald-500/20 bg-emerald-500/5':'border-red-500/20 bg-red-500/5'}`}>
+                      <span className={`font-black text-xs w-8 ${win?'text-emerald-400':'text-red-400'}`}>{win?'WIN':'LOSS'}</span>
+                      {champ && <img src={`https://ddragon.leagueoflegends.com/cdn/16.8.1/img/champion/${champ}.png`} alt={champ}
+                        className="w-8 h-8 rounded-lg border border-zinc-700" onError={e => e.target.style.display='none'} />}
+                      <div className="flex-1 min-w-0">
+                        <span className="text-white font-medium text-sm">{champ||'Unknown'}</span>
+                        {m.queue_type && <span className="text-gray-600 text-xs ml-2">{m.queue_type}</span>}
+                      </div>
+                      <span className="text-gray-400 font-mono text-xs">{k}/{d}/{a2}</span>
+                      {dur && <span className="text-gray-600 text-xs hidden sm:inline">{dur}</span>}
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="text-center py-4">
+                <p className="text-gray-600 text-sm">No match history yet</p>
+                <button onClick={() => { setSyncing(acc.id); onSync(acc.id).finally(()=>setSyncing(null)); }}
+                  className="mt-2 text-xs text-blue-400 hover:text-blue-300 flex items-center gap-1 mx-auto">
+                  <RefreshCw className="w-3 h-3" /> Sync to load matches
+                </button>
+              </div>
+            )}
+          </div>
+
+          {acc.last_synced_at && (
+            <div className="px-5 pb-3 text-xs text-gray-700 text-right">Synced {new Date(acc.last_synced_at).toLocaleDateString()}</div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function StatsTab({ riotAccounts, onRefetch }) {
+  const [selectedAccId, setSelectedAccId] = useState(riotAccounts[0]?.id || null);
+  const acc = riotAccounts.find(a => a.id === selectedAccId) || riotAccounts[0];
+  const [expandedMatch, setExpandedMatch] = useState(null);
+
+  if (!riotAccounts.length) {
+    return (
+      <div className="text-center py-16">
+        <Swords className="w-12 h-12 text-zinc-700 mx-auto mb-3" />
+        <p className="text-gray-400 font-medium mb-2">No gaming accounts linked yet</p>
+        <p className="text-gray-500 text-sm">Link a Riot account in the Connect tab to see your stats here.</p>
+      </div>
+    );
+  }
+
+  const matches = Array.isArray(acc?.match_history_cache) ? acc.match_history_cache : [];
+  const wins = acc?.wins || 0;
+  const losses = acc?.losses || 0;
+  const wr = wins + losses > 0 ? Math.round((wins / (wins + losses)) * 100) : null;
+
+  return (
+    <div className="space-y-4">
+      {/* Account selector */}
+      {riotAccounts.length > 1 && (
+        <div className="flex gap-2 flex-wrap">
+          {riotAccounts.map(a => (
+            <button key={a.id}
+              onClick={() => { setSelectedAccId(a.id); setExpandedMatch(null); }}
+              className={`flex items-center gap-2 px-3 py-2 rounded-xl border text-sm font-medium transition-colors ${selectedAccId === a.id ? 'border-red-500 bg-red-500/10 text-white' : 'border-zinc-700 bg-zinc-800/50 text-gray-400 hover:border-zinc-600'}`}>
+              {a.game_key === 'lol' && a.profile_icon_id && (
+                <img src={`https://ddragon.leagueoflegends.com/cdn/16.8.1/img/profileicon/${a.profile_icon_id}.png`} alt="" className="w-6 h-6 rounded-full" onError={e => e.target.style.display='none'} />
+              )}
+              <span className="font-mono">{a.game_name}#{a.tag_line}</span>
+              <span className="text-xs opacity-60">{a.game_key === 'lol' ? 'LoL' : 'VAL'}</span>
+            </button>
+          ))}
+        </div>
+      )}
+
+      {acc && (
+        <FloatingPanel className="p-5">
+          {/* Account header */}
+          <div className="flex items-center gap-4 mb-5">
+            {acc.game_key === 'lol' && acc.profile_icon_id && (
+              <img src={`https://ddragon.leagueoflegends.com/cdn/16.8.1/img/profileicon/${acc.profile_icon_id}.png`} alt="" className="w-16 h-16 rounded-full border-2 border-zinc-600" onError={e => e.target.style.display='none'} />
+            )}
+            <div className="flex-1">
+              <h3 className="text-xl font-black text-white font-mono">{acc.game_name}<span className="text-gray-500">#{acc.tag_line}</span></h3>
+              <p className="text-gray-500 text-sm">{acc.game_key === 'lol' ? 'League of Legends' : 'Valorant'} · {acc.region?.toUpperCase()} · Level {acc.summoner_level}</p>
+              {acc.rank_tier && (
+                <p className="text-sm font-bold mt-1" style={{ color: { IRON:'#9ca3af',BRONZE:'#b45309',SILVER:'#cbd5e1',GOLD:'#facc15',PLATINUM:'#2dd4bf',EMERALD:'#34d399',DIAMOND:'#93c5fd',MASTER:'#c084fc',GRANDMASTER:'#f87171',CHALLENGER:'#67e8f9' }[acc.rank_tier] || '#fff' }}>
+                  {acc.rank_tier} {acc.rank_division || ''} {acc.rank_lp != null ? `· ${acc.rank_lp} LP` : ''}
+                </p>
+              )}
+            </div>
+          </div>
+
+          {/* Stats grid */}
+          <div className="grid grid-cols-4 gap-3 mb-5">
+            {[
+              { label: 'Wins', value: wins, color: 'text-emerald-400' },
+              { label: 'Losses', value: losses, color: 'text-red-400' },
+              { label: 'Win Rate', value: wr != null ? `${wr}%` : '—', color: wr >= 50 ? 'text-emerald-400' : 'text-red-400' },
+              { label: 'Level', value: acc.summoner_level || '—', color: 'text-white' },
+            ].map(s => (
+              <div key={s.label} className="text-center p-3 bg-zinc-800/50 rounded-xl">
+                <p className={`text-2xl font-black ${s.color}`}>{s.value}</p>
+                <p className="text-xs text-gray-500 uppercase mt-0.5">{s.label}</p>
+              </div>
+            ))}
+          </div>
+
+          {/* Champion masteries */}
+          {Array.isArray(acc.champion_masteries) && acc.champion_masteries.length > 0 && (
+            <div className="mb-5">
+              <p className="text-xs text-gray-500 uppercase font-bold mb-3 flex items-center gap-1.5"><Star className="w-3.5 h-3.5 text-yellow-500" /> Top Champions</p>
+              <div className="flex gap-3 flex-wrap">
+                {acc.champion_masteries.slice(0, 7).map((m, i) => (
+                  <div key={i} className="flex flex-col items-center gap-1.5">
+                    <div className="relative">
+                      <img
+                        src={`https://ddragon.leagueoflegends.com/cdn/16.8.1/img/champion/${m.champion_name || m.name}.png`}
+                        alt={m.champion_name || m.name}
+                        className="w-14 h-14 rounded-xl border border-zinc-700"
+                        onError={e => { e.target.src = 'https://ddragon.leagueoflegends.com/cdn/16.8.1/img/champion/Aatrox.png'; }}
+                      />
+                      {m.champion_level && (
+                        <span className="absolute -bottom-1 -right-1 text-xs bg-yellow-500 text-black font-black px-1 rounded-full">M{m.champion_level}</span>
+                      )}
+                    </div>
+                    <span className="text-xs text-gray-400 text-center max-w-[56px] truncate">{m.champion_name || m.name}</span>
+                    {m.champion_points && <span className="text-xs text-yellow-600">{(m.champion_points / 1000).toFixed(0)}k pts</span>}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Match history */}
+          <div>
+            <p className="text-xs text-gray-500 uppercase font-bold mb-3 flex items-center gap-1.5"><Swords className="w-3.5 h-3.5 text-red-400" /> Match History ({matches.length})</p>
+            {matches.length === 0 ? (
+              <p className="text-gray-600 text-sm text-center py-6">No matches cached. Click Sync on the account above.</p>
+            ) : (
+              <div className="space-y-2">
+                {matches.map((m, i) => {
+                  const win = m.win || m.result === 'Win';
+                  const k = m.kills ?? m.k ?? '?'; const d = m.deaths ?? m.d ?? '?'; const a = m.assists ?? m.a ?? '?';
+                  const champion = m.champion || m.agent || m.character || '';
+                  const duration = m.game_duration ? `${Math.floor(m.game_duration/60)}m${m.game_duration%60}s` : '';
+                  const isOpen = expandedMatch === i;
+                  return (
+                    <div key={i} className={`rounded-xl border overflow-hidden ${win ? 'border-emerald-500/20' : 'border-red-500/20'}`}>
+                      <button className={`w-full flex items-center gap-3 px-4 py-3 text-sm text-left transition-colors ${win ? 'bg-emerald-500/5 hover:bg-emerald-500/10' : 'bg-red-500/5 hover:bg-red-500/10'}`}
+                        onClick={() => setExpandedMatch(isOpen ? null : i)}>
+                        <span className={`font-black w-10 text-xs ${win ? 'text-emerald-400' : 'text-red-400'}`}>{win ? 'WIN' : 'LOSS'}</span>
+                        {champion && (
+                          <img src={`https://ddragon.leagueoflegends.com/cdn/16.8.1/img/champion/${champion}.png`} alt={champion}
+                            className="w-8 h-8 rounded-lg border border-zinc-700" onError={e => e.target.style.display='none'} />
+                        )}
+                        <div className="flex-1 min-w-0">
+                          <span className="text-white font-medium">{champion || 'Unknown'}</span>
+                          <span className="text-gray-500 mx-2 font-mono text-xs">{k}/{d}/{a}</span>
+                          {m.queue_type && <span className="text-xs text-gray-600">{m.queue_type}</span>}
+                        </div>
+                        <div className="flex items-center gap-3 text-xs text-gray-500">
+                          {duration && <span>{duration}</span>}
+                          {m.date && <span className="hidden sm:inline">{new Date(m.date).toLocaleDateString()}</span>}
+                          {isOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                        </div>
+                      </button>
+                      {isOpen && (
+                        <div className="px-4 pb-4 pt-2 border-t border-zinc-800/50 bg-zinc-900/50 grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
+                          {[
+                            { label: 'KDA', value: m.kda || `${k}/${d}/${a}` },
+                            { label: 'CS', value: m.cs ?? m.creep_score ?? '—' },
+                            { label: 'Damage', value: m.damage_dealt ? `${Math.round(m.damage_dealt/1000)}k` : '—' },
+                            { label: 'Gold', value: m.gold_earned ? `${Math.round(m.gold_earned/1000)}k` : '—' },
+                            { label: 'Vision', value: m.vision_score ?? '—' },
+                            { label: 'Mode', value: m.queue_type || m.game_mode || '—' },
+                            { label: 'Duration', value: duration || '—' },
+                            { label: 'Date', value: m.date ? new Date(m.date).toLocaleDateString() : '—' },
+                          ].map(s => (
+                            <div key={s.label} className="text-center p-2 bg-zinc-800/50 rounded-lg">
+                              <p className="text-white font-bold">{s.value}</p>
+                              <p className="text-gray-600 uppercase">{s.label}</p>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </FloatingPanel>
+      )}
     </div>
   );
 }
@@ -354,6 +531,15 @@ export default function GamerProfile() {
     enabled: !!user?.id,
     staleTime: 60_000,
   });
+
+  // Fetch connect status for Discord display on top card
+  const { data: connectStatusTop } = useQuery({
+    queryKey: ['connect-status-top', user?.id],
+    queryFn: () => Connect.status(),
+    enabled: !!user?.id,
+    staleTime: 60_000,
+  });
+  const discordAccount = (connectStatusTop?.discord || []).find(a => a.platform === 'discord' && a.is_active);
 
   const [editForm, setEditForm] = useState({});
 
@@ -651,13 +837,21 @@ export default function GamerProfile() {
                       </p>
                     )}
                   </div>
-                  <div className="flex gap-2 flex-shrink-0">
-                    <GlowButton variant="secondary" size="sm" onClick={() => setEditing(true)}>
-                      <Edit2 className="w-4 h-4" /> Edit
-                    </GlowButton>
-                    <GlowButton variant="ghost" size="sm" onClick={() => setBecomeOrgModal(true)}>
-                      <Briefcase className="w-4 h-4" /> Become Organizer
-                    </GlowButton>
+                  <div className="flex flex-col items-end gap-2 flex-shrink-0">
+                    <div className="flex gap-2">
+                      <GlowButton variant="secondary" size="sm" onClick={() => setEditing(true)}>
+                        <Edit2 className="w-4 h-4" /> Edit
+                      </GlowButton>
+                      <GlowButton variant="ghost" size="sm" onClick={() => setBecomeOrgModal(true)}>
+                        <Briefcase className="w-4 h-4" /> Become Organizer & Build Events
+                      </GlowButton>
+                    </div>
+                    {discordAccount && (
+                      <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-indigo-500/10 border border-indigo-500/30 text-xs text-indigo-300">
+                        <MessageSquare className="w-3.5 h-3.5" />
+                        <span className="font-medium">{discordAccount.platform_username || 'Discord linked'}</span>
+                      </div>
+                    )}
                   </div>
                 </div>
                 {profile?.bio && (
@@ -708,13 +902,13 @@ export default function GamerProfile() {
       </FloatingPanel>
 
       {/* Main Tabs */}
-      <Tabs defaultValue={defaultTab} className="space-y-6">
+      <Tabs defaultValue={defaultTab === 'games' ? 'teams' : defaultTab} className="space-y-6">
         <TabsList className="bg-zinc-900 border border-zinc-800 p-1">
-          <TabsTrigger value="games" className="data-[state=active]:bg-red-600 data-[state=active]:text-white text-gray-400">
-            <Gamepad2 className="w-4 h-4 mr-1.5" /> Games
-          </TabsTrigger>
           <TabsTrigger value="teams" className="data-[state=active]:bg-red-600 data-[state=active]:text-white text-gray-400">
             <Users className="w-4 h-4 mr-1.5" /> Teams
+          </TabsTrigger>
+          <TabsTrigger value="stats" className="data-[state=active]:bg-red-600 data-[state=active]:text-white text-gray-400">
+            <TrendingUp className="w-4 h-4 mr-1.5" /> Stats
           </TabsTrigger>
           <TabsTrigger value="achievements" className="data-[state=active]:bg-red-600 data-[state=active]:text-white text-gray-400">
             <Award className="w-4 h-4 mr-1.5" /> Badges
@@ -739,64 +933,12 @@ export default function GamerProfile() {
         </TabsList>
 
         {/* Games Tab */}
-        <TabsContent value="games">
-          <FloatingPanel className="p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-bold text-white flex items-center gap-2">
-                <Gamepad2 className="w-5 h-5 text-red-500" />
-                My Games
-              </h2>
-              <GlowButton variant="secondary" size="sm" onClick={() => setAddGameModal(true)}>
-                <Plus className="w-4 h-4" /> Add Game
-              </GlowButton>
-            </div>
-
-            <div className="grid sm:grid-cols-2 gap-3">
-              {profile?.games?.map((game, i) => (
-                <motion.div
-                  key={i}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: i * 0.05 }}
-                >
-                  <div className="flex items-center justify-between p-4 bg-zinc-800/50 rounded-xl border border-zinc-700/30 hover:border-red-500/20 transition-colors">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-red-600/20 to-zinc-700 flex items-center justify-center">
-                        <Gamepad2 className="w-5 h-5 text-red-400" />
-                      </div>
-                      <div>
-                        <p className="text-white font-bold">{game.game_name}</p>
-                        <p className="text-gray-500 text-xs">
-                          {game.game_id && `ID: ${game.game_id}`}
-                          {game.game_id && game.rank && ' · '}
-                          {game.rank && <span className="text-red-400">{game.rank}</span>}
-                        </p>
-                      </div>
-                    </div>
-                    <button
-                      onClick={() => removeGameMutation.mutate(i)}
-                      className="p-2 text-gray-600 hover:text-red-400 transition-colors"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
-                </motion.div>
-              ))}
-            </div>
-            {(!profile?.games || profile.games.length === 0) && (
-              <div className="text-center py-12">
-                <Gamepad2 className="w-16 h-16 text-zinc-700 mx-auto mb-3" />
-                <p className="text-gray-400 font-medium mb-1">No games added yet</p>
-                <p className="text-gray-600 text-sm mb-4">Add your games so teams and organizers can find you</p>
-                <GlowButton size="sm" onClick={() => setAddGameModal(true)}>
-                  <Plus className="w-4 h-4" /> Add Your First Game
-                </GlowButton>
-              </div>
-            )}
-          </FloatingPanel>
+        {/* Teams Tab */}
+        {/* Stats Tab */}
+        <TabsContent value="stats">
+          <StatsTab riotAccounts={ownRiotAccounts} onRefetch={refetchRiot} />
         </TabsContent>
 
-        {/* Teams Tab */}
         <TabsContent value="teams">
           <FloatingPanel className="p-6">
             <div className="flex items-center justify-between mb-4">
@@ -1395,8 +1537,21 @@ export default function GamerProfile() {
       <Dialog open={becomeOrgModal} onOpenChange={setBecomeOrgModal}>
         <DialogContent className="bg-zinc-900 border-zinc-700 text-white max-w-md">
           <DialogHeader>
-            <DialogTitle className="text-white">Become an Organizer</DialogTitle>
+            <DialogTitle className="text-white flex items-center gap-2">
+              <Briefcase className="w-5 h-5 text-red-400" /> Become an Organizer
+            </DialogTitle>
           </DialogHeader>
+          <div className="mb-4 p-3 rounded-xl bg-indigo-500/10 border border-indigo-500/30 flex items-start gap-3">
+            <MessageSquare className="w-5 h-5 text-indigo-400 shrink-0 mt-0.5" />
+            <div>
+              <p className="text-indigo-300 font-bold text-sm">Add the HERU Bot to your Discord server</p>
+              <p className="text-indigo-400/70 text-xs mt-0.5">Build and manage tournaments with single commands. Your linked Discord plays a key role in bot interactions.</p>
+              <a href="https://discord.com/oauth2/authorize?client_id=HERU_BOT_ID&scope=bot&permissions=8" target="_blank" rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 mt-2 px-3 py-1 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-lg transition-colors">
+                <MessageSquare className="w-3 h-3" /> Add HERU Bot to Server
+              </a>
+            </div>
+          </div>
           <p className="text-gray-400 text-sm mb-4">
             Fill in your organizer details. Your request will be reviewed by staff before approval.
           </p>
