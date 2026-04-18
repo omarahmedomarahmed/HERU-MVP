@@ -275,21 +275,46 @@ export const TeamMember = {
 }
 
 export const Connect = {
-  status:            ()         => apiCall('/connect/status'),
-  discordAuthUrl:    ()         => apiCall('/connect/discord/auth-url').then(d => d.url),
-  disconnectDiscord: ()         => apiCall('/connect/discord', { method: 'DELETE' }),
-  botInstallUrl:     ()         => apiCall('/connect/bot-install-url').then(d => d.url),
-  riotAccounts:      ()         => apiCall('/connect/riot/accounts'),
-  linkRiot:          (data)     => apiCall('/connect/riot/link', { method: 'POST', body: data }),
-  removeRiot:        (id)       => apiCall(`/connect/riot/${id}`, { method: 'DELETE' }),
-  syncRiot:          (id)       => apiCall(`/connect/riot/${id}/sync`, { method: 'POST' }),
-  updateRiot:        (id, data) => apiCall(`/connect/riot/${id}`, { method: 'PATCH', body: data }),
+  status:              ()         => apiCall('/connect/status'),
+  discordAuthUrl:      ()         => apiCall('/connect/discord/auth-url').then(d => d.url),
+  disconnectDiscord:   ()         => apiCall('/connect/discord', { method: 'DELETE' }),
+  botInstallUrl:       ()         => apiCall('/connect/bot-install-url').then(d => d.url),
+  riotAccounts:        ()         => apiCall('/connect/riot/accounts'),
+  publicRiotAccounts:  (userId)   => apiCall(`/connect/riot/public/${userId}`),
+  publicRiotBatch:     (userIds)  => apiCall('/connect/riot/public-batch', { method: 'POST', body: { user_ids: userIds } }),
+  linkRiot:            (data)     => apiCall('/connect/riot/link', { method: 'POST', body: data }),
+  removeRiot:          (id)       => apiCall(`/connect/riot/${id}`, { method: 'DELETE' }),
+  syncRiot:            (id)       => apiCall(`/connect/riot/${id}/sync`, { method: 'POST' }),
+  updateRiot:          (id, data) => apiCall(`/connect/riot/${id}`, { method: 'PATCH', body: data }),
 }
 
 export const AiAgent = {
   sendMessage:    (data)          => apiCall('/ai-agent/message', { method: 'POST', body: data }),
   getSession:     ()              => apiCall('/ai-agent/session'),
   clearSession:   ()              => apiCall('/ai-agent/session', { method: 'DELETE' }),
+}
+
+export const Badge = {
+  list:                ()         => apiCall('/badges'),
+  userBadges:          (userId)   => apiCall(`/badges/user/${userId}`),
+  // Staff
+  create:              (data)     => apiCall('/badges', { method: 'POST', body: data }),
+  update:              (id, data) => apiCall(`/badges/${id}`, { method: 'PUT', body: data }),
+  award:               (data)     => apiCall('/badges/award', { method: 'POST', body: data }),
+  revoke:              (userId, badgeId) => apiCall(`/badges/award/${userId}/${badgeId}`, { method: 'DELETE' }),
+  // Organizer
+  createCustom:        (data)     => apiCall('/badges/organizer', { method: 'POST', body: data }),
+  myCustomBadges:      ()         => apiCall('/badges/organizer/mine'),
+  awardToTournament:   (data)     => apiCall('/badges/organizer/award-tournament', { method: 'POST', body: data }),
+}
+
+export const Venue = {
+  list:         ()         => apiCall('/venues'),
+  submit:       (data)     => apiCall('/venues', { method: 'POST', body: data }),
+  update:       (id, data) => apiCall(`/venues/${id}`, { method: 'PUT', body: data }),
+  // Staff
+  staffAll:     (filters)  => apiCall(`/venues/staff/all${buildQuery(filters)}`),
+  review:       (id, data) => apiCall(`/venues/staff/${id}/review`, { method: 'PUT', body: data }),
 }
 
 // ---------------------------------------------------------------------------

@@ -51,6 +51,11 @@ router.post('/:id/setup', requireAuth, async (req, res) => {
     res.json({ riot_provider_id: providerId, riot_tournament_id: tournamentId, region });
   } catch (err) {
     console.error('[riot-tournament/setup]', err.message);
+    if (err.message?.includes('401') || err.message?.includes('Forbidden')) {
+      return res.status(400).json({
+        error: 'Tournament API requires a Production Riot API key. Set RIOT_USE_STUB=true in your backend .env to use stub mode for testing.',
+      });
+    }
     res.status(500).json({ error: err.message });
   }
 });

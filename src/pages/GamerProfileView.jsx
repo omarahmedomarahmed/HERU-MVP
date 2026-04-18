@@ -1,13 +1,181 @@
-import React from 'react'
+import React, { useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import {
   User, ArrowLeft, Gamepad2, Users, Star, Mic, Video,
-  Trophy, Swords, Shield, MapPin, Calendar, ExternalLink,
-  Pencil, LogIn,
+  Trophy, Swords, Shield, Calendar, ExternalLink,
+  Pencil, LogIn, ChevronDown, ChevronUp, Flame, Zap,
 } from 'lucide-react'
-import { GamerProfile, Team, apiCall } from '@/api/heruClient'
+import { GamerProfile, Team, Connect } from '@/api/heruClient'
 import { useAuth } from '@/lib/AuthContext'
+
+// ---------------------------------------------------------------------------
+// Riot helpers
+// ---------------------------------------------------------------------------
+
+const RANK_COLORS = {
+  IRON:        'text-zinc-400 border-zinc-600 bg-zinc-800/50',
+  BRONZE:      'text-amber-700 border-amber-800 bg-amber-900/20',
+  SILVER:      'text-slate-300 border-slate-500 bg-slate-800/30',
+  GOLD:        'text-yellow-400 border-yellow-600 bg-yellow-900/20',
+  PLATINUM:    'text-teal-300 border-teal-600 bg-teal-900/20',
+  EMERALD:     'text-emerald-400 border-emerald-600 bg-emerald-900/20',
+  DIAMOND:     'text-blue-300 border-blue-500 bg-blue-900/20',
+  MASTER:      'text-purple-400 border-purple-500 bg-purple-900/20',
+  GRANDMASTER: 'text-red-400 border-red-500 bg-red-900/20',
+  CHALLENGER:  'text-cyan-300 border-cyan-400 bg-cyan-900/20',
+}
+
+function RankBadge({ tier, division, lp, small }) {
+  if (!tier) return <span className="text-zinc-600 text-xs">Unranked</span>
+  const color = RANK_COLORS[tier?.toUpperCase()] || 'text-zinc-400 border-zinc-600 bg-zinc-800/50'
+  const noDiv = ['MASTER','GRANDMASTER','CHALLENGER'].includes(tier?.toUpperCase())
+  return (
+    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded border font-bold text-xs ${color} ${small ? 'text-[10px] px-1.5' : ''}`}>
+      {tier} {!noDiv && division} {lp !== undefined && `${lp} LP`}
+    </span>
+  )
+}
+
+function WinRate({ wins, losses }) {
+  const total = (wins || 0) + (losses || 0)
+  const wr = total > 0 ? Math.round(((wins || 0) / total) * 100) : 0
+  const color = wr >= 55 ? 'text-emerald-400' : wr >= 50 ? 'text-blue-400' : 'text-zinc-400'
+  return (
+    <span className={`font-bold ${color}`}>{wr}%</span>
+  )
+}
+
+function ChampionMastery({ mastery }) {
+  const version = '14.10.1'
+  const imgUrl = `https://ddragon.leagueoflegends.com/cdn/${version}/img/champion/${mastery.championName || 'Aatrox'}.png`
+  const pts = mastery.championPoints >= 1000
+    ? `${Math.round(mastery.championPoints / 1000)}k`
+    : mastery.championPoints
+  return (
+    <div className="flex flex-col items-center gap-1 group">
+      <div className="w-10 h-10 rounded-lg overflow-hidden border border-zinc-700/50 group-hover:border-red-500/40 transition-colors">
+        <img src={imgUrl} alt={mastery.championName} className="w-full h-full object-cover" onError={e => { e.target.style.display='none' }} />
+      </div>
+      <span className="text-[9px] text-zinc-500 font-medium">{pts}</span>
+    </div>
+  )
+}
+
+function MatchRow({ match }) {
+  const [open, setOpen] = useState(false)
+  const duration = match.duration_s ? `${Math.floor(match.duration_s / 60)}m` : '—'
+  const date = match.played_at ? new Date(match.played_at).toLocaleDateString('en-GB', { day:'numeric', month:'short' }) : ''
+  const version = '14.10.1'
+  const champImg = match.champion
+    ? `https://ddragon.leagueoflegends.com/cdn/${version}/img/champion/${match.champion}.png`
+    : null
+  return (
+    <div className={`rounded-lg border text-xs ${match.win ? 'border-emerald-800/40 bg-emerald-900/10' : 'border-red-900/40 bg-red-900/10'}`}>
+      <button className="w-full flex items-center gap-2 p-2 text-left" onClick={() => setOpen(o => !o)}>
+        <span className={`w-1 h-8 rounded-full shrink-0 ${match.win ? 'bg-emerald-500' : 'bg-red-500'}`} />
+        {champImg && <img src={champImg} alt={match.champion} className="w-7 h-7 rounded-md object-cover shrink-0" onError={e=>{e.target.style.display='none'}} />}
+        <span className={`font-bold w-6 ${match.win ? 'text-emerald-400' : 'text-red-400'}`}>{match.win ? 'W' : 'L'}</span>
+        <span className="text-white font-semibold">{match.champion}</span>
+        <span className="text-zinc-400 ml-1">{match.kills}/{match.deaths}/{match.assists}</span>
+        <span className="text-zinc-500 ml-auto">{duration}</span>
+        <span className="text-zinc-600 ml-2 hidden sm:inline">{date}</span>
+        {open ? <ChevronUp className="w-3 h-3 text-zinc-500 shrink-0" /> : <ChevronDown className="w-3 h-3 text-zinc-500 shrink-0" />}
+      </button>
+      {open && (
+        <div className="px-3 pb-3 grid grid-cols-3 gap-2 text-center border-t border-zinc-800/50 mt-1 pt-2">
+          <div><p className="text-zinc-500">KDA</p><p className="text-white font-bold">{match.kda}</p></div>
+          <div><p className="text-zinc-500">CS</p><p className="text-white font-bold">{match.cs}</p></div>
+          <div><p className="text-zinc-500">Damage</p><p className="text-white font-bold">{match.damage_dealt ? `${Math.round(match.damage_dealt/1000)}k` : '—'}</p></div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+function LolPublicCard({ account }) {
+  const [showMatches, setShowMatches] = useState(false)
+  const matches = account.match_history_cache || []
+  const masteries = account.champion_masteries || []
+  const wins = account.wins || 0
+  const losses = account.losses || 0
+
+  return (
+    <div className="rounded-xl border border-zinc-800/60 bg-zinc-900/50 p-4 space-y-4">
+      {/* Header */}
+      <div className="flex items-center gap-3">
+        {account.profile_icon_id && (
+          <img
+            src={`https://ddragon.leagueoflegends.com/cdn/14.10.1/img/profileicon/${account.profile_icon_id}.png`}
+            alt="" className="w-12 h-12 rounded-full border border-zinc-700"
+            onError={e => { e.target.style.display='none' }}
+          />
+        )}
+        <div className="flex-1 min-w-0">
+          <p className="font-bold text-white truncate">{account.game_name}#{account.tag_line}</p>
+          <p className="text-zinc-500 text-xs">{account.region?.toUpperCase()} · Lv {account.summoner_level}</p>
+        </div>
+        {account.is_primary && (
+          <span className="text-[10px] px-1.5 py-0.5 rounded bg-red-600/20 text-red-400 border border-red-500/20 font-bold">MAIN</span>
+        )}
+      </div>
+
+      {/* Rank */}
+      <div className="flex flex-wrap gap-2">
+        {account.rank_tier ? (
+          <div className="flex items-center gap-2">
+            <RankBadge tier={account.rank_tier} division={account.rank_division} lp={account.rank_lp} />
+            {account.hot_streak && <Flame className="w-4 h-4 text-orange-400" title="Hot streak" />}
+          </div>
+        ) : (
+          <span className="text-zinc-600 text-xs">Unranked (Solo/Duo)</span>
+        )}
+        {account.flex_rank_tier && (
+          <RankBadge tier={account.flex_rank_tier} division={account.flex_rank_division} lp={account.flex_rank_lp} small />
+        )}
+      </div>
+
+      {/* W/L */}
+      {(wins + losses) > 0 && (
+        <div className="flex items-center gap-4 text-xs">
+          <span className="text-emerald-400 font-bold">{wins}W</span>
+          <span className="text-red-400 font-bold">{losses}L</span>
+          <WinRate wins={wins} losses={losses} />
+          {account.total_mastery_score > 0 && (
+            <span className="text-zinc-500 ml-auto flex items-center gap-1">
+              <Zap className="w-3 h-3 text-yellow-500" /> {account.total_mastery_score.toLocaleString()} mastery
+            </span>
+          )}
+        </div>
+      )}
+
+      {/* Champion masteries */}
+      {masteries.length > 0 && (
+        <div className="flex gap-2 flex-wrap">
+          {masteries.slice(0, 7).map((m, i) => <ChampionMastery key={i} mastery={m} />)}
+        </div>
+      )}
+
+      {/* Match history toggle */}
+      {matches.length > 0 && (
+        <div>
+          <button
+            onClick={() => setShowMatches(o => !o)}
+            className="flex items-center gap-1.5 text-xs text-zinc-400 hover:text-white transition-colors mb-2"
+          >
+            {showMatches ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+            Recent Matches ({matches.length})
+          </button>
+          {showMatches && (
+            <div className="space-y-1.5">
+              {matches.map((m, i) => <MatchRow key={i} match={m} />)}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -142,6 +310,13 @@ export default function GamerProfileView() {
     enabled: !!profileData?.team_ids?.length,
   })
 
+  // Fetch public Riot accounts
+  const { data: riotAccounts = [] } = useQuery({
+    queryKey: ['public-riot-accounts', profileData?.user_id],
+    queryFn: () => Connect.publicRiotAccounts(profileData.user_id),
+    enabled: !!profileData?.user_id,
+  })
+
   // Check if viewing own profile
   const isOwnProfile = authUser && profileData && (
     authUser.id === profileData.user_id || authUser.id === profileData.id
@@ -184,6 +359,13 @@ export default function GamerProfileView() {
   const gamesCount = profileData.games?.length || 0
   const tournamentsPlayed = stats?.tournaments_played || 0
   const tournamentsWon = stats?.tournaments_won || 0
+
+  // Aggregate Riot stats for the stat bar
+  const primaryLol = riotAccounts.find(a => a.game_key === 'lol' && a.is_primary) || riotAccounts.find(a => a.game_key === 'lol')
+  const riotWins = primaryLol ? (primaryLol.wins || 0) : 0
+  const riotLosses = primaryLol ? (primaryLol.losses || 0) : 0
+  const lolAccounts = riotAccounts.filter(a => a.game_key === 'lol')
+  const valAccounts = riotAccounts.filter(a => a.game_key === 'valorant')
 
   return (
     <div className="min-h-screen bg-[#0a0a0a] text-white">
@@ -269,37 +451,68 @@ export default function GamerProfileView() {
           {/* Stats Row */}
           <div className="relative mt-8 flex flex-wrap items-center justify-center sm:justify-start gap-3">
             <StatBox label="Teams" value={teams.length} icon={Users} />
-            <StatBox label="Games" value={gamesCount} icon={Gamepad2} />
-            <StatBox label="Played" value={tournamentsPlayed} icon={Swords} />
-            <StatBox label="Won" value={tournamentsWon} icon={Trophy} />
+            <StatBox label="Accounts" value={riotAccounts.length || gamesCount} icon={Gamepad2} />
+            <StatBox label="Ranked W" value={riotWins || tournamentsPlayed} icon={Swords} />
+            <StatBox label="Ranked L" value={riotLosses || tournamentsWon} icon={Trophy} />
           </div>
         </div>
 
-        {/* ---------- Content Grid ---------- */}
-        <div className="grid lg:grid-cols-2 gap-6">
-          {/* Games & Ranks */}
-          <section className="rounded-2xl bg-zinc-900/50 border border-zinc-800/50 p-6">
+        {/* ---------- Riot Ranked Accounts ---------- */}
+        {riotAccounts.length > 0 && (
+          <section className="mb-6 rounded-2xl bg-zinc-900/50 border border-zinc-800/50 p-6">
             <h2 className="text-lg font-bold text-white flex items-center gap-2 mb-5">
-              <Gamepad2 className="w-5 h-5 text-red-500" />
-              Games & Ranks
+              <Swords className="w-5 h-5 text-yellow-400" />
+              Riot Accounts
             </h2>
-            <div className="space-y-2.5">
-              {profileData.games?.map((game, i) => (
-                <GameRow key={i} game={game} />
+            <div className="grid sm:grid-cols-2 gap-4">
+              {lolAccounts.map(acc => <LolPublicCard key={acc.id} account={acc} />)}
+              {valAccounts.map(acc => (
+                <div key={acc.id} className="rounded-xl border border-zinc-800/60 bg-zinc-900/50 p-4 space-y-3">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-red-900/20 border border-red-800/40 flex items-center justify-center shrink-0">
+                      <Swords className="w-5 h-5 text-red-400" />
+                    </div>
+                    <div>
+                      <p className="font-bold text-white text-sm">{acc.game_name}#{acc.tag_line}</p>
+                      <p className="text-zinc-500 text-xs">Valorant · {acc.region?.toUpperCase()}</p>
+                    </div>
+                    {acc.is_primary && <span className="ml-auto text-[10px] px-1.5 py-0.5 rounded bg-red-600/20 text-red-400 border border-red-500/20 font-bold">MAIN</span>}
+                  </div>
+                  {acc.val_rank_tier ? (
+                    <RankBadge tier={acc.val_rank_tier} lp={acc.val_rank_rating} />
+                  ) : (
+                    <span className="text-zinc-600 text-xs">Rank data unavailable (requires prod API key)</span>
+                  )}
+                </div>
               ))}
-              {gamesCount === 0 && (
-                <p className="text-zinc-600 text-center py-8 text-sm">No games added yet</p>
-              )}
             </div>
           </section>
+        )}
+
+        {/* ---------- Content Grid ---------- */}
+        <div className="grid lg:grid-cols-2 gap-6">
+          {/* Games & Ranks (manual entries) */}
+          {(profileData.games?.length > 0) && (
+            <section className="rounded-2xl bg-zinc-900/50 border border-zinc-800/50 p-6">
+              <h2 className="text-lg font-bold text-white flex items-center gap-2 mb-5">
+                <Gamepad2 className="w-5 h-5 text-red-500" />
+                Other Games
+              </h2>
+              <div className="space-y-2.5">
+                {profileData.games?.map((game, i) => (
+                  <GameRow key={i} game={game} />
+                ))}
+              </div>
+            </section>
+          )}
 
           {/* Teams */}
-          <section className="rounded-2xl bg-zinc-900/50 border border-zinc-800/50 p-6">
+          <section className={`rounded-2xl bg-zinc-900/50 border border-zinc-800/50 p-6 ${!profileData.games?.length ? 'lg:col-span-2' : ''}`}>
             <h2 className="text-lg font-bold text-white flex items-center gap-2 mb-5">
               <Shield className="w-5 h-5 text-red-500" />
               Teams
             </h2>
-            <div className="space-y-2.5">
+            <div className={`space-y-2.5 ${!profileData.games?.length ? 'grid sm:grid-cols-2 gap-2.5 space-y-0' : ''}`}>
               {teams.map((team) => (
                 <TeamCard key={team.id} team={team} />
               ))}

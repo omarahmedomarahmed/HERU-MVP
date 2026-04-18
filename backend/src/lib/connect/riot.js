@@ -283,13 +283,58 @@ export async function getValStatus(valPlatform = 'eu') {
 // ============================================================================
 
 export async function syncLolStats(puuid, platform) {
-  const [summoner, ranked, masteries] = await Promise.all([
+  const [summoner, ranked, masteries, masteryTotal, matchIds] = await Promise.all([
     getSummonerByPuuid(puuid, platform),
     getLolRankedByPuuid(puuid, platform),
-    getTopMasteries(puuid, platform, 5),
+    getTopMasteries(puuid, platform, 7),
+    getMasteryTotal(puuid, platform).catch(() => 0),
+    getMatchIds(puuid, platform, { count: 5, type: 'ranked' }).catch(() => []),
   ]);
+
   const soloEntry = ranked?.find(e => e.queueType === 'RANKED_SOLO_5x5') || null;
   const flexEntry = ranked?.find(e => e.queueType === 'RANKED_FLEX_SR') || null;
+
+  // Fetch and cache the 5 most recent match details
+  let matchHistoryCache = [];
+  if (matchIds?.length) {
+    const matchDetails = await Promise.allSettled(
+      matchIds.slice(0, 5).map(id => getMatch(id, platform))
+    );
+    matchHistoryCache = matchDetails
+      .filter(r => r.status === 'fulfilled' && r.value)
+      .map(r => {
+        const m = r.value;
+        const participant = m.info?.participants?.find(p => p.puuid === puuid);
+        if (!participant) return null;
+        return {
+          matchId: m.metadata?.matchId,
+          win: participant.win,
+          kills: participant.kills,
+          deaths: participant.deaths,
+          assists: participant.assists,
+          champion: participant.championName,
+          champion_id: participant.championId,
+          cs: (participant.totalMinionsKilled || 0) + (participant.neutralMinionsKilled || 0),
+          duration_s: m.info?.gameDuration,
+          queue_type: m.info?.queueId,
+          played_at: m.info?.gameStartTimestamp
+            ? new Date(m.info.gameStartTimestamp).toISOString()
+            : null,
+          kda: participant.deaths > 0
+            ? ((participant.kills + participant.assists) / participant.deaths).toFixed(2)
+            : 'Perfect',
+          damage_dealt: participant.totalDamageDealtToChampions,
+          vision_score: participant.visionScore,
+          gold_earned: participant.goldEarned,
+          items: [
+            participant.item0, participant.item1, participant.item2,
+            participant.item3, participant.item4, participant.item5, participant.item6,
+          ].filter(Boolean),
+        };
+      })
+      .filter(Boolean);
+  }
+
   return {
     summoner_id: summoner?.id || null,
     summoner_level: summoner?.summonerLevel || null,
@@ -299,7 +344,18 @@ export async function syncLolStats(puuid, platform) {
     rank_lp: soloEntry?.leaguePoints || 0,
     wins: soloEntry?.wins || 0,
     losses: soloEntry?.losses || 0,
+    hot_streak: soloEntry?.hotStreak || false,
+    veteran: soloEntry?.veteran || false,
+    freshblood: soloEntry?.freshBlood || false,
+    flex_rank_tier: flexEntry?.tier || null,
+    flex_rank_division: flexEntry?.rank || null,
+    flex_rank_lp: flexEntry?.leaguePoints || 0,
+    flex_wins: flexEntry?.wins || 0,
+    flex_losses: flexEntry?.losses || 0,
     champion_masteries: masteries,
+    total_mastery_score: masteryTotal || 0,
+    match_history_cache: matchHistoryCache,
+    recent_match_ids: matchIds || [],
     raw_rank_data: { solo: soloEntry, flex: flexEntry },
   };
 }

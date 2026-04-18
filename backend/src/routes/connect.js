@@ -106,10 +106,45 @@ router.get('/bot-install-url', (req, res) => {
   res.json({ url: discord.getBotInstallUrl() });
 });
 
-// GET /api/connect/riot/accounts
+// GET /api/connect/riot/accounts — current user's accounts (all, including private)
 router.get('/riot/accounts', requireAuth, async (req, res) => {
   try {
     const { data, error } = await supabaseAdmin.from('riot_accounts').select('*').eq('user_id', req.user.id).order('created_at');
+    if (error) throw error;
+    res.json(data || []);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// GET /api/connect/riot/public/:userId — public Riot accounts for any user (for profiles, team pages)
+router.get('/riot/public/:userId', async (req, res) => {
+  try {
+    const { data, error } = await supabaseAdmin
+      .from('riot_accounts')
+      .select('id,game_key,game_name,tag_line,region,rank_tier,rank_division,rank_lp,wins,losses,summoner_level,profile_icon_id,is_primary,champion_masteries,match_history_cache,total_mastery_score,hot_streak,flex_rank_tier,flex_rank_division,flex_rank_lp,flex_wins,flex_losses,last_synced_at,val_rank_tier,val_rank_rating,val_wins')
+      .eq('user_id', req.params.userId)
+      .eq('is_public', true)
+      .order('is_primary', { ascending: false });
+    if (error) throw error;
+    res.json(data || []);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// GET /api/connect/riot/public-batch — public Riot accounts for multiple users at once
+// Body: { user_ids: ['uuid1', 'uuid2', ...] }
+router.post('/riot/public-batch', async (req, res) => {
+  try {
+    const { user_ids } = req.body;
+    if (!Array.isArray(user_ids) || user_ids.length === 0) return res.json([]);
+    const { data, error } = await supabaseAdmin
+      .from('riot_accounts')
+      .select('id,user_id,game_key,game_name,tag_line,region,rank_tier,rank_division,rank_lp,wins,losses,summoner_level,profile_icon_id,is_primary,champion_masteries,val_rank_tier,val_rank_rating,last_synced_at')
+      .in('user_id', user_ids.slice(0, 50))
+      .eq('is_public', true)
+      .order('is_primary', { ascending: false });
     if (error) throw error;
     res.json(data || []);
   } catch (err) {
@@ -181,6 +216,9 @@ router.post('/riot/link', requireAuth, async (req, res) => {
     res.status(201).json(newAccount);
   } catch (err) {
     console.error('[connect/riot/link]', err.message);
+    if (err.message?.includes('401') || err.message?.includes('Forbidden')) {
+      return res.status(503).json({ error: 'Riot API key is invalid or expired. Please update RIOT_API_KEY in the backend environment.' });
+    }
     res.status(500).json({ error: err.message });
   }
 });

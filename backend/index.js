@@ -35,6 +35,8 @@ import connectRoutes from './src/routes/connect.js';
 import aiAgentRoutes from './src/routes/ai-agent.js';
 import botRoutes from './src/routes/bot.js';
 import riotTournamentRoutes from './src/routes/riot-tournament.js';
+import badgeRoutes from './src/routes/badges.js';
+import venueRoutes from './src/routes/venues.js';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -160,6 +162,8 @@ app.use('/api/connect', connectRoutes);
 app.use('/api/ai-agent', aiAgentRoutes);
 app.use('/api/bot', botRoutes);
 app.use('/api/riot-tournament', riotTournamentRoutes);
+app.use('/api/badges', badgeRoutes);
+app.use('/api/venues', venueRoutes);
 
 // ---------------------------------------------------------------------------
 // 404 handler

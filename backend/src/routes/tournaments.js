@@ -289,7 +289,7 @@ router.post('/:id/publish', requireAuth, async (req, res) => {
         ...(tournament.prizepool_total > 0 ? [{ title: 'Cash Prizepool', price: tournament.prizepool_total, category: 'prizepool' }] : []),
         { title: 'Platform Fee (15%)', price: costs.platformFee, category: 'platform_fee' },
       ];
-      const { data: radar } = await supabaseAdmin.from('sponsorship_radar').insert({
+      const { data: radar, error: radarError } = await supabaseAdmin.from('sponsorship_radar').insert({
         tournament_id: tournament.id,
         tournament_name: tournament.name,
         tournament_image: tournament.tournament_image || '',
@@ -308,6 +308,11 @@ router.post('/:id/publish', requireAuth, async (req, res) => {
         order_breakdown: radarOrderBreakdown,
         status: 'open',
       }).select().single();
+
+      if (radarError || !radar) {
+        console.error('[publish] radar insert error', radarError?.message);
+        return res.status(500).json({ error: 'Failed to create radar listing: ' + (radarError?.message || 'unknown') });
+      }
 
       updateData.on_radar = true;
       updateData.sponsorship_radar_id = radar.id;

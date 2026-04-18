@@ -24,7 +24,8 @@ import {
   Package, Plus, Trash2, LogOut, Briefcase, Trophy,
   Swords, TrendingUp, Crown, Shield, Medal, Award,
   Target, Lock, ShoppingBag, DollarSign, CreditCard, Bell, ChevronRight,
-  Link2, RefreshCw, Eye, EyeOff, CheckCircle2, AlertCircle, MessageSquare
+  Link2, RefreshCw, Eye, EyeOff, CheckCircle2, AlertCircle, MessageSquare,
+  Zap, BarChart2, Flame, Sparkles, ChevronDown, ChevronUp, ExternalLink
 } from 'lucide-react';
 
 // Achievement icon mapping
@@ -135,6 +136,12 @@ export default function GamerProfile() {
     queryKey: ['achievements-all'],
     queryFn: () => Achievement.list(),
   });
+
+  // Riot account link modal state (shared between Games tab and Connect tab)
+  const [linkModal, setLinkModal] = useState(null); // null | 'lol' | 'valorant'
+  const [linkForm, setLinkForm] = useState({ gameName: '', tagLine: '', region: 'euw1' });
+  const [linkError, setLinkError] = useState('');
+  const [syncing, setSyncing] = useState({});
 
   const [editForm, setEditForm] = useState({});
 
@@ -291,6 +298,54 @@ export default function GamerProfile() {
 
   const handleLogout = async () => {
     await logout();
+  };
+
+  // Connect status (Riot + Discord accounts)
+  const { data: connectStatus, isLoading: connectStatusLoading, refetch: refetchConnect } = useQuery({
+    queryKey: ['connect-status', user?.id],
+    queryFn: () => Connect.status(),
+    enabled: !!user?.id,
+    staleTime: 30000,
+  });
+
+  const linkRiotMutation = useMutation({
+    mutationFn: (data) => Connect.linkRiot(data),
+    onSuccess: () => {
+      setLinkModal(null);
+      setLinkForm({ gameName: '', tagLine: '', region: 'euw1' });
+      setLinkError('');
+      refetchConnect();
+      queryClient.invalidateQueries(['gamer-profile', user?.id]);
+      toast({ title: 'Riot account linked!', description: 'Your account has been linked successfully.' });
+    },
+    onError: (err) => setLinkError(err.message || 'Failed to link account'),
+  });
+
+  const removeRiotMutation = useMutation({
+    mutationFn: (id) => Connect.removeRiot(id),
+    onSuccess: () => { refetchConnect(); toast({ title: 'Account removed' }); },
+  });
+
+  const handleRiotSync = async (id) => {
+    setSyncing(s => ({ ...s, [id]: true }));
+    try {
+      await Connect.syncRiot(id);
+      refetchConnect();
+      toast({ title: 'Stats synced!' });
+    } catch (err) {
+      toast({ title: 'Sync failed', description: err.message, variant: 'destructive' });
+    } finally {
+      setSyncing(s => ({ ...s, [id]: false }));
+    }
+  };
+
+  const handleToggleRiotPublic = async (id, is_public) => {
+    try {
+      await Connect.updateRiot(id, { is_public: !is_public });
+      refetchConnect();
+    } catch (err) {
+      toast({ title: 'Update failed', description: err.message, variant: 'destructive' });
+    }
   };
 
   const cart = JSON.parse(localStorage.getItem(`cart_${user?.id}`) || '[]');
@@ -509,62 +564,22 @@ export default function GamerProfile() {
           </TabsTrigger>
         </TabsList>
 
-        {/* Games Tab */}
+        {/* Games & Accounts Tab */}
         <TabsContent value="games">
-          <FloatingPanel className="p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-bold text-white flex items-center gap-2">
-                <Gamepad2 className="w-5 h-5 text-red-500" />
-                My Games
-              </h2>
-              <GlowButton variant="secondary" size="sm" onClick={() => setAddGameModal(true)}>
-                <Plus className="w-4 h-4" /> Add Game
-              </GlowButton>
-            </div>
-
-            <div className="grid sm:grid-cols-2 gap-3">
-              {profile?.games?.map((game, i) => (
-                <motion.div
-                  key={i}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: i * 0.05 }}
-                >
-                  <div className="flex items-center justify-between p-4 bg-zinc-800/50 rounded-xl border border-zinc-700/30 hover:border-red-500/20 transition-colors">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-red-600/20 to-zinc-700 flex items-center justify-center">
-                        <Gamepad2 className="w-5 h-5 text-red-400" />
-                      </div>
-                      <div>
-                        <p className="text-white font-bold">{game.game_name}</p>
-                        <p className="text-gray-500 text-xs">
-                          {game.game_id && `ID: ${game.game_id}`}
-                          {game.game_id && game.rank && ' · '}
-                          {game.rank && <span className="text-red-400">{game.rank}</span>}
-                        </p>
-                      </div>
-                    </div>
-                    <button
-                      onClick={() => removeGameMutation.mutate(i)}
-                      className="p-2 text-gray-600 hover:text-red-400 transition-colors"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
-                </motion.div>
-              ))}
-            </div>
-            {(!profile?.games || profile.games.length === 0) && (
-              <div className="text-center py-12">
-                <Gamepad2 className="w-16 h-16 text-zinc-700 mx-auto mb-3" />
-                <p className="text-gray-400 font-medium mb-1">No games added yet</p>
-                <p className="text-gray-600 text-sm mb-4">Add your games so teams and organizers can find you</p>
-                <GlowButton size="sm" onClick={() => setAddGameModal(true)}>
-                  <Plus className="w-4 h-4" /> Add Your First Game
-                </GlowButton>
-              </div>
-            )}
-          </FloatingPanel>
+          <GamesAccountsTab
+            profile={profile}
+            userId={user?.id}
+            riotAccounts={connectStatus?.riot || []}
+            connectStatusLoading={connectStatusLoading}
+            onLinkLol={() => { setLinkModal('lol'); setLinkError(''); setLinkForm({ gameName: '', tagLine: '', region: 'euw1' }); }}
+            onLinkValorant={() => { setLinkModal('valorant'); setLinkError(''); setLinkForm({ gameName: '', tagLine: '', region: 'euw1' }); }}
+            onSync={handleRiotSync}
+            onRemove={(id) => removeRiotMutation.mutate(id)}
+            onTogglePublic={handleToggleRiotPublic}
+            syncing={syncing}
+            onAddManualGame={() => setAddGameModal(true)}
+            onRemoveManualGame={(i) => removeGameMutation.mutate(i)}
+          />
         </TabsContent>
 
         {/* Teams Tab */}
@@ -926,7 +941,18 @@ export default function GamerProfile() {
 
         {/* HERU Connect Tab */}
         <TabsContent value="connect">
-          <ConnectTab userId={user?.id} profile={profile} queryClient={queryClient} />
+          <ConnectTab
+            userId={user?.id}
+            profile={profile}
+            connectStatus={connectStatus}
+            onRefetch={refetchConnect}
+            onLinkLol={() => { setLinkModal('lol'); setLinkError(''); setLinkForm({ gameName: '', tagLine: '', region: 'euw1' }); }}
+            onLinkValorant={() => { setLinkModal('valorant'); setLinkError(''); setLinkForm({ gameName: '', tagLine: '', region: 'euw1' }); }}
+            onSync={handleRiotSync}
+            onRemove={(id) => removeRiotMutation.mutate(id)}
+            onTogglePublic={handleToggleRiotPublic}
+            syncing={syncing}
+          />
         </TabsContent>
       </Tabs>
 
@@ -955,24 +981,25 @@ export default function GamerProfile() {
         </button>
       </div>
 
-      {/* Add Game Modal */}
+      {/* Add Manual Game Modal */}
       <Dialog open={addGameModal} onOpenChange={setAddGameModal}>
         <DialogContent className="bg-zinc-900 border-zinc-800 text-white">
           <DialogHeader>
-            <DialogTitle>Add Game</DialogTitle>
+            <DialogTitle>Add Other Game</DialogTitle>
           </DialogHeader>
-          <div className="space-y-4 py-4">
+          <p className="text-gray-400 text-sm pt-1 pb-2">For CS2, Dota 2, and other non-Riot games. League of Legends and Valorant can be connected with real stats below.</p>
+          <div className="space-y-4">
             <div>
               <label className="text-sm text-gray-400 block mb-1">Game Name</label>
               <Input
                 value={newGame.game_name}
                 onChange={(e) => setNewGame({ ...newGame, game_name: e.target.value })}
-                placeholder="e.g. Valorant, CS2, League of Legends"
+                placeholder="e.g. CS2, Dota 2, Rocket League"
                 className="bg-zinc-800 border-zinc-700 text-white"
               />
             </div>
             <div>
-              <label className="text-sm text-gray-400 block mb-1">Game ID / Username</label>
+              <label className="text-sm text-gray-400 block mb-1">In-Game ID / Username</label>
               <Input
                 value={newGame.game_id}
                 onChange={(e) => setNewGame({ ...newGame, game_id: e.target.value })}
@@ -985,7 +1012,7 @@ export default function GamerProfile() {
               <Input
                 value={newGame.rank}
                 onChange={(e) => setNewGame({ ...newGame, rank: e.target.value })}
-                placeholder="e.g. Diamond, Global Elite"
+                placeholder="e.g. Global Elite, Divine"
                 className="bg-zinc-800 border-zinc-700 text-white"
               />
             </div>
@@ -995,6 +1022,83 @@ export default function GamerProfile() {
               disabled={!newGame.game_name || !newGame.game_id}
             >
               <Plus className="w-4 h-4" /> Add Game
+            </GlowButton>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Link Riot Account Modal (shared between Games tab and Connect tab) */}
+      <Dialog open={!!linkModal} onOpenChange={() => { setLinkModal(null); setLinkError(''); }}>
+        <DialogContent className="bg-zinc-900 border-zinc-800 text-white max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              {linkModal === 'lol'
+                ? <><Swords className="w-5 h-5 text-yellow-400" /> Link League of Legends Account</>
+                : <><Target className="w-5 h-5 text-red-400" /> Link Valorant Account</>
+              }
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <p className="text-gray-400 text-sm">
+              Enter your Riot ID exactly as it appears in-game (e.g. <span className="text-white font-mono">PlayerName#EUW</span>).
+            </p>
+            <div>
+              <label className="text-xs text-gray-400 block mb-1">Game Name</label>
+              <Input
+                value={linkForm.gameName}
+                onChange={(e) => setLinkForm({ ...linkForm, gameName: e.target.value })}
+                placeholder="PlayerName"
+                className="bg-zinc-800 border-zinc-700 text-white"
+              />
+            </div>
+            <div>
+              <label className="text-xs text-gray-400 block mb-1">Tag Line</label>
+              <div className="flex items-center gap-2">
+                <span className="text-gray-500 font-bold">#</span>
+                <Input
+                  value={linkForm.tagLine}
+                  onChange={(e) => setLinkForm({ ...linkForm, tagLine: e.target.value.replace('#', '') })}
+                  placeholder="EUW"
+                  className="bg-zinc-800 border-zinc-700 text-white"
+                />
+              </div>
+            </div>
+            <div>
+              <label className="text-xs text-gray-400 block mb-1">Region</label>
+              <select
+                value={linkForm.region}
+                onChange={(e) => setLinkForm({ ...linkForm, region: e.target.value })}
+                className="w-full bg-zinc-800 border border-zinc-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-red-500"
+              >
+                {[
+                  { value: 'euw1', label: 'EUW (Europe West)' },
+                  { value: 'eun1', label: 'EUNE (Europe Nordic)' },
+                  { value: 'me1', label: 'ME (Middle East / MENA)' },
+                  { value: 'na1', label: 'NA (North America)' },
+                  { value: 'kr', label: 'KR (Korea)' },
+                  { value: 'br1', label: 'BR (Brazil)' },
+                  { value: 'tr1', label: 'TR (Turkey)' },
+                ].map(r => (
+                  <option key={r.value} value={r.value}>{r.label}</option>
+                ))}
+              </select>
+            </div>
+            {linkError && (
+              <div className="flex items-start gap-2 p-3 bg-red-500/10 border border-red-500/30 rounded-lg">
+                <AlertCircle className="w-4 h-4 text-red-400 flex-shrink-0 mt-0.5" />
+                <p className="text-red-400 text-sm">{linkError}</p>
+              </div>
+            )}
+            <GlowButton
+              className="w-full"
+              onClick={() => linkRiotMutation.mutate({ ...linkForm, game: linkModal })}
+              disabled={!linkForm.gameName || !linkForm.tagLine || linkRiotMutation.isPending}
+            >
+              {linkRiotMutation.isPending ? (
+                <><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> Linking...</>
+              ) : (
+                <><Link2 className="w-4 h-4" /> Link Account</>
+              )}
             </GlowButton>
           </div>
         </DialogContent>
@@ -1351,61 +1455,346 @@ function TournamentInvitesTab({ userId, profile }) {
 
 // ─── RANK TIER COLORS ────────────────────────────────────────────────────────
 const RANK_COLORS = {
-  IRON: 'text-gray-400 bg-gray-500/20',
-  BRONZE: 'text-orange-700 bg-orange-900/20',
-  SILVER: 'text-gray-300 bg-gray-500/20',
-  GOLD: 'text-yellow-400 bg-yellow-500/20',
-  PLATINUM: 'text-cyan-300 bg-cyan-500/20',
-  EMERALD: 'text-emerald-400 bg-emerald-500/20',
-  DIAMOND: 'text-blue-400 bg-blue-500/20',
-  MASTER: 'text-purple-400 bg-purple-500/20',
-  GRANDMASTER: 'text-red-400 bg-red-500/20',
-  CHALLENGER: 'text-yellow-300 bg-yellow-400/20',
+  IRON: 'text-gray-400 bg-gray-500/20 border-gray-500/20',
+  BRONZE: 'text-orange-600 bg-orange-900/20 border-orange-700/30',
+  SILVER: 'text-gray-300 bg-gray-500/20 border-gray-400/20',
+  GOLD: 'text-yellow-400 bg-yellow-500/20 border-yellow-500/30',
+  PLATINUM: 'text-cyan-300 bg-cyan-500/20 border-cyan-500/30',
+  EMERALD: 'text-emerald-400 bg-emerald-500/20 border-emerald-500/30',
+  DIAMOND: 'text-blue-400 bg-blue-500/20 border-blue-500/30',
+  MASTER: 'text-purple-400 bg-purple-500/20 border-purple-500/30',
+  GRANDMASTER: 'text-red-400 bg-red-500/20 border-red-500/30',
+  CHALLENGER: 'text-yellow-300 bg-yellow-400/20 border-yellow-400/30',
 };
 
+const RANK_ICON_URL = (tier) =>
+  `https://raw.communitydragon.org/latest/plugins/rcp-fe-lol-shared-components/global/default/${tier?.toLowerCase() || 'unranked'}.png`;
+
+// ─── Games & Accounts Tab ─────────────────────────────────────────────────────
+function GamesAccountsTab({ profile, userId, riotAccounts = [], connectStatusLoading, onLinkLol, onLinkValorant, onSync, onRemove, onTogglePublic, syncing, onAddManualGame, onRemoveManualGame }) {
+  const [expandedMatch, setExpandedMatch] = useState(null);
+  const lolAccounts = riotAccounts.filter(a => a.game_key === 'lol');
+  const valAccounts = riotAccounts.filter(a => a.game_key === 'valorant');
+
+  return (
+    <div className="space-y-6">
+      {/* ── League of Legends ────────────────────────────────── */}
+      <FloatingPanel className="p-6">
+        <div className="flex items-center justify-between mb-5">
+          <h2 className="text-xl font-bold text-white flex items-center gap-2">
+            <Swords className="w-5 h-5 text-yellow-400" /> League of Legends
+          </h2>
+          <button onClick={onLinkLol} className="flex items-center gap-1.5 px-3 py-1.5 bg-yellow-500/10 border border-yellow-500/30 text-yellow-400 hover:bg-yellow-500/20 rounded-lg text-sm font-bold transition-colors">
+            <Plus className="w-4 h-4" /> Connect Account
+          </button>
+        </div>
+
+        {connectStatusLoading && <div className="text-gray-500 text-sm py-4 text-center">Loading accounts...</div>}
+
+        {!connectStatusLoading && lolAccounts.length === 0 && (
+          <div className="text-center py-10 bg-zinc-800/30 rounded-xl border border-dashed border-zinc-700">
+            <Swords className="w-14 h-14 mx-auto mb-3 text-zinc-600" />
+            <p className="text-gray-300 font-bold mb-1">Connect League of Legends</p>
+            <p className="text-gray-500 text-sm mb-4">Get your rank, champion masteries, and match history displayed on your profile</p>
+            <button onClick={onLinkLol} className="px-4 py-2 bg-yellow-500/20 border border-yellow-500/30 text-yellow-300 rounded-lg text-sm font-bold hover:bg-yellow-500/30 transition-colors">
+              <Link2 className="w-4 h-4 inline mr-1.5" /> Link Riot ID
+            </button>
+          </div>
+        )}
+
+        <div className="space-y-4">
+          {lolAccounts.map(acc => (
+            <LolAccountCard key={acc.id} acc={acc} onSync={onSync} onRemove={onRemove} onTogglePublic={onTogglePublic} syncing={syncing} expandedMatch={expandedMatch} setExpandedMatch={setExpandedMatch} />
+          ))}
+        </div>
+      </FloatingPanel>
+
+      {/* ── Valorant ─────────────────────────────────────────── */}
+      <FloatingPanel className="p-6">
+        <div className="flex items-center justify-between mb-5">
+          <h2 className="text-xl font-bold text-white flex items-center gap-2">
+            <Target className="w-5 h-5 text-red-400" /> Valorant
+          </h2>
+          <button onClick={onLinkValorant} className="flex items-center gap-1.5 px-3 py-1.5 bg-red-500/10 border border-red-500/30 text-red-400 hover:bg-red-500/20 rounded-lg text-sm font-bold transition-colors">
+            <Plus className="w-4 h-4" /> Connect Account
+          </button>
+        </div>
+
+        {!connectStatusLoading && valAccounts.length === 0 && (
+          <div className="text-center py-10 bg-zinc-800/30 rounded-xl border border-dashed border-zinc-700">
+            <Target className="w-14 h-14 mx-auto mb-3 text-zinc-600" />
+            <p className="text-gray-300 font-bold mb-1">Connect Valorant</p>
+            <p className="text-gray-500 text-sm mb-4">Link your Riot ID to compete in HERU Valorant tournaments</p>
+            <button onClick={onLinkValorant} className="px-4 py-2 bg-red-500/20 border border-red-500/30 text-red-300 rounded-lg text-sm font-bold hover:bg-red-500/30 transition-colors">
+              <Link2 className="w-4 h-4 inline mr-1.5" /> Link Riot ID
+            </button>
+          </div>
+        )}
+
+        <div className="space-y-4">
+          {valAccounts.map(acc => (
+            <ValAccountCard key={acc.id} acc={acc} onSync={onSync} onRemove={onRemove} onTogglePublic={onTogglePublic} syncing={syncing} />
+          ))}
+        </div>
+      </FloatingPanel>
+
+      {/* ── Other Games (manual) ─────────────────────────────── */}
+      <FloatingPanel className="p-6">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-bold text-white flex items-center gap-2">
+            <Gamepad2 className="w-5 h-5 text-gray-400" /> Other Games
+          </h2>
+          <button onClick={onAddManualGame} className="flex items-center gap-1.5 px-3 py-1.5 bg-zinc-700/50 border border-zinc-600 text-gray-300 hover:bg-zinc-700 rounded-lg text-sm font-bold transition-colors">
+            <Plus className="w-4 h-4" /> Add Game
+          </button>
+        </div>
+        {(!profile?.games || profile.games.length === 0) ? (
+          <p className="text-gray-600 text-sm text-center py-6">CS2, Dota 2, and other games you play — add them for organizers to find you.</p>
+        ) : (
+          <div className="grid sm:grid-cols-2 gap-3">
+            {profile.games.map((game, i) => (
+              <div key={i} className="flex items-center justify-between p-3 bg-zinc-800/50 rounded-xl border border-zinc-700/30">
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-lg bg-zinc-700 flex items-center justify-center">
+                    <Gamepad2 className="w-4 h-4 text-gray-400" />
+                  </div>
+                  <div>
+                    <p className="text-white font-medium text-sm">{game.game_name}</p>
+                    <p className="text-gray-500 text-xs">
+                      {game.game_id && `ID: ${game.game_id}`}
+                      {game.game_id && game.rank && ' · '}
+                      {game.rank && <span className="text-red-400">{game.rank}</span>}
+                    </p>
+                  </div>
+                </div>
+                <button onClick={() => onRemoveManualGame(i)} className="p-1.5 text-gray-600 hover:text-red-400 transition-colors">
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+      </FloatingPanel>
+    </div>
+  );
+}
+
+// ─── LoL Account Card ─────────────────────────────────────────────────────────
+function LolAccountCard({ acc, onSync, onRemove, onTogglePublic, syncing, expandedMatch, setExpandedMatch }) {
+  const rankColor = RANK_COLORS[acc.rank_tier] || 'text-gray-400 bg-gray-500/20 border-gray-500/20';
+  const winRate = acc.wins + acc.losses > 0 ? Math.round((acc.wins / (acc.wins + acc.losses)) * 100) : 0;
+  const matches = acc.match_history_cache || [];
+
+  return (
+    <div className="rounded-xl border border-zinc-700/40 overflow-hidden bg-zinc-800/30">
+      {/* Account header */}
+      <div className="p-4">
+        <div className="flex items-start gap-4">
+          {/* Profile icon */}
+          <div className="relative flex-shrink-0">
+            {acc.profile_icon_id ? (
+              <img
+                src={`https://ddragon.leagueoflegends.com/cdn/16.8.1/img/profileicon/${acc.profile_icon_id}.png`}
+                alt=""
+                className="w-14 h-14 rounded-xl border-2 border-yellow-500/30"
+              />
+            ) : (
+              <div className="w-14 h-14 rounded-xl bg-yellow-900/30 border border-yellow-500/20 flex items-center justify-center">
+                <Swords className="w-7 h-7 text-yellow-400" />
+              </div>
+            )}
+            <span className="absolute -bottom-1.5 -right-1.5 text-[10px] font-black bg-zinc-900 border border-zinc-700 text-gray-300 px-1.5 py-0.5 rounded">
+              {acc.summoner_level || '?'}
+            </span>
+          </div>
+
+          {/* Name + rank */}
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 mb-1">
+              <p className="text-white font-black text-lg truncate">{acc.game_name}#{acc.tag_line}</p>
+              {acc.is_primary && <span className="text-[10px] font-black text-red-400 bg-red-500/10 border border-red-500/20 px-1.5 py-0.5 rounded uppercase">Primary</span>}
+            </div>
+            <p className="text-gray-500 text-xs mb-2">{acc.region?.toUpperCase()} · Level {acc.summoner_level || '?'}</p>
+
+            {/* Solo rank */}
+            {acc.rank_tier ? (
+              <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-lg border text-sm font-bold ${rankColor}`}>
+                <Crown className="w-4 h-4" />
+                {acc.rank_tier} {acc.rank_division}
+                <span className="text-xs opacity-70">· {acc.rank_lp} LP</span>
+                {acc.hot_streak && <Flame className="w-3.5 h-3.5 text-orange-400" title="Hot streak!" />}
+              </div>
+            ) : (
+              <span className="text-gray-600 text-sm">Unranked</span>
+            )}
+          </div>
+
+          {/* Action buttons */}
+          <div className="flex items-center gap-1 flex-shrink-0">
+            <button onClick={() => onTogglePublic(acc.id, acc.is_public)} title={acc.is_public ? 'Make private' : 'Make public'} className="p-2 text-gray-500 hover:text-white rounded-lg hover:bg-zinc-700 transition-colors">
+              {acc.is_public ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
+            </button>
+            <button onClick={() => onSync(acc.id)} disabled={syncing[acc.id]} title="Sync stats" className="p-2 text-gray-500 hover:text-blue-400 rounded-lg hover:bg-zinc-700 transition-colors">
+              <RefreshCw className={`w-4 h-4 ${syncing[acc.id] ? 'animate-spin text-blue-400' : ''}`} />
+            </button>
+            <button onClick={() => onRemove(acc.id)} title="Remove" className="p-2 text-gray-500 hover:text-red-400 rounded-lg hover:bg-zinc-700 transition-colors">
+              <Trash2 className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+
+        {/* Stats row */}
+        <div className="grid grid-cols-4 gap-2 mt-4">
+          <div className="text-center p-2 bg-zinc-900/60 rounded-lg">
+            <p className="text-base font-black text-white">{acc.wins}</p>
+            <p className="text-[10px] text-gray-500 uppercase">Wins</p>
+          </div>
+          <div className="text-center p-2 bg-zinc-900/60 rounded-lg">
+            <p className="text-base font-black text-white">{acc.losses}</p>
+            <p className="text-[10px] text-gray-500 uppercase">Losses</p>
+          </div>
+          <div className="text-center p-2 bg-zinc-900/60 rounded-lg">
+            <p className={`text-base font-black ${winRate >= 55 ? 'text-green-400' : winRate < 45 ? 'text-red-400' : 'text-white'}`}>{winRate}%</p>
+            <p className="text-[10px] text-gray-500 uppercase">Win Rate</p>
+          </div>
+          <div className="text-center p-2 bg-zinc-900/60 rounded-lg">
+            <p className="text-base font-black text-purple-400">{(acc.total_mastery_score || 0).toLocaleString()}</p>
+            <p className="text-[10px] text-gray-500 uppercase">Mastery</p>
+          </div>
+        </div>
+
+        {/* Flex rank if present */}
+        {acc.flex_rank_tier && (
+          <div className="mt-2 text-xs text-gray-500">
+            Flex: <span className="text-gray-300 font-medium">{acc.flex_rank_tier} {acc.flex_rank_division} · {acc.flex_rank_lp} LP ({acc.flex_wins}W {acc.flex_losses}L)</span>
+          </div>
+        )}
+      </div>
+
+      {/* Champion masteries */}
+      {acc.champion_masteries?.length > 0 && (
+        <div className="px-4 pb-3 border-t border-zinc-700/30 pt-3">
+          <p className="text-xs text-gray-500 uppercase font-bold mb-2 flex items-center gap-1.5"><Sparkles className="w-3.5 h-3.5" /> Top Champions</p>
+          <div className="flex gap-2 flex-wrap">
+            {acc.champion_masteries.slice(0, 5).map((m, i) => (
+              <div key={i} className="flex items-center gap-1.5 px-2.5 py-1.5 bg-zinc-900/60 rounded-lg border border-zinc-700/30">
+                <img
+                  src={`https://ddragon.leagueoflegends.com/cdn/16.8.1/img/champion/${m.championName || m.championId}.png`}
+                  alt={m.championName || String(m.championId)}
+                  className="w-6 h-6 rounded"
+                  onError={e => { e.target.style.display = 'none'; }}
+                />
+                <div>
+                  <p className="text-white text-xs font-bold leading-none">{m.championName || `#${m.championId}`}</p>
+                  <p className="text-gray-500 text-[10px]">M{m.championLevel} · {(m.championPoints || 0).toLocaleString()}pts</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Recent match history */}
+      {matches.length > 0 && (
+        <div className="border-t border-zinc-700/30">
+          <button
+            onClick={() => setExpandedMatch(expandedMatch === acc.id ? null : acc.id)}
+            className="w-full flex items-center justify-between px-4 py-2.5 text-xs text-gray-400 hover:text-white hover:bg-zinc-700/20 transition-colors"
+          >
+            <span className="flex items-center gap-1.5 font-bold"><BarChart2 className="w-3.5 h-3.5" /> Recent Games ({matches.length})</span>
+            {expandedMatch === acc.id ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+          </button>
+          {expandedMatch === acc.id && (
+            <div className="space-y-1 px-4 pb-3">
+              {matches.map((m, i) => (
+                <div key={i} className={`flex items-center gap-3 p-2.5 rounded-lg text-xs ${m.win ? 'bg-green-500/5 border border-green-500/20' : 'bg-red-500/5 border border-red-500/20'}`}>
+                  <div className={`w-1.5 h-8 rounded-full flex-shrink-0 ${m.win ? 'bg-green-500' : 'bg-red-500'}`} />
+                  {m.champion && (
+                    <img
+                      src={`https://ddragon.leagueoflegends.com/cdn/16.8.1/img/champion/${m.champion}.png`}
+                      alt={m.champion}
+                      className="w-8 h-8 rounded-lg flex-shrink-0"
+                      onError={e => { e.target.style.display = 'none'; }}
+                    />
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className={`font-black ${m.win ? 'text-green-400' : 'text-red-400'}`}>{m.win ? 'WIN' : 'LOSS'}</span>
+                      <span className="text-white font-bold">{m.kills}/{m.deaths}/{m.assists}</span>
+                      <span className="text-gray-500">KDA: {m.kda}</span>
+                    </div>
+                    <div className="text-gray-600 mt-0.5">{m.champion} · {m.cs} CS · {m.played_at ? new Date(m.played_at).toLocaleDateString() : ''}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {acc.last_synced_at && (
+        <div className="px-4 pb-2 text-[10px] text-gray-600">
+          Last synced: {new Date(acc.last_synced_at).toLocaleString()}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Valorant Account Card ────────────────────────────────────────────────────
+function ValAccountCard({ acc, onSync, onRemove, onTogglePublic, syncing }) {
+  return (
+    <div className="rounded-xl border border-zinc-700/40 overflow-hidden bg-zinc-800/30 p-4">
+      <div className="flex items-start gap-4">
+        <div className="w-14 h-14 rounded-xl bg-red-900/30 border border-red-500/20 flex items-center justify-center flex-shrink-0">
+          <Target className="w-7 h-7 text-red-400" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 mb-0.5">
+            <p className="text-white font-black text-lg truncate">{acc.game_name}#{acc.tag_line}</p>
+            {acc.is_primary && <span className="text-[10px] font-black text-red-400 bg-red-500/10 border border-red-500/20 px-1.5 py-0.5 rounded uppercase">Primary</span>}
+          </div>
+          <p className="text-gray-500 text-xs mb-2">{acc.region?.toUpperCase()}</p>
+          {acc.val_rank_tier ? (
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-red-500/10 border border-red-500/20 text-red-300 text-sm font-bold">
+              <Crown className="w-4 h-4" /> {acc.val_rank_tier}
+              {acc.val_rank_rating ? ` · ${acc.val_rank_rating} RR` : ''}
+            </span>
+          ) : (
+            <span className="text-gray-500 text-xs">Rank requires Production API key</span>
+          )}
+        </div>
+        <div className="flex items-center gap-1 flex-shrink-0">
+          <button onClick={() => onTogglePublic(acc.id, acc.is_public)} className="p-2 text-gray-500 hover:text-white rounded-lg hover:bg-zinc-700 transition-colors">
+            {acc.is_public ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
+          </button>
+          <button onClick={() => onSync(acc.id)} disabled={syncing[acc.id]} className="p-2 text-gray-500 hover:text-blue-400 rounded-lg hover:bg-zinc-700 transition-colors">
+            <RefreshCw className={`w-4 h-4 ${syncing[acc.id] ? 'animate-spin text-blue-400' : ''}`} />
+          </button>
+          <button onClick={() => onRemove(acc.id)} className="p-2 text-gray-500 hover:text-red-400 rounded-lg hover:bg-zinc-700 transition-colors">
+            <Trash2 className="w-4 h-4" />
+          </button>
+        </div>
+      </div>
+      {acc.last_synced_at && (
+        <p className="text-[10px] text-gray-600 mt-3">Last synced: {new Date(acc.last_synced_at).toLocaleString()}</p>
+      )}
+    </div>
+  );
+}
+
 // ─── HERU Connect Sub-Component ──────────────────────────────────────────────
-function ConnectTab({ userId, profile, queryClient }) {
-  const [linkModal, setLinkModal] = useState(null); // null | 'lol' | 'valorant'
-  const [linkForm, setLinkForm] = useState({ gameName: '', tagLine: '', region: 'euw1' });
-  const [linkError, setLinkError] = useState('');
-  const [syncing, setSyncing] = useState({});
+function ConnectTab({ userId, profile, connectStatus, onRefetch, onLinkLol, onLinkValorant, onSync, onRemove, onTogglePublic, syncing }) {
   const [discordConnecting, setDiscordConnecting] = useState(false);
   const { toast } = useToast();
-
-  const { data: connectStatus, refetch: refetchStatus } = useQuery({
-    queryKey: ['connect-status', userId],
-    queryFn: () => Connect.status(),
-    enabled: !!userId,
-    staleTime: 30000,
-  });
 
   const discordAccounts = connectStatus?.discord || [];
   const riotAccounts = connectStatus?.riot || [];
   const hasDiscord = discordAccounts.some(a => a.platform === 'discord' && a.is_active);
 
-  const linkRiotMutation = useMutation({
-    mutationFn: async (data) => Connect.linkRiot(data),
-    onSuccess: () => {
-      setLinkModal(null);
-      setLinkForm({ gameName: '', tagLine: '', region: 'euw1' });
-      setLinkError('');
-      refetchStatus();
-      queryClient.invalidateQueries(['gamer-profile', userId]);
-      toast({ title: 'Riot account linked!', description: 'Your account has been linked successfully.' });
-    },
-    onError: (err) => {
-      setLinkError(err.message || 'Failed to link account');
-    },
-  });
-
-  const removeRiotMutation = useMutation({
-    mutationFn: (id) => Connect.removeRiot(id),
-    onSuccess: () => { refetchStatus(); toast({ title: 'Account removed' }); },
-  });
-
   const disconnectDiscordMutation = useMutation({
     mutationFn: () => Connect.disconnectDiscord(),
-    onSuccess: () => { refetchStatus(); toast({ title: 'Discord disconnected' }); },
+    onSuccess: () => { onRefetch(); toast({ title: 'Discord disconnected' }); },
   });
 
   const handleDiscordConnect = async () => {
@@ -1418,38 +1807,6 @@ function ConnectTab({ userId, profile, queryClient }) {
       setDiscordConnecting(false);
     }
   };
-
-  const handleSync = async (id) => {
-    setSyncing(s => ({ ...s, [id]: true }));
-    try {
-      await Connect.syncRiot(id);
-      refetchStatus();
-      toast({ title: 'Account synced!' });
-    } catch (err) {
-      toast({ title: 'Sync failed', description: err.message, variant: 'destructive' });
-    } finally {
-      setSyncing(s => ({ ...s, [id]: false }));
-    }
-  };
-
-  const handleTogglePublic = async (id, is_public) => {
-    try {
-      await Connect.updateRiot(id, { is_public: !is_public });
-      refetchStatus();
-    } catch (err) {
-      toast({ title: 'Update failed', description: err.message, variant: 'destructive' });
-    }
-  };
-
-  const LOL_REGIONS = [
-    { value: 'euw1', label: 'EUW (Europe West)' },
-    { value: 'eun1', label: 'EUNE (Europe Nordic)' },
-    { value: 'me1', label: 'ME (Middle East / MENA)' },
-    { value: 'na1', label: 'NA (North America)' },
-    { value: 'kr', label: 'KR (Korea)' },
-    { value: 'br1', label: 'BR (Brazil)' },
-    { value: 'tr1', label: 'TR (Turkey)' },
-  ];
 
   const lolAccounts = riotAccounts.filter(a => a.game_key === 'lol');
   const valAccounts = riotAccounts.filter(a => a.game_key === 'valorant');
@@ -1525,244 +1882,51 @@ function ConnectTab({ userId, profile, queryClient }) {
         )}
       </FloatingPanel>
 
-      {/* ── League of Legends Section ──────────────────────── */}
+      {/* ── Riot Accounts Summary ──────────────────────────── */}
       <FloatingPanel className="p-6">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-xl font-bold text-white flex items-center gap-2">
-            <Swords className="w-5 h-5 text-yellow-400" />
-            League of Legends
+            <Swords className="w-5 h-5 text-yellow-400" /> Riot Accounts
           </h2>
-          <button
-            onClick={() => { setLinkModal('lol'); setLinkError(''); setLinkForm({ gameName: '', tagLine: '', region: 'euw1' }); }}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-yellow-500/10 border border-yellow-500/30 text-yellow-400 hover:bg-yellow-500/20 rounded-lg text-sm font-bold transition-colors"
-          >
-            <Plus className="w-4 h-4" /> Link Account
-          </button>
+          <div className="flex gap-2">
+            <button onClick={onLinkLol} className="flex items-center gap-1 px-2.5 py-1.5 bg-yellow-500/10 border border-yellow-500/30 text-yellow-400 hover:bg-yellow-500/20 rounded-lg text-xs font-bold transition-colors">
+              <Plus className="w-3.5 h-3.5" /> LoL
+            </button>
+            <button onClick={onLinkValorant} className="flex items-center gap-1 px-2.5 py-1.5 bg-red-500/10 border border-red-500/30 text-red-400 hover:bg-red-500/20 rounded-lg text-xs font-bold transition-colors">
+              <Plus className="w-3.5 h-3.5" /> VAL
+            </button>
+          </div>
         </div>
+        <p className="text-gray-500 text-xs mb-4">Manage linked accounts here or in the <strong className="text-white">Games</strong> tab for full stats, champion masteries and match history.</p>
 
-        {lolAccounts.length === 0 ? (
-          <div className="text-center py-8 text-gray-500">
-            <Swords className="w-12 h-12 mx-auto mb-3 text-zinc-700" />
-            <p className="text-sm mb-1">No LoL accounts linked</p>
-            <p className="text-xs text-gray-600">Link your Riot ID to show your rank and compete in HERU tournaments</p>
-          </div>
-        ) : (
-          <div className="space-y-3">
-            {lolAccounts.map(acc => {
-              const rankColor = RANK_COLORS[acc.rank_tier] || 'text-gray-400 bg-gray-500/20';
-              return (
-                <div key={acc.id} className="p-4 bg-zinc-800/50 rounded-xl border border-zinc-700/30 hover:border-yellow-500/20 transition-colors">
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="flex items-center gap-3 flex-1 min-w-0">
-                      {acc.profile_icon_id ? (
-                        <img
-                          src={`https://ddragon.leagueoflegends.com/cdn/16.8.1/img/profileicon/${acc.profile_icon_id}.png`}
-                          alt=""
-                          className="w-12 h-12 rounded-xl border border-zinc-700"
-                        />
-                      ) : (
-                        <div className="w-12 h-12 rounded-xl bg-zinc-700 flex items-center justify-center">
-                          <Swords className="w-6 h-6 text-yellow-400" />
-                        </div>
-                      )}
-                      <div className="min-w-0">
-                        <p className="text-white font-bold truncate">{acc.game_name}#{acc.tag_line}</p>
-                        <p className="text-gray-500 text-xs">{acc.region?.toUpperCase()} · Level {acc.summoner_level || '?'}</p>
-                        <div className="flex items-center gap-2 mt-1 flex-wrap">
-                          {acc.rank_tier ? (
-                            <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${rankColor}`}>
-                              {acc.rank_tier} {acc.rank_division} {acc.rank_lp ? `· ${acc.rank_lp} LP` : ''}
-                            </span>
-                          ) : (
-                            <span className="text-xs text-gray-600">Unranked</span>
-                          )}
-                          {acc.wins > 0 && (
-                            <span className="text-xs text-gray-500">{acc.wins}W {acc.losses}L</span>
-                          )}
-                          {acc.is_primary && (
-                            <span className="text-xs text-red-400 bg-red-500/10 px-2 py-0.5 rounded-full font-bold">PRIMARY</span>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-1.5 flex-shrink-0">
-                      <button
-                        onClick={() => handleTogglePublic(acc.id, acc.is_public)}
-                        title={acc.is_public ? 'Make private' : 'Make public'}
-                        className="p-2 text-gray-500 hover:text-white rounded-lg hover:bg-zinc-700 transition-colors"
-                      >
-                        {acc.is_public ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
-                      </button>
-                      <button
-                        onClick={() => handleSync(acc.id)}
-                        disabled={syncing[acc.id]}
-                        title="Sync stats"
-                        className="p-2 text-gray-500 hover:text-blue-400 rounded-lg hover:bg-zinc-700 transition-colors"
-                      >
-                        <RefreshCw className={`w-4 h-4 ${syncing[acc.id] ? 'animate-spin text-blue-400' : ''}`} />
-                      </button>
-                      <button
-                        onClick={() => removeRiotMutation.mutate(acc.id)}
-                        title="Remove account"
-                        className="p-2 text-gray-500 hover:text-red-400 rounded-lg hover:bg-zinc-700 transition-colors"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </FloatingPanel>
-
-      {/* ── Valorant Section ───────────────────────────────── */}
-      <FloatingPanel className="p-6">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl font-bold text-white flex items-center gap-2">
-            <Target className="w-5 h-5 text-red-400" />
-            Valorant
-          </h2>
-          <button
-            onClick={() => { setLinkModal('valorant'); setLinkError(''); setLinkForm({ gameName: '', tagLine: '', region: 'euw1' }); }}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-red-500/10 border border-red-500/30 text-red-400 hover:bg-red-500/20 rounded-lg text-sm font-bold transition-colors"
-          >
-            <Plus className="w-4 h-4" /> Link Account
-          </button>
-        </div>
-
-        {valAccounts.length === 0 ? (
-          <div className="text-center py-8 text-gray-500">
-            <Target className="w-12 h-12 mx-auto mb-3 text-zinc-700" />
-            <p className="text-sm mb-1">No Valorant accounts linked</p>
-            <p className="text-xs text-gray-600">Link your Riot ID to compete in HERU Valorant tournaments</p>
-          </div>
-        ) : (
-          <div className="space-y-3">
-            {valAccounts.map(acc => (
-              <div key={acc.id} className="p-4 bg-zinc-800/50 rounded-xl border border-zinc-700/30 hover:border-red-500/20 transition-colors">
-                <div className="flex items-start justify-between gap-3">
-                  <div className="flex items-center gap-3 flex-1 min-w-0">
-                    <div className="w-12 h-12 rounded-xl bg-red-900/30 border border-red-500/20 flex items-center justify-center">
-                      <Target className="w-6 h-6 text-red-400" />
-                    </div>
-                    <div className="min-w-0">
-                      <p className="text-white font-bold truncate">{acc.game_name}#{acc.tag_line}</p>
-                      <p className="text-gray-500 text-xs">{acc.region?.toUpperCase()}</p>
-                      <div className="flex items-center gap-2 mt-1 flex-wrap">
-                        {acc.val_rank_tier ? (
-                          <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-red-500/20 text-red-300">
-                            {acc.val_rank_tier} {acc.val_rank_rating ? `· ${acc.val_rank_rating} RR` : ''}
-                          </span>
-                        ) : (
-                          <span className="text-xs text-gray-600">Rank not available</span>
-                        )}
-                        {acc.is_primary && (
-                          <span className="text-xs text-red-400 bg-red-500/10 px-2 py-0.5 rounded-full font-bold">PRIMARY</span>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-1.5 flex-shrink-0">
-                    <button
-                      onClick={() => handleTogglePublic(acc.id, acc.is_public)}
-                      title={acc.is_public ? 'Make private' : 'Make public'}
-                      className="p-2 text-gray-500 hover:text-white rounded-lg hover:bg-zinc-700 transition-colors"
-                    >
-                      {acc.is_public ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
-                    </button>
-                    <button
-                      onClick={() => handleSync(acc.id)}
-                      disabled={syncing[acc.id]}
-                      title="Sync stats"
-                      className="p-2 text-gray-500 hover:text-blue-400 rounded-lg hover:bg-zinc-700 transition-colors"
-                    >
-                      <RefreshCw className={`w-4 h-4 ${syncing[acc.id] ? 'animate-spin text-blue-400' : ''}`} />
-                    </button>
-                    <button
-                      onClick={() => removeRiotMutation.mutate(acc.id)}
-                      title="Remove account"
-                      className="p-2 text-gray-500 hover:text-red-400 rounded-lg hover:bg-zinc-700 transition-colors"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </FloatingPanel>
-
-      {/* ── Link Riot Account Modal ────────────────────────── */}
-      <Dialog open={!!linkModal} onOpenChange={() => { setLinkModal(null); setLinkError(''); }}>
-        <DialogContent className="bg-zinc-900 border-zinc-800 text-white max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              {linkModal === 'lol'
-                ? <><Swords className="w-5 h-5 text-yellow-400" /> Link League of Legends Account</>
-                : <><Target className="w-5 h-5 text-red-400" /> Link Valorant Account</>
-              }
-            </DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 py-2">
-            <p className="text-gray-400 text-sm">
-              Enter your Riot ID exactly as it appears in-game (e.g. <span className="text-white font-mono">PlayerName#EUW</span>).
+        {/* Riot accounts summary (link to Games tab) */}
+        <div className="p-4 bg-zinc-800/30 rounded-xl border border-zinc-700/30">
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-gray-400 text-sm font-bold flex items-center gap-1.5">
+              <Swords className="w-4 h-4 text-yellow-400" /> Riot Accounts
             </p>
-            <div>
-              <label className="text-xs text-gray-400 block mb-1">Game Name</label>
-              <Input
-                value={linkForm.gameName}
-                onChange={(e) => setLinkForm({ ...linkForm, gameName: e.target.value })}
-                placeholder="PlayerName"
-                className="bg-zinc-800 border-zinc-700 text-white"
-              />
-            </div>
-            <div>
-              <label className="text-xs text-gray-400 block mb-1">Tag Line</label>
-              <div className="flex items-center gap-2">
-                <span className="text-gray-500 font-bold">#</span>
-                <Input
-                  value={linkForm.tagLine}
-                  onChange={(e) => setLinkForm({ ...linkForm, tagLine: e.target.value.replace('#', '') })}
-                  placeholder="EUW"
-                  className="bg-zinc-800 border-zinc-700 text-white"
-                />
-              </div>
-            </div>
-            <div>
-              <label className="text-xs text-gray-400 block mb-1">Region</label>
-              <select
-                value={linkForm.region}
-                onChange={(e) => setLinkForm({ ...linkForm, region: e.target.value })}
-                className="w-full bg-zinc-800 border border-zinc-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-red-500"
-              >
-                {LOL_REGIONS.map(r => (
-                  <option key={r.value} value={r.value}>{r.label}</option>
-                ))}
-              </select>
-            </div>
-            {linkError && (
-              <div className="flex items-start gap-2 p-3 bg-red-500/10 border border-red-500/30 rounded-lg">
-                <AlertCircle className="w-4 h-4 text-red-400 flex-shrink-0 mt-0.5" />
-                <p className="text-red-400 text-sm">{linkError}</p>
-              </div>
-            )}
-            <GlowButton
-              className="w-full"
-              onClick={() => linkRiotMutation.mutate({ ...linkForm, game: linkModal })}
-              disabled={!linkForm.gameName || !linkForm.tagLine || linkRiotMutation.isPending}
-            >
-              {linkRiotMutation.isPending ? (
-                <><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> Linking...</>
-              ) : (
-                <><Link2 className="w-4 h-4" /> Link Account</>
-              )}
-            </GlowButton>
+            <span className="text-xs text-gray-500">{riotAccounts.length} linked</span>
           </div>
-        </DialogContent>
-      </Dialog>
+          {riotAccounts.length === 0 ? (
+            <p className="text-gray-600 text-xs">No Riot accounts linked yet. Go to the <strong>Games</strong> tab to connect LoL or Valorant.</p>
+          ) : (
+            <div className="space-y-1.5">
+              {riotAccounts.map(a => (
+                <div key={a.id} className="flex items-center justify-between text-xs text-gray-400">
+                  <span>{a.game_name}#{a.tag_line} <span className="text-gray-600">({a.game_key === 'lol' ? 'LoL' : 'Valorant'})</span></span>
+                  <span className={`font-bold ${a.rank_tier ? 'text-yellow-400' : 'text-gray-600'}`}>{a.rank_tier || 'Unranked'}</span>
+                </div>
+              ))}
+            </div>
+          )}
+          <button
+            onClick={onLinkLol}
+            className="mt-3 w-full text-xs text-yellow-400 hover:text-yellow-300 py-1.5 border border-yellow-500/20 hover:border-yellow-500/40 rounded-lg transition-colors"
+          >
+            <Plus className="w-3.5 h-3.5 inline mr-1" /> Connect another account
+          </button>
+        </div>
+      </FloatingPanel>
     </div>
   );
 }

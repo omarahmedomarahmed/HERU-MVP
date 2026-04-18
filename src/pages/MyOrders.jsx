@@ -64,42 +64,9 @@ export default function MyOrders() {
       };
       const updatedChat = [...(order.support_chat || []), msgObj];
       await Order.update(orderId, { support_chat: updatedChat });
-      
-      // Sync to DM thread for order support
-      const allDms = await Order.list();
-      const orderDm = allDms.find(dm => dm.chat_type === 'order_support' && dm.reference_id === orderId);
-      
-      if (orderDm) {
-        const messages = orderDm.messages || [];
-        messages.push({
-          sender_id: user.id,
-          sender_name: profile?.username || user.full_name,
-          content: message,
-          timestamp: new Date().toISOString()
-        });
-        await Order.update(orderDm.id, {
-          messages,
-          last_message_at: new Date().toISOString()
-        });
-      } else {
-        await Order.create({
-          chat_type: 'order_support',
-          chat_name: `Order #${orderId.slice(0, 8).toUpperCase()} Support`,
-          reference_id: orderId,
-          participants: [user.id],
-          messages: [{
-            sender_id: user.id,
-            sender_name: profile?.username || user.full_name,
-            content: message,
-            timestamp: new Date().toISOString()
-          }],
-          last_message_at: new Date().toISOString()
-        });
-      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries(['my-orders', user?.id]);
-      queryClient.invalidateQueries(['my-conversations', user?.id]);
       setNewMessage('');
     }
   });

@@ -275,12 +275,12 @@ router.post('/staff/login', async (req, res) => {
       .eq('id', user.id)
       .single();
 
-    if (profileError) {
-      console.error('[staff/login] profile lookup error');
+    if (profileError && profileError.code !== 'PGRST116') {
+      console.error('[staff/login] profile lookup error', profileError.message);
       return res.status(500).json({ error: 'Authentication failed' });
     }
 
-    if (profile?.role !== 'admin') {
+    if (!profile || profile.role !== 'admin') {
       return res.status(403).json({ error: 'Invalid credentials' });
     }
 
@@ -313,16 +313,15 @@ router.post('/staff/login', async (req, res) => {
         session_token: sessionToken,
         staff_email: email,
         staff_name: profile.full_name || email,
+        access_key_id: keyRecord.id,
         expires_at: expiresAt,
         is_active: true,
         ip_address: req.ip || req.connection?.remoteAddress,
         user_agent: req.headers['user-agent'] || '',
-      })
-      .select()
-      .single();
+      });
 
     if (sessionError) {
-      console.error('[staff/login] session creation error');
+      console.error('[staff/login] session creation error', sessionError.message);
       return res.status(500).json({ error: 'Authentication failed' });
     }
 
