@@ -1,10 +1,25 @@
 import React, { useState, useEffect } from 'react';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import FloatingPanel from '@/components/ui/FloatingPanel';
 import GlowButton from '@/components/ui/GlowButton';
 import { GripVertical, Users, Award } from 'lucide-react';
-import { Tournament } from '@/api/heruClient'
+import { Tournament, Connect } from '@/api/heruClient'
+
+const TIER_ORDER = ['IRON','BRONZE','SILVER','GOLD','PLATINUM','EMERALD','DIAMOND','MASTER','GRANDMASTER','CHALLENGER']
+const TIER_COLOR = {
+  IRON:'text-zinc-400', BRONZE:'text-amber-700', SILVER:'text-slate-300',
+  GOLD:'text-yellow-400', PLATINUM:'text-teal-300', EMERALD:'text-emerald-400',
+  DIAMOND:'text-blue-300', MASTER:'text-purple-400', GRANDMASTER:'text-red-400', CHALLENGER:'text-cyan-300',
+}
+function topRank(riotList) {
+  if (!riotList?.length) return null
+  return riotList.reduce((best, acc) => {
+    const bIdx = TIER_ORDER.indexOf((best?.rank_tier || '').toUpperCase())
+    const aIdx = TIER_ORDER.indexOf((acc.rank_tier || '').toUpperCase())
+    return aIdx > bIdx ? acc : best
+  }, riotList[0])
+}
 
 
 export default function SeedingPanel({ tournament, confirmedTeams, onBracketsGenerated }) {
@@ -82,6 +97,19 @@ export default function SeedingPanel({ tournament, confirmedTeams, onBracketsGen
     },
   });
 
+  const allMemberIds = seeds.flatMap(t => t.members || [])
+  const { data: seedingRiot = [] } = useQuery({
+    queryKey: ['seeding-riot-batch', allMemberIds.join(',')],
+    queryFn: () => Connect.publicRiotBatch(allMemberIds),
+    enabled: allMemberIds.length > 0,
+    staleTime: 120_000,
+  })
+  const riotByUser = seedingRiot.reduce((acc, r) => {
+    if (!acc[r.user_id]) acc[r.user_id] = []
+    acc[r.user_id].push(r)
+    return acc
+  }, {})
+
   const onDragEnd = (result) => {
     if (!result.destination) return;
     const reordered = Array.from(seeds);
@@ -155,6 +183,17 @@ export default function SeedingPanel({ tournament, confirmedTeams, onBracketsGen
                             <p className="text-white font-medium text-sm truncate">{team.name}</p>
                             <p className="text-gray-500 text-xs">{team.members?.length || 0} members</p>
                           </div>
+                          {(() => {
+                            const memberRiots = (team.members || []).flatMap(uid => riotByUser[uid] || [])
+                            const best = topRank(memberRiots)
+                            if (!best?.rank_tier) return null
+                            const color = TIER_COLOR[best.rank_tier.toUpperCase()] || 'text-gray-400'
+                            return (
+                              <span className={`text-[10px] font-bold shrink-0 ${color}`} title={`Top rank: ${best.game_name}#${best.tag_line}`}>
+                                {best.rank_tier}
+                              </span>
+                            )
+                          })()}
                         </div>
                       )}
                     </Draggable>

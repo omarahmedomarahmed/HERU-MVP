@@ -17,7 +17,7 @@ import {
   Shield, Settings, ArrowLeft, Gamepad2, Edit2, Save, Trash2, Upload, Loader2
 } from 'lucide-react';
 
-import { GamerProfile, Team, Tournament, apiCall } from '@/api/heruClient'
+import { GamerProfile, Team, Tournament, Connect, apiCall } from '@/api/heruClient'
 import { useAuth } from '@/lib/AuthContext'
 import { uploadFile } from '@/lib/uploadFile'
 import { useToast } from '@/components/ui/use-toast'
@@ -77,6 +77,25 @@ export default function TeamDetails() {
     },
     enabled: !!teamId && !!team,
   });
+
+  const { data: memberRiotAccounts = [] } = useQuery({
+    queryKey: ['team-riot-batch', teamId, team?.members?.join(',')],
+    queryFn: () => Connect.publicRiotBatch(team?.members || []),
+    enabled: !!(team?.members?.length),
+    staleTime: 120_000,
+  })
+  const riotByUser = memberRiotAccounts.reduce((acc, r) => {
+    if (!acc[r.user_id]) acc[r.user_id] = []
+    acc[r.user_id].push(r)
+    return acc
+  }, {})
+
+  const RIOT_RANK_COLORS = {
+    IRON: 'text-gray-400', BRONZE: 'text-orange-600', SILVER: 'text-gray-300',
+    GOLD: 'text-yellow-400', PLATINUM: 'text-cyan-300', EMERALD: 'text-emerald-400',
+    DIAMOND: 'text-blue-400', MASTER: 'text-purple-400',
+    GRANDMASTER: 'text-red-400', CHALLENGER: 'text-yellow-300',
+  }
 
   const { data: friends = [] } = useQuery({
     queryKey: ['my-friends', profile?.friends],
@@ -423,6 +442,25 @@ export default function TeamDetails() {
                           {member.games[0]?.game_name} {member.games[0]?.rank && `· ${member.games[0].rank}`}
                         </p>
                       )}
+                      {(riotByUser[member.user_id] || []).slice(0, 2).map(acc => (
+                        <div key={acc.id} className="flex items-center gap-1.5 mt-1">
+                          {acc.profile_icon_id ? (
+                            <img
+                              src={`https://ddragon.leagueoflegends.com/cdn/16.8.1/img/profileicon/${acc.profile_icon_id}.png`}
+                              alt=""
+                              className="w-4 h-4 rounded-full border border-zinc-700 shrink-0"
+                            />
+                          ) : (
+                            <span className="text-[10px]">{acc.game_key === 'valorant' ? '🎯' : '⚔️'}</span>
+                          )}
+                          <span className="text-[11px] text-gray-400 truncate font-mono">{acc.game_name}#{acc.tag_line}</span>
+                          {acc.rank_tier && (
+                            <span className={`text-[10px] font-bold shrink-0 ${RIOT_RANK_COLORS[acc.rank_tier] || 'text-gray-500'}`}>
+                              {acc.rank_tier}
+                            </span>
+                          )}
+                        </div>
+                      ))}
                     </div>
                     {isLeader && member.user_id !== user?.id && (
                       <div className="flex gap-1 flex-shrink-0">
