@@ -1,7 +1,7 @@
 import React from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
-import { Tournament, TournamentOrder, apiCall } from '@/api/heruClient'
+import { Tournament, TournamentOrder, Team, apiCall } from '@/api/heruClient'
 import {
   ArrowLeft, Trophy, Users, Swords, DollarSign, Calendar,
   Gamepad2, LayoutGrid, Shield, Loader2, AlertTriangle,
@@ -57,6 +57,16 @@ export default function TournamentSummaryReport() {
     enabled: !!id,
   })
 
+  // Fetch team objects for the tournament so we can resolve IDs to names
+  const teamIds = tournament?.teams || []
+  const { data: allTeams = [] } = useQuery({
+    queryKey: ['tournament-teams-report', id, teamIds.join(',')],
+    queryFn: () => Promise.all(teamIds.map(tid => Team.get(tid).catch(() => null))).then(r => r.filter(Boolean)),
+    enabled: teamIds.length > 0,
+    staleTime: 120_000,
+  })
+  const teamById = Object.fromEntries(allTeams.map(t => [t.id, t]))
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-[#0a0a14] flex items-center justify-center">
@@ -84,23 +94,27 @@ export default function TournamentSummaryReport() {
     )
   }
 
-  const brackets = tournament?.brackets || []
-  const teams = tournament?.teams || []
+  const bracketRounds = tournament?.brackets || []
   const coOrganizers = tournament?.co_organizers || []
   const isShared = tournament?.tournament_type === 'shared'
 
-  // Count completed matches and derive round winners
+  // Build rounds map from {round, matches:[]} structure
   const rounds = {}
-  brackets.forEach((match) => {
-    const roundKey = match.round || match.round_name || `Round ${match.round_number || '?'}`
+  let totalMatches = 0
+  let completedMatches = 0
+  bracketRounds.forEach((roundData) => {
+    const roundNum = roundData.round || '?'
+    const roundKey = roundNum === bracketRounds.length ? 'Finals'
+      : roundNum === bracketRounds.length - 1 ? 'Semi-Finals'
+      : roundNum === 1 ? 'Round 1'
+      : `Round ${roundNum}`
+    const matches = Array.isArray(roundData.matches) ? roundData.matches
+      : Array.isArray(roundData) ? roundData : []
     if (!rounds[roundKey]) rounds[roundKey] = []
-    rounds[roundKey].push(match)
+    rounds[roundKey].push(...matches)
+    totalMatches += matches.length
+    completedMatches += matches.filter(m => !!m.winner).length
   })
-
-  const totalMatches = brackets.length
-  const completedMatches = brackets.filter(
-    (m) => m.status === 'completed' || m.winner || m.winner_id
-  ).length
 
   const order = Array.isArray(tournamentOrders)
     ? tournamentOrders[0]
@@ -171,11 +185,34 @@ export default function TournamentSummaryReport() {
 
       {/* Key Metrics */}
       <section className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-        <StatCard icon={Users} label="Total Teams" value={teams.length} />
+        <StatCard icon={Users} label="Total Teams" value={teamIds.length} />
         <StatCard icon={Swords} label="Matches Played" value={`${completedMatches} / ${totalMatches}`} accent="text-blue-400" />
         <StatCard icon={DollarSign} label="Total Cost" value={formatEGP(tournament?.total_cost)} accent="text-green-400" />
         <StatCard icon={Trophy} label="Prize Pool" value={formatEGP(tournament?.prizepool_total)} accent="text-yellow-400" />
       </section>
+
+      {/* Teams List */}
+      {allTeams.length > 0 && (
+        <section className="bg-[#12121f] border border-white/10 rounded-xl p-6 mb-6">
+          <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
+            <Users className="w-5 h-5 text-blue-400" />
+            Participating Teams ({allTeams.length})
+          </h2>
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+            {allTeams.map((team, i) => (
+              <div key={team.id} className="flex items-center gap-2 bg-[#0a0a14] border border-white/5 rounded-lg px-3 py-2">
+                <span className="text-xs text-gray-500 font-mono w-5 shrink-0">#{i+1}</span>
+                {team.logo ? (
+                  <img src={team.logo} alt="" className="w-6 h-6 rounded object-cover shrink-0" />
+                ) : (
+                  <div className="w-6 h-6 rounded bg-zinc-800 shrink-0" />
+                )}
+                <span className="text-white text-sm font-medium truncate">{team.name}</span>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* Platform Fee */}
       <section className="bg-[#12121f] border border-white/10 rounded-xl p-6 mb-6">
@@ -228,28 +265,31 @@ export default function TournamentSummaryReport() {
                 <h3 className="text-sm font-medium text-gray-400 mb-2">{roundName}</h3>
                 <div className="space-y-2">
                   {matches.map((match, idx) => {
-                    const team1 = match.team1_name || match.team1 || 'TBD'
-                    const team2 = match.team2_name || match.team2 || 'TBD'
-                    const score1 = match.team1_score ?? match.score1 ?? '-'
-                    const score2 = match.team2_score ?? match.score2 ?? '-'
-                    const winner = match.winner || match.winner_name || null
-                    const isComplete = match.status === 'completed' || !!winner
+                    const t1 = teamById[match.team1] || null
+                    const t2 = teamById[match.team2] || null
+                    const team1Name = t1?.name || match.team1_name || (match.team1 ? match.team1.slice(0,8)+'...' : 'TBD')
+                    const team2Name = t2?.name || match.team2_name || (match.team2 ? match.team2.slice(0,8)+'...' : 'TBD')
+                    const score1 = match.score1 ?? match.team1_score ?? '-'
+                    const score2 = match.score2 ?? match.team2_score ?? '-'
+                    const winnerTeam = teamById[match.winner] || null
+                    const winnerName = winnerTeam?.name || match.winner_name || null
+                    const isComplete = !!match.winner
 
                     return (
                       <div
-                        key={match.id || idx}
+                        key={match.match_id || match.id || idx}
                         className={`flex items-center justify-between bg-[#0a0a14] border rounded-lg px-4 py-2.5 text-sm ${
                           isComplete ? 'border-green-500/20' : 'border-white/5'
                         }`}
                       >
-                        <span className={`flex-1 ${winner === team1 ? 'text-green-400 font-medium' : 'text-white'}`}>
-                          {team1}
+                        <span className={`flex-1 ${match.winner === match.team1 ? 'text-green-400 font-medium' : 'text-white'}`}>
+                          {team1Name}
                         </span>
                         <span className="text-gray-500 mx-3 font-mono text-xs">
-                          {score1} - {score2}
+                          {score1} — {score2}
                         </span>
-                        <span className={`flex-1 text-right ${winner === team2 ? 'text-green-400 font-medium' : 'text-white'}`}>
-                          {team2}
+                        <span className={`flex-1 text-right ${match.winner === match.team2 ? 'text-green-400 font-medium' : 'text-white'}`}>
+                          {team2Name}
                         </span>
                       </div>
                     )
