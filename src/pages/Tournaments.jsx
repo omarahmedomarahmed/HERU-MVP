@@ -207,6 +207,28 @@ export default function Tournaments() {
                     )}
                   </div>
 
+                  {/* Organizer logos */}
+                  {(tournament.organizer_brand || (tournament.co_organizers || []).length > 0) && (
+                    <div className="flex items-center gap-2 mb-3 flex-wrap">
+                      {tournament.organizer_brand?.logo || tournament.organizer_brand?.brand_logo ? (
+                        <img
+                          src={tournament.organizer_brand.logo || tournament.organizer_brand.brand_logo}
+                          alt={tournament.organizer_brand.name || tournament.organizer_brand.brand_name}
+                          title={tournament.organizer_brand.name || tournament.organizer_brand.brand_name}
+                          className="w-7 h-7 rounded object-cover border border-white/10"
+                        />
+                      ) : null}
+                      {(tournament.co_organizers || []).filter(co => co.brand_logo).map((co, i) => (
+                        <img key={i}
+                          src={co.brand_logo}
+                          alt={co.brand_name}
+                          title={co.brand_name}
+                          className="w-7 h-7 rounded object-cover border border-white/10"
+                        />
+                      ))}
+                    </div>
+                  )}
+
                   {tournament.status === 'published' && (
                     <GlowButton size="sm" className="w-full">
                       <Play className="w-3 h-3" />
