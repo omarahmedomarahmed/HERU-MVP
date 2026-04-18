@@ -453,10 +453,19 @@ export default function Home() {
               </div>
               <div className="bg-zinc-900 p-6 flex items-center justify-between">
                 <div className="flex items-center gap-4">
-                  {featuredTournament.organizer_brand?.logo && (
-                    <img src={featuredTournament.organizer_brand.logo} alt="Organizer" className="h-10 w-10 rounded-full" />
+                  {(featuredTournament.organizer_brand?.logo || featuredTournament.organizer_brand?.brand_logo) && (
+                    <img src={featuredTournament.organizer_brand.logo || featuredTournament.organizer_brand.brand_logo} alt="Organizer" className="h-10 w-10 rounded-full object-cover" />
                   )}
-                  <div className="text-sm text-gray-300">{featuredTournament.organizer_brand?.name || 'Organizer'}</div>
+                  <div>
+                    <div className="text-sm text-gray-300">{featuredTournament.organizer_brand?.name || featuredTournament.organizer_brand?.brand_name || 'Organizer'}</div>
+                    {(featuredTournament.co_organizers || []).filter(co => co.brand_logo).length > 0 && (
+                      <div className="flex items-center gap-1 mt-1">
+                        {(featuredTournament.co_organizers || []).filter(co => co.brand_logo).map((co, i) => (
+                          <img key={i} src={co.brand_logo} title={co.brand_name} className="w-5 h-5 rounded object-cover border border-white/10" />
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 </div>
                 <Link to={`/tournaments/${featuredTournament.id}`} className="text-red-500 hover:text-red-400 font-bold text-sm">
                   View Tournament <ChevronRight className="w-4 h-4 inline" />
@@ -489,12 +498,25 @@ export default function Home() {
                 <div className="p-4">
                   <h3 className="font-bold mb-2 line-clamp-2">{t.name}</h3>
                   <div className="text-xs text-gray-400 mb-3 space-y-1">
-                    <div className="flex gap-2">
+                    <div className="flex gap-2 flex-wrap">
                       <span className="bg-white/10 px-2 py-1 rounded">{t.game}</span>
-                      <span className="bg-white/10 px-2 py-1 rounded">{t.tournament_type === 'shared' ? 'Shared' : 'Solo'}</span>
+                      {t.format && <span className="bg-white/10 px-2 py-1 rounded">{t.format}</span>}
                     </div>
-                    <div className="text-amber-400 font-bold">EGP {(t.prizepool_total || 0).toLocaleString()}</div>
+                    {t.prizepool_total > 0 && <div className="text-amber-400 font-bold">EGP {(t.prizepool_total || 0).toLocaleString()}</div>}
                   </div>
+                  {(t.organizer_brand || (t.co_organizers || []).length > 0) && (
+                    <div className="flex items-center gap-1.5 mb-3 flex-wrap">
+                      {(t.organizer_brand?.logo || t.organizer_brand?.brand_logo) && (
+                        <img src={t.organizer_brand.logo || t.organizer_brand.brand_logo}
+                          title={t.organizer_brand.name || t.organizer_brand.brand_name}
+                          className="w-5 h-5 rounded object-cover border border-white/10" />
+                      )}
+                      {(t.co_organizers || []).filter(co => co.brand_logo).map((co, i) => (
+                        <img key={i} src={co.brand_logo} title={co.brand_name}
+                          className="w-5 h-5 rounded object-cover border border-white/10 opacity-80" />
+                      ))}
+                    </div>
+                  )}
                   <Link to={`/tournaments/${t.id}`} className="text-red-500 hover:text-red-400 text-xs font-bold">
                     View Tournament →
                   </Link>
