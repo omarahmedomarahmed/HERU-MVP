@@ -3,12 +3,47 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import FloatingPanel from '@/components/ui/FloatingPanel';
 import GlowButton from '@/components/ui/GlowButton';
 import { Input } from '@/components/ui/input';
-import { Users, CheckCircle, XCircle, UserMinus, Search, Clock } from 'lucide-react';
-import { Team, Tournament } from '@/api/heruClient'
+import { Users, CheckCircle, XCircle, UserMinus, Search, Clock, ChevronDown, ChevronRight, Crown, Shield } from 'lucide-react';
+import { Team, Tournament, TeamMember } from '@/api/heruClient'
 
+
+function TeamMembersRow({ teamId }) {
+  const { data: members = [], isLoading } = useQuery({
+    queryKey: ['team-members-panel', teamId],
+    queryFn: () => TeamMember.list(teamId),
+    staleTime: 30_000,
+  });
+
+  if (isLoading) return <div className="px-4 pb-3 text-xs text-gray-500">Loading members...</div>;
+  if (!members.length) return <div className="px-4 pb-3 text-xs text-gray-500">No members found</div>;
+
+  return (
+    <div className="px-4 pb-3 pt-1 grid grid-cols-2 md:grid-cols-3 gap-2">
+      {members.map(m => (
+        <div key={m.user_id} className="flex items-center gap-2 bg-zinc-900/60 rounded-lg p-2">
+          <div className="w-7 h-7 rounded-full bg-zinc-700 overflow-hidden flex-shrink-0">
+            {m.avatar
+              ? <img src={m.avatar} alt="" className="w-full h-full object-cover" />
+              : <div className="w-full h-full flex items-center justify-center text-gray-500 text-xs">{(m.username || '?')[0].toUpperCase()}</div>
+            }
+          </div>
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-1">
+              {m.is_leader && <Crown className="w-3 h-3 text-yellow-400 flex-shrink-0" />}
+              {m.role === 'sub' && <Shield className="w-3 h-3 text-blue-400 flex-shrink-0" />}
+              <span className="text-white text-xs font-medium truncate">{m.username || 'Player'}</span>
+            </div>
+            <span className="text-gray-500 text-xs truncate block">{m.role || 'player'}</span>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
 
 export default function TeamManagementPanel({ tournament, canEdit }) {
   const [search, setSearch] = useState('');
+  const [expandedTeam, setExpandedTeam] = useState(null);
   const queryClient = useQueryClient();
   const tournamentId = tournament.id;
 
@@ -165,24 +200,34 @@ export default function TeamManagementPanel({ tournament, canEdit }) {
         ) : (
           <div className="space-y-2">
             {confirmedTeams.map((team, idx) => team && (
-              <div key={team.id} className="flex items-center gap-3 p-3 bg-zinc-800/40 rounded-lg">
-                <span className="text-gray-500 text-xs w-5 text-center font-bold">#{idx + 1}</span>
-                <div className="w-9 h-9 rounded-lg bg-zinc-800 overflow-hidden flex items-center justify-center">
-                  {team.logo ? <img src={team.logo} alt="" className="w-full h-full object-cover" /> : <Users className="w-4 h-4 text-gray-500" />}
+              <div key={team.id} className="bg-zinc-800/40 rounded-lg overflow-hidden">
+                <div
+                  className="flex items-center gap-3 p-3 cursor-pointer hover:bg-zinc-800/60 transition-colors"
+                  onClick={() => setExpandedTeam(expandedTeam === team.id ? null : team.id)}
+                >
+                  <span className="text-gray-500 text-xs w-5 text-center font-bold">#{idx + 1}</span>
+                  <div className="w-9 h-9 rounded-lg bg-zinc-800 overflow-hidden flex items-center justify-center flex-shrink-0">
+                    {team.logo ? <img src={team.logo} alt="" className="w-full h-full object-cover" /> : <Users className="w-4 h-4 text-gray-500" />}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-white font-medium text-sm truncate">{team.name}</p>
+                    <p className="text-gray-500 text-xs">{team.members?.length || 0} members · {team.games?.[0] || '—'}</p>
+                  </div>
+                  {expandedTeam === team.id
+                    ? <ChevronDown className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                    : <ChevronRight className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                  }
+                  {canEdit && (
+                    <button
+                      onClick={(e) => { e.stopPropagation(); removeTeam.mutate(team.id); }}
+                      className="p-1.5 rounded-lg bg-zinc-700/50 hover:bg-red-500/20 text-gray-400 hover:text-red-400 transition-colors"
+                      title="Remove team"
+                    >
+                      <UserMinus className="w-3.5 h-3.5" />
+                    </button>
+                  )}
                 </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-white font-medium text-sm truncate">{team.name}</p>
-                  <p className="text-gray-500 text-xs">{team.members?.length || 0} members · {team.games?.[0] || '—'}</p>
-                </div>
-                {canEdit && (
-                  <button
-                    onClick={() => removeTeam.mutate(team.id)}
-                    className="p-1.5 rounded-lg bg-zinc-700/50 hover:bg-red-500/20 text-gray-400 hover:text-red-400 transition-colors"
-                    title="Remove team"
-                  >
-                    <UserMinus className="w-3.5 h-3.5" />
-                  </button>
-                )}
+                {expandedTeam === team.id && <TeamMembersRow teamId={team.id} />}
               </div>
             ))}
           </div>
