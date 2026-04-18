@@ -232,9 +232,16 @@ router.post('/:id/publish', requireAuth, async (req, res) => {
     resolvedTournament.prizepool_items.forEach(item => {
       orderItems.push({ item_id: item.id, title: item.title, price: item.price, quantity: 1, category: 'prizepool', status: 'pending' });
     });
-    // Add talent items
+    // Add talent items — resolve gamer usernames for bill display
+    const talentUserIds = (tournament.talents || []).map(t => t.user_id).filter(Boolean);
+    let talentProfilesMap = {};
+    if (talentUserIds.length > 0) {
+      const { data: gamerProfiles } = await supabaseAdmin.from('gamer_profiles').select('user_id,username').in('user_id', talentUserIds);
+      (gamerProfiles || []).forEach(p => { talentProfilesMap[p.user_id] = p.username; });
+    }
     (tournament.talents || []).forEach(t => {
-      orderItems.push({ item_id: t.user_id, title: `Talent: ${t.talent_type}`, price: t.price, quantity: 1, category: 'talent', status: 'pending' });
+      const name = talentProfilesMap[t.user_id] || t.user_id?.slice(0, 8) || 'Unknown';
+      orderItems.push({ item_id: t.user_id, title: `${t.talent_type} — ${name}`, price: t.price, quantity: 1, category: 'talent', gig_worker: name, status: 'pending' });
     });
 
     // Create tournament order
