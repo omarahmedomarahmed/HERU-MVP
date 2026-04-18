@@ -1421,12 +1421,26 @@ function ConnectTab({ userId, profile, queryClient }) {
   const [discordConnecting, setDiscordConnecting] = useState(false);
   const { toast } = useToast();
 
+  const [searchParams, setSearchParams] = useSearchParams();
+
   const { data: connectStatus, refetch: refetchStatus } = useQuery({
     queryKey: ['connect-status', userId],
     queryFn: () => Connect.status(),
     enabled: !!userId,
     staleTime: 30000,
   });
+
+  useEffect(() => {
+    if (searchParams.get('discord') === 'connected') {
+      toast({ title: 'Discord connected!', description: 'Your Discord account has been linked.' });
+      refetchStatus();
+      setSearchParams(prev => { prev.delete('discord'); return prev; });
+    }
+    if (searchParams.get('error')) {
+      toast({ title: 'Connection failed', description: searchParams.get('error'), variant: 'destructive' });
+      setSearchParams(prev => { prev.delete('error'); return prev; });
+    }
+  }, []);
 
   const discordAccounts = connectStatus?.discord || [];
   const riotAccounts = connectStatus?.riot || [];
