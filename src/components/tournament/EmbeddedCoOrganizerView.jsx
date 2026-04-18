@@ -11,7 +11,7 @@ import {
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { Team, Tournament, TournamentOrder } from '@/api/heruClient'
-import { uploadFile } from '@/lib/uploadFile'
+import { uploadFile as uploadFileUtil } from '@/lib/uploadFile'
 
 
 const FOLDERS = ['Tournament Branding', 'Organizer Branding', 'Co-Organizer Branding', 'Social Media'];
@@ -352,7 +352,7 @@ function FileLibraryFolder({ folder, tournamentId, profile }) {
 
   const uploadFile = async (file) => {
     setUploading(true);
-    const { file_url } = await uploadFile(file);
+    const { file_url } = await uploadFileUtil(file);
     const newFile = {
       name: file.name,
       url: file_url,
