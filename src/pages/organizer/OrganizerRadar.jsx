@@ -13,7 +13,7 @@ const fmtEGP = (n) => 'EGP ' + (n || 0).toLocaleString()
 
 const STATUS_CONFIG = {
   open:         { label: 'Open',         cls: 'bg-green-500/20 text-green-400 border-green-500/30',    dot: 'bg-green-400' },
-  in_progress:  { label: 'In Progress',  cls: 'bg-violet-500/20 text-violet-400 border-violet-500/30', dot: 'bg-violet-400' },
+  in_progress:  { label: 'In Progress',  cls: 'bg-red-500/20 text-red-400 border-red-500/30', dot: 'bg-red-400' },
   fully_funded: { label: 'Fully Funded', cls: 'bg-cyan-500/20 text-cyan-400 border-cyan-500/30',       dot: 'bg-cyan-400' },
   closed:       { label: 'Closed',       cls: 'bg-zinc-500/20 text-zinc-400 border-zinc-500/30',       dot: 'bg-zinc-500' },
 }
@@ -24,13 +24,13 @@ const GAME_GRADIENTS = {
   'League of Legends': 'from-blue-900/80 to-cyan-900/60',
   'PUBG':              'from-yellow-900/80 to-amber-900/60',
   'FIFA':              'from-green-900/80 to-emerald-900/60',
-  'Fortnite':          'from-purple-900/80 to-violet-900/60',
+  'Fortnite':          'from-red-900/80 to-pink-900/60',
   'Apex Legends':      'from-red-900/80 to-orange-900/60',
   'Dota 2':            'from-red-950/80 to-rose-900/60',
 }
 
 function getGameGradient(game) {
-  return GAME_GRADIENTS[game] || 'from-violet-900/80 to-indigo-900/60'
+  return GAME_GRADIENTS[game] || 'from-red-900/80 to-zinc-900/60'
 }
 
 function StatusBadge({ status }) {
@@ -59,7 +59,7 @@ function FundingBar({ percent }) {
         />
       </div>
       <div className="flex justify-between mt-1.5 text-xs text-gray-500">
-        <span className="font-medium text-violet-400">{Math.round(pct)}% funded</span>
+        <span className="font-medium text-red-400">{Math.round(pct)}% funded</span>
         <span>{100 - Math.round(pct)}% remaining</span>
       </div>
     </div>
@@ -79,7 +79,7 @@ function FeaturedCard({ listing, isSelf, onClick }) {
   return (
     <button
       onClick={onClick}
-      className="w-full text-left rounded-2xl overflow-hidden border border-white/10 hover:border-violet-500/50 transition-all duration-300 group relative"
+      className="w-full text-left rounded-2xl overflow-hidden border border-white/10 hover:border-red-500/50 transition-all duration-300 group relative"
       style={{ minHeight: 320 }}
     >
       {/* Background image or gradient */}
@@ -94,13 +94,13 @@ function FeaturedCard({ listing, isSelf, onClick }) {
       )}
 
       {/* Overlay */}
-      <div className="absolute inset-0 bg-gradient-to-t from-[#0f0f1a] via-[#0f0f1a]/70 to-transparent" />
-      <div className="absolute inset-0 bg-gradient-to-r from-[#0f0f1a]/80 to-transparent" />
+      <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/70 to-transparent" />
+      <div className="absolute inset-0 bg-gradient-to-r from-zinc-950/80 to-transparent" />
 
       {/* Top badges */}
       <div className="absolute top-4 left-4 right-4 flex items-center justify-between">
         <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-black/60 border border-white/10 text-xs font-bold text-white backdrop-blur-sm">
-          <Gamepad2 className="w-3.5 h-3.5 text-violet-400" />
+          <Gamepad2 className="w-3.5 h-3.5 text-red-400" />
           {listing.game || 'TBD'}
         </span>
         <StatusBadge status={listing.status} />
@@ -119,7 +119,7 @@ function FeaturedCard({ listing, isSelf, onClick }) {
               ? <img src={brandLogo} alt="" className="w-full h-full object-cover" />
               : <span className="text-xs font-black text-white">{brandName[0]}</span>}
           </div>
-          <span className="text-gray-300 text-sm font-medium group-hover/brand:text-violet-300 transition-colors">
+          <span className="text-gray-300 text-sm font-medium group-hover/brand:text-red-300 transition-colors">
             {brandName}
           </span>
           {(listing.main_organizer_brand?.is_verified) && (
@@ -127,7 +127,7 @@ function FeaturedCard({ listing, isSelf, onClick }) {
           )}
         </Link>
 
-        <h2 className="text-2xl font-black text-white mb-1 group-hover:text-violet-200 transition-colors leading-tight">
+        <h2 className="text-2xl font-black text-white mb-1 group-hover:text-red-200 transition-colors leading-tight">
           {listing.tournament_name}
         </h2>
 
@@ -163,7 +163,7 @@ function FeaturedCard({ listing, isSelf, onClick }) {
             {coOrgs.length > 0 && (
               <div className="flex -space-x-2">
                 {coOrgs.slice(0, 3).map((co, i) => (
-                  <div key={i} className="w-7 h-7 rounded-full border-2 border-[#0f0f1a] bg-zinc-700 overflow-hidden flex items-center justify-center">
+                  <div key={i} className="w-7 h-7 rounded-full border-2 border-zinc-950 bg-zinc-700 overflow-hidden flex items-center justify-center">
                     {co.brand_logo
                       ? <img src={co.brand_logo} alt="" className="w-full h-full object-cover" />
                       : <span className="text-[9px] font-black text-white">{(co.brand_name || '?')[0]}</span>}
@@ -183,7 +183,7 @@ function FeaturedCard({ listing, isSelf, onClick }) {
           <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all duration-200 ${
             isSelf
               ? 'bg-white/5 border border-white/10 text-gray-400'
-              : 'bg-violet-600 hover:bg-violet-500 text-white shadow-lg shadow-violet-900/40 group-hover:shadow-violet-900/60'
+              : 'bg-red-600 hover:bg-red-500 text-white shadow-lg shadow-red-900/40 group-hover:shadow-red-900/60'
           }`}>
             {isSelf ? (
               <><Shield className="w-4 h-4" /> Your Tournament</>
@@ -208,7 +208,7 @@ function RadarCard({ listing, isSelf, onClick }) {
   return (
     <button
       onClick={onClick}
-      className="w-full text-left rounded-xl border border-white/10 bg-[#1a1a2e] hover:border-violet-500/40 hover:bg-[#1e1e36] transition-all duration-200 group overflow-hidden"
+      className="w-full text-left rounded-xl border border-white/10 bg-zinc-900 hover:border-red-500/40 hover:bg-zinc-800 transition-all duration-200 group overflow-hidden"
     >
       {/* Mini banner */}
       <div className="relative h-24 overflow-hidden">
@@ -217,13 +217,13 @@ function RadarCard({ listing, isSelf, onClick }) {
         ) : (
           <div className={`w-full h-full bg-gradient-to-br ${getGameGradient(listing.game)}`} />
         )}
-        <div className="absolute inset-0 bg-gradient-to-t from-[#1a1a2e] to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-zinc-900 to-transparent" />
         <div className="absolute top-2 right-2">
           <StatusBadge status={listing.status} />
         </div>
         <div className="absolute bottom-2 left-3">
           <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-black/60 text-xs text-white font-medium backdrop-blur-sm">
-            <Gamepad2 className="w-3 h-3 text-violet-400" />{listing.game}
+            <Gamepad2 className="w-3 h-3 text-red-400" />{listing.game}
           </span>
         </div>
       </div>
@@ -240,7 +240,7 @@ function RadarCard({ listing, isSelf, onClick }) {
           <span className="text-gray-500 text-xs truncate">{brandName}</span>
         </div>
 
-        <h3 className="text-white font-bold text-sm leading-tight mb-3 group-hover:text-violet-300 transition-colors line-clamp-2">
+        <h3 className="text-white font-bold text-sm leading-tight mb-3 group-hover:text-red-300 transition-colors line-clamp-2">
           {listing.tournament_name}
         </h3>
 
@@ -258,7 +258,7 @@ function RadarCard({ listing, isSelf, onClick }) {
           <span className={`text-xs font-bold ${slotsLeft > 0 ? 'text-green-400' : 'text-gray-500'}`}>
             {slotsLeft > 0 ? `${slotsLeft} slot${slotsLeft !== 1 ? 's' : ''} open` : 'Full'}
           </span>
-          <span className="text-violet-400 text-xs font-bold flex items-center gap-1">
+          <span className="text-red-400 text-xs font-bold flex items-center gap-1">
             {isSelf ? 'Your listing' : <>View <ChevronRight className="w-3 h-3" /></>}
           </span>
         </div>
@@ -270,13 +270,13 @@ function RadarCard({ listing, isSelf, onClick }) {
 // ── Radar Header Animation ───────────────────────────────────────────────────
 function RadarHeader() {
   return (
-    <div className="relative rounded-2xl overflow-hidden bg-gradient-to-br from-[#0f0f1a] to-[#1a0f2e] border border-violet-500/20 p-8 mb-8">
+    <div className="relative rounded-2xl overflow-hidden bg-gradient-to-br from-zinc-950 to-zinc-950 border border-red-500/20 p-8 mb-8">
       {/* Animated radar rings */}
       <div className="absolute right-8 top-1/2 -translate-y-1/2 opacity-20 pointer-events-none select-none">
         {[140, 100, 60, 30].map((size, i) => (
           <div
             key={i}
-            className="absolute rounded-full border border-violet-400"
+            className="absolute rounded-full border border-red-400"
             style={{
               width: size,
               height: size,
@@ -288,17 +288,17 @@ function RadarHeader() {
             }}
           />
         ))}
-        <Radio className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-6 h-6 text-violet-400" />
+        <Radio className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-6 h-6 text-red-400" />
       </div>
 
       <div className="relative z-10">
         <div className="flex items-center gap-3 mb-2">
-          <div className="p-2.5 rounded-xl bg-violet-500/20 border border-violet-500/30">
-            <Radio className="w-6 h-6 text-violet-400" />
+          <div className="p-2.5 rounded-xl bg-red-500/20 border border-red-500/30">
+            <Radio className="w-6 h-6 text-red-400" />
           </div>
           <div>
             <h1 className="text-3xl font-black text-white">Sponsorship Radar</h1>
-            <p className="text-violet-300/70 text-sm">Find tournaments to co-organize or sponsor</p>
+            <p className="text-red-300/70 text-sm">Find tournaments to co-organize or sponsor</p>
           </div>
         </div>
         <p className="text-gray-400 text-sm max-w-xl mt-3">
@@ -306,7 +306,7 @@ function RadarHeader() {
           Pay your invoice and unlock full access to the tournament workspace.
         </p>
         <div className="flex items-center gap-4 mt-4 text-xs">
-          <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-violet-500/10 border border-violet-500/20 text-violet-300">
+          <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-500/10 border border-red-500/20 text-red-300">
             <Star className="w-3.5 h-3.5" /> 33% = Co-Organizer (2 slots)
           </span>
           <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-cyan-500/10 border border-cyan-500/20 text-cyan-300">
@@ -375,7 +375,7 @@ export default function OrganizerRadar() {
   const restListings = listings.slice(2)
 
   return (
-    <div className="min-h-screen bg-[#0f0f1a] p-4 sm:p-6 lg:p-8">
+    <div className="min-h-screen bg-zinc-950 p-4 sm:p-6 lg:p-8">
       <div className="max-w-7xl mx-auto">
 
         <RadarHeader />
@@ -384,17 +384,17 @@ export default function OrganizerRadar() {
         <div className="flex gap-1 mb-6 border-b border-white/10">
           <button
             onClick={() => setActiveTab('browse')}
-            className={`px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${activeTab === 'browse' ? 'border-violet-500 text-white' : 'border-transparent text-gray-500 hover:text-gray-300'}`}
+            className={`px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${activeTab === 'browse' ? 'border-red-500 text-white' : 'border-transparent text-gray-500 hover:text-gray-300'}`}
           >
             Browse Radar
           </button>
           <button
             onClick={() => setActiveTab('commitments')}
-            className={`px-4 py-2.5 text-sm font-medium border-b-2 transition-colors flex items-center gap-1.5 ${activeTab === 'commitments' ? 'border-violet-500 text-white' : 'border-transparent text-gray-500 hover:text-gray-300'}`}
+            className={`px-4 py-2.5 text-sm font-medium border-b-2 transition-colors flex items-center gap-1.5 ${activeTab === 'commitments' ? 'border-red-500 text-white' : 'border-transparent text-gray-500 hover:text-gray-300'}`}
           >
             My Commitments
             {myCommitments.length > 0 && (
-              <span className="text-[10px] bg-violet-500/30 text-violet-300 px-1.5 py-0.5 rounded-full font-bold">{myCommitments.length}</span>
+              <span className="text-[10px] bg-red-500/30 text-red-300 px-1.5 py-0.5 rounded-full font-bold">{myCommitments.length}</span>
             )}
           </button>
         </div>
@@ -407,18 +407,18 @@ export default function OrganizerRadar() {
                 <Shield className="w-12 h-12 mb-3 opacity-30" />
                 <p className="text-sm font-medium">No commitments yet</p>
                 <p className="text-xs text-gray-600 mt-1">Commit to a tournament from the Browse tab</p>
-                <button onClick={() => setActiveTab('browse')} className="mt-4 text-violet-400 text-sm hover:text-violet-300 transition-colors">Browse Radar →</button>
+                <button onClick={() => setActiveTab('browse')} className="mt-4 text-red-400 text-sm hover:text-red-300 transition-colors">Browse Radar →</button>
               </div>
             ) : (
               myCommitments.map(listing => {
                 const myEntry = (listing.co_organizers || []).find(co => co.organizer_id === user?.id)
                 const mainBrand = listing.main_organizer_brand?.name || listing.main_organizer_brand?.brand_name || 'Main Organizer'
                 return (
-                  <div key={listing.id} className="rounded-xl border border-violet-500/20 bg-[#1a1a2e] p-5 hover:border-violet-500/40 transition-all cursor-pointer" onClick={() => navigate(`/organizer/radar/${listing.id}`)}>
+                  <div key={listing.id} className="rounded-xl border border-red-500/20 bg-zinc-900 p-5 hover:border-red-500/40 transition-all cursor-pointer" onClick={() => navigate(`/organizer/radar/${listing.id}`)}>
                     <div className="flex items-start justify-between gap-4">
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-2 mb-1">
-                          <span className="text-[10px] px-2 py-0.5 rounded-full bg-violet-500/20 text-violet-300 border border-violet-500/30 font-bold uppercase">
+                          <span className="text-[10px] px-2 py-0.5 rounded-full bg-red-500/20 text-red-300 border border-red-500/30 font-bold uppercase">
                             {myEntry?.label || 'Co-Organizer'}
                           </span>
                           <StatusBadge status={listing.status} />
@@ -427,7 +427,7 @@ export default function OrganizerRadar() {
                         <p className="text-gray-500 text-xs mt-0.5">{listing.game} · by {mainBrand}</p>
                       </div>
                       <div className="text-right shrink-0">
-                        <p className="text-violet-400 font-black text-lg">{myEntry?.percent || 0}%</p>
+                        <p className="text-red-400 font-black text-lg">{myEntry?.percent || 0}%</p>
                         <p className="text-gray-500 text-xs">{fmtEGP(myEntry?.amount || 0)}</p>
                         {myEntry?.access_granted ? (
                           <span className="text-[10px] text-green-400 font-bold flex items-center gap-1 justify-end mt-1">
@@ -457,7 +457,7 @@ export default function OrganizerRadar() {
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
               placeholder="Search tournaments, games, organizers..."
-              className="w-full bg-[#1a1a2e] border border-white/10 rounded-xl pl-10 pr-4 py-3 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-violet-500/50 transition"
+              className="w-full bg-zinc-900 border border-white/10 rounded-xl pl-10 pr-4 py-3 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-red-500/50 transition"
             />
           </div>
           <div className="flex gap-2">
@@ -466,7 +466,7 @@ export default function OrganizerRadar() {
               <select
                 value={gameFilter}
                 onChange={e => setGameFilter(e.target.value)}
-                className="appearance-none bg-[#1a1a2e] border border-white/10 rounded-xl pl-10 pr-8 py-3 text-sm text-white focus:outline-none focus:border-violet-500/50 transition cursor-pointer"
+                className="appearance-none bg-zinc-900 border border-white/10 rounded-xl pl-10 pr-8 py-3 text-sm text-white focus:outline-none focus:border-red-500/50 transition cursor-pointer"
               >
                 <option value="all">All Games</option>
                 {gameOptions.map(g => <option key={g} value={g}>{g}</option>)}
@@ -477,7 +477,7 @@ export default function OrganizerRadar() {
               <select
                 value={statusFilter}
                 onChange={e => setStatusFilter(e.target.value)}
-                className="appearance-none bg-[#1a1a2e] border border-white/10 rounded-xl pl-10 pr-8 py-3 text-sm text-white focus:outline-none focus:border-violet-500/50 transition cursor-pointer"
+                className="appearance-none bg-zinc-900 border border-white/10 rounded-xl pl-10 pr-8 py-3 text-sm text-white focus:outline-none focus:border-red-500/50 transition cursor-pointer"
               >
                 <option value="open">Open Only</option>
                 <option value="in_progress">In Progress</option>
@@ -490,13 +490,13 @@ export default function OrganizerRadar() {
         {/* Content */}
         {isLoading ? (
           <div className="flex items-center justify-center py-24">
-            <Loader2 className="w-8 h-8 animate-spin text-violet-400" />
+            <Loader2 className="w-8 h-8 animate-spin text-red-400" />
           </div>
         ) : listings.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-24 text-center">
-            <div className="p-6 rounded-2xl bg-violet-500/10 border border-violet-500/20 mb-6 relative">
-              <Radio className="w-12 h-12 text-violet-400" />
-              <div className="absolute inset-0 rounded-2xl border border-violet-400/20 animate-ping" />
+            <div className="p-6 rounded-2xl bg-red-500/10 border border-red-500/20 mb-6 relative">
+              <Radio className="w-12 h-12 text-red-400" />
+              <div className="absolute inset-0 rounded-2xl border border-red-400/20 animate-ping" />
             </div>
             <h3 className="text-white font-bold text-xl mb-2">No tournaments on the radar</h3>
             <p className="text-gray-500 text-sm max-w-sm">
@@ -508,7 +508,7 @@ export default function OrganizerRadar() {
         ) : (
           <>
             <p className="text-xs text-gray-500 mb-4 flex items-center gap-1">
-              <Radio className="w-3.5 h-3.5 text-violet-400" />
+              <Radio className="w-3.5 h-3.5 text-red-400" />
               {listings.length} tournament{listings.length !== 1 ? 's' : ''} seeking partners
             </p>
 

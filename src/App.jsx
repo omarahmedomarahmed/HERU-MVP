@@ -59,6 +59,7 @@ import OrganizerSettings from './pages/OrganizerSettings'
 import OrganizerTeams from './pages/OrganizerTeams'
 import OrganizerMessages from './pages/OrganizerMessages'
 import SponsorshipRadar from './pages/SponsorshipRadar'
+import OrganizerRadarPage from './pages/organizer/OrganizerRadar'
 import BillDetail from './pages/BillDetail'
 import OrganizerBilling from './pages/organizer/OrganizerBilling'
 import CoOrganizedTournaments from './pages/organizer/CoOrganizedTournaments'
@@ -158,7 +159,7 @@ function App() {
             <Route path="/organizer/tournaments/:id/manage/chat" element={<RequireOrganizer><OrganizerLayout><OrgTournamentManage defaultTab="chat" /></OrganizerLayout></RequireOrganizer>} />
             <Route path="/organizer/tournaments/:id/manage/settings" element={<RequireOrganizer><OrganizerLayout><OrgTournamentManage defaultTab="report" /></OrganizerLayout></RequireOrganizer>} />
             <Route path="/organizer/tournaments/:id/view" element={<RequireOrganizer><OrganizerLayout><CoOrganizerView /></OrganizerLayout></RequireOrganizer>} />
-            <Route path="/organizer/radar" element={<RequireOrganizer><OrganizerLayout><SponsorshipRadar /></OrganizerLayout></RequireOrganizer>} />
+            <Route path="/organizer/radar" element={<RequireOrganizer><OrganizerLayout><OrganizerRadarPage /></OrganizerLayout></RequireOrganizer>} />
             <Route path="/organizer/radar/:radar_id" element={<RequireOrganizer><OrganizerLayout><RadarDetailPage /></OrganizerLayout></RequireOrganizer>} />
             <Route path="/organizer/billing" element={<RequireOrganizer><OrganizerLayout><OrganizerBilling /></OrganizerLayout></RequireOrganizer>} />
             <Route path="/organizer/billing/payment-method" element={<RequireOrganizer><OrganizerLayout><PaymentMethod /></OrganizerLayout></RequireOrganizer>} />
