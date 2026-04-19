@@ -369,6 +369,44 @@ router.post('/:id/publish', requireAuth, async (req, res) => {
       }));
     }
 
+    // Push invite notification to each invited player (1v1 tournaments)
+    const invitedPlayerIds = tournament.player_invites || [];
+    if (invitedPlayerIds.length > 0) {
+      const { data: gamerProfiles } = await supabaseAdmin
+        .from('gamer_profiles')
+        .select('id,user_id,tournament_invites,notifications')
+        .in('user_id', invitedPlayerIds);
+      await Promise.all((gamerProfiles || []).map(async (gp) => {
+        const existingInvites = gp.tournament_invites || [];
+        const existingNotifs = gp.notifications || [];
+        const alreadyInvited = existingInvites.some(inv => inv.tournament_id === tournament.id);
+        const updates = {};
+        if (!alreadyInvited) {
+          updates.tournament_invites = [...existingInvites, {
+            tournament_id: tournament.id,
+            tournament_name: tournament.name,
+            game: tournament.game,
+            schedule: tournament.schedule,
+            status: 'pending',
+            invited_at: new Date().toISOString(),
+          }];
+          updates.notifications = [...existingNotifs, {
+            id: `notif_${Date.now()}_${gp.user_id}`,
+            type: 'tournament',
+            title: 'Tournament Invite',
+            message: `You've been invited to join "${tournament.name}"`,
+            description: `${tournament.game} · ${tournament.format || '1v1'}`,
+            link: `/gamer/profile?tab=invites`,
+            read: false,
+            created_at: new Date().toISOString(),
+          }];
+        }
+        if (Object.keys(updates).length > 0) {
+          await supabaseAdmin.from('gamer_profiles').update(updates).eq('user_id', gp.user_id);
+        }
+      }));
+    }
+
     res.json(updated);
   } catch (err) {
     res.status(500).json({ error: err.message });
