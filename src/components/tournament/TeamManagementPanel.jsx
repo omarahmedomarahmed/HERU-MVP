@@ -3,8 +3,8 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import FloatingPanel from '@/components/ui/FloatingPanel';
 import GlowButton from '@/components/ui/GlowButton';
 import { Input } from '@/components/ui/input';
-import { Users, CheckCircle, XCircle, UserMinus, Search, Clock, ChevronDown, ChevronRight, Crown, Shield } from 'lucide-react';
-import { Team, Tournament, TeamMember } from '@/api/heruClient'
+import { Users, CheckCircle, XCircle, UserMinus, Search, Clock, ChevronDown, ChevronRight, Crown, Shield, User, Swords } from 'lucide-react';
+import { Team, Tournament, TeamMember, GamerProfile } from '@/api/heruClient'
 
 
 function TeamMembersRow({ teamId }) {
@@ -41,11 +41,14 @@ function TeamMembersRow({ teamId }) {
   );
 }
 
+const is1v1Tournament = (t) => t.participant_type === 'player' || t.participant_type === '1v1';
+
 export default function TeamManagementPanel({ tournament, canEdit }) {
   const [search, setSearch] = useState('');
   const [expandedTeam, setExpandedTeam] = useState(null);
   const queryClient = useQueryClient();
   const tournamentId = tournament.id;
+  const is1v1 = is1v1Tournament(tournament);
 
   const { data: confirmedTeams = [] } = useQuery({
     queryKey: ['confirmed-teams', tournament.teams],
@@ -127,10 +130,45 @@ export default function TeamManagementPanel({ tournament, canEdit }) {
       )
     : [];
 
+  const playerParticipants = tournament.player_participants || [];
+
   return (
     <div className="space-y-6">
+      {/* 1v1 Player Participants Section */}
+      {is1v1 && (
+        <FloatingPanel className="p-5">
+          <h3 className="text-white font-bold mb-4 flex items-center gap-2">
+            <Swords className="w-4 h-4 text-red-400" /> Registered Players ({playerParticipants.length} / {tournament.max_teams || '∞'})
+          </h3>
+          {playerParticipants.length === 0 ? (
+            <p className="text-gray-500 text-sm text-center py-4">No players registered yet</p>
+          ) : (
+            <div className="space-y-2">
+              {playerParticipants.map((p, i) => (
+                <div key={p.user_id || i} className="flex items-center gap-3 p-3 bg-zinc-800/40 rounded-lg">
+                  <span className="text-gray-500 text-xs w-5 font-bold">#{i + 1}</span>
+                  <div className="w-8 h-8 rounded-full bg-zinc-700 flex items-center justify-center flex-shrink-0">
+                    <User className="w-4 h-4 text-gray-400" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-white text-sm font-medium truncate">{p.username || p.user_id?.slice(0, 8) || 'Player'}</p>
+                    {(p.game_id || p.rank) && (
+                      <p className="text-gray-500 text-xs">
+                        {p.game_id && <span>ID: {p.game_id}</span>}
+                        {p.rank && <span className="ml-2">Rank: {p.rank}</span>}
+                      </p>
+                    )}
+                  </div>
+                  <span className="text-xs text-green-400 bg-green-500/10 px-2 py-0.5 rounded-full">Registered</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </FloatingPanel>
+      )}
+
       {/* Capacity Bar */}
-      {capacity > 0 && (
+      {capacity > 0 && !is1v1 && (
         <FloatingPanel className="p-4">
           <div className="flex justify-between text-sm mb-2">
             <span className="text-gray-400">Team Capacity</span>
@@ -146,8 +184,8 @@ export default function TeamManagementPanel({ tournament, canEdit }) {
         </FloatingPanel>
       )}
 
-      {/* Pending Join Requests */}
-      {pendingRequests.length > 0 && (
+      {/* Pending Join Requests (team tournaments only) */}
+      {!is1v1 && pendingRequests.length > 0 && (
         <FloatingPanel className="p-5">
           <h3 className="text-white font-bold mb-4 flex items-center gap-2">
             <Clock className="w-4 h-4 text-amber-400" /> Pending Join Requests ({pendingRequests.length})
@@ -190,8 +228,8 @@ export default function TeamManagementPanel({ tournament, canEdit }) {
         </FloatingPanel>
       )}
 
-      {/* Confirmed Teams */}
-      <FloatingPanel className="p-5">
+      {/* Confirmed Teams (team tournaments only) */}
+      {!is1v1 && <FloatingPanel className="p-5">
         <h3 className="text-white font-bold mb-4 flex items-center gap-2">
           <CheckCircle className="w-4 h-4 text-green-400" /> Confirmed Teams ({confirmedTeams.length})
         </h3>
@@ -232,10 +270,10 @@ export default function TeamManagementPanel({ tournament, canEdit }) {
             ))}
           </div>
         )}
-      </FloatingPanel>
+      </FloatingPanel>}
 
-      {/* Invited Teams */}
-      {invitedTeams.length > 0 && (
+      {/* Invited Teams (team tournaments only) */}
+      {!is1v1 && invitedTeams.length > 0 && (
         <FloatingPanel className="p-5">
           <h3 className="text-white font-bold mb-4 flex items-center gap-2">
             <Clock className="w-4 h-4 text-red-400" /> Invited (Pending Response) ({invitedTeams.length})
@@ -257,8 +295,8 @@ export default function TeamManagementPanel({ tournament, canEdit }) {
         </FloatingPanel>
       )}
 
-      {/* Invite by Search */}
-      {canEdit && (
+      {/* Invite by Search (team tournaments only) */}
+      {canEdit && !is1v1 && (
         <FloatingPanel className="p-5">
           <h3 className="text-white font-bold mb-3 flex items-center gap-2">
             <Search className="w-4 h-4 text-gray-400" /> Invite a Team
