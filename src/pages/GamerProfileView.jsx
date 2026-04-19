@@ -418,7 +418,18 @@ export default function GamerProfileView() {
 
       <main className="max-w-4xl mx-auto px-6 py-10">
         {/* ---------- Profile Hero ---------- */}
-        <div className="relative rounded-2xl bg-gradient-to-br from-zinc-900/80 to-zinc-950/80 border border-zinc-800/60 p-8 mb-8 overflow-hidden">
+        <div className="relative rounded-2xl border border-zinc-800/60 mb-8 overflow-hidden">
+          {/* Cover banner background */}
+          <div className="absolute inset-0 z-0">
+            {profileData.cover_image ? (
+              <img src={profileData.cover_image} alt="" className="w-full h-full object-cover" />
+            ) : (
+              <div className="w-full h-full bg-gradient-to-br from-zinc-900/80 to-zinc-950/80" />
+            )}
+            {/* Dark overlay so text stays readable */}
+            <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/50 to-black/80" />
+          </div>
+          <div className="relative z-10 p-8">
           {/* Decorative glow */}
           <div className="absolute -top-20 -right-20 w-60 h-60 bg-red-500/5 rounded-full blur-3xl pointer-events-none" />
 
@@ -460,9 +471,18 @@ export default function GamerProfileView() {
 
               {discordPublic && (
                 <div className="flex items-center gap-1.5 mb-3 justify-center sm:justify-start">
-                  <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-indigo-500/10 border border-indigo-500/30 text-xs text-indigo-300 font-medium">
-                    <MessageSquare className="w-3.5 h-3.5" />
-                    <span>{discordPublic.platform_username}</span>
+                  <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-indigo-500/10 border border-indigo-500/30">
+                    {discordPublic.platform_avatar ? (
+                      <img src={discordPublic.platform_avatar} alt="" className="w-6 h-6 rounded-full flex-shrink-0" />
+                    ) : (
+                      <div className="w-6 h-6 rounded-full bg-indigo-600 flex items-center justify-center flex-shrink-0">
+                        <MessageSquare className="w-3 h-3 text-white" />
+                      </div>
+                    )}
+                    <div className="min-w-0">
+                      <p className="text-[10px] text-indigo-400 font-semibold leading-none">Discord</p>
+                      <p className="text-white text-xs font-bold truncate leading-snug">{discordPublic.platform_username}</p>
+                    </div>
                   </div>
                 </div>
               )}
@@ -516,6 +536,7 @@ export default function GamerProfileView() {
               })}
             </div>
           )}
+          </div>{/* end relative z-10 inner */}
         </div>
 
         {/* ---------- Riot Ranked Accounts ---------- */}

@@ -760,14 +760,17 @@ export default function GamerProfile() {
               ) : (
                 <User className="w-16 h-16 text-red-500" />
               )}
+              {/* Edit icon overlaid directly on the avatar */}
+              <label className="absolute inset-0 cursor-pointer flex items-end justify-end p-1.5 opacity-0 hover:opacity-100 transition-opacity bg-black/40 rounded-2xl">
+                <div className="bg-zinc-900/90 border border-zinc-600 text-white w-7 h-7 rounded-full flex items-center justify-center">
+                  {avatarUploading ? <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <Edit2 className="w-3 h-3" />}
+                </div>
+                <input type="file" accept="image/*" className="hidden" onChange={handleAvatarUpload} disabled={avatarUploading} />
+              </label>
             </div>
-            <label className="absolute -bottom-2 -left-2 cursor-pointer bg-zinc-800 hover:bg-zinc-700 border border-zinc-600 text-white text-xs font-bold w-8 h-8 rounded-full flex items-center justify-center transition-colors">
-              {avatarUploading ? <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <Edit2 className="w-3.5 h-3.5" />}
-              <input type="file" accept="image/*" className="hidden" onChange={handleAvatarUpload} disabled={avatarUploading} />
-            </label>
             {profile?.is_talent && (
-              <div className="absolute -bottom-2 -right-2 bg-yellow-500 text-black text-xs font-bold px-2 py-0.5 rounded-full flex items-center gap-1">
-                <Star className="w-3 h-3" /> TALENT
+              <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 bg-yellow-500 text-black text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-0.5 whitespace-nowrap shadow-lg">
+                <Star className="w-2.5 h-2.5" /> TALENT
               </div>
             )}
           </div>
@@ -842,14 +845,29 @@ export default function GamerProfile() {
                       <GlowButton variant="secondary" size="sm" onClick={() => setEditing(true)}>
                         <Edit2 className="w-4 h-4" /> Edit
                       </GlowButton>
-                      <GlowButton variant="ghost" size="sm" onClick={() => setBecomeOrgModal(true)}>
-                        <Briefcase className="w-4 h-4" /> Become Organizer & Build Events
-                      </GlowButton>
+                      <a
+                        href="https://discord.com/oauth2/authorize?client_id=HERU_BOT_ID&scope=bot&permissions=8"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-600/20 border border-indigo-500/40 text-indigo-300 hover:bg-indigo-600/30 text-xs font-bold transition-colors"
+                      >
+                        <MessageSquare className="w-3.5 h-3.5" /> Add HERU Bot to Server
+                      </a>
                     </div>
+                    {/* Discord badge — same style as Connect tab */}
                     {discordAccount && (
-                      <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-indigo-500/10 border border-indigo-500/30 text-xs text-indigo-300">
-                        <MessageSquare className="w-3.5 h-3.5" />
-                        <span className="font-medium">{discordAccount.platform_username || 'Discord linked'}</span>
+                      <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-indigo-500/10 border border-indigo-500/30">
+                        {discordAccount.platform_avatar ? (
+                          <img src={discordAccount.platform_avatar} alt="" className="w-6 h-6 rounded-full flex-shrink-0" />
+                        ) : (
+                          <div className="w-6 h-6 rounded-full bg-indigo-600 flex items-center justify-center flex-shrink-0">
+                            <MessageSquare className="w-3 h-3 text-white" />
+                          </div>
+                        )}
+                        <div className="min-w-0">
+                          <p className="text-[10px] text-indigo-400 font-semibold leading-none">Discord</p>
+                          <p className="text-white text-xs font-bold truncate leading-snug">{discordAccount.platform_username}</p>
+                        </div>
                       </div>
                     )}
                   </div>

@@ -378,7 +378,11 @@ export default function Arena() {
             {/* Stats row */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
               {[
-                { label: 'Teams', value: tournament.teams?.length || 0, sub: `/ ${tournament.max_teams || '∞'}` },
+                {
+                  label: is1v1 ? 'Players' : 'Teams',
+                  value: is1v1 ? (tournament.player_participants?.length || 0) : (tournament.teams?.length || 0),
+                  sub: `/ ${tournament.max_teams || '∞'}`,
+                },
                 { label: 'Format', value: tournament.format || 'TBD', sub: '' },
                 { label: 'Prizepool', value: formatEGP(tournament.prizepool_total), sub: '' },
                 { label: 'Status', value: (tournament.status || 'draft').toUpperCase(), sub: '' },
@@ -426,16 +430,44 @@ export default function Arena() {
                 <h3 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-3 flex items-center gap-2">
                   <Star className="w-4 h-4 text-yellow-400" /> Prizes
                 </h3>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div className="rounded-lg bg-yellow-500/10 border border-yellow-500/20 p-3 text-center">
-                    <p className="text-xs text-yellow-400">🥇 1st Place</p>
-                    <p className="text-lg font-bold text-white">{formatEGP(tournament.prizepool_total * 0.5)}</p>
-                  </div>
-                  <div className="rounded-lg bg-gray-500/10 border border-gray-500/20 p-3 text-center">
-                    <p className="text-xs text-gray-400">🥈 2nd Place</p>
-                    <p className="text-lg font-bold text-white">{formatEGP(tournament.prizepool_total * 0.3)}</p>
-                  </div>
-                </div>
+                {(() => {
+                  const breakdown = tournament.prize_breakdown;
+                  if (breakdown?.length > 0) {
+                    return (
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        {breakdown.map((prize, i) => {
+                          const medals = ['🥇', '🥈', '🥉'];
+                          const colors = [
+                            'bg-yellow-500/10 border-yellow-500/20 text-yellow-400',
+                            'bg-gray-400/10 border-gray-400/20 text-gray-400',
+                            'bg-amber-700/10 border-amber-700/20 text-amber-600',
+                          ];
+                          return (
+                            <div key={i} className={`rounded-lg border p-3 text-center ${colors[i] || colors[2]}`}>
+                              <p className="text-xs">{medals[i] || `#${prize.place}`} {prize.label}</p>
+                              <p className="text-lg font-bold text-white">{formatEGP(prize.cash)}</p>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    );
+                  }
+                  // Fallback: default 50/30/20 split
+                  return (
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                      {[
+                        { emoji: '🥇', label: '1st Place', pct: 0.5, cls: 'bg-yellow-500/10 border-yellow-500/20 text-yellow-400' },
+                        { emoji: '🥈', label: '2nd Place', pct: 0.3, cls: 'bg-gray-400/10 border-gray-400/20 text-gray-400' },
+                        { emoji: '🥉', label: '3rd Place', pct: 0.2, cls: 'bg-amber-700/10 border-amber-700/20 text-amber-600' },
+                      ].map((p, i) => (
+                        <div key={i} className={`rounded-lg border p-3 text-center ${p.cls}`}>
+                          <p className="text-xs">{p.emoji} {p.label}</p>
+                          <p className="text-lg font-bold text-white">{formatEGP(tournament.prizepool_total * p.pct)}</p>
+                        </div>
+                      ))}
+                    </div>
+                  );
+                })()}
               </div>
             )}
           </div>
