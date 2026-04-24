@@ -46,6 +46,12 @@ import reviewRoutes from './src/routes/reviews.js';
 import organizerVerificationRoutes from './src/routes/organizer-verifications.js';
 import cmsRoutes from './src/routes/cms.js';
 import revenueRoutes from './src/routes/revenue.js';
+import managedServicesRoutes from './src/routes/managed-services.js';
+import coachingRoutes from './src/routes/coaching.js';
+import friendsRoutes from './src/routes/friends.js';
+import directMessagesRoutes from './src/routes/direct-messages.js';
+import leaderboardsRoutes from './src/routes/leaderboards.js';
+import reportsRoutes from './src/routes/reports.js';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -158,6 +164,12 @@ app.use('/api/reviews', reviewRoutes);
 app.use('/api/organizer-verifications', organizerVerificationRoutes);
 app.use('/api/cms', cmsRoutes);
 app.use('/api/revenue', revenueRoutes);
+app.use('/api/managed-services', managedServicesRoutes);
+app.use('/api/coaching', coachingRoutes);
+app.use('/api/friends', friendsRoutes);
+app.use('/api/direct-messages', directMessagesRoutes);
+app.use('/api/leaderboards', leaderboardsRoutes);
+app.use('/api/reports', reportsRoutes);
 
 app.use((_req, res) => {
   res.status(404).json({ error: 'Route not found' });

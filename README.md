@@ -1,45 +1,125 @@
-# HERU.gg — Esports Tournament Platform
+# HERU.gg — The Operating System for Esports in MENA
 
-HERU.gg is an esports tournament platform built for the MENA region (Egypt, Saudi Arabia, UAE).  
-It connects **Gamers**, **Tournament Organizers**, and **Staff** in one unified platform.
-
----
-
-## What The Platform Does
-
-| Who | What they can do |
-|-----|------------------|
-| **Gamers** | Join tournaments, manage teams, offer talent services, shop the marketplace, connect Riot & Discord accounts, chat with the AI assistant |
-| **Organizers** | Build tournaments using a step-by-step builder, list on the Sponsorship Radar to find co-organizers/sponsors, manage billing, add HERU Bot to their Discord server |
-| **Staff** | Full admin control — users, tournaments, billing, marketplace, approvals, revenue tracking |
-
-### Key Features Built
-- **Tournament Builder** — Multi-step form with live cost calculator (15% platform fee auto-applied)
-- **Sponsorship Radar** — Organizers who can't fund 100% solo list their tournament; others commit 33%/66% as co-organizers or sponsors
-- **HERU CONNECT** — Gamers link their Discord and Riot Games (LoL / Valorant) accounts; stats display on profile
-- **HERU BOT** — Discord bot with 11 slash commands; supports natural language via @mentions; Claude AI-powered
-- **AI Agent** — Claude-powered chat assistant on `/gamer/ai-agent` and inside Discord
-- **Marketplace** — Gamers can buy tournament-related items; talents can be booked by organizers
-- **Billing System** — Automated invoicing (EGP), Paymob payment gateway ready, shared-tournament invoice splitting
-- **Arena (1v1)** — Gamers challenge each other to 1v1 matches
+HERU.gg is a four-sided esports marketplace connecting **Gamers**, **Organizers**, **Sponsors**, and **Service Providers** across the MENA region (Egypt, Saudi Arabia, UAE).
 
 ---
 
-## Tech Stack
+## Architecture
 
-| Layer | Technology |
-|-------|------------|
-| Frontend | React 18 + Vite + TailwindCSS |
-| Backend | Node.js 20 + Express 4 (ES Modules) |
-| Database | Supabase (PostgreSQL 15) |
-| Auth | Supabase Auth (email + password + JWT) |
-| Storage | Supabase Storage |
-| Realtime | Supabase Realtime (chat) |
-| Payments | Paymob API (MENA) |
-| Email | Resend API |
-| AI | Anthropic Claude (`claude-opus-4-7`) |
-| Discord Bot | discord.js v14 |
-| Hosting | Hostinger VPS (Ubuntu 22.04, Nginx, PM2) |
+```
+Frontend:  React 18 + Vite + TailwindCSS
+Backend:   Node.js 20 + Express 4
+Database:  Supabase (PostgreSQL 15 + RLS + Realtime + Storage)
+Auth:      Supabase Auth (JWT) + custom staff session tokens
+Payments:  Paymob API (EGP, MENA gateway)
+Email:     Resend API
+Hosting:   Hostinger VPS (Ubuntu 22.04, Nginx, PM2)
+```
+
+---
+
+## Quick Start (Local Development)
+
+### Prerequisites
+- Node.js 20+
+- Supabase CLI (`npm install -g supabase`)
+- A Supabase project (free tier works)
+
+### 1. Clone & install
+
+```bash
+git clone <repo-url> heru-mvp
+cd heru-mvp
+
+# Frontend dependencies
+npm install
+
+# Backend dependencies
+cd backend && npm install && cd ..
+```
+
+### 2. Environment setup
+
+```bash
+cp .env.example .env
+```
+
+Fill in `.env` with your Supabase URL, anon key, service role key, and other credentials. See `.env.example` for all required variables.
+
+### 3. Database setup
+
+```bash
+# Start local Supabase (optional — or use hosted project)
+supabase start
+
+# Run all migrations in order
+supabase db push
+# OR apply manually via Supabase dashboard SQL editor
+```
+
+Migrations are in `supabase/migrations/` numbered sequentially:
+- `001–020`: Core schema (users, tournaments, teams, billing, etc.)
+- `021_platform_pivot.sql`: Sponsor/provider tables, packages, revenue ledger
+- `022_phase2_features.sql`: Coaching, friends, DMs, leaderboards, managed services
+
+### 4. Run locally
+
+```bash
+# Terminal 1 — Frontend (port 5173)
+npm run dev
+
+# Terminal 2 — Backend (port 3001)
+cd backend && npm start
+```
+
+Visit `http://localhost:5173`
+
+---
+
+## Stakeholder Flows
+
+### Gamers (`/auth/gamer/*` → `/gamer/*`)
+- Register, compete in tournaments, manage teams
+- Browse coaches and book 1:1 sessions
+- View cross-tournament leaderboards
+- Add friends and send direct messages
+
+### Organizers (`/auth/organizer/*` → `/organizer/*`)
+- Build tournaments with a multi-step builder (costs auto-calculated)
+- Create sponsorship packages (priced relative to reach)
+- Book service providers directly inside the builder
+- Get verified (required to publish to Sponsorship Radar)
+
+### Sponsors (`/auth/sponsor/*` → `/sponsor/*`)
+- Browse Sponsorship Radar to find tournaments with packages
+- Purchase packages via Paymob, track deliverables
+- Subscribe (Pro/Enterprise) for analytics and consultant access
+- Request fully-managed campaigns from HERU
+
+### Service Providers (`/auth/provider/*` → `/provider/*`)
+- List services in categories: Branding, Production, Talent, Venue, Marketing
+- Receive bookings from organizers; payment held in escrow
+- Special types: Coaches (visible at `/coaches`), Influencers (visible at `/influencers`)
+- Get rated and reviewed after each booking
+
+### Staff (`/admin` — hidden, not linked publicly)
+- Approve service providers and organizer verifications
+- Manage the revenue ledger (service fee + sponsorship fee + subscription MRR)
+- Platform control panel (feature toggles, fee %)
+- CMS editor for landing page copy
+- Assign consultants to managed service projects
+
+---
+
+## Revenue Model
+
+| Stream | Rate | Table |
+|--------|------|-------|
+| Service booking fee | 15% of booking price | `heru_revenue_ledger` |
+| Sponsorship fee | 15% of package price | `heru_revenue_ledger` |
+| Subscription (Pro/Enterprise) | Full price | `heru_revenue_ledger` |
+
+All currency is **EGP** — never USD.
 
 ---
 
@@ -47,256 +127,66 @@ It connects **Gamers**, **Tournament Organizers**, and **Staff** in one unified 
 
 ```
 /
-├── src/                        # React frontend (Vite)
-│   ├── pages/                  # All page components
-│   │   ├── gamer/             # Gamer-specific pages (Arena, ConnectedAccounts, AiAgent)
-│   │   ├── organizer/         # Organizer-specific pages
-│   │   └── auth/              # Auth pages (login/register)
-│   ├── components/
-│   │   ├── layouts/           # GamerLayout, OrganizerLayout, StaffLayout
-│   │   ├── navigation/        # Navbar, dropdowns
-│   │   └── shared/            # Reusable UI components
-│   ├── api/
-│   │   └── heruClient.js      # All API calls to backend (single source of truth)
-│   └── lib/
-│       ├── AuthContext.jsx    # Supabase auth context
-│       ├── auth-guards.jsx    # RequireGamer, RequireOrganizer, RequireStaff
-│       └── supabase.js        # Supabase client (anon key)
-│
-├── backend/                    # Express API server
-│   ├── index.js               # Entry point — all route mounts
+├── src/                    # React frontend
+│   ├── api/heruClient.js   # API helper (all fetch calls)
+│   ├── lib/AuthContext.jsx  # Auth + role state
+│   ├── lib/auth-guards.jsx  # Route protection components
+│   ├── components/layouts/ # Per-stakeholder layouts
+│   └── pages/
+│       ├── auth/           # Login/register pages per role
+│       ├── gamer/          # Gamer dashboard pages
+│       ├── organizer/      # Organizer dashboard pages
+│       ├── sponsor/        # Sponsor dashboard pages
+│       ├── provider/       # Provider dashboard pages
+│       └── staff/          # Staff admin pages
+├── backend/
+│   ├── index.js            # Express app entry point
 │   └── src/
-│       ├── routes/            # 27 route modules (one per feature area)
-│       ├── middleware/        # auth.js, roleGuard.js, staffGuard.js
-│       ├── lib/
-│       │   ├── supabase.js   # Supabase admin client (service role key)
-│       │   ├── paymob.js     # Paymob payment gateway
-│       │   ├── resend.js     # Email via Resend
-│       │   ├── ai/           # Claude agent: agent.js, tools.js, prompts.js
-│       │   └── connect/      # Discord OAuth: discord.js | Riot API: riot.js
-│       └── logic/            # Business logic (tournament costs, billing, radar)
-│
-├── bot/                        # Discord bot (discord.js v14)
-│   ├── index.js               # Bot entry point
-│   ├── register-commands.js   # One-time slash command registration
-│   ├── commands/index.js      # 11 slash command definitions
-│   └── lib/                   # heruClient.js, embeds.js, conversationManager.js
-│
-├── supabase/
-│   └── migrations/            # 14 SQL migration files (run in order)
-│
-└── nginx/                      # Nginx config for VPS
+│       ├── routes/         # One file per API resource
+│       ├── middleware/      # auth.js, roleGuard.js, staffGuard.js
+│       ├── lib/             # supabase.js, paymob.js, resend.js
+│       └── logic/          # tournament.js, billing.js, notifications.js
+└── supabase/
+    └── migrations/         # Sequential SQL migration files
 ```
 
 ---
 
-## All Frontend Routes
+## Deployment (Hostinger VPS)
 
-### Public (no login needed)
-| Path | Page |
-|------|------|
-| `/` | Landing page |
-| `/tournaments` | Browse all tournaments |
-| `/tournaments/:id` | Tournament detail |
-| `/teams` | Browse teams |
-| `/teams/:id` | Team profile |
-| `/organizer/:id` | Organizer public profile |
-| `/talents` | Browse talent profiles |
-| `/radar` | Sponsorship radar |
-| `/radar/:id` | Radar listing detail |
+See `SETUP.md` for full step-by-step deployment instructions.
 
-### Auth
-| Path | Page |
-|------|------|
-| `/auth` | Choose gamer or organizer |
-| `/auth/gamer/login` | Gamer login |
-| `/auth/gamer/register` | Gamer register |
-| `/auth/organizer/login` | Organizer login |
-| `/auth/organizer/register` | Organizer register |
-| `/auth/forgot-password` | Password reset request |
-| `/auth/reset-password` | Set new password |
-| `/admin` | Staff login (hidden — not linked anywhere) |
-
-### Gamer Zone (login required)
-| Path | Page |
-|------|------|
-| `/gamer/home` | Feed — tournaments, notifications |
-| `/gamer/arena` | 1v1 Arena challenges |
-| `/gamer/tournaments` | Browse tournaments |
-| `/gamer/tournaments/:id` | Tournament detail + join |
-| `/gamer/profile` | Edit profile |
-| `/gamer/profile/talent` | Become a talent |
-| `/gamer/teams` | My teams |
-| `/gamer/teams/create` | Create a team |
-| `/gamer/teams/:id` | Team management |
-| `/gamer/gigs` | Gig requests (talent) |
-| `/gamer/gigs/:id` | Gig detail + chat |
-| `/gamer/orders` | My marketplace orders |
-| `/gamer/orders/:id` | Order detail |
-| `/gamer/marketplace` | Shop |
-| `/gamer/cart` | Shopping cart |
-| `/gamer/billing` | My bills |
-| `/gamer/notifications` | All notifications |
-| `/gamer/connect` | Connect Discord + Riot accounts |
-| `/gamer/ai-agent` | AI assistant chat |
-
-### Organizer Zone (login required)
-| Path | Page |
-|------|------|
-| `/organizer/dashboard` | Main dashboard |
-| `/organizer/tournaments` | My tournaments |
-| `/organizer/tournaments/new` | Tournament Builder |
-| `/organizer/tournaments/:id/manage` | Manage tournament |
-| `/organizer/tournaments/:id/view` | Co-organizer read-only view |
-| `/organizer/radar` | Sponsorship Radar feed |
-| `/organizer/radar/:id` | Radar listing + commit |
-| `/organizer/sponsored` | My co-organized tournaments |
-| `/organizer/billing` | All invoices |
-| `/organizer/billing/:bill_number` | Bill detail + pay |
-| `/organizer/messages` | Conversations |
-| `/organizer/profile` | Brand settings |
-
-### Staff Zone (access key required)
-| Path | Page |
-|------|------|
-| `/staff/dashboard` | Platform overview |
-| `/staff/tournaments` | All tournaments |
-| `/staff/users` | All users |
-| `/staff/marketplace` | Manage items |
-| `/staff/approvals` | Approval queue |
-| `/staff/orders` | All orders |
-| `/staff/radar` | All radar listings |
-| `/staff/billing` | Master billing |
-| `/staff/revenue` | HERU fee revenue |
-| `/staff/organizers` | All organizer profiles |
-| `/staff/gamers` | All gamer profiles |
-| `/staff/teams` | All teams |
-| `/staff/gigs` | All gig requests |
-| `/staff/audit` | Audit trail |
-| `/staff/settings` | App settings |
-| `/staff/tournament-builder` | Build on behalf |
+Quick summary:
+1. SSH into VPS, install Node.js 20, Nginx, PM2
+2. Clone repo, run `npm install` in both root and `backend/`
+3. Copy `.env` with production credentials
+4. Run migrations against hosted Supabase project
+5. Build frontend: `npm run build` → output in `dist/`
+6. Configure Nginx: serve `dist/` for frontend, proxy `/api` to backend port 3001
+7. Start backend with PM2: `pm2 start backend/index.js --name heru-backend`
+8. Enable HTTPS with Certbot
 
 ---
 
-## Database (Supabase)
+## Demo Accounts (seed data)
 
-Apply all 14 migration files in order via Supabase Dashboard → SQL Editor:
-
-| File | What it creates |
-|------|-----------------|
-| 001_initial_schema.sql | Core tables |
-| 002_rls_policies.sql | Row-Level Security |
-| 003_indexes.sql | Performance indexes |
-| 004_storage.sql | Storage buckets |
-| 005_enhanced_entities.sql | Extended table fields |
-| 006_security_fixes.sql | RLS hardening |
-| 007_username_slug.sql | Gamer username/slug |
-| 008_arena_1v1.sql | 1v1 Arena tables |
-| 009_promo_codes.sql | Promo code tables |
-| 009_team_chat_and_fixes.sql | Team chat |
-| 010_radar_views.sql | Radar view tracking |
-| 011_prize_breakdown_and_reports.sql | Prize breakdown + reports |
-| 014_heru_connect.sql | Discord + Riot + AI Agent tables |
+| Role | Email | Note |
+|------|-------|------|
+| Admin/Staff | omarabdelgawad001@gmail.com | Staff key: `HERU-STAFF-OMAR-2026` |
+| Organizer | mr.3omar.a7mad@gmail.com | Nexus Esports |
+| Gamer | habibaheikal27@gmail.com | — |
 
 ---
 
-## Discord Bot Commands
+## Key Business Rules
 
-| Command | What it does |
-|---------|--------------|
-| `/heru-link` | Sends OAuth link to connect HERU account to Discord |
-| `/heru-profile [username]` | Shows a gamer's HERU profile |
-| `/heru-stats [game]` | Shows your Riot ranked stats |
-| `/heru-tournaments` | Lists active tournaments |
-| `/heru-join [tournament]` | Join a tournament via Discord |
-| `/heru-team [name]` | Look up a team |
-| `/heru-standings` | Tournament standings |
-| `/heru-ask [question]` | Ask the Claude AI assistant anything |
-| `/heru-build` | Start building a tournament (AI-guided, organizers only) |
-| `/heru-setup` | Link your Discord server to your HERU organizer account (admin only) |
-| `/heru-announce [message]` | Announce something to the server (admin only) |
-
----
-
-## Local Development Setup
-
-```bash
-# 1. Install dependencies
-npm install
-cd backend && npm install && cd ..
-cd bot && npm install && cd ..
-
-# 2. Set up environment files
-cp .env.example .env
-cp .env.example backend/.env
-# Fill in Supabase keys, Discord secrets, Anthropic key, etc.
-
-# 3. Apply database migrations
-# In Supabase Dashboard → SQL Editor, paste and run each migration file in order
-
-# 4. Start development servers
-# Terminal 1 — Backend (port 3001)
-cd backend && npm run dev
-# Terminal 2 — Frontend (port 5173)
-npm run dev
-
-# 5. Register bot slash commands (once)
-cd bot && node register-commands.js
-```
-
----
-
-## VPS Deployment (Hostinger Ubuntu 22.04)
-
-```bash
-cd /var/www/heru
-git pull origin claude/add-oauth-discord-bot-cDDza
-npm install
-cd backend && npm install && cd ..
-cd bot && npm install && cd ..
-npm run build
-pm2 restart heru-backend
-pm2 restart heru-bot
-pm2 save
-```
-
----
-
-## Environment Variables
-
-See `.env.example` for the complete list.
-
-| Variable | Where to get it |
-|----------|-----------------|
-| `VITE_SUPABASE_URL` | Supabase → Settings → API |
-| `SUPABASE_SERVICE_ROLE_KEY` | Supabase → Settings → API |
-| `DISCORD_CLIENT_SECRET` | Discord Developer Portal → OAuth2 |
-| `DISCORD_BOT_TOKEN` | Discord Developer Portal → Bot |
-| `RIOT_API_KEY` | developer.riotgames.com (renew daily) |
-| `ANTHROPIC_API_KEY` | console.anthropic.com |
-| `HERU_BOT_SECRET` | Generate: `openssl rand -hex 32` |
-| `PAYMOB_API_KEY` | Paymob merchant dashboard |
-
----
-
-## Demo Accounts
-
-| Role | Email | Key |
-|------|-------|-----|
-| Staff (super admin) | omarabdelgawad001@gmail.com | HERU-STAFF-OMAR-2026 |
-| Staff (ops) | heru.gg.esports@gmail.com | HERU-STAFF-OPS-2026 |
-
----
-
-## Revenue Model
-
-- HERU charges a **15% platform fee** on every tournament total
-- Fee is auto-calculated and added to every invoice
-- Example: EGP 80,000 tournament → EGP 12,000 fee → EGP 92,000 billed
-- All currency is **EGP** — never USD
-
----
-
-## License
-
-Proprietary — All rights reserved © HERU.gg 2026
+1. Platform fee is always **15%** on all transactions
+2. All prices in **EGP** only
+3. Organizer must be **verified** before publishing to Sponsorship Radar
+4. Service provider listings require **staff approval** before appearing
+5. Sponsor cannot see tournament cost breakdown — only packages
+6. Staff login at `/admin` — never linked from public navigation
+7. Escrow: payment held at booking, released after organizer confirms delivery
+8. Coaching: 15% HERU cut on every session
+9. Subscriptions: full price goes to HERU (no cut — it is the cut)
+10. Max sponsorship packages per tournament: no hard limit, but guide is 1–3 tiers

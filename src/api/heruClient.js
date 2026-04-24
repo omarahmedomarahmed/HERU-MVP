@@ -126,7 +126,6 @@ export const GamerProfile = {
   ...createEntity('/gamers'),
   me:               ()            => apiCall('/gamers/me'),
   updateMe:         (data)        => apiCall('/gamers/me', { method: 'PUT', body: data }),
-  applyTalent:      (data)        => apiCall('/gamers/talent-application', { method: 'POST', body: data }),
   stats:            (id)          => apiCall(`/gamers/${id}/stats`),
   achievements:     (id)          => apiCall(`/gamers/${id}/achievements`),
 }
@@ -137,8 +136,104 @@ export const OrganizerProfile = {
   updateMe:         (data)        => apiCall('/organizers/me', { method: 'PUT', body: data }),
 }
 
-export const MarketplaceItem = {
-  ...createEntity('/marketplace'),
+// ---------------------------------------------------------------------------
+// Platform Pivot — new 4-stakeholder entities
+// ---------------------------------------------------------------------------
+
+export const Service = {
+  ...createEntity('/services'),
+  mine:             ()            => apiCall('/services/mine'),
+  approve:          (id)          => apiCall(`/services/${id}/approve`, { method: 'PUT' }),
+}
+
+export const ServiceBooking = {
+  ...createEntity('/service-bookings'),
+  accept:           (id)          => apiCall(`/service-bookings/${id}/accept`, { method: 'PUT' }),
+  reject:           (id, data)    => apiCall(`/service-bookings/${id}/reject`, { method: 'PUT', body: data }),
+  complete:         (id)          => apiCall(`/service-bookings/${id}/complete`, { method: 'PUT' }),
+  release:          (id)          => apiCall(`/service-bookings/${id}/release`, { method: 'PUT' }),
+  sendChat:         (id, msg)     => apiCall(`/service-bookings/${id}/chat`, { method: 'POST', body: msg }),
+  addFile:          (id, data)    => apiCall(`/service-bookings/${id}/files`, { method: 'POST', body: data }),
+}
+
+export const SponsorshipPackage = {
+  ...createEntity('/sponsorship-packages'),
+}
+
+export const Sponsorship = {
+  ...createEntity('/sponsorships'),
+  pay:              (id, data)    => apiCall(`/sponsorships/${id}/pay`, { method: 'PUT', body: data }),
+}
+
+export const Subscription = {
+  me:               ()            => apiCall('/subscriptions/me'),
+  create:           (data)        => apiCall('/subscriptions', { method: 'POST', body: data }),
+  cancel:           ()            => apiCall('/subscriptions/cancel', { method: 'PUT' }),
+}
+
+export const SponsorProfile = {
+  me:               ()            => apiCall('/sponsors/me'),
+  updateMe:         (data)        => apiCall('/sponsors/me', { method: 'PUT', body: data }),
+}
+
+export const Provider = {
+  ...createEntity('/providers'),
+  me:               ()            => apiCall('/providers/me'),
+  updateMe:         (data)        => apiCall('/providers/me', { method: 'PUT', body: data }),
+}
+
+export const Review = {
+  ...createEntity('/reviews'),
+}
+
+export const OrganizerVerification = {
+  me:               ()            => apiCall('/organizer-verifications/me'),
+  submit:           (data)        => apiCall('/organizer-verifications', { method: 'POST', body: data }),
+  review:           (id, data)    => apiCall(`/organizer-verifications/${id}`, { method: 'PUT', body: data }),
+}
+
+export const ManagedService = {
+  ...createEntity('/managed-services'),
+  approve:          (id)          => apiCall(`/managed-services/${id}/approve`, { method: 'PUT' }),
+  assign:           (id, data)    => apiCall(`/managed-services/${id}/assign`, { method: 'PUT', body: data }),
+  submitProposal:   (id, data)    => apiCall(`/managed-services/${id}/proposal`, { method: 'PUT', body: data }),
+  complete:         (id, data)    => apiCall(`/managed-services/${id}/complete`, { method: 'PUT', body: data }),
+  sendChat:         (id, msg)     => apiCall(`/managed-services/${id}/chat`, { method: 'POST', body: msg }),
+}
+
+export const Coaching = {
+  list:             (filters)     => apiCall(`/coaches${buildQuery(filters)}`),
+  get:              (id)          => apiCall(`/coaches/${id}`),
+  sessions:         ()            => apiCall('/coaching-sessions'),
+  book:             (data)        => apiCall('/coaching-sessions', { method: 'POST', body: data }),
+  complete:         (id)          => apiCall(`/coaching-sessions/${id}/complete`, { method: 'PUT' }),
+}
+
+export const Friend = {
+  list:             ()            => apiCall('/friends'),
+  requests:         ()            => apiCall('/friends/requests'),
+  sendRequest:      (data)        => apiCall('/friends/request', { method: 'POST', body: data }),
+  accept:           (id)          => apiCall(`/friends/${id}/accept`, { method: 'PUT' }),
+  block:            (id)          => apiCall(`/friends/${id}/block`, { method: 'PUT' }),
+  remove:           (id)          => apiCall(`/friends/${id}`, { method: 'DELETE' }),
+}
+
+export const DirectMessage = {
+  conversations:    ()            => apiCall('/direct-messages'),
+  thread:           (convId)      => apiCall(`/direct-messages/${convId}`),
+  send:             (data)        => apiCall('/direct-messages', { method: 'POST', body: data }),
+  markRead:         (id)          => apiCall(`/direct-messages/${id}/read`, { method: 'PUT' }),
+}
+
+export const Leaderboard = {
+  list:             (filters)     => apiCall(`/leaderboards${buildQuery(filters)}`),
+  me:               ()            => apiCall('/leaderboards/me'),
+}
+
+export const Report = {
+  submit:           (data)        => apiCall('/reports', { method: 'POST', body: data }),
+  list:             (filters)     => apiCall(`/reports${buildQuery(filters)}`),
+  update:           (id, data)    => apiCall(`/reports/${id}`, { method: 'PUT', body: data }),
 }
 
 export const Order = {
@@ -152,21 +247,6 @@ export const TournamentOrder = {
   updateFulfillment:(id, data)    => apiCall(`/tournament-orders/${id}/fulfillment`, { method: 'PUT', body: data }),
 }
 
-export const SponsorshipRadar = {
-  ...createEntity('/radar'),
-  commit:           (id, data)    => apiCall(`/radar/${id}/commit`, { method: 'POST', body: data }),
-  sendChat:         (id, msg)     => apiCall(`/radar/${id}/chat`, { method: 'POST', body: msg }),
-  recordView:       (id)          => apiCall(`/radar/${id}/view`, { method: 'POST' }),
-}
-
-export const GigRequest = {
-  ...createEntity('/gigs'),
-  accept:           (id)          => apiCall(`/gigs/${id}/accept`, { method: 'POST' }),
-  reject:           (id, data)    => apiCall(`/gigs/${id}/reject`, { method: 'POST', body: data }),
-  complete:         (id)          => apiCall(`/gigs/${id}/complete`, { method: 'POST' }),
-  sendChat:         (id, msg)     => apiCall(`/gigs/${id}/chat`, { method: 'POST', body: msg }),
-  uploadFile:       (id, data)    => apiCall(`/gigs/${id}/files`, { method: 'POST', body: data }),
-}
 
 export const Bill = {
   ...createEntity('/bills'),
@@ -289,11 +369,6 @@ export const Connect = {
   updateRiot:          (id, data) => apiCall(`/connect/riot/${id}`, { method: 'PATCH', body: data }),
 }
 
-export const AiAgent = {
-  sendMessage:    (data)          => apiCall('/ai-agent/message', { method: 'POST', body: data }),
-  getSession:     ()              => apiCall('/ai-agent/session'),
-  clearSession:   ()              => apiCall('/ai-agent/session', { method: 'DELETE' }),
-}
 
 export const Badge = {
   list:                ()         => apiCall('/badges'),

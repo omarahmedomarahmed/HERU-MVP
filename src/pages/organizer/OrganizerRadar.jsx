@@ -1,317 +1,235 @@
-import React, { useState, useMemo } from 'react'
+import React, { useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { useAuth } from '@/lib/AuthContext'
 import { apiCall } from '@/api/heruClient'
+import OrganizerLayout from '@/components/layouts/OrganizerLayout'
 import {
-  Radio, Search, Gamepad2, Calendar, ChevronRight,
-  Loader2, Shield, Filter, Users, Trophy, Zap,
-  Star, TrendingUp, Award, Target, CheckCircle
+  Radio, Search, Calendar, ChevronRight, Loader2,
+  Package, TrendingUp, Star, Target, CheckCircle, AlertCircle,
 } from 'lucide-react'
 
 const fmtEGP = (n) => 'EGP ' + (n || 0).toLocaleString()
 
-const STATUS_CONFIG = {
-  open:         { label: 'Open',         cls: 'bg-green-500/20 text-green-400 border-green-500/30',  dot: 'bg-green-400' },
-  in_progress:  { label: 'In Progress',  cls: 'bg-red-500/20 text-red-400 border-red-500/30',        dot: 'bg-red-400' },
-  fully_funded: { label: 'Fully Funded', cls: 'bg-cyan-500/20 text-cyan-400 border-cyan-500/30',     dot: 'bg-cyan-400' },
-  closed:       { label: 'Closed',       cls: 'bg-zinc-500/20 text-zinc-400 border-zinc-500/30',     dot: 'bg-zinc-500' },
-}
+function PackageRow({ pkg, sponsors = [] }) {
+  const sold = sponsors.filter(s => s.package_id === pkg.id).length
+  const totalRaised = sponsors
+    .filter(s => s.package_id === pkg.id && s.payment_status === 'paid')
+    .reduce((sum, s) => sum + (s.amount || pkg.price || 0), 0)
 
-const GAME_GRADIENTS = {
-  'Valorant': 'from-red-900/80 to-pink-900/60',
-  'CS2': 'from-orange-900/80 to-yellow-900/60',
-  'League of Legends': 'from-blue-900/80 to-cyan-900/60',
-  'PUBG': 'from-yellow-900/80 to-amber-900/60',
-  'FIFA': 'from-green-900/80 to-emerald-900/60',
-  'Fortnite': 'from-red-900/80 to-pink-900/60',
-}
-const getGameGradient = (game) => GAME_GRADIENTS[game] || 'from-red-900/80 to-zinc-900/60'
-
-function StatusBadge({ status }) {
-  const s = STATUS_CONFIG[status] || STATUS_CONFIG.open
   return (
-    <span className={`inline-flex items-center gap-1.5 text-xs font-bold px-2.5 py-1 rounded-full border ${s.cls}`}>
-      <span className={`w-1.5 h-1.5 rounded-full ${s.dot} ${status === 'open' ? 'animate-pulse' : ''}`} />
-      {s.label}
-    </span>
-  )
-}
-
-function FundingBar({ percent }) {
-  const pct = Math.min(percent || 0, 100)
-  return (
-    <div>
-      <div className="w-full h-2 rounded-full bg-white/10 overflow-hidden">
-        <div className="h-full rounded-full transition-all duration-700" style={{ width: `${pct}%`, background: pct >= 100 ? 'linear-gradient(to right, #10b981, #06b6d4)' : 'linear-gradient(to right, #7c3aed, #2563eb)' }} />
+    <div className="flex items-center justify-between p-3 rounded-xl bg-zinc-800/50 border border-zinc-700/50">
+      <div className="flex items-start gap-3">
+        <div className="w-8 h-8 rounded-lg bg-red-500/10 flex items-center justify-center flex-shrink-0">
+          <Package className="w-4 h-4 text-red-400" />
+        </div>
+        <div>
+          <p className="text-sm font-bold text-white">{pkg.title}</p>
+          <p className="text-xs text-gray-400">{fmtEGP(pkg.price)} · {pkg.tier || 'Standard'} tier</p>
+        </div>
       </div>
-      <div className="flex justify-between mt-1.5 text-xs text-gray-500">
-        <span className="font-medium text-red-400">{Math.round(pct)}% funded</span>
-        <span>{100 - Math.round(pct)}% remaining</span>
+      <div className="text-right flex-shrink-0">
+        <p className="text-sm font-black text-white">{fmtEGP(totalRaised)}</p>
+        <p className="text-xs text-gray-500">{sold} sponsor{sold !== 1 ? 's' : ''}</p>
       </div>
     </div>
   )
 }
 
-function FeaturedCard({ listing, isSelf, onClick }) {
-  const brandName = listing.main_organizer_brand?.name || listing.main_organizer_brand?.brand_name || 'Unknown Organizer'
-  const brandLogo = listing.main_organizer_brand?.logo || listing.main_organizer_brand?.brand_logo
-  const coOrgs = listing.co_organizers || []
-  const slotsLeft = (listing.max_co_organizers || 2) - coOrgs.length
-  const gradient = getGameGradient(listing.game)
-  return (
-    <button onClick={onClick} className="w-full text-left rounded-2xl overflow-hidden border border-white/10 hover:border-red-500/50 transition-all duration-300 group relative" style={{ minHeight: 320 }}>
-      {listing.tournament_image
-        ? <img src={listing.tournament_image} alt="" className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
-        : <div className={`absolute inset-0 bg-gradient-to-br ${gradient}`} />}
-      <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/70 to-transparent" />
-      <div className="absolute top-4 left-4 right-4 flex items-center justify-between">
-        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-black/60 border border-white/10 text-xs font-bold text-white backdrop-blur-sm">
-          <Gamepad2 className="w-3.5 h-3.5 text-red-400" />{listing.game || 'TBD'}
-        </span>
-        <StatusBadge status={listing.status} />
-      </div>
-      <div className="relative p-6 pt-16 flex flex-col justify-end" style={{ minHeight: 320 }}>
-        <div className="flex items-center gap-2 mb-3">
-          <div className="w-8 h-8 rounded-lg border border-white/20 overflow-hidden flex items-center justify-center bg-zinc-800/80">
-            {brandLogo ? <img src={brandLogo} alt="" className="w-full h-full object-cover" /> : <span className="text-xs font-black text-white">{brandName[0]}</span>}
-          </div>
-          <span className="text-gray-300 text-sm font-medium">{brandName}</span>
-        </div>
-        <h2 className="text-2xl font-black text-white mb-1 group-hover:text-red-200 transition-colors leading-tight">{listing.tournament_name}</h2>
-        <div className="flex flex-wrap items-center gap-4 text-sm text-gray-400 mb-4">
-          {listing.schedule && <span className="flex items-center gap-1"><Calendar className="w-3.5 h-3.5" />{new Date(listing.schedule).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}</span>}
-          {listing.prizepool_amount > 0 && <span className="flex items-center gap-1 text-yellow-400 font-bold"><Award className="w-3.5 h-3.5" />{fmtEGP(listing.prizepool_amount)} Prize</span>}
-          <span className="flex items-center gap-1"><Target className="w-3.5 h-3.5" />{fmtEGP(listing.total_cost)} Total</span>
-        </div>
-        <div className="mb-4"><FundingBar percent={listing.funding_percent} /></div>
-        <div className="flex items-center justify-between">
-          <span className={`text-xs font-bold ${slotsLeft > 0 ? 'text-green-400' : 'text-gray-500'}`}>{slotsLeft > 0 ? `${slotsLeft} slot${slotsLeft !== 1 ? 's' : ''} open` : 'All slots filled'}</span>
-          <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all ${isSelf ? 'bg-white/5 border border-white/10 text-gray-400' : 'bg-red-600 hover:bg-red-500 text-white shadow-lg shadow-red-900/40'}`}>
-            {isSelf ? <><Shield className="w-4 h-4" /> Your Tournament</> : <><Zap className="w-4 h-4" /> View & Commit</>}
-          </div>
-        </div>
-      </div>
-    </button>
-  )
-}
+function TournamentRadarCard({ tournament, packages = [], sponsors = [] }) {
+  const navigate = useNavigate()
+  const myPackages = packages.filter(p => p.tournament_id === tournament.id)
+  const mySponsors = sponsors.filter(s => s.tournament_id === tournament.id)
+  const totalRaised = mySponsors
+    .filter(s => s.payment_status === 'paid')
+    .reduce((sum, s) => sum + (s.amount || 0), 0)
+  const totalPackageValue = myPackages.reduce((sum, p) => sum + (p.price || 0), 0)
+  const pct = totalPackageValue > 0 ? Math.round((totalRaised / totalPackageValue) * 100) : 0
 
-function RadarCard({ listing, isSelf, onClick }) {
-  const brandName = listing.main_organizer_brand?.name || listing.main_organizer_brand?.brand_name || 'Unknown'
-  const brandLogo = listing.main_organizer_brand?.logo || listing.main_organizer_brand?.brand_logo
-  const slotsLeft = (listing.max_co_organizers || 2) - (listing.co_organizers || []).length
   return (
-    <button onClick={onClick} className="w-full text-left rounded-xl border border-white/10 bg-zinc-900 hover:border-red-500/40 hover:bg-zinc-800 transition-all duration-200 group overflow-hidden">
-      <div className="relative h-24 overflow-hidden">
-        {listing.tournament_image
-          ? <img src={listing.tournament_image} alt="" className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
-          : <div className={`w-full h-full bg-gradient-to-br ${getGameGradient(listing.game)}`} />}
-        <div className="absolute inset-0 bg-gradient-to-t from-zinc-900 to-transparent" />
-        <div className="absolute top-2 right-2"><StatusBadge status={listing.status} /></div>
-        <div className="absolute bottom-2 left-3">
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-black/60 text-xs text-white font-medium">
-            <Gamepad2 className="w-3 h-3 text-red-400" />{listing.game}
-          </span>
-        </div>
-      </div>
-      <div className="p-4">
-        <div className="flex items-center gap-2 mb-2">
-          <div className="w-6 h-6 rounded border border-white/10 overflow-hidden flex items-center justify-center bg-zinc-800 flex-shrink-0">
-            {brandLogo ? <img src={brandLogo} alt="" className="w-full h-full object-cover" /> : <span className="text-[9px] font-black text-white">{brandName[0]}</span>}
+    <div className="rounded-2xl bg-zinc-900 border border-zinc-800 overflow-hidden hover:border-zinc-700 transition-all">
+      <div className="p-5 border-b border-zinc-800">
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <p className="text-xs text-gray-500 mb-1">{tournament.game}</p>
+            <h3 className="text-white font-black text-base">{tournament.name}</h3>
+            {tournament.schedule && (
+              <p className="text-xs text-gray-500 mt-1 flex items-center gap-1">
+                <Calendar className="w-3 h-3" />
+                {new Date(tournament.schedule).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
+              </p>
+            )}
           </div>
-          <span className="text-gray-500 text-xs truncate">{brandName}</span>
+          <div className="flex-shrink-0 text-right">
+            {tournament.sponsorship_enabled ? (
+              <span className="inline-flex items-center gap-1 text-xs font-bold px-2 py-0.5 rounded-full bg-green-500/20 text-green-400 border border-green-500/30">
+                <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" /> On Radar
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-1 text-xs font-bold px-2 py-0.5 rounded-full bg-zinc-500/20 text-zinc-400 border border-zinc-500/30">
+                Not Listed
+              </span>
+            )}
+          </div>
         </div>
-        <h3 className="text-white font-bold text-sm leading-tight mb-3 group-hover:text-red-300 transition-colors line-clamp-2">{listing.tournament_name}</h3>
-        <div className="flex items-center justify-between text-xs text-gray-500 mb-3">
-          <span>{fmtEGP(listing.total_cost)}</span>
-          {listing.prizepool_amount > 0 && <span className="text-yellow-400 font-bold">{fmtEGP(listing.prizepool_amount)} prize</span>}
-        </div>
-        <FundingBar percent={listing.funding_percent} />
-        <div className="mt-3 flex items-center justify-between">
-          <span className={`text-xs font-bold ${slotsLeft > 0 ? 'text-green-400' : 'text-gray-500'}`}>{slotsLeft > 0 ? `${slotsLeft} slot${slotsLeft !== 1 ? 's' : ''} open` : 'Full'}</span>
-          <span className="text-red-400 text-xs font-bold flex items-center gap-1">{isSelf ? 'Your listing' : <>View <ChevronRight className="w-3 h-3" /></>}</span>
-        </div>
+
+        {/* Progress */}
+        {myPackages.length > 0 && (
+          <div className="mt-4">
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-xs text-gray-400">Sponsorship raised</span>
+              <span className="text-xs font-bold text-white">{pct}%</span>
+            </div>
+            <div className="h-1.5 bg-zinc-800 rounded-full overflow-hidden">
+              <div
+                className="h-full bg-gradient-to-r from-red-600 to-red-400 rounded-full transition-all"
+                style={{ width: `${Math.min(pct, 100)}%` }}
+              />
+            </div>
+            <div className="flex items-center justify-between mt-1">
+              <span className="text-xs text-gray-500">{fmtEGP(totalRaised)} raised</span>
+              <span className="text-xs text-gray-500">{fmtEGP(totalPackageValue)} total</span>
+            </div>
+          </div>
+        )}
       </div>
-    </button>
+
+      {/* Packages */}
+      <div className="p-5">
+        {myPackages.length === 0 ? (
+          <div className="text-center py-4">
+            <AlertCircle className="w-8 h-8 text-zinc-700 mx-auto mb-2" />
+            <p className="text-xs text-gray-500">No packages created yet</p>
+            <button
+              onClick={() => navigate(`/organizer/tournaments/${tournament.id}/manage`)}
+              className="mt-2 text-xs text-red-400 hover:text-red-300 font-medium"
+            >
+              Set up packages →
+            </button>
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {myPackages.map(pkg => (
+              <PackageRow key={pkg.id} pkg={pkg} sponsors={mySponsors} />
+            ))}
+          </div>
+        )}
+
+        <button
+          onClick={() => navigate(`/organizer/tournaments/${tournament.id}/manage`)}
+          className="w-full mt-4 py-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-white text-xs font-bold transition-colors flex items-center justify-center gap-1"
+        >
+          Manage Tournament <ChevronRight className="w-3.5 h-3.5" />
+        </button>
+      </div>
+    </div>
   )
 }
 
 export default function OrganizerRadar() {
-  const navigate = useNavigate()
   const { user } = useAuth()
-  const [activeTab, setActiveTab] = useState('browse')
-  const [gameFilter, setGameFilter] = useState('all')
-  const [searchQuery, setSearchQuery] = useState('')
-  const [statusFilter, setStatusFilter] = useState('open')
+  const [search, setSearch] = useState('')
 
-  const { data: radarData = [], isLoading } = useQuery({
-    queryKey: ['radar-listings', statusFilter],
-    queryFn: () => apiCall(`/radar?status=${statusFilter === 'all' ? 'all' : statusFilter}&limit=50`),
-    enabled: !!user,
-    staleTime: 30_000,
-  })
-
-  const { data: allRadarData = [] } = useQuery({
-    queryKey: ['radar-all-listings'],
-    queryFn: () => apiCall('/radar?status=all&limit=200'),
-    enabled: !!user,
+  const { data: rawTournaments = [], isLoading: tLoading } = useQuery({
+    queryKey: ['organizer-radar-tournaments', user?.id],
+    queryFn: () => apiCall('/tournaments?my=true&limit=50'),
+    enabled: !!user?.id,
     staleTime: 60_000,
   })
 
-  const allListings = Array.isArray(radarData) ? radarData : (radarData?.data || [])
-  const allRadarListings = Array.isArray(allRadarData) ? allRadarData : (allRadarData?.data || [])
+  const { data: rawPackages = [] } = useQuery({
+    queryKey: ['organizer-radar-packages', user?.id],
+    queryFn: () => apiCall('/sponsorship-packages?my=true'),
+    enabled: !!user?.id,
+    staleTime: 60_000,
+  })
 
-  const myCommitments = useMemo(() =>
-    allRadarListings.filter(l => (l.co_organizers || []).some(co => co.organizer_id === user?.id)),
-    [allRadarListings, user?.id]
+  const { data: rawSponsors = [] } = useQuery({
+    queryKey: ['organizer-radar-sponsors', user?.id],
+    queryFn: () => apiCall('/sponsorships?my_tournament=true'),
+    enabled: !!user?.id,
+    staleTime: 60_000,
+  })
+
+  const tournaments = Array.isArray(rawTournaments) ? rawTournaments : rawTournaments.data || []
+  const packages = Array.isArray(rawPackages) ? rawPackages : rawPackages.data || []
+  const sponsors = Array.isArray(rawSponsors) ? rawSponsors : rawSponsors.data || []
+
+  const filtered = tournaments.filter(t =>
+    !search || t.name?.toLowerCase().includes(search.toLowerCase())
   )
 
-  const gameOptions = useMemo(() => [...new Set(allListings.map(l => l.game).filter(Boolean))].sort(), [allListings])
-
-  const listings = useMemo(() => {
-    let result = allListings
-    if (gameFilter !== 'all') result = result.filter(l => l.game === gameFilter)
-    if (searchQuery.trim()) {
-      const q = searchQuery.toLowerCase()
-      result = result.filter(l =>
-        (l.tournament_name || '').toLowerCase().includes(q) ||
-        (l.game || '').toLowerCase().includes(q) ||
-        (l.main_organizer_brand?.name || l.main_organizer_brand?.brand_name || '').toLowerCase().includes(q)
-      )
-    }
-    return result
-  }, [allListings, gameFilter, searchQuery])
-
-  const featuredListings = listings.slice(0, 2)
-  const restListings = listings.slice(2)
+  const listedCount = tournaments.filter(t => t.sponsorship_enabled).length
+  const totalRaised = sponsors.filter(s => s.payment_status === 'paid').reduce((sum, s) => sum + (s.amount || 0), 0)
+  const totalPackages = packages.length
 
   return (
-    <div className="min-h-screen bg-zinc-950 p-4 sm:p-6 lg:p-8">
-      <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="relative rounded-2xl overflow-hidden bg-gradient-to-br from-zinc-950 to-zinc-950 border border-red-500/20 p-8 mb-8">
-          <div className="absolute right-8 top-1/2 -translate-y-1/2 opacity-20 pointer-events-none">
-            <Radio className="w-32 h-32 text-red-400" />
-          </div>
-          <div className="relative z-10">
-            <div className="flex items-center gap-3 mb-2">
-              <div className="p-2.5 rounded-xl bg-red-500/20 border border-red-500/30">
-                <Radio className="w-6 h-6 text-red-400" />
-              </div>
-              <div>
-                <h1 className="text-3xl font-black text-white">Sponsorship Radar</h1>
-                <p className="text-red-300/70 text-sm">Find tournaments to co-organize or sponsor</p>
-              </div>
-            </div>
-            <p className="text-gray-400 text-sm max-w-xl mt-3">
-              Commit your share to join a tournament as a co-organizer (33%) or exclusive sponsor (66%).
-            </p>
-            <div className="flex items-center gap-4 mt-4 text-xs">
-              <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-500/10 border border-red-500/20 text-red-300">
-                <Star className="w-3.5 h-3.5" /> 33% = Co-Organizer (2 slots)
-              </span>
-              <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-cyan-500/10 border border-cyan-500/20 text-cyan-300">
-                <TrendingUp className="w-3.5 h-3.5" /> 66% = Exclusive Sponsor (1 slot)
-              </span>
-            </div>
+    <OrganizerLayout>
+      <div>
+        <div className="flex flex-col sm:flex-row sm:items-center gap-4 justify-between mb-6">
+          <div>
+            <h1 className="text-2xl font-black text-white">Sponsorship Radar</h1>
+            <p className="text-sm text-gray-400 mt-1">Track your sponsorship packages and sponsor interest per tournament</p>
           </div>
         </div>
 
-        {/* Tabs */}
-        <div className="flex gap-1 mb-6 border-b border-white/10">
-          {[{ id: 'browse', label: 'Browse Radar' }, { id: 'commitments', label: 'My Commitments', count: myCommitments.length }].map(t => (
-            <button key={t.id} onClick={() => setActiveTab(t.id)}
-              className={`px-4 py-2.5 text-sm font-medium border-b-2 transition-colors flex items-center gap-1.5 ${
-                activeTab === t.id ? 'border-red-500 text-white' : 'border-transparent text-gray-500 hover:text-gray-300'
-              }`}>
-              {t.label}
-              {t.count > 0 && <span className="text-[10px] bg-red-500/30 text-red-300 px-1.5 py-0.5 rounded-full font-bold">{t.count}</span>}
-            </button>
+        {/* Stats */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+          {[
+            { icon: Radio,      label: 'On Radar',       value: listedCount,             color: 'text-green-400' },
+            { icon: Package,    label: 'Active Packages', value: totalPackages,           color: 'text-red-400' },
+            { icon: TrendingUp, label: 'Total Raised',    value: fmtEGP(totalRaised),    color: 'text-amber-400' },
+          ].map((s, i) => (
+            <div key={i} className="bg-zinc-900 border border-zinc-800 rounded-xl p-4 flex items-center gap-3">
+              <s.icon className={`w-5 h-5 ${s.color} flex-shrink-0`} />
+              <div>
+                <p className="text-white font-black text-xl">{s.value}</p>
+                <p className="text-xs text-gray-500">{s.label}</p>
+              </div>
+            </div>
           ))}
         </div>
 
-        {activeTab === 'commitments' && (
-          <div className="space-y-4">
-            {myCommitments.length === 0 ? (
-              <div className="flex flex-col items-center py-20 text-gray-500">
-                <Shield className="w-12 h-12 mb-3 opacity-30" />
-                <p className="text-sm font-medium">No commitments yet</p>
-                <button onClick={() => setActiveTab('browse')} className="mt-4 text-red-400 text-sm hover:text-red-300">Browse Radar →</button>
-              </div>
-            ) : myCommitments.map(listing => {
-              const myEntry = (listing.co_organizers || []).find(co => co.organizer_id === user?.id)
-              return (
-                <div key={listing.id} className="rounded-xl border border-red-500/20 bg-zinc-900 p-5 cursor-pointer hover:border-red-500/40 transition-all" onClick={() => navigate(`/organizer/radar/${listing.id}`)}>
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-red-500/20 text-red-300 border border-red-500/30 font-bold uppercase">{myEntry?.label || 'Co-Organizer'}</span>
-                        <StatusBadge status={listing.status} />
-                      </div>
-                      <h3 className="text-white font-bold text-sm truncate">{listing.tournament_name}</h3>
-                      <p className="text-gray-500 text-xs mt-0.5">{listing.game}</p>
-                    </div>
-                    <div className="text-right shrink-0">
-                      <p className="text-red-400 font-black text-lg">{myEntry?.percent || 0}%</p>
-                      <p className="text-gray-500 text-xs">{fmtEGP(myEntry?.amount || 0)}</p>
-                      {myEntry?.access_granted
-                        ? <span className="text-[10px] text-green-400 font-bold flex items-center gap-1 justify-end mt-1"><CheckCircle className="w-3 h-3" /> Access Granted</span>
-                        : <span className="text-[10px] text-yellow-400 mt-1 block">Awaiting Payment</span>}
-                    </div>
-                  </div>
-                  <div className="mt-3"><FundingBar percent={listing.funding_percent} /></div>
-                </div>
-              )
-            })}
+        {/* Search */}
+        <div className="relative max-w-sm mb-6">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
+          <input
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            placeholder="Search tournaments..."
+            className="w-full pl-9 pr-4 py-2 bg-zinc-800 border border-zinc-700 rounded-xl text-white text-sm placeholder-gray-500 focus:outline-none focus:border-red-500"
+          />
+        </div>
+
+        {tLoading ? (
+          <div className="flex items-center justify-center py-16">
+            <Loader2 className="w-6 h-6 text-red-400 animate-spin" />
+          </div>
+        ) : filtered.length === 0 ? (
+          <div className="text-center py-20">
+            <Radio className="w-14 h-14 text-zinc-700 mx-auto mb-4" />
+            <p className="text-gray-400 font-semibold text-lg">No tournaments yet</p>
+            <p className="text-gray-600 text-sm mt-1">Create a tournament and add sponsorship packages to appear on radar</p>
+            <Link
+              to="/organizer/tournaments/new"
+              className="inline-flex items-center gap-2 mt-6 px-6 py-3 rounded-xl bg-red-600 hover:bg-red-500 text-white font-bold text-sm transition-colors"
+            >
+              Build a Tournament
+            </Link>
+          </div>
+        ) : (
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            {filtered.map(tournament => (
+              <TournamentRadarCard
+                key={tournament.id}
+                tournament={tournament}
+                packages={packages}
+                sponsors={sponsors}
+              />
+            ))}
           </div>
         )}
-
-        {activeTab === 'browse' && (
-          <>
-            <div className="flex flex-col sm:flex-row gap-3 mb-6">
-              <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
-                <input type="text" value={searchQuery} onChange={e => setSearchQuery(e.target.value)} placeholder="Search tournaments..." className="w-full bg-zinc-900 border border-white/10 rounded-xl pl-10 pr-4 py-3 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-red-500/50" />
-              </div>
-              <div className="flex gap-2">
-                <select value={gameFilter} onChange={e => setGameFilter(e.target.value)} className="appearance-none bg-zinc-900 border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-red-500/50">
-                  <option value="all">All Games</option>
-                  {gameOptions.map(g => <option key={g} value={g}>{g}</option>)}
-                </select>
-                <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} className="appearance-none bg-zinc-900 border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-red-500/50">
-                  <option value="open">Open Only</option>
-                  <option value="in_progress">In Progress</option>
-                  <option value="all">All Listings</option>
-                </select>
-              </div>
-            </div>
-
-            {isLoading ? (
-              <div className="flex items-center justify-center py-24"><Loader2 className="w-8 h-8 animate-spin text-red-400" /></div>
-            ) : listings.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-24 text-center">
-                <Radio className="w-12 h-12 text-red-400 opacity-30 mb-4" />
-                <h3 className="text-white font-bold text-xl mb-2">No tournaments on the radar</h3>
-                <p className="text-gray-500 text-sm">Check back soon. Organizers will list tournaments seeking co-organizers.</p>
-              </div>
-            ) : (
-              <>
-                <p className="text-xs text-gray-500 mb-4">{listings.length} tournament{listings.length !== 1 ? 's' : ''} seeking partners</p>
-                {featuredListings.length > 0 && (
-                  <div className={`grid gap-4 mb-4 ${featuredListings.length === 1 ? 'grid-cols-1' : 'md:grid-cols-2'}`}>
-                    {featuredListings.map(listing => <FeaturedCard key={listing.id} listing={listing} isSelf={listing.main_organizer_id === user?.id} onClick={() => navigate(`/organizer/radar/${listing.id}`)} />)}
-                  </div>
-                )}
-                {restListings.length > 0 && (
-                  <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                    {restListings.map(listing => <RadarCard key={listing.id} listing={listing} isSelf={listing.main_organizer_id === user?.id} onClick={() => navigate(`/organizer/radar/${listing.id}`)} />)}
-                  </div>
-                )}
-              </>
-            )}
-          </>
-        )}
       </div>
-    </div>
+    </OrganizerLayout>
   )
 }

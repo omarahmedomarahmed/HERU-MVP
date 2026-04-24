@@ -12,7 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { motion } from 'framer-motion';
-import { GamerProfile as GamerProfileAPI, Order, Team, Achievement, ApprovalRequest, Connect, GigRequest, apiCall } from '@/api/heruClient'
+import { GamerProfile as GamerProfileAPI, Order, Team, Achievement, Connect, apiCall } from '@/api/heruClient'
 import { useAuth } from '@/lib/AuthContext'
 import { uploadFile } from '@/lib/uploadFile'
 import PhoneInput from '@/components/ui/PhoneInput'
@@ -448,11 +448,9 @@ export default function GamerProfile() {
   const [user, setUser] = useState(null);
   const [editing, setEditing] = useState(false);
   const [addGameModal, setAddGameModal] = useState(false);
-  const [talentModal, setTalentModal] = useState(false);
   const [orderChatModal, setOrderChatModal] = useState(null);
   const [newMessage, setNewMessage] = useState('');
   const [newGame, setNewGame] = useState({ game_name: '', game_id: '', rank: '' });
-  const [talentForm, setTalentForm] = useState({ talent_type: '', talent_price: '', talent_video_link: '', contact_number: '' });
   const [slugInput, setSlugInput] = useState('');
   const [slugError, setSlugError] = useState('');
   const [slugSuccess, setSlugSuccess] = useState('');
@@ -584,14 +582,6 @@ export default function GamerProfile() {
     onSuccess: () => queryClient.invalidateQueries(['gamer-profile', user?.id])
   });
 
-  const applyTalentMutation = useMutation({
-    mutationFn: async (data) => GamerProfileAPI.applyTalent({ ...data, email: user?.email }),
-    onSuccess: () => {
-      setTalentModal(false);
-      setTalentForm({ talent_type: '', talent_price: '', talent_video_link: '', contact_number: '' });
-    }
-  });
-
   const updateSlugMutation = useMutation({
     mutationFn: async (slug) => {
       const cleaned = slug.toLowerCase().replace(/[^a-z0-9_-]/g, '');
@@ -686,12 +676,6 @@ export default function GamerProfile() {
     enabled: !!user?.id,
   });
 
-  const { data: talentApplications = [] } = useQuery({
-    queryKey: ['talent-applications', user?.id],
-    queryFn: () => ApprovalRequest.list({ requester_id: user?.id, approval_type: 'talent_application' }),
-    enabled: !!user?.id,
-  });
-
   const sendOrderMessageMutation = useMutation({
     mutationFn: async ({ orderId, message }) => {
       const order = orders.find(o => o.id === orderId);
@@ -768,11 +752,7 @@ export default function GamerProfile() {
                 <input type="file" accept="image/*" className="hidden" onChange={handleAvatarUpload} disabled={avatarUploading} />
               </label>
             </div>
-            {profile?.is_talent && (
-              <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 bg-yellow-500 text-black text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-0.5 whitespace-nowrap shadow-lg">
-                <Star className="w-2.5 h-2.5" /> TALENT
-              </div>
-            )}
+
           </div>
 
           {/* Info */}
@@ -937,16 +917,6 @@ export default function GamerProfile() {
           <TabsTrigger value="orders" className="data-[state=active]:bg-red-600 data-[state=active]:text-white text-gray-400">
             <Package className="w-4 h-4 mr-1.5" /> Orders
           </TabsTrigger>
-          {profile?.is_talent && (
-            <TabsTrigger value="talent" className="data-[state=active]:bg-red-600 data-[state=active]:text-white text-gray-400">
-              <Star className="w-4 h-4 mr-1.5" /> Talent
-            </TabsTrigger>
-          )}
-          {profile?.is_talent && (
-            <TabsTrigger value="gigs" className="data-[state=active]:bg-red-600 data-[state=active]:text-white text-gray-400">
-              <Briefcase className="w-4 h-4 mr-1.5" /> Gigs
-            </TabsTrigger>
-          )}
           <TabsTrigger value="billing" className="data-[state=active]:bg-red-600 data-[state=active]:text-white text-gray-400">
             <DollarSign className="w-4 h-4 mr-1.5" /> Billing
           </TabsTrigger>
@@ -1226,64 +1196,6 @@ export default function GamerProfile() {
           </FloatingPanel>
         </TabsContent>
 
-        {/* Talent Tab */}
-        {profile?.is_talent && (
-          <TabsContent value="talent">
-            <FloatingPanel className="p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-bold text-white flex items-center gap-2">
-                  <Star className="w-5 h-5 text-yellow-500" />
-                  Talent Profile
-                </h2>
-                <Link to="/gamer/gigs">
-                  <GlowButton variant="secondary" size="sm">
-                    <Briefcase className="w-4 h-4" /> My Gig Requests
-                  </GlowButton>
-                </Link>
-              </div>
-
-              <div className="grid sm:grid-cols-3 gap-4 mb-6">
-                <div className="p-4 bg-zinc-800/50 rounded-xl text-center">
-                  <p className="text-gray-500 text-xs uppercase mb-1">Type</p>
-                  <p className="text-white font-bold capitalize">{profile.talent_type || 'N/A'}</p>
-                </div>
-                <div className="p-4 bg-zinc-800/50 rounded-xl text-center">
-                  <p className="text-gray-500 text-xs uppercase mb-1">Rate</p>
-                  <p className="text-white font-bold">EGP {profile.talent_price?.toLocaleString() || '0'}</p>
-                </div>
-                <div className="p-4 bg-zinc-800/50 rounded-xl text-center">
-                  <p className="text-gray-500 text-xs uppercase mb-1">Rating</p>
-                  <p className="text-white font-bold flex items-center justify-center gap-1">
-                    <Star className="w-4 h-4 text-yellow-400" />
-                    {profile.talent_rating?.toFixed(1) || 'N/A'}
-                  </p>
-                </div>
-              </div>
-
-              {profile.talent_video_link && (
-                <div className="p-4 bg-zinc-800/50 rounded-xl">
-                  <p className="text-gray-500 text-xs uppercase mb-2">Showreel</p>
-                  <a
-                    href={profile.talent_video_link}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-red-400 hover:text-red-300 text-sm break-all"
-                  >
-                    {profile.talent_video_link}
-                  </a>
-                </div>
-              )}
-            </FloatingPanel>
-          </TabsContent>
-        )}
-
-        {/* Gigs Tab — talent only */}
-        {profile?.is_talent && (
-          <TabsContent value="gigs">
-            <GigsTab userId={user?.id} profile={profile} />
-          </TabsContent>
-        )}
-
         {/* Tournament Invites Tab */}
         <TabsContent value="tournaments">
           <FloatingPanel className="p-6">
@@ -1311,21 +1223,6 @@ export default function GamerProfile() {
           <ConnectTab userId={user?.id} profile={profile} queryClient={queryClient} />
         </TabsContent>
       </Tabs>
-
-      {/* Talent Application CTA (if not talent yet) */}
-      {!profile?.is_talent && (
-        <div className="mt-6 relative overflow-hidden rounded-2xl border-2 border-yellow-500/40 bg-gradient-to-br from-yellow-500/10 via-zinc-900 to-red-500/10 p-8 text-center shadow-lg shadow-yellow-500/5">
-          <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-yellow-500 via-red-500 to-yellow-500" />
-          <Star className="w-14 h-14 text-yellow-400 mx-auto mb-4 drop-shadow-lg" />
-          <h3 className="text-2xl font-black text-white mb-2">JOIN THE TALENT ROSTER</h3>
-          <p className="text-gray-400 text-sm mb-6 max-w-md mx-auto">
-            Are you a caster, host, analyst, or observer? Apply to join our talent roster and get booked for tournaments. Earn EGP per event!
-          </p>
-          <GlowButton onClick={() => setTalentModal(true)} size="lg" className="bg-gradient-to-r from-yellow-600 to-red-600 hover:from-yellow-500 hover:to-red-500 text-white font-bold px-8">
-            <Star className="w-5 h-5" /> Apply as Talent
-          </GlowButton>
-        </div>
-      )}
 
       {/* Logout */}
       <div className="mt-6 pt-4 border-t border-zinc-800">
@@ -1378,128 +1275,6 @@ export default function GamerProfile() {
             >
               <Plus className="w-4 h-4" /> Add Game
             </GlowButton>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* Talent Application Modal */}
-      <Dialog open={talentModal} onOpenChange={setTalentModal}>
-        <DialogContent className="bg-zinc-900 border-zinc-800 text-white">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Star className="w-5 h-5 text-yellow-500" /> Apply as Talent
-            </DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div>
-              <label className="text-sm text-gray-400 block mb-1">Talent Type</label>
-              <Select
-                value={talentForm.talent_type}
-                onValueChange={(val) => setTalentForm({ ...talentForm, talent_type: val })}
-              >
-                <SelectTrigger className="bg-zinc-800 border-zinc-700 text-white">
-                  <SelectValue placeholder="Select your talent type" />
-                </SelectTrigger>
-                <SelectContent className="bg-zinc-800 border-zinc-700">
-                  <SelectItem value="caster">Caster</SelectItem>
-                  <SelectItem value="host">Host</SelectItem>
-                  <SelectItem value="analyst">Analyst</SelectItem>
-                  <SelectItem value="observer">Observer</SelectItem>
-                  <SelectItem value="coach">Coach</SelectItem>
-                  <SelectItem value="streamer">Streamer</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <label className="text-sm text-gray-400 block mb-1">Rate per Event (EGP)</label>
-              <Input
-                type="number"
-                value={talentForm.talent_price}
-                onChange={(e) => setTalentForm({ ...talentForm, talent_price: e.target.value })}
-                placeholder="e.g. 1500"
-                className="bg-zinc-800 border-zinc-700 text-white"
-              />
-            </div>
-            <div>
-              <label className="text-sm text-gray-400 block mb-1">Showreel / Demo Link</label>
-              <UrlInput
-                value={talentForm.talent_video_link}
-                onChange={(v) => setTalentForm({ ...talentForm, talent_video_link: v })}
-                placeholder="https://youtube.com/... or https://twitch.tv/..."
-              />
-            </div>
-            <div>
-              <label className="text-sm text-gray-400 block mb-1">Contact Number</label>
-              <PhoneInput
-                value={talentForm.contact_number}
-                onChange={(v) => setTalentForm({ ...talentForm, contact_number: v })}
-              />
-            </div>
-            <div>
-              <label className="text-sm text-gray-400 block mb-1">Email</label>
-              <Input
-                type="email"
-                value={user?.email || ''}
-                readOnly
-                className="bg-zinc-800/60 border-zinc-700 text-gray-400 cursor-not-allowed"
-              />
-            </div>
-            <GlowButton
-              className="w-full"
-              onClick={() => applyTalentMutation.mutate(talentForm)}
-              disabled={!talentForm.talent_type || !talentForm.talent_price || applyTalentMutation.isPending}
-            >
-              {applyTalentMutation.isPending ? 'Submitting...' : (
-                <><Star className="w-4 h-4" /> Submit Application</>
-              )}
-            </GlowButton>
-            {applyTalentMutation.isSuccess && (
-              <p className="text-green-400 text-sm text-center">Application submitted! Staff will review it.</p>
-            )}
-            {applyTalentMutation.isError && (
-              <p className="text-red-400 text-sm text-center">Failed to submit. Please try again.</p>
-            )}
-
-            {/* Talent Application History */}
-            {talentApplications.length > 0 && (
-              <div className="mt-6 pt-4 border-t border-zinc-700">
-                <p className="text-sm font-bold text-gray-300 mb-3">Application History</p>
-                <div className="space-y-2 max-h-48 overflow-y-auto">
-                  {talentApplications.map((app) => (
-                    <div key={app.id} className="flex items-center justify-between p-3 bg-zinc-800/50 rounded-lg border border-zinc-700/30">
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm text-white font-medium capitalize">{app.details?.talent_type || app.reference_name || 'Talent'}</p>
-                        <p className="text-xs text-gray-500">{new Date(app.created_at).toLocaleDateString()}</p>
-                      </div>
-                      <div className="flex items-center gap-2 flex-shrink-0">
-                        <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${
-                          app.status === 'approved' ? 'bg-green-500/20 text-green-400' :
-                          app.status === 'rejected' ? 'bg-red-500/20 text-red-400' :
-                          'bg-yellow-500/20 text-yellow-400'
-                        }`}>
-                          {app.status?.toUpperCase()}
-                        </span>
-                        {app.status === 'pending' && (
-                          <button
-                            onClick={() => {
-                              setTalentForm({
-                                talent_type: app.details?.talent_type || '',
-                                talent_price: app.details?.talent_price || '',
-                                talent_video_link: app.details?.talent_video_link || '',
-                                contact_number: app.details?.contact_number || '',
-                              });
-                            }}
-                            className="text-xs text-red-400 hover:text-red-300 font-medium"
-                          >
-                            Edit
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
           </div>
         </DialogContent>
       </Dialog>
@@ -1630,97 +1405,6 @@ export default function GamerProfile() {
 }
 
 // ─── Tournament Invites Sub-Component ────────────────────────────────────────
-const GIG_STATUS_STYLE = {
-  pending:   'bg-yellow-500/20 text-yellow-300 border-yellow-500/30',
-  accepted:  'bg-green-500/20 text-green-300 border-green-500/30',
-  rejected:  'bg-red-500/20 text-red-400 border-red-500/30',
-  completed: 'bg-blue-500/20 text-blue-300 border-blue-500/30',
-};
-
-function GigsTab({ userId }) {
-  const { data: gigs = [], isLoading } = useQuery({
-    queryKey: ['my-gigs', userId],
-    queryFn: () => GigRequest.list({ talent_user_id: userId }),
-    enabled: !!userId,
-  });
-
-  if (isLoading) return (
-    <FloatingPanel className="p-8 text-center">
-      <div className="w-6 h-6 border-2 border-red-500 border-t-transparent rounded-full animate-spin mx-auto mb-2" />
-      <p className="text-gray-400 text-sm">Loading gigs…</p>
-    </FloatingPanel>
-  );
-
-  if (!gigs.length) return (
-    <FloatingPanel className="p-12 text-center">
-      <Briefcase className="w-14 h-14 text-zinc-700 mx-auto mb-4" />
-      <p className="text-white font-bold text-lg mb-1">No gig requests yet</p>
-      <p className="text-gray-400 text-sm">When organizers book you for a tournament, your gigs will appear here.</p>
-    </FloatingPanel>
-  );
-
-  const active = gigs.filter(g => ['pending', 'accepted'].includes(g.status));
-  const past   = gigs.filter(g => ['rejected', 'completed'].includes(g.status));
-
-  return (
-    <div className="space-y-6">
-      {active.length > 0 && (
-        <div>
-          <h3 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-3 flex items-center gap-2">
-            <Zap className="w-4 h-4 text-yellow-400" /> Active Gigs
-          </h3>
-          <div className="space-y-3">
-            {active.map(gig => (
-              <FloatingPanel key={gig.id} className="p-4">
-                <div className="flex items-start justify-between gap-4">
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className={`text-xs px-2 py-0.5 rounded-full border font-medium ${GIG_STATUS_STYLE[gig.status] || GIG_STATUS_STYLE.pending}`}>
-                        {gig.status}
-                      </span>
-                      <span className="text-xs text-gray-500 capitalize">{gig.talent_type}</span>
-                    </div>
-                    <p className="text-white font-bold truncate">{gig.tournament_name || 'Unnamed Tournament'}</p>
-                    <p className="text-gray-400 text-sm">
-                      {gig.organizer_brand || 'Organizer'} · <span className="text-green-400 font-medium">EGP {(gig.price || 0).toLocaleString()}</span>
-                    </p>
-                    {gig.notes && <p className="text-gray-500 text-xs mt-1 truncate">{gig.notes}</p>}
-                  </div>
-                  <Link to={`/gamer/gigs/${gig.id}`} className="flex-shrink-0">
-                    <GlowButton size="sm" variant="secondary">
-                      <ExternalLink className="w-3.5 h-3.5" /> View
-                    </GlowButton>
-                  </Link>
-                </div>
-              </FloatingPanel>
-            ))}
-          </div>
-        </div>
-      )}
-      {past.length > 0 && (
-        <div>
-          <h3 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-3">Past Gigs</h3>
-          <div className="space-y-2">
-            {past.map(gig => (
-              <FloatingPanel key={gig.id} className="p-3 opacity-70">
-                <div className="flex items-center justify-between gap-3">
-                  <div className="flex-1 min-w-0">
-                    <p className="text-white text-sm font-medium truncate">{gig.tournament_name || 'Tournament'}</p>
-                    <p className="text-gray-500 text-xs">{gig.organizer_brand} · EGP {(gig.price || 0).toLocaleString()}</p>
-                  </div>
-                  <span className={`text-xs px-2 py-0.5 rounded-full border ${GIG_STATUS_STYLE[gig.status]}`}>
-                    {gig.status}
-                  </span>
-                </div>
-              </FloatingPanel>
-            ))}
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
-
 function TournamentInvitesTab({ userId, profile }) {
   const { data: tournaments = [], isLoading } = useQuery({
     queryKey: ['gamer-tournament-invites', userId],

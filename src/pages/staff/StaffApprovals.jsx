@@ -5,7 +5,7 @@ import StaffLayout from '@/components/layouts/StaffLayout';
 import { apiCall } from '@/api/heruClient';
 import {
   CheckCircle, XCircle, Clock, Search, Users, Trophy,
-  Sparkles, AlertTriangle, ChevronDown, Inbox,
+  Sparkles, AlertTriangle, ChevronDown, Inbox, Briefcase, BadgeCheck,
 } from 'lucide-react';
 
 // ---------------------------------------------------------------------------
@@ -36,6 +36,16 @@ const TYPE_CONFIG = {
     label: 'Talent Application',
     color: 'bg-amber-50 text-amber-700',
     icon: Sparkles,
+  },
+  service_provider: {
+    label: 'Service Provider',
+    color: 'bg-cyan-50 text-cyan-700',
+    icon: Briefcase,
+  },
+  organizer_verification: {
+    label: 'Organizer Verification',
+    color: 'bg-purple-50 text-purple-700',
+    icon: BadgeCheck,
   },
 };
 
@@ -94,10 +104,36 @@ export default function StaffApprovals() {
     retry: 1,
   });
 
+  // Fetch pending services (provider service approvals)
+  const { data: rawServices } = useQuery({
+    queryKey: ['staff-pending-services'],
+    queryFn: () => apiCall('/services?status=pending'),
+    staleTime: 30_000,
+    retry: 1,
+  });
+
+  // Fetch pending organizer verifications
+  const { data: rawVerifications } = useQuery({
+    queryKey: ['staff-pending-verifications'],
+    queryFn: () => apiCall('/organizer-verifications?status=pending'),
+    staleTime: 30_000,
+    retry: 1,
+  });
+
   const approvals = useMemo(() => {
     if (Array.isArray(rawApprovals)) return rawApprovals;
     return rawApprovals?.data || [];
   }, [rawApprovals]);
+
+  const pendingServices = useMemo(() => {
+    if (Array.isArray(rawServices)) return rawServices;
+    return rawServices?.data || [];
+  }, [rawServices]);
+
+  const pendingVerifications = useMemo(() => {
+    if (Array.isArray(rawVerifications)) return rawVerifications;
+    return rawVerifications?.data || [];
+  }, [rawVerifications]);
 
   // Approve mutation
   const approveMutation = useMutation({
@@ -117,6 +153,30 @@ export default function StaffApprovals() {
       setRejectionReason('');
       queryClient.invalidateQueries({ queryKey: ['staff-approvals'] });
     },
+  });
+
+  // Approve service mutation
+  const approveServiceMutation = useMutation({
+    mutationFn: (id) => apiCall(`/services/${id}/approve`, { method: 'PUT' }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['staff-pending-services'] }),
+  });
+
+  // Reject service mutation
+  const rejectServiceMutation = useMutation({
+    mutationFn: ({ id, reason }) => apiCall(`/services/${id}/reject`, { method: 'PUT', body: { reason } }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['staff-pending-services'] }),
+  });
+
+  // Approve verification mutation
+  const approveVerificationMutation = useMutation({
+    mutationFn: (id) => apiCall(`/organizer-verifications/${id}/approve`, { method: 'PUT' }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['staff-pending-verifications'] }),
+  });
+
+  // Reject verification mutation
+  const rejectVerificationMutation = useMutation({
+    mutationFn: ({ id, reason }) => apiCall(`/organizer-verifications/${id}/reject`, { method: 'PUT', body: { reason } }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['staff-pending-verifications'] }),
   });
 
   // Filter by tab and search
@@ -148,6 +208,8 @@ export default function StaffApprovals() {
     { key: 'pending', label: 'Pending', icon: Clock, count: counts.pending },
     { key: 'approved', label: 'Approved', icon: CheckCircle, count: counts.approved },
     { key: 'rejected', label: 'Rejected', icon: XCircle, count: counts.rejected },
+    { key: 'services', label: 'Service Providers', icon: Briefcase, count: pendingServices.length },
+    { key: 'verifications', label: 'Org. Verification', icon: BadgeCheck, count: pendingVerifications.length },
   ];
 
   function handleApprove(id) {
@@ -167,7 +229,7 @@ export default function StaffApprovals() {
         <div className="mb-6">
           <h1 className="text-2xl font-bold text-gray-900">Approvals</h1>
           <p className="text-sm text-gray-500 mt-1">
-            Manage team joins, tournament publish requests, and talent applications
+            Manage team joins, tournament publish requests, service providers, and organizer verifications
           </p>
         </div>
 
@@ -214,8 +276,8 @@ export default function StaffApprovals() {
           />
         </div>
 
-        {/* Table */}
-        <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+        {/* Table — only show for status-based tabs */}
+        {!['services', 'verifications'].includes(activeTab) && <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
           {isLoading ? (
             <div className="px-6 py-16 text-center text-sm text-gray-400">Loading approvals...</div>
           ) : filtered.length === 0 ? (
@@ -296,7 +358,118 @@ export default function StaffApprovals() {
               </table>
             </div>
           )}
-        </div>
+        </div>}
+
+        {/* Service Providers Tab */}
+        {activeTab === 'services' && (
+          <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+            {pendingServices.length === 0 ? (
+              <div className="px-6 py-16 text-center">
+                <Inbox className="w-10 h-10 text-gray-300 mx-auto mb-3" />
+                <p className="text-sm text-gray-400">No pending service approvals.</p>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-left">
+                  <thead>
+                    <tr className="border-b border-gray-100">
+                      <th className="px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Service</th>
+                      <th className="px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Category</th>
+                      <th className="px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Price (EGP)</th>
+                      <th className="px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Submitted</th>
+                      <th className="px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider text-right">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100">
+                    {pendingServices.map((svc) => (
+                      <tr key={svc.id} className="hover:bg-gray-50 transition">
+                        <td className="px-6 py-3.5">
+                          <p className="text-sm font-medium text-gray-900">{svc.title}</p>
+                          <p className="text-xs text-gray-400 truncate max-w-[200px]">{svc.description}</p>
+                        </td>
+                        <td className="px-6 py-3.5 text-sm text-gray-600 capitalize">{svc.category}</td>
+                        <td className="px-6 py-3.5 text-sm text-gray-900">EGP {(svc.price || 0).toLocaleString()}</td>
+                        <td className="px-6 py-3.5 text-sm text-gray-500">{formatDate(svc.created_at)}</td>
+                        <td className="px-6 py-3.5 text-right">
+                          <div className="flex items-center justify-end gap-2">
+                            <button
+                              onClick={() => approveServiceMutation.mutate(svc.id)}
+                              disabled={approveServiceMutation.isPending}
+                              className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium bg-emerald-50 text-emerald-700 hover:bg-emerald-100 transition disabled:opacity-50"
+                            >
+                              <CheckCircle className="w-3.5 h-3.5" /> Approve
+                            </button>
+                            <button
+                              onClick={() => rejectServiceMutation.mutate({ id: svc.id, reason: 'Does not meet platform standards' })}
+                              disabled={rejectServiceMutation.isPending}
+                              className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium bg-red-50 text-red-600 hover:bg-red-100 transition"
+                            >
+                              <XCircle className="w-3.5 h-3.5" /> Reject
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Organizer Verifications Tab */}
+        {activeTab === 'verifications' && (
+          <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+            {pendingVerifications.length === 0 ? (
+              <div className="px-6 py-16 text-center">
+                <Inbox className="w-10 h-10 text-gray-300 mx-auto mb-3" />
+                <p className="text-sm text-gray-400">No pending organizer verifications.</p>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-left">
+                  <thead>
+                    <tr className="border-b border-gray-100">
+                      <th className="px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Organizer</th>
+                      <th className="px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Brand</th>
+                      <th className="px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Submitted</th>
+                      <th className="px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider text-right">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100">
+                    {pendingVerifications.map((v) => (
+                      <tr key={v.id} className="hover:bg-gray-50 transition">
+                        <td className="px-6 py-3.5">
+                          <p className="text-sm font-medium text-gray-900">{v.organizer_email || v.organizer_id?.slice(0, 8)}</p>
+                        </td>
+                        <td className="px-6 py-3.5 text-sm text-gray-600">{v.brand_name || '-'}</td>
+                        <td className="px-6 py-3.5 text-sm text-gray-500">{formatDate(v.created_at)}</td>
+                        <td className="px-6 py-3.5 text-right">
+                          <div className="flex items-center justify-end gap-2">
+                            <button
+                              onClick={() => approveVerificationMutation.mutate(v.id)}
+                              disabled={approveVerificationMutation.isPending}
+                              className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium bg-emerald-50 text-emerald-700 hover:bg-emerald-100 transition disabled:opacity-50"
+                            >
+                              <CheckCircle className="w-3.5 h-3.5" /> Approve
+                            </button>
+                            <button
+                              onClick={() => rejectVerificationMutation.mutate({ id: v.id, reason: 'Insufficient documentation' })}
+                              disabled={rejectVerificationMutation.isPending}
+                              className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium bg-red-50 text-red-600 hover:bg-red-100 transition"
+                            >
+                              <XCircle className="w-3.5 h-3.5" /> Reject
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Rejection modal */}
         {rejectingId && (
