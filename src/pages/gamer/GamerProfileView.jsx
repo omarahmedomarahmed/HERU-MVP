@@ -259,9 +259,17 @@ function TeamCard({ team }) {
 // Main Component
 // ---------------------------------------------------------------------------
 
+const PROFILE_TABS = [
+  { id: 'overview', label: 'Overview' },
+  { id: 'games',    label: 'Games' },
+  { id: 'teams',    label: 'Teams' },
+  { id: 'friends',  label: 'Friends' },
+]
+
 export default function GamerProfileView() {
   const { slug, id: paramId } = useParams()
   const identifier = slug || paramId
+  const [activeTab, setActiveTab] = useState('overview')
 
   // Current auth user (may be null for guests)
   const { user: authUser } = useAuth()
@@ -581,97 +589,166 @@ export default function GamerProfileView() {
           </div>{/* end relative z-10 inner */}
         </div>
 
-        {/* ---------- Riot Ranked Accounts ---------- */}
-        {riotAccounts.length > 0 && (
-          <section className="mb-6 rounded-2xl bg-zinc-900/50 border border-zinc-800/50 p-6">
-            <h2 className="text-lg font-bold text-white flex items-center gap-2 mb-5">
-              <Swords className="w-5 h-5 text-yellow-400" />
-              Riot Accounts
-            </h2>
-            <div className="grid sm:grid-cols-2 gap-4">
-              {lolAccounts.map(acc => <LolPublicCard key={acc.id} account={acc} />)}
-              {valAccounts.map(acc => (
-                <div key={acc.id} className="rounded-xl border border-zinc-800/60 bg-zinc-900/50 p-4 space-y-3">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-red-900/20 border border-red-800/40 flex items-center justify-center shrink-0">
-                      <Swords className="w-5 h-5 text-red-400" />
-                    </div>
-                    <div>
-                      <p className="font-bold text-white text-sm">{acc.game_name}#{acc.tag_line}</p>
-                      <p className="text-zinc-500 text-xs">Valorant · {acc.region?.toUpperCase()}</p>
-                    </div>
-                    {acc.is_primary && <span className="ml-auto text-[10px] px-1.5 py-0.5 rounded bg-red-600/20 text-red-400 border border-red-500/20 font-bold">MAIN</span>}
-                  </div>
-                  {acc.val_rank_tier ? (
-                    <RankBadge tier={acc.val_rank_tier} lp={acc.val_rank_rating} />
-                  ) : (
-                    <span className="text-zinc-600 text-xs">Rank data unavailable (requires prod API key)</span>
-                  )}
-                </div>
-              ))}
-            </div>
-          </section>
-        )}
-
-        {/* ---------- Content Grid ---------- */}
-        <div className="grid lg:grid-cols-2 gap-6">
-          {/* Teams */}
-          <section className="rounded-2xl bg-zinc-900/50 border border-zinc-800/50 p-6 lg:col-span-2">
-            <h2 className="text-lg font-bold text-white flex items-center gap-2 mb-5">
-              <Shield className="w-5 h-5 text-red-500" />
-              Teams
-            </h2>
-            <div className="grid sm:grid-cols-2 gap-2.5">
-              {teams.map((team) => (
-                <TeamCard key={team.id} team={team} />
-              ))}
-              {teams.length === 0 && (
-                <p className="text-zinc-600 py-8 text-sm col-span-2 text-center">Not in any teams yet</p>
-              )}
-            </div>
-          </section>
+        {/* ---------- Tabs ---------- */}
+        <div className="flex gap-1 bg-zinc-900/60 rounded-xl border border-zinc-800 p-1 mb-6 overflow-x-auto">
+          {PROFILE_TABS.map(t => (
+            <button
+              key={t.id}
+              onClick={() => setActiveTab(t.id)}
+              className={`flex-1 px-4 py-2 rounded-lg text-xs font-bold whitespace-nowrap transition-colors ${
+                activeTab === t.id
+                  ? 'bg-red-600/20 text-red-400 border border-red-500/30'
+                  : 'text-zinc-500 hover:text-zinc-300'
+              }`}
+            >
+              {t.label}
+            </button>
+          ))}
         </div>
 
-        {/* ---------- Talent Showcase ---------- */}
-        {profileData.is_talent && profileData.talent_video_link && (
-          <section className="mt-6 rounded-2xl bg-zinc-900/50 border border-zinc-800/50 p-6">
-            <h2 className="text-lg font-bold text-white flex items-center gap-2 mb-5">
-              <Video className="w-5 h-5 text-amber-500" />
-              Talent Showcase
-            </h2>
-            <div className="rounded-xl overflow-hidden bg-black aspect-video">
-              <iframe
-                src={profileData.talent_video_link.replace('watch?v=', 'embed/')}
-                title="Talent Showcase"
-                className="w-full h-full"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                allowFullScreen
-              />
+        {/* Overview Tab */}
+        {activeTab === 'overview' && (
+          <div className="space-y-6">
+            {/* Stats */}
+            <div className="grid grid-cols-3 gap-3">
+              <StatBox label="Tournaments" value={tournamentsPlayed} icon={Trophy} />
+              <StatBox label="Wins" value={tournamentsWon} icon={Flame} />
+              <StatBox label="Teams" value={teams.length} icon={Shield} />
             </div>
-          </section>
+
+            {/* Talent Showcase */}
+            {profileData.is_talent && profileData.talent_video_link && (
+              <section className="rounded-2xl bg-zinc-900/50 border border-zinc-800/50 p-6">
+                <h2 className="text-lg font-bold text-white flex items-center gap-2 mb-4">
+                  <Video className="w-5 h-5 text-amber-500" />
+                  Talent Showcase
+                </h2>
+                <div className="rounded-xl overflow-hidden bg-black aspect-video">
+                  <iframe
+                    src={profileData.talent_video_link.replace('watch?v=', 'embed/')}
+                    title="Talent Showcase"
+                    className="w-full h-full"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowFullScreen
+                  />
+                </div>
+              </section>
+            )}
+
+            {/* Guest CTA */}
+            {!authUser && (
+              <div className="rounded-2xl bg-gradient-to-r from-red-600/10 to-zinc-900/50 border border-red-500/20 p-8 text-center">
+                <h3 className="text-xl font-bold text-white mb-2">Want to connect with {profileData.username}?</h3>
+                <p className="text-zinc-400 text-sm mb-6 max-w-md mx-auto">
+                  Create a HERU account to join teams, compete in tournaments, and connect with gamers across MENA.
+                </p>
+                <div className="flex items-center justify-center gap-3">
+                  <Link to="/auth/gamer/register" className="px-6 py-2.5 bg-red-600 hover:bg-red-500 text-white font-bold rounded-lg transition-colors text-sm">
+                    Create Account
+                  </Link>
+                  <Link to="/auth/gamer/login" className="px-6 py-2.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 font-semibold rounded-lg transition-colors text-sm border border-zinc-700">
+                    Sign In
+                  </Link>
+                </div>
+              </div>
+            )}
+          </div>
         )}
 
-        {/* ---------- Guest CTA ---------- */}
-        {!authUser && (
-          <div className="mt-10 rounded-2xl bg-gradient-to-r from-red-600/10 to-zinc-900/50 border border-red-500/20 p-8 text-center">
-            <h3 className="text-xl font-bold text-white mb-2">Want to connect with {profileData.username}?</h3>
-            <p className="text-zinc-400 text-sm mb-6 max-w-md mx-auto">
-              Create a HERU account to join teams, compete in tournaments, and connect with gamers across the MENA region.
-            </p>
-            <div className="flex items-center justify-center gap-3">
-              <Link
-                to="/auth/gamer/register"
-                className="px-6 py-2.5 bg-red-600 hover:bg-red-500 text-white font-bold rounded-lg transition-colors text-sm"
-              >
-                Create Account
-              </Link>
-              <Link
-                to="/auth/gamer/login"
-                className="px-6 py-2.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 font-semibold rounded-lg transition-colors text-sm border border-zinc-700"
-              >
-                Sign In
-              </Link>
-            </div>
+        {/* Games Tab */}
+        {activeTab === 'games' && (
+          <div className="space-y-4">
+            {riotAccounts.length === 0 && profileData.games?.length === 0 && (
+              <div className="text-center py-16 bg-zinc-900/50 rounded-2xl border border-zinc-800/50">
+                <Gamepad2 className="w-10 h-10 text-zinc-700 mx-auto mb-3" />
+                <p className="text-zinc-500 text-sm">No game accounts connected</p>
+              </div>
+            )}
+            {profileData.games?.map((g, i) => <GameRow key={i} game={g} />)}
+            {lolAccounts.length > 0 && (
+              <div className="space-y-3">
+                <h3 className="text-sm font-bold text-zinc-400 uppercase tracking-wider">League of Legends</h3>
+                {lolAccounts.map(acc => <LolPublicCard key={acc.id} account={acc} />)}
+              </div>
+            )}
+            {valAccounts.length > 0 && (
+              <div className="space-y-3">
+                <h3 className="text-sm font-bold text-zinc-400 uppercase tracking-wider">Valorant</h3>
+                {valAccounts.map(acc => (
+                  <div key={acc.id} className="rounded-xl border border-zinc-800/60 bg-zinc-900/50 p-4 flex items-center justify-between gap-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-red-900/20 border border-red-800/40 flex items-center justify-center">
+                        <Swords className="w-5 h-5 text-red-400" />
+                      </div>
+                      <div>
+                        <p className="font-bold text-white text-sm">{acc.game_name}#{acc.tag_line}</p>
+                        <p className="text-zinc-500 text-xs">Valorant · {acc.region?.toUpperCase()}</p>
+                      </div>
+                    </div>
+                    {acc.val_rank_tier
+                      ? <RankBadge tier={acc.val_rank_tier} lp={acc.val_rank_rating} />
+                      : <span className="text-zinc-600 text-xs">Unranked</span>}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Teams Tab */}
+        {activeTab === 'teams' && (
+          <div className="space-y-3">
+            {teams.length === 0 ? (
+              <div className="text-center py-16 bg-zinc-900/50 rounded-2xl border border-zinc-800/50">
+                <Shield className="w-10 h-10 text-zinc-700 mx-auto mb-3" />
+                <p className="text-zinc-500 text-sm">Not in any teams</p>
+              </div>
+            ) : teams.map(t => <TeamCard key={t.id} team={t} />)}
+          </div>
+        )}
+
+        {/* Friends Tab */}
+        {activeTab === 'friends' && (
+          <div className="space-y-3">
+            {!authUser ? (
+              <div className="text-center py-16 bg-zinc-900/50 rounded-2xl border border-zinc-800/50">
+                <Users className="w-10 h-10 text-zinc-700 mx-auto mb-3" />
+                <p className="text-zinc-500 text-sm mb-3">Sign in to view friends</p>
+                <Link to="/auth/gamer/login" className="text-sm text-red-400 hover:text-red-300 transition-colors">
+                  Sign in →
+                </Link>
+              </div>
+            ) : friendStatus === 'accepted' ? (
+              <div className="text-center py-16 bg-zinc-900/50 rounded-2xl border border-zinc-800/50">
+                <Users className="w-10 h-10 text-zinc-700 mx-auto mb-3" />
+                <p className="text-zinc-400 text-sm">You are friends with {profileData.username}</p>
+                <Link
+                  to={`/gamer/messages?dm=${profileData.user_id}`}
+                  className="mt-4 inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-red-600 hover:bg-red-500 text-white text-sm font-bold transition-colors"
+                >
+                  <MessageSquare className="w-3.5 h-3.5" /> Send a message
+                </Link>
+              </div>
+            ) : (
+              <div className="text-center py-16 bg-zinc-900/50 rounded-2xl border border-zinc-800/50">
+                <UserPlus className="w-10 h-10 text-zinc-700 mx-auto mb-3" />
+                <p className="text-zinc-400 text-sm mb-4">Add {profileData.username} as a friend to see their network</p>
+                {friendStatus === 'pending' ? (
+                  <span className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-yellow-500/10 text-yellow-400 border border-yellow-500/20 text-sm font-bold">
+                    <Clock className="w-3.5 h-3.5" /> Request Sent
+                  </span>
+                ) : (
+                  <button
+                    onClick={() => addFriendMutation.mutate()}
+                    disabled={addFriendMutation.isPending}
+                    className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-red-600 hover:bg-red-500 text-white text-sm font-bold transition-colors disabled:opacity-50"
+                  >
+                    <UserPlus className="w-3.5 h-3.5" />
+                    {addFriendMutation.isPending ? 'Sending…' : 'Add Friend'}
+                  </button>
+                )}
+              </div>
+            )}
           </div>
         )}
       </main>
