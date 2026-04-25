@@ -55,7 +55,7 @@ export default function ProviderServices() {
       ) : (
         <div className="space-y-4">
           {services.map(svc => {
-            const statusKey = svc.is_approved ? 'approved' : svc.is_active ? 'pending' : 'rejected';
+            const statusKey = svc.status || (svc.is_approved ? 'approved' : 'pending');
             const st = STATUS[statusKey] || STATUS.pending;
             const Icon = st.icon;
             return (
@@ -86,7 +86,7 @@ export default function ProviderServices() {
         </div>
       )}
 
-      {!loading && services.some(s => !s.is_approved) && (
+      {!loading && services.some(s => s.status !== 'approved') && (
         <div className="mt-4 flex items-start gap-2 p-3 rounded-lg bg-blue-500/10 border border-blue-500/20 text-xs text-blue-300">
           <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
           Services pending approval will be visible to organizers once the HERU team reviews them (usually within 24–48 hours).

@@ -28,19 +28,19 @@ export default function SponsorBilling() {
 
   const { data: sponsorships = [], isLoading: ls } = useQuery({
     queryKey: ['sponsor-sponsorships-billing', user?.id],
-    queryFn: () => apiCall('/sponsorships'),
+    queryFn: () => apiCall('/sponsorships').then(d => d?.sponsorships || d?.data || (Array.isArray(d) ? d : [])),
     enabled: !!user?.id,
   })
 
   const { data: subscription } = useQuery({
     queryKey: ['sponsor-subscription-billing', user?.id],
-    queryFn: () => apiCall('/subscriptions/me'),
+    queryFn: () => apiCall('/subscriptions/me').then(d => d?.subscription || d),
     enabled: !!user?.id,
   })
 
   const { data: managedProjects = [] } = useQuery({
     queryKey: ['sponsor-managed-billing', user?.id],
-    queryFn: () => apiCall('/managed-services'),
+    queryFn: () => apiCall('/managed-services').then(d => d?.projects || d?.data || (Array.isArray(d) ? d : [])),
     enabled: !!user?.id,
   })
 

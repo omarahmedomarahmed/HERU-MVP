@@ -68,6 +68,7 @@ function EmptyState({ icon: Icon, message }) {
 
 const TABS = [
   { id: 'overview',      label: 'Overview',      icon: Trophy },
+  { id: 'sponsors',      label: 'Sponsors',      icon: DollarSign },
   { id: 'teams',         label: 'Teams',         icon: Users },
   { id: 'seeding',       label: 'Seeding',       icon: GripVertical },
   { id: 'brackets',      label: 'Brackets',      icon: GitBranch },
@@ -302,6 +303,97 @@ function DeliverablesTab({ tournament, queryClient }) {
               <p className="text-sm text-gray-400">Grand Total</p>
               <p className="text-white font-bold">{formatEGP(order.grand_total)}</p>
             </div>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ---------------------------------------------------------------------------
+// Sponsors Tab
+// ---------------------------------------------------------------------------
+
+function SponsorsTab({ tournament }) {
+  const { data: packages = [], isLoading } = useQuery({
+    queryKey: ['tournament-packages', tournament.id],
+    queryFn: () => apiCall(`/sponsorship-packages?tournament_id=${tournament.id}`)
+      .then(d => Array.isArray(d) ? d : d?.packages || d?.data || []),
+    staleTime: 30_000,
+  })
+
+  const { data: sponsorships = [] } = useQuery({
+    queryKey: ['tournament-sponsorships', tournament.id],
+    queryFn: () => apiCall(`/sponsorships?tournament_id=${tournament.id}`)
+      .then(d => Array.isArray(d) ? d : d?.sponsorships || d?.data || []),
+    staleTime: 30_000,
+  })
+
+  const totalRaised = sponsorships.reduce((s, sp) => s + (sp.amount || 0), 0)
+
+  return (
+    <div className="space-y-6">
+      {/* Summary */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+        <div className="bg-white/5 border border-white/10 rounded-xl p-4">
+          <p className="text-xs text-gray-500 mb-1">Packages</p>
+          <p className="text-xl font-bold text-white">{packages.length}</p>
+        </div>
+        <div className="bg-white/5 border border-white/10 rounded-xl p-4">
+          <p className="text-xs text-gray-500 mb-1">Sponsors</p>
+          <p className="text-xl font-bold text-white">{sponsorships.length}</p>
+        </div>
+        <div className="bg-white/5 border border-white/10 rounded-xl p-4">
+          <p className="text-xs text-gray-500 mb-1">Total Raised</p>
+          <p className="text-xl font-bold text-green-400">{formatEGP(totalRaised)}</p>
+        </div>
+      </div>
+
+      {/* Sponsorship Packages */}
+      <div>
+        <h3 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-3">Packages on Radar</h3>
+        {isLoading ? (
+          <div className="flex items-center justify-center py-8"><Loader2 className="w-5 h-5 animate-spin text-purple-400" /></div>
+        ) : packages.length === 0 ? (
+          <EmptyState icon={DollarSign} message="No sponsorship packages listed on Radar yet." />
+        ) : (
+          <div className="space-y-3">
+            {packages.map(pkg => (
+              <div key={pkg.id} className="bg-white/5 border border-white/10 rounded-xl p-4 flex items-center gap-4">
+                <div className="flex-1 min-w-0">
+                  <p className="text-white font-semibold truncate">{pkg.title || pkg.name}</p>
+                  <p className="text-gray-400 text-xs mt-0.5">{pkg.description}</p>
+                </div>
+                <div className="text-right flex-shrink-0">
+                  <p className="text-purple-300 font-bold">{formatEGP(pkg.price)}</p>
+                  <p className="text-xs text-gray-500">{pkg.status}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Active Sponsors */}
+      {sponsorships.length > 0 && (
+        <div>
+          <h3 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-3">Active Sponsors</h3>
+          <div className="space-y-3">
+            {sponsorships.map(sp => (
+              <div key={sp.id} className="bg-white/5 border border-white/10 rounded-xl p-4 flex items-center gap-4">
+                <div className="w-9 h-9 rounded-lg bg-yellow-500/10 flex items-center justify-center flex-shrink-0">
+                  <DollarSign className="w-4 h-4 text-yellow-400" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-white font-semibold truncate">{sp.sponsor_name || sp.brand_name || 'Sponsor'}</p>
+                  <p className="text-gray-400 text-xs">{sp.package_name || 'Package'}</p>
+                </div>
+                <div className="text-right">
+                  <p className="text-green-400 font-bold">{formatEGP(sp.amount)}</p>
+                  <span className="text-xs bg-green-500/20 text-green-400 px-2 py-0.5 rounded-full">{sp.status || 'active'}</span>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       )}
@@ -869,6 +961,7 @@ export default function TournamentManage({ defaultTab = 'overview' }) {
         {/* ----------------------------------------------------------------- */}
         <div>
           {activeTab === 'overview' && <OverviewTab tournament={tournament} />}
+          {activeTab === 'sponsors' && <SponsorsTab tournament={tournament} />}
           {activeTab === 'teams' && (
             <TeamManagementPanel tournament={tournament} canEdit={true} />
           )}

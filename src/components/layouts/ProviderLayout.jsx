@@ -4,7 +4,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '@/lib/AuthContext'
 import HeruLogo from '@/components/shared/HeruLogo'
 import SupportChat from '@/components/ui/SupportChat'
-import { LayoutDashboard, Package, BookOpen, User, Menu, LogOut, ChevronLeft, ChevronRight, Briefcase, TrendingUp, Plus } from 'lucide-react'
+import { LayoutDashboard, Package, BookOpen, User, Menu, LogOut, ChevronLeft, ChevronRight, Briefcase, TrendingUp, Plus, Image } from 'lucide-react'
 
 const NAV_SECTIONS = [
   { label: 'Overview', items: [{ to: '/provider/dashboard', icon: LayoutDashboard, text: 'Dashboard' }] },
@@ -12,16 +12,19 @@ const NAV_SECTIONS = [
     { to: '/provider/services', icon: Package, text: 'My Services' },
     { to: '/provider/services/new', icon: Plus, text: 'Add Service', highlight: true },
   ]},
-  { label: 'Work', items: [{ to: '/provider/bookings', icon: BookOpen, text: 'Bookings' }] },
+  { label: 'Work', items: [
+    { to: '/provider/bookings', icon: BookOpen, text: 'Bookings' },
+    { to: '/provider/portfolio', icon: Image, text: 'Portfolio' },
+  ]},
   { label: 'Finance', items: [{ to: '/provider/income', icon: TrendingUp, text: 'Income Breakdown' }] },
-  { label: 'Account', items: [{ to: '/provider/profile', icon: User, text: 'Profile & Portfolio' }] },
+  { label: 'Account', items: [{ to: '/provider/profile', icon: User, text: 'Profile' }] },
 ]
 
 const BOTTOM_TABS = [
   { to: '/provider/dashboard', icon: LayoutDashboard, text: 'Home' },
   { to: '/provider/services', icon: Package, text: 'Services' },
   { to: '/provider/bookings', icon: BookOpen, text: 'Bookings' },
-  { to: '/provider/income', icon: TrendingUp, text: 'Income' },
+  { to: '/provider/portfolio', icon: Image, text: 'Portfolio' },
   { to: '/provider/profile', icon: User, text: 'Profile' },
 ]
 

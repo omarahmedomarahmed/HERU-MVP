@@ -3,7 +3,6 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/lib/AuthContext';
 import { apiCall } from '@/api/heruClient';
-import SponsorLayout from '@/components/layouts/SponsorLayout';
 import {
   ArrowLeft, Briefcase, Send, CheckCircle, Clock,
   MessageCircle, Loader2,
@@ -49,29 +48,28 @@ export default function SponsorManagedServiceDetail() {
 
   if (isLoading) {
     return (
-      <SponsorLayout>
+      <>
         <div className="flex items-center justify-center h-48">
           <Loader2 className="w-6 h-6 text-yellow-400 animate-spin" />
         </div>
-      </SponsorLayout>
+      </>
     );
   }
 
   if (!project) {
     return (
-      <SponsorLayout>
+      <>
         <div className="text-center py-16">
           <p className="text-gray-400">Project not found.</p>
         </div>
-      </SponsorLayout>
+      </>
     );
   }
 
   const chat = project.chat || [];
 
   return (
-    <SponsorLayout>
-      <div className="max-w-3xl mx-auto">
+    <div className="max-w-3xl mx-auto">
         <button
           onClick={() => navigate('/sponsor/managed-services')}
           className="flex items-center gap-2 text-sm text-gray-400 hover:text-white transition-colors mb-6"
@@ -157,7 +155,6 @@ export default function SponsorManagedServiceDetail() {
             </button>
           </div>
         </div>
-      </div>
-    </SponsorLayout>
+    </div>
   );
 }

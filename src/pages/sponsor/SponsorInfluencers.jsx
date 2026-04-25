@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { apiCall } from '@/api/heruClient';
-import SponsorLayout from '@/components/layouts/SponsorLayout';
 import { Search, Users, Play, Loader2, Star } from 'lucide-react';
 
 function InfluencerCard({ influencer }) {
@@ -88,8 +87,7 @@ export default function SponsorInfluencers() {
   );
 
   return (
-    <SponsorLayout>
-      <div>
+    <div>
         <div className="mb-6">
           <h1 className="text-2xl font-black text-white">Influencer Marketplace</h1>
           <p className="text-sm text-gray-400 mt-1">Browse and book MENA gaming influencers for your esports campaigns.</p>
@@ -122,7 +120,6 @@ export default function SponsorInfluencers() {
             ))}
           </div>
         )}
-      </div>
-    </SponsorLayout>
+    </div>
   );
 }

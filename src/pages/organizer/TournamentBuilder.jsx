@@ -124,8 +124,9 @@ export default function TournamentBuilder() {
     queryKey: ['organizer-profile', user?.id],
     queryFn: async () => {
       if (!user?.id) return null;
-      const profiles = await OrganizerProfile.list({ user_id: user.id });
-      return profiles[0];
+      const res = await OrganizerProfile.list({ user_id: user.id });
+      const profiles = Array.isArray(res) ? res : res?.profiles || res?.data || [];
+      return profiles[0] || null;
     },
     enabled: !!user?.id,
   });
@@ -208,17 +209,17 @@ export default function TournamentBuilder() {
 
   const { data: allTeams = [] } = useQuery({
     queryKey: ['all-teams'],
-    queryFn: () => Team.list('-created_date'),
+    queryFn: () => Team.list('-created_date').then(d => Array.isArray(d) ? d : d?.teams || d?.data || []),
   });
 
   const { data: approvedServices = [] } = useQuery({
     queryKey: ['approved-services'],
-    queryFn: () => Service.list({ status: 'approved' }),
+    queryFn: () => Service.list({ status: 'approved' }).then(d => Array.isArray(d) ? d : d?.services || d?.data || []),
   });
 
   const { data: allGamers = [] } = useQuery({
     queryKey: ['all-gamers'],
-    queryFn: () => GamerProfile.list({}),
+    queryFn: () => GamerProfile.list({}).then(d => Array.isArray(d) ? d : d?.gamers || d?.profiles || d?.data || []),
   });
 
   const brandingItems = approvedServices.filter(i => i.category === 'Branding');

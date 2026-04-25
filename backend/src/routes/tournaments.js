@@ -55,6 +55,11 @@ router.get('/', async (req, res) => {
       query = query.in('status', ['published', 'live', 'completed']);
     }
 
+    // Hide internal/corporate tournaments from public listings unless explicitly requested by the organizer
+    if (!organizer_id && !include_drafts) {
+      query = query.or('is_internal.is.null,is_internal.eq.false');
+    }
+
     if (game) query = query.eq('game', game);
     if (organizer_id) query = query.eq('organizer_id', organizer_id);
     if (invited_gamer) query = query.contains('gamer_invites', [invited_gamer]);
@@ -80,11 +85,12 @@ router.get('/my-arena', requireAuth, async (req, res) => {
       .or(`leader_id.eq.${userId},members.cs.{"${userId}"}`);
     const teamIds = (teamsData || []).map(t => t.id);
 
-    // 2. Get all published/live tournaments
+    // 2. Get all published/live tournaments (exclude internal corporate events)
     const { data: allTournaments, error } = await supabaseAdmin
       .from('tournaments')
       .select('id,name,game,tournament_image,status,format,max_teams,schedule,participant_type,teams,gamer_participants,player_participants,brackets,prizepool_total')
       .in('status', ['published', 'live', 'completed'])
+      .or('is_internal.is.null,is_internal.eq.false')
       .order('created_at', { ascending: false });
     if (error) throw error;
 

@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useMutation } from '@tanstack/react-query';
 import { apiCall } from '@/api/heruClient';
-import SponsorLayout from '@/components/layouts/SponsorLayout';
 import { Briefcase, ArrowLeft } from 'lucide-react';
 
 export default function SponsorManagedServiceNew() {
@@ -15,8 +14,7 @@ export default function SponsorManagedServiceNew() {
   });
 
   return (
-    <SponsorLayout>
-      <div className="max-w-2xl mx-auto">
+    <div className="max-w-2xl mx-auto">
         <button
           onClick={() => navigate('/sponsor/managed-services')}
           className="flex items-center gap-2 text-sm text-gray-400 hover:text-white transition-colors mb-6"
@@ -90,7 +88,6 @@ export default function SponsorManagedServiceNew() {
             {createMutation.isPending ? 'Submitting...' : 'Submit Request'}
           </button>
         </div>
-      </div>
-    </SponsorLayout>
+    </div>
   );
 }

@@ -37,14 +37,35 @@ router.get('/', async (req, res) => {
 // GET /providers/me — own profile (requires provider auth)
 router.get('/me', requireAuth, requireProvider, async (req, res) => {
   try {
-    const { data, error } = await supabaseAdmin
+    let { data, error } = await supabaseAdmin
       .from('service_provider_profiles')
-      .select('*, services(*), provider_portfolio_items(*), provider_past_projects(*)')
+      .select('*')
       .eq('user_id', req.user.id)
       .single();
 
-    if (error) return res.status(404).json({ error: 'Provider profile not found' });
-    res.json({ provider: data });
+    if (error || !data) {
+      // Auto-create profile if missing
+      const { data: newProfile, error: createErr } = await supabaseAdmin
+        .from('service_provider_profiles')
+        .insert({
+          user_id: req.user.id,
+          display_name: req.user.email?.split('@')[0] || 'Provider',
+          approval_status: 'pending',
+          is_approved: false,
+        })
+        .select()
+        .single();
+      if (createErr) return res.status(500).json({ error: 'Failed to create provider profile' });
+      data = newProfile;
+    }
+
+    // Fetch services and portfolio separately to avoid join errors
+    const [{ data: services }, { data: portfolio }] = await Promise.all([
+      supabaseAdmin.from('services').select('*').eq('provider_id', data.id).order('created_at', { ascending: false }),
+      supabaseAdmin.from('provider_portfolio_items').select('*').eq('provider_id', data.id).order('created_at', { ascending: false }),
+    ]);
+
+    res.json({ provider: { ...data, services: services || [], provider_portfolio_items: portfolio || [] } });
   } catch (err) {
     console.error('[providers GET /me]', err);
     res.status(500).json({ error: 'Failed to fetch profile' });
@@ -106,12 +127,18 @@ router.get('/:id', async (req, res) => {
   try {
     const { data, error } = await supabaseAdmin
       .from('service_provider_profiles')
-      .select('*, services(*), provider_portfolio_items(*), provider_past_projects(*)')
+      .select('*')
       .eq('id', req.params.id)
       .single();
 
-    if (error) return res.status(404).json({ error: 'Provider not found' });
-    res.json({ provider: data });
+    if (error || !data) return res.status(404).json({ error: 'Provider not found' });
+
+    const [{ data: services }, { data: portfolio }] = await Promise.all([
+      supabaseAdmin.from('services').select('*').eq('provider_id', data.id).eq('status', 'approved'),
+      supabaseAdmin.from('provider_portfolio_items').select('*').eq('provider_id', data.id).order('created_at', { ascending: false }),
+    ]);
+
+    res.json({ provider: { ...data, services: services || [], provider_portfolio_items: portfolio || [] } });
   } catch (err) {
     console.error('[providers GET /:id]', err);
     res.status(500).json({ error: 'Failed to fetch provider' });
@@ -122,17 +149,25 @@ router.get('/:id', async (req, res) => {
 router.put('/me', requireAuth, requireProvider, async (req, res) => {
   try {
     const allowed = [
-      'display_name','avatar','bio','portfolio_url','portfolio_description',
-      'years_experience','social_links','is_discord_server',
-      'discord_server_invite','discord_server_member_count',
+      'display_name','avatar','bio','categories','provider_type',
+      'social_links','coach_games','coach_rank','coach_availability','hourly_rate',
+      'influencer_platforms','audience_size','avg_views_per_post','slug',
     ];
     const updates = {};
     for (const key of allowed) {
       if (req.body[key] !== undefined) updates[key] = req.body[key];
     }
 
-    if (updates.is_discord_server && updates.discord_server_member_count < 1000) {
-      return res.status(400).json({ error: 'Discord server must have at least 1000 members' });
+    // Validate slug uniqueness if provided
+    if (updates.slug) {
+      updates.slug = updates.slug.toLowerCase().replace(/[^a-z0-9-]/g, '-');
+      const { data: existing } = await supabaseAdmin
+        .from('service_provider_profiles')
+        .select('id')
+        .eq('slug', updates.slug)
+        .neq('user_id', req.user.id)
+        .single();
+      if (existing) return res.status(400).json({ error: 'Slug already taken' });
     }
 
     updates.updated_at = new Date().toISOString();
@@ -149,6 +184,127 @@ router.put('/me', requireAuth, requireProvider, async (req, res) => {
   } catch (err) {
     console.error('[providers PUT /me]', err);
     res.status(500).json({ error: 'Failed to update profile' });
+  }
+});
+
+// GET /providers/slug/:slug — public profile by slug
+router.get('/slug/:slug', async (req, res) => {
+  try {
+    const { data, error } = await supabaseAdmin
+      .from('service_provider_profiles')
+      .select('*')
+      .eq('slug', req.params.slug)
+      .single();
+
+    if (error || !data) return res.status(404).json({ error: 'Provider not found' });
+
+    const [{ data: services }, { data: portfolio }] = await Promise.all([
+      supabaseAdmin.from('services').select('*').eq('provider_id', data.id).eq('status', 'approved'),
+      supabaseAdmin.from('provider_portfolio_items').select('*').eq('provider_id', data.id).order('created_at', { ascending: false }),
+    ]);
+
+    res.json({ provider: { ...data, services: services || [], provider_portfolio_items: portfolio || [] } });
+  } catch (err) {
+    console.error('[providers GET /slug/:slug]', err);
+    res.status(500).json({ error: 'Failed to fetch provider' });
+  }
+});
+
+// POST /providers/portfolio — add portfolio item
+router.post('/portfolio', requireAuth, requireProvider, async (req, res) => {
+  try {
+    const { data: profile } = await supabaseAdmin
+      .from('service_provider_profiles')
+      .select('id')
+      .eq('user_id', req.user.id)
+      .single();
+
+    if (!profile) return res.status(404).json({ error: 'Profile not found' });
+
+    const { title, description, image_url, video_url, tournament_name, type,
+      client_name, deliverables, links, testimonial, service_id } = req.body;
+
+    if (!title) return res.status(400).json({ error: 'title is required' });
+
+    const { data, error } = await supabaseAdmin
+      .from('provider_portfolio_items')
+      .insert({
+        provider_id: profile.id,
+        service_id: service_id || null,
+        title,
+        description: description || '',
+        image_url: image_url || null,
+        video_url: video_url || null,
+        tournament_name: tournament_name || null,
+        type: type || 'general',
+        client_name: client_name || null,
+        deliverables: Array.isArray(deliverables) ? deliverables : [],
+        links: Array.isArray(links) ? links : [],
+        testimonial: testimonial || null,
+      })
+      .select()
+      .single();
+
+    if (error) throw error;
+    res.status(201).json({ item: data });
+  } catch (err) {
+    console.error('[providers POST /portfolio]', err);
+    res.status(500).json({ error: 'Failed to add portfolio item' });
+  }
+});
+
+// PUT /providers/portfolio/:id — update portfolio item
+router.put('/portfolio/:id', requireAuth, requireProvider, async (req, res) => {
+  try {
+    const { data: profile } = await supabaseAdmin
+      .from('service_provider_profiles')
+      .select('id')
+      .eq('user_id', req.user.id)
+      .single();
+
+    const allowed = ['title','description','image_url','video_url','tournament_name',
+      'type','client_name','deliverables','links','testimonial','service_id'];
+    const updates = {};
+    for (const key of allowed) {
+      if (req.body[key] !== undefined) updates[key] = req.body[key];
+    }
+
+    const { data, error } = await supabaseAdmin
+      .from('provider_portfolio_items')
+      .update(updates)
+      .eq('id', req.params.id)
+      .eq('provider_id', profile.id)
+      .select()
+      .single();
+
+    if (error) return res.status(404).json({ error: 'Item not found' });
+    res.json({ item: data });
+  } catch (err) {
+    console.error('[providers PUT /portfolio/:id]', err);
+    res.status(500).json({ error: 'Failed to update portfolio item' });
+  }
+});
+
+// DELETE /providers/portfolio/:id
+router.delete('/portfolio/:id', requireAuth, requireProvider, async (req, res) => {
+  try {
+    const { data: profile } = await supabaseAdmin
+      .from('service_provider_profiles')
+      .select('id')
+      .eq('user_id', req.user.id)
+      .single();
+
+    const { error } = await supabaseAdmin
+      .from('provider_portfolio_items')
+      .delete()
+      .eq('id', req.params.id)
+      .eq('provider_id', profile.id);
+
+    if (error) throw error;
+    res.json({ success: true });
+  } catch (err) {
+    console.error('[providers DELETE /portfolio/:id]', err);
+    res.status(500).json({ error: 'Failed to delete portfolio item' });
   }
 });
 

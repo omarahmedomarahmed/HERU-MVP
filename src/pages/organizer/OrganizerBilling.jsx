@@ -136,7 +136,7 @@ export default function OrganizerBilling() {
 
   // Normalize
   const allBills = useMemo(() => {
-    const raw = Array.isArray(billsData) ? billsData : billsData?.data || []
+    const raw = Array.isArray(billsData) ? billsData : billsData?.bills || billsData?.data || []
     // Sort: unpaid/overdue first, then partial, then paid; within group by date descending
     return [...raw].sort((a, b) => {
       const order = { overdue: 0, unpaid: 1, partial: 2, paid: 3 }

@@ -11,9 +11,8 @@ router.get('/', async (req, res) => {
     const { category, provider_id, limit = 50, offset = 0 } = req.query;
     let query = supabaseAdmin
       .from('services')
-      .select('*, service_provider_profiles(id,display_name,avatar,rating,is_approved)')
-      .eq('is_active', true)
-      .eq('is_approved', true)
+      .select('*, service_provider_profiles(id,display_name,avatar,rating,is_approved,approval_status)')
+      .eq('status', 'approved')
       .order('rating', { ascending: false })
       .range(Number(offset), Number(offset) + Number(limit) - 1);
 
@@ -171,14 +170,11 @@ router.post('/', requireAuth, requireProvider, async (req, res) => {
         title,
         description: description || '',
         category,
-        category_id: category_id || null,
         price: Number(price),
         price_type: price_type || 'fixed',
         deliverables: Array.isArray(deliverables) ? deliverables : [],
-        portfolio_url: portfolio_url || null,
         portfolio_images: Array.isArray(portfolio_images) ? portfolio_images : [],
-        is_active: true,
-        is_approved: false,
+        status: 'pending',
       })
       .select()
       .single();
@@ -201,8 +197,8 @@ router.put('/:id', requireAuth, requireProvider, async (req, res) => {
       .single();
 
     const allowed = [
-      'title','description','category','category_id','price','price_type',
-      'deliverables','portfolio_url','portfolio_images',
+      'title','description','category','price','price_type',
+      'deliverables','portfolio_images','portfolio_videos','availability',
     ];
     const updates = { updated_at: new Date().toISOString() };
     for (const key of allowed) {
@@ -236,7 +232,7 @@ router.delete('/:id', requireAuth, requireProvider, async (req, res) => {
 
     const { error } = await supabaseAdmin
       .from('services')
-      .update({ is_active: false, updated_at: new Date().toISOString() })
+      .update({ status: 'suspended', updated_at: new Date().toISOString() })
       .eq('id', req.params.id)
       .eq('provider_id', profile.id);
 

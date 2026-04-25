@@ -101,6 +101,7 @@ import ProviderBookings from './pages/provider/ProviderBookings'
 import ProviderBookingDetail from './pages/provider/ProviderBookingDetail'
 import ProviderProfile from './pages/provider/ProviderProfile'
 import ProviderIncome from './pages/provider/ProviderIncome'
+import ProviderPortfolio from './pages/provider/ProviderPortfolio'
 
 // Staff pages
 import StaffLayout from '@/components/layouts/StaffLayout'
@@ -236,6 +237,7 @@ function App() {
             <Route path="/provider/bookings" element={<RequireProvider><ProviderLayout><ProviderBookings /></ProviderLayout></RequireProvider>} />
             <Route path="/provider/bookings/:id" element={<RequireProvider><ProviderLayout><ProviderBookingDetail /></ProviderLayout></RequireProvider>} />
             <Route path="/provider/profile" element={<RequireProvider><ProviderLayout><ProviderProfile /></ProviderLayout></RequireProvider>} />
+            <Route path="/provider/portfolio" element={<RequireProvider><ProviderLayout><ProviderPortfolio /></ProviderLayout></RequireProvider>} />
             <Route path="/provider/income" element={<RequireProvider><ProviderLayout><ProviderIncome /></ProviderLayout></RequireProvider>} />
 
             {/* ============ STAFF ZONE ============ */}

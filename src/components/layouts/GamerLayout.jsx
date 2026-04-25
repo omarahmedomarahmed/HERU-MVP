@@ -5,21 +5,19 @@ import { useQuery } from '@tanstack/react-query';
 import AnimatedBackground from '@/components/shared/AnimatedBackground';
 import HeruLogo from '@/components/shared/HeruLogo';
 import SupportChat from '@/components/ui/SupportChat';
-import OrdersDropdown from '@/components/navigation/OrdersDropdown.jsx';
 import { motion, AnimatePresence } from 'framer-motion';
-import { GamerProfile, Order, Team } from '@/api/heruClient'
+import { GamerProfile, Team } from '@/api/heruClient'
 import { useAuth } from '@/lib/AuthContext'
 
 import {
-  Home, Trophy, Users, ShoppingBag, User, Bell,
-  ShoppingCart, Menu, X, LogOut, Package, LayoutDashboard,
-  Swords, Link2, Bot, ChevronRight
+  Home, Trophy, Users, User, Bell,
+  Menu, X, LogOut, LayoutDashboard,
+  Swords, UserPlus, BookOpen, MessageSquare, ChevronRight
 } from 'lucide-react';
 
-export default function GamerLayout({ children, user: userProp, profile: profileProp, cartCount = 0 }) {
+export default function GamerLayout({ children, user: userProp, profile: profileProp }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
-  const [ordersOpen, setOrdersOpen] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
   const { logout, user: authUser } = useAuth();
@@ -76,8 +74,9 @@ export default function GamerLayout({ children, user: userProp, profile: profile
     { icon: Home, label: 'Home', path: '/gamer/home' },
     { icon: Trophy, label: 'Tournaments', path: '/gamer/tournaments' },
     { icon: Users, label: 'Teams', path: '/gamer/teams', badge: pendingTeamRequests },
-    { icon: ShoppingBag, label: 'Shop', path: '/gamer/orders' },
-    { icon: Link2, label: 'Connect', path: '/gamer/profile', search: 'tab=connect' },
+    { icon: BookOpen, label: 'Coaching', path: '/gamer/bookings' },
+    { icon: UserPlus, label: 'Friends', path: '/gamer/friends' },
+    { icon: MessageSquare, label: 'Messages', path: '/gamer/messages' },
   ];
 
   const isActive = (path, search) => {
@@ -91,16 +90,6 @@ export default function GamerLayout({ children, user: userProp, profile: profile
     await logout();
     navigate('/auth/gamer/login');
   };
-
-  // Fetch orders
-  const { data: orders = [] } = useQuery({
-    queryKey: ['orders-nav', user?.id],
-    queryFn: async () => {
-      if (!user?.id) return [];
-      return Order.list({ gamer_id: user.id }, '-created_date', 5);
-    },
-    enabled: !!user?.id,
-  });
 
   const recentNotifs = [...notifications].reverse().slice(0, 5);
 
@@ -148,36 +137,15 @@ export default function GamerLayout({ children, user: userProp, profile: profile
           </div>
 
           <div className="flex items-center gap-2">
-            {/* Orders */}
+            {/* Placeholder to keep spacing */}
             <div className="relative hidden md:block">
               <button
-                onClick={() => setOrdersOpen(!ordersOpen)}
-                className="relative p-2 text-gray-400 hover:text-white transition-colors"
+                className="relative p-2 text-gray-400 hover:text-white transition-colors opacity-0 pointer-events-none"
               >
-                <Package className="w-5 h-5" />
-                {orders.filter(o => o.status === 'pending').length > 0 && (
-                  <span className="absolute -top-1 -right-1 w-2 h-2 bg-yellow-500 rounded-full" />
+                <span className="w-5 h-5" />
                 )}
               </button>
-              <OrdersDropdown
-                isOpen={ordersOpen}
-                onClose={() => setOrdersOpen(false)}
-                orders={orders}
-              />
             </div>
-
-            {/* Cart */}
-            <Link
-              to={'/gamer/cart'}
-              className="relative p-2 text-gray-400 hover:text-white transition-colors"
-            >
-              <ShoppingCart className="w-5 h-5" />
-              {cartCount > 0 && (
-                <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full text-white text-xs flex items-center justify-center font-bold">
-                  {cartCount}
-                </span>
-              )}
-            </Link>
 
             {/* Notifications Bell */}
             <div className="relative">
@@ -349,12 +317,12 @@ export default function GamerLayout({ children, user: userProp, profile: profile
                     )}
                   </Link>
                   <Link
-                    to={'/gamer/orders'}
+                    to={'/gamer/bookings'}
                     onClick={() => setMobileMenuOpen(false)}
                     className="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-400 hover:text-white hover:bg-white/5"
                   >
-                    <Package className="w-5 h-5" />
-                    My Orders
+                    <BookOpen className="w-5 h-5" />
+                    Coaching Sessions
                   </Link>
                   <Link
                     to={'/gamer/profile?tab=connect'}

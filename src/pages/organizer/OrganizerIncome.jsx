@@ -16,19 +16,19 @@ export default function OrganizerIncome() {
 
   const { data: sponsorships = [], isLoading: loadingS } = useQuery({
     queryKey: ['organizer-sponsorships', user?.id],
-    queryFn: () => apiCall('/sponsorships?organizer=true'),
+    queryFn: () => apiCall('/sponsorships?organizer=true').then(d => Array.isArray(d) ? d : d?.sponsorships || d?.data || []),
     enabled: !!user?.id,
   })
 
   const { data: bookings = [], isLoading: loadingB } = useQuery({
     queryKey: ['organizer-service-bookings', user?.id],
-    queryFn: () => apiCall('/service-bookings?as_organizer=true'),
+    queryFn: () => apiCall('/service-bookings?as_organizer=true').then(d => Array.isArray(d) ? d : d?.bookings || d?.data || []),
     enabled: !!user?.id,
   })
 
   const { data: tournaments = [] } = useQuery({
     queryKey: ['organizer-tournaments-income', user?.id],
-    queryFn: () => apiCall('/tournaments?organizer=me'),
+    queryFn: () => apiCall('/tournaments?organizer=me').then(d => Array.isArray(d) ? d : d?.tournaments || d?.data || []),
     enabled: !!user?.id,
   })
 
