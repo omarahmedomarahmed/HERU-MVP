@@ -96,7 +96,7 @@ CREATE TABLE IF NOT EXISTS tournaments (
   tournament_image     TEXT,
   rules                TEXT,
   is_online            BOOLEAN NOT NULL DEFAULT TRUE,
-  venue_id             UUID,
+  venue_name           TEXT,
   skill_level          TEXT DEFAULT 'open' CHECK (skill_level IN ('open','beginner','intermediate','advanced','pro')),
   is_featured          BOOLEAN NOT NULL DEFAULT FALSE,
   sponsorship_enabled  BOOLEAN NOT NULL DEFAULT FALSE,
@@ -173,21 +173,9 @@ CREATE TABLE IF NOT EXISTS tournament_reports (
   updated_at     TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
--- Venues (offline event locations)
-CREATE TABLE IF NOT EXISTS venues (
-  id           UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  name         TEXT NOT NULL,
-  address      TEXT,
-  city         TEXT,
-  country      TEXT,
-  capacity     INT,
-  hourly_rate  NUMERIC(10,2),
-  images       TEXT[] DEFAULT '{}',
-  contact_info JSONB DEFAULT '{}',
-  submitted_by UUID,
-  status       TEXT DEFAULT 'pending' CHECK (status IN ('pending','approved','rejected')),
-  created_at   TIMESTAMPTZ NOT NULL DEFAULT NOW()
-);
+-- NOTE: Venues are no longer a separate entity.
+-- Venue is a service category under service_provider_profiles + services.
+-- Organizers reference the venue by booking a venue service provider.
 
 -- Leaderboards
 CREATE TABLE IF NOT EXISTS leaderboard_entries (

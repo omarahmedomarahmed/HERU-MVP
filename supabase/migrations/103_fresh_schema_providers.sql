@@ -16,7 +16,9 @@ CREATE TABLE IF NOT EXISTS service_provider_profiles (
   portfolio_url        TEXT,
   categories           TEXT[] DEFAULT '{}',
   provider_type        TEXT DEFAULT 'general'
-                       CHECK (provider_type IN ('general','coach','influencer','venue','discord')),
+                       CHECK (provider_type IN ('general','coach','influencer')),
+  approval_status      TEXT NOT NULL DEFAULT 'pending'
+                       CHECK (approval_status IN ('pending','approved','rejected','suspended')),
   rating               NUMERIC(3,2) DEFAULT 0,
   review_count         INT NOT NULL DEFAULT 0,
   total_bookings       INT NOT NULL DEFAULT 0,
@@ -43,7 +45,8 @@ CREATE TABLE IF NOT EXISTS services (
   title               TEXT NOT NULL,
   description         TEXT,
   category            TEXT NOT NULL
-                      CHECK (category IN ('Branding','Production','Talent','Venue','Marketing','Coaching')),
+                      CHECK (category IN ('Branding','Production','Talent','Venue','Marketing','Coaching','Influencer')),
+  custom_fields       JSONB DEFAULT '{}'::jsonb,
   price               NUMERIC(10,2) NOT NULL DEFAULT 0,
   price_type          TEXT DEFAULT 'fixed' CHECK (price_type IN ('fixed','hourly','per_event')),
   deliverables        JSONB DEFAULT '[]',
