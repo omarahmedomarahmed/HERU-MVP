@@ -1,12 +1,13 @@
 import React, { useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
   User, ArrowLeft, Gamepad2, Users, Star, Mic, Video,
   Trophy, Swords, Shield, Calendar, ExternalLink,
   Pencil, LogIn, ChevronDown, ChevronUp, Flame, Zap, MessageSquare,
+  UserPlus, Check, Clock,
 } from 'lucide-react'
-import { GamerProfile, Team, Connect, Badge } from '@/api/heruClient'
+import { GamerProfile, Team, Connect, Badge, apiCall } from '@/api/heruClient'
 import { useAuth } from '@/lib/AuthContext'
 import HeruLogo from '@/components/shared/HeruLogo'
 
@@ -337,6 +338,25 @@ export default function GamerProfileView() {
     authUser.id === profileData.user_id || authUser.id === profileData.id
   )
 
+  // Friend status with this profile
+  const { data: friendsData } = useQuery({
+    queryKey: ['friends-list', authUser?.id],
+    queryFn: () => apiCall('/friends'),
+    enabled: !!authUser && !isOwnProfile,
+    staleTime: 30_000,
+  })
+  const allFriends = friendsData?.friendships || friendsData?.friends || (Array.isArray(friendsData) ? friendsData : [])
+  const friendEntry = allFriends.find(f =>
+    f.user_id === profileData?.user_id || f.friend_id === profileData?.user_id
+  )
+  const friendStatus = friendEntry?.status || null
+
+  const qc = useQueryClient()
+  const addFriendMutation = useMutation({
+    mutationFn: () => apiCall('/friends/request', { method: 'POST', body: { friend_id: profileData.user_id } }),
+    onSuccess: () => qc.invalidateQueries(['friends-list']),
+  })
+
   // ------- Loading -------
   if (profileLoading) {
     return (
@@ -412,7 +432,29 @@ export default function GamerProfileView() {
               <LogIn className="w-3 h-3" />
               Sign in to connect
             </Link>
-          ) : null}
+          ) : friendStatus === 'accepted' ? (
+            <Link
+              to={`/gamer/messages?dm=${profileData.user_id}`}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-green-600/15 text-green-400 border border-green-500/20 hover:bg-green-600/25 transition-colors"
+            >
+              <MessageSquare className="w-3 h-3" />
+              Message
+            </Link>
+          ) : friendStatus === 'pending' ? (
+            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-yellow-500/10 text-yellow-400 border border-yellow-500/20">
+              <Clock className="w-3 h-3" />
+              Request Sent
+            </span>
+          ) : (
+            <button
+              onClick={() => addFriendMutation.mutate()}
+              disabled={addFriendMutation.isPending}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-red-600 text-white hover:bg-red-500 transition-colors disabled:opacity-50"
+            >
+              <UserPlus className="w-3 h-3" />
+              {addFriendMutation.isPending ? 'Sending...' : 'Add Friend'}
+            </button>
+          )}
         </div>
       </header>
 
