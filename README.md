@@ -78,16 +78,16 @@ Visit `http://localhost:5173`
 - Gamer Shop (`/gamer/orders`) for marketplace items
 
 ### Organizers (`/auth/organizer/*` → `/organizer/*`)
-- Tournament Builder (multi-step): basic info → game settings → teams → prizepool → service providers → sponsorship packages → publish
-- Service providers booked inside builder; payment held in escrow
-- Income page showing gross sponsorship, HERU fees, and net earnings
-- Verification required before publishing sponsorship packages
+- Tournament Builder (4-step): game setup → details → prize pool → publish
+- Tournament Management CRM: overview, teams, brackets, providers, chat, settings
+- Service providers bookable via /providers; payment held in escrow
+- Verification required before enabling Sponsorship Radar (sponsorship_enabled flag)
 
 ### Sponsors (`/auth/sponsor/*` → `/sponsor/*`)
-- Browse Sponsorship Radar to find tournaments with packages
+- Browse Sponsorship Radar (HERU RADAR) to find tournaments with packages
 - Purchase packages via Paymob, track deliverables
-- Subscribe (Free/Pro/Enterprise) — Internal Builder behind Enterprise paywall
-- Influencer Hub (Pro+), Managed Projects (Pro+), Billing page
+- Subscribe: Free / Starter (EGP 150K/mo) / Growth (EGP 250K/mo) / Premium (EGP 500K/mo)
+- Influencer Hub (Growth+), Managed Projects (Growth+), Billing page
 
 ### Service Providers (`/auth/provider/*` → `/provider/*`)
 - List services in categories (Branding, Production, Talent, Venue, Marketing, Coaching, Influencer)
