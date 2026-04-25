@@ -183,7 +183,8 @@ export default function OrganizerTournaments() {
   } = useQuery({
     queryKey: ['organizer-tournaments', user?.id],
     queryFn: () =>
-      apiCall(`/tournaments?organizer_id=${user?.id}&include_drafts=true`),
+      apiCall(`/tournaments?organizer_id=${user?.id}&include_drafts=true`)
+        .then(d => Array.isArray(d) ? d : d?.tournaments || d?.data || []),
     enabled: !!user?.id,
   })
 
