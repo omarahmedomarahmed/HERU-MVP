@@ -11,7 +11,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { GamerProfile, MarketplaceItem, OrganizerProfile, Team, Tournament, apiCall } from '@/api/heruClient'
+import { GamerProfile, Service, OrganizerProfile, Team, Tournament, apiCall } from '@/api/heruClient'
 import { useAuth } from '@/lib/AuthContext'
 import { uploadFile } from '@/lib/uploadFile'
 import { useToast } from '@/components/ui/use-toast'
@@ -211,29 +211,23 @@ export default function TournamentBuilder() {
     queryFn: () => Team.list('-created_date'),
   });
 
-  const { data: marketplaceItems = [] } = useQuery({
-    queryKey: ['marketplace-items'],
-    queryFn: () => MarketplaceItem.list({ is_active: true }),
+  const { data: approvedServices = [] } = useQuery({
+    queryKey: ['approved-services'],
+    queryFn: () => Service.list({ status: 'approved' }),
   });
 
-  const { data: talents = [] } = useQuery({
-    queryKey: ['talents'],
-    queryFn: async () => {
-      const profiles = await GamerProfile.list({ is_talent: true });
-      return profiles;
-    },
-  });
-
-  // All gamers for 1v1 player invite
   const { data: allGamers = [] } = useQuery({
     queryKey: ['all-gamers'],
     queryFn: () => GamerProfile.list({}),
   });
 
-  const brandingItems = marketplaceItems.filter(i => i.category === 'branding');
-  const productionItems = marketplaceItems.filter(i => i.category === 'production');
-  const venueItems = marketplaceItems.filter(i => i.category === 'venue');
-  const prizepoolItems = marketplaceItems.filter(i => i.category === 'prizepool');
+  const brandingItems = approvedServices.filter(i => i.category === 'Branding');
+  const productionItems = approvedServices.filter(i => i.category === 'Production');
+  const venueItems = approvedServices.filter(i => i.category === 'Venue');
+  const talentItems = approvedServices.filter(i => i.category === 'Talent');
+  const marketingItems = approvedServices.filter(i => i.category === 'Marketing');
+  const prizepoolItems = [];
+  const talents = talentItems;
 
   const saveTournamentMutation = useMutation({
     mutationFn: async () => {
@@ -306,7 +300,7 @@ export default function TournamentBuilder() {
     }
   });
 
-  const calculateSubtotal = () => calcSubtotal(tournament, marketplaceItems);
+  const calculateSubtotal = () => calcSubtotal(tournament, approvedServices);
   const calculatePlatformFee = () => Math.round(calculateSubtotal() * 0.15);
   const calculateTotalCost = () => calculateSubtotal() + calculatePlatformFee();
   // kept for sidebar display only
@@ -315,7 +309,7 @@ export default function TournamentBuilder() {
     (tournament.talents || []).forEach(t => { cost += t.price || 0; });
     ['branding_items','production_items','prizepool_items','venue_items'].forEach(field => {
       (tournament[field] || []).forEach(id => {
-        cost += marketplaceItems.find(i => i.id === id)?.price || 0;
+        cost += approvedServices.find(i => i.id === id)?.price || 0;
       });
     });
     return cost;
@@ -351,9 +345,9 @@ export default function TournamentBuilder() {
       setTournament(prev => ({
         ...prev,
         talents: [...(prev.talents || []), {
-          user_id: talent.user_id,
-          talent_type: talent.talent_type,
-          price: talent.talent_price || 0
+          user_id: talent.user_id || talent.provider_id,
+          category: talent.category || 'Talent',
+          price: talent.price || 0
         }]
       }));
     }
@@ -702,7 +696,7 @@ export default function TournamentBuilder() {
                               <p className="text-white font-medium truncate">{gamer.username || 'Player'}</p>
                               {invited && <Check className="w-4 h-4 text-green-400 flex-shrink-0" />}
                             </div>
-                            {gamer.is_talent && <HexBadge className="text-[10px]">{gamer.talent_type}</HexBadge>}
+                            {gamer.games?.length > 0 && <HexBadge className="text-[10px]">{gamer.games[0]}</HexBadge>}
                           </div>
                         </div>
                       </GameCard>
@@ -787,14 +781,14 @@ export default function TournamentBuilder() {
                           <Check className="w-4 h-4 text-green-400 flex-shrink-0" />
                         )}
                       </div>
-                      <HexBadge className="text-[10px] mt-1">{talent.talent_type}</HexBadge>
+                      <HexBadge className="text-[10px] mt-1">{talent.category || 'Talent'}</HexBadge>
                     </div>
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-gray-500 text-sm">
                       ★ {talent.talent_rating || 'New'}
                     </span>
-                    <span className="text-red-400 font-bold">EGP {talent.talent_price || 0}/event</span>
+                    <span className="text-red-400 font-bold">EGP {talent.price || 0}/event</span>
                   </div>
                 </GameCard>
               ))}
@@ -964,7 +958,7 @@ export default function TournamentBuilder() {
                         <label className="text-xs text-gray-400 block mb-1">Physical Prizes from Shop</label>
                         <div className="flex flex-wrap gap-1">
                           {(prize.item_ids || []).map((iid, ii) => {
-                            const item = marketplaceItems.find(m => m.id === iid);
+                            const item = approvedServices.find(m => m.id === iid);
                             return item ? (
                               <span key={ii} className="inline-flex items-center gap-1 text-xs bg-zinc-700 text-gray-300 px-2 py-0.5 rounded">
                                 {item.title}
@@ -1272,7 +1266,7 @@ export default function TournamentBuilder() {
                   <span className="text-gray-400">Branding ({tournament.branding_items.length})</span>
                   <span className="text-white">
                   EGP {tournament.branding_items.reduce((sum, id) => {
-                      const item = marketplaceItems.find(i => i.id === id);
+                      const item = approvedServices.find(i => i.id === id);
                       return sum + (item?.price || 0);
                     }, 0)}
                   </span>
@@ -1283,7 +1277,7 @@ export default function TournamentBuilder() {
                   <span className="text-gray-400">Production ({tournament.production_items.length})</span>
                   <span className="text-white">
                   EGP {tournament.production_items.reduce((sum, id) => {
-                      const item = marketplaceItems.find(i => i.id === id);
+                      const item = approvedServices.find(i => i.id === id);
                       return sum + (item?.price || 0);
                     }, 0)}
                   </span>
@@ -1294,7 +1288,7 @@ export default function TournamentBuilder() {
                   <span className="text-gray-400">Prizepool ({tournament.prizepool_items.length})</span>
                   <span className="text-white">
                   EGP {tournament.prizepool_items.reduce((sum, id) => {
-                      const item = marketplaceItems.find(i => i.id === id);
+                      const item = approvedServices.find(i => i.id === id);
                       return sum + (item?.price || 0);
                     }, 0)}
                   </span>
@@ -1305,7 +1299,7 @@ export default function TournamentBuilder() {
                   <span className="text-gray-400">Venue ({tournament.venue_items.length})</span>
                   <span className="text-white">
                   EGP {tournament.venue_items.reduce((sum, id) => {
-                      const item = marketplaceItems.find(i => i.id === id);
+                      const item = approvedServices.find(i => i.id === id);
                       return sum + (item?.price || 0);
                     }, 0)}
                   </span>

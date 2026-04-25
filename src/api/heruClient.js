@@ -160,6 +160,14 @@ export const SponsorshipPackage = {
   ...createEntity('/sponsorship-packages'),
 }
 
+// Legacy alias — old EmbeddedRadar components use SponsorshipRadar.list/update;
+// map to sponsored tournaments so existing components continue to work.
+export const SponsorshipRadar = {
+  list:   (params)     => apiCall('/tournaments', { params: { ...params, sponsorship_enabled: true } }),
+  get:    (id)         => apiCall(`/tournaments/${id}`),
+  update: (id, data)   => apiCall(`/tournaments/${id}`, { method: 'PUT', body: data }),
+}
+
 export const Sponsorship = {
   ...createEntity('/sponsorships'),
   pay:              (id, data)    => apiCall(`/sponsorships/${id}/pay`, { method: 'PUT', body: data }),

@@ -11,7 +11,7 @@ import RegisterTeamModal from '@/components/tournament/RegisterTeamModal';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
-import { GamerProfile, MarketplaceItem, Team, Tournament, apiCall } from '@/api/heruClient';
+import { GamerProfile, Team, Tournament, apiCall } from '@/api/heruClient';
 import { useAuth } from '@/lib/AuthContext';
 import { useToast } from '@/components/ui/use-toast';
 
@@ -87,16 +87,7 @@ export default function TournamentDetails() {
     enabled: !!tournament?.talents?.length,
   });
 
-  // ── Prizepool items ────────────────────────────────────────────────────────
-  const { data: prizepoolItems = [] } = useQuery({
-    queryKey: ['prizepool-items', tournament?.prizepool_items],
-    queryFn: async () => {
-      if (!tournament?.prizepool_items?.length) return [];
-      const items = await MarketplaceItem.list();
-      return items.filter(i => tournament.prizepool_items.includes(i.id));
-    },
-    enabled: !!tournament?.prizepool_items?.length,
-  });
+  const prizepoolItems = [];
 
   // ── 1v1 join mutation ──────────────────────────────────────────────────────
   const joinAsPlayerMutation = useMutation({
