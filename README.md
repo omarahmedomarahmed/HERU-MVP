@@ -1,5 +1,7 @@
 # HERU.gg — The Operating System for Esports in MENA
 
+> **New here?** Start with [HANDOVER.md](./HANDOVER.md) — it explains the full platform, how to maintain it, and how to migrate/change anything.
+
 HERU.gg is a four-sided esports marketplace connecting **Gamers**, **Organizers**, **Sponsors**, and **Service Providers** across the MENA region (Egypt, Saudi Arabia, UAE).
 
 ---
@@ -7,7 +9,7 @@ HERU.gg is a four-sided esports marketplace connecting **Gamers**, **Organizers*
 ## Architecture
 
 ```
-Frontend:  React 18 + Vite + TailwindCSS
+Frontend:  React 18 + Vite + TailwindCSS + shadcn/ui
 Backend:   Node.js 20 + Express 4
 Database:  Supabase (PostgreSQL 15 + RLS + Realtime + Storage)
 Auth:      Supabase Auth (JWT) + custom staff session tokens
@@ -22,7 +24,6 @@ Hosting:   Hostinger VPS (Ubuntu 22.04, Nginx, PM2)
 
 ### Prerequisites
 - Node.js 20+
-- Supabase CLI (`npm install -g supabase`)
 - A Supabase project (free tier works)
 
 ### 1. Clone & install
@@ -30,11 +31,7 @@ Hosting:   Hostinger VPS (Ubuntu 22.04, Nginx, PM2)
 ```bash
 git clone <repo-url> heru-mvp
 cd heru-mvp
-
-# Frontend dependencies
 npm install
-
-# Backend dependencies
 cd backend && npm install && cd ..
 ```
 
@@ -42,25 +39,14 @@ cd backend && npm install && cd ..
 
 ```bash
 cp .env.example .env
+# Fill in: VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY
+# Also create backend/.env with same credentials
 ```
-
-Fill in `.env` with your Supabase URL, anon key, service role key, and other credentials. See `.env.example` for all required variables.
 
 ### 3. Database setup
 
 ```bash
-# Start local Supabase (optional — or use hosted project)
-supabase start
-
-# Run all migrations in order
-supabase db push
-# OR apply manually via Supabase dashboard SQL editor
-```
-
-Migrations are in `supabase/migrations/`. Use the canonical fresh schema (`100–105`):
-
-```bash
-# Apply in order (fresh install — skip 001-022 legacy files)
+# Apply canonical fresh schema (skip 001–022 legacy files)
 psql "$DATABASE_URL" -f supabase/migrations/100_fresh_schema_core.sql
 psql "$DATABASE_URL" -f supabase/migrations/101_fresh_schema_gamers.sql
 psql "$DATABASE_URL" -f supabase/migrations/102_fresh_schema_organizers.sql
@@ -68,8 +54,6 @@ psql "$DATABASE_URL" -f supabase/migrations/103_fresh_schema_providers.sql
 psql "$DATABASE_URL" -f supabase/migrations/104_fresh_schema_sponsors.sql
 psql "$DATABASE_URL" -f supabase/migrations/105_fresh_schema_rls.sql
 ```
-
-If using Supabase CLI: `supabase db push` (only runs files not yet applied).
 
 ### 4. Run locally
 
@@ -90,43 +74,43 @@ Visit `http://localhost:5173`
 ### Gamers (`/auth/gamer/*` → `/gamer/*`)
 - Register, compete in tournaments, manage teams
 - Browse coaches and book 1:1 sessions
-- View cross-tournament leaderboards
-- Add friends and send direct messages
+- View cross-tournament leaderboards, add friends, send DMs
+- Gamer Shop (`/gamer/orders`) for marketplace items
 
 ### Organizers (`/auth/organizer/*` → `/organizer/*`)
-- Build tournaments with a multi-step builder (costs auto-calculated)
-- Create sponsorship packages (priced relative to reach)
-- Book service providers directly inside the builder
-- Get verified (required to publish to Sponsorship Radar)
+- Tournament Builder (multi-step): basic info → game settings → teams → prizepool → service providers → sponsorship packages → publish
+- Service providers booked inside builder; payment held in escrow
+- Income page showing gross sponsorship, HERU fees, and net earnings
+- Verification required before publishing sponsorship packages
 
 ### Sponsors (`/auth/sponsor/*` → `/sponsor/*`)
 - Browse Sponsorship Radar to find tournaments with packages
 - Purchase packages via Paymob, track deliverables
-- Subscribe (Pro/Enterprise) for analytics and consultant access
-- Request fully-managed campaigns from HERU
+- Subscribe (Free/Pro/Enterprise) — Internal Builder behind Enterprise paywall
+- Influencer Hub (Pro+), Managed Projects (Pro+), Billing page
 
 ### Service Providers (`/auth/provider/*` → `/provider/*`)
-- List services in categories: Branding, Production, Talent, Venue, Marketing
-- Receive bookings from organizers; payment held in escrow
+- List services in categories (Branding, Production, Talent, Venue, Marketing, Coaching, Influencer)
+- Venue = service category, not a separate database entity
 - Special types: Coaches (visible at `/coaches`), Influencers (visible at `/influencers`)
-- Get rated and reviewed after each booking
+- Income breakdown page showing earnings after 15% platform fee
 
 ### Staff (`/admin` — hidden, not linked publicly)
-- Approve service providers and organizer verifications
-- Manage the revenue ledger (service fee + sponsorship fee + subscription MRR)
-- Platform control panel (feature toggles, fee %)
-- CMS editor for landing page copy
-- Assign consultants to managed service projects
+- Full platform control: approve/reject providers, manage users, run tournaments
+- Revenue ledger (service fee + sponsorship fee + subscription MRR)
+- Platform control panel: feature toggles, CMS, settings (including fee %)
+- All fee/pricing assumptions are configurable from Staff → Settings
 
 ---
 
 ## Revenue Model
 
-| Stream | Rate | Table |
-|--------|------|-------|
+| Stream | Rate | Source |
+|--------|------|--------|
 | Service booking fee | 15% of booking price | `heru_revenue_ledger` |
-| Sponsorship fee | 15% of package price | `heru_revenue_ledger` |
-| Subscription (Pro/Enterprise) | Full price | `heru_revenue_ledger` |
+| Sponsorship package fee | 15% of package price | `heru_revenue_ledger` |
+| Coaching session fee | 15% of session price | `heru_revenue_ledger` |
+| Subscription (Pro/Enterprise) | Full price → HERU | `heru_revenue_ledger` |
 
 All currency is **EGP** — never USD.
 
@@ -136,48 +120,48 @@ All currency is **EGP** — never USD.
 
 ```
 /
-├── src/                    # React frontend
-│   ├── api/heruClient.js   # API helper (all fetch calls)
-│   ├── lib/AuthContext.jsx  # Auth + role state
-│   ├── lib/auth-guards.jsx  # Route protection components
-│   ├── components/layouts/ # Per-stakeholder layouts
+├── src/
+│   ├── api/heruClient.js       # API helper (all fetch calls)
+│   ├── lib/AuthContext.jsx      # Auth + role state
+│   ├── lib/auth-guards.jsx      # Route protection components
+│   ├── components/layouts/      # Per-stakeholder layouts
 │   └── pages/
-│       ├── auth/           # Login/register pages per role
-│       ├── gamer/          # Gamer dashboard pages
-│       ├── organizer/      # Organizer dashboard pages
-│       ├── sponsor/        # Sponsor dashboard pages
-│       ├── provider/       # Provider dashboard pages
-│       └── staff/          # Staff admin pages
+│       ├── public/              # Public pages (Home, Tournaments, Teams, etc.)
+│       ├── auth/                # Login/register pages per role
+│       ├── gamer/               # Gamer dashboard pages
+│       ├── organizer/           # Organizer dashboard pages
+│       ├── sponsor/             # Sponsor dashboard pages
+│       ├── provider/            # Provider dashboard pages
+│       └── staff/               # Staff admin pages
 ├── backend/
-│   ├── index.js            # Express app entry point
+│   ├── index.js                 # Express app entry point
 │   └── src/
-│       ├── routes/         # One file per API resource
-│       ├── middleware/      # auth.js, roleGuard.js, staffGuard.js
-│       ├── lib/             # supabase.js, paymob.js, resend.js
-│       └── logic/          # tournament.js, billing.js, notifications.js
-└── supabase/
-    └── migrations/         # Sequential SQL migration files
+│       ├── routes/              # One file per API resource
+│       ├── middleware/          # auth.js, roleGuard.js, staffGuard.js
+│       ├── lib/                 # supabase.js, paymob.js, resend.js
+│       └── logic/              # tournament.js, billing.js, notifications.js
+├── supabase/migrations/         # SQL migration files (100–105 canonical)
+├── nginx/heru.gg.conf           # Nginx production config
+└── ecosystem.config.cjs         # PM2 process manager config
 ```
 
 ---
 
-## Deployment (Hostinger VPS)
+## Deployment
 
-See `SETUP.md` for full step-by-step deployment instructions.
-
-Quick summary:
+See `SETUP.md` for full instructions. Quick summary:
 1. SSH into VPS, install Node.js 20, Nginx, PM2
-2. Clone repo, run `npm install` in both root and `backend/`
+2. Clone repo, `npm install` in root and `backend/`
 3. Copy `.env` with production credentials
-4. Run migrations against hosted Supabase project
-5. Build frontend: `npm run build` → output in `dist/`
-6. Configure Nginx: serve `dist/` for frontend, proxy `/api` to backend port 3001
-7. Start backend with PM2: `pm2 start backend/index.js --name heru-backend`
+4. Run migrations against hosted Supabase
+5. Build: `npm run build`
+6. Configure Nginx (see `nginx/heru.gg.conf`)
+7. Start: `pm2 start ecosystem.config.cjs`
 8. Enable HTTPS with Certbot
 
 ---
 
-## Demo Accounts (seed data)
+## Demo Accounts
 
 | Role | Email | Note |
 |------|-------|------|
@@ -191,23 +175,58 @@ Quick summary:
 
 | File | Contents |
 |------|----------|
-| `CLAUDE.md` | Full architecture handover for AI assistants |
-| `REVENUE.md` | Where every fee is stored, applied, and how to change it |
-| `DATABASE_MIGRATION.md` | How to migrate to MySQL, Firebase, or plain PostgreSQL |
-| `AUTH_MIGRATION.md` | How to swap Supabase Auth for Firebase, Auth0, Clerk, or custom JWT |
-| `SETUP.md` | Step-by-step VPS deployment instructions |
+| **[HANDOVER.md](./HANDOVER.md)** | **Start here** — full platform state, maintenance, migration guides |
+| [PRODUCT_REQUIREMENTS.md](./PRODUCT_REQUIREMENTS.md) | Full PRD — all features, flows, and data models |
+| [SETUP.md](./SETUP.md) | Step-by-step VPS deployment |
+| [DATABASE_MIGRATION.md](./DATABASE_MIGRATION.md) | How to migrate DB to MySQL/Firebase/PostgreSQL |
+| [AUTH_MIGRATION.md](./AUTH_MIGRATION.md) | How to swap Supabase Auth |
+| [REVENUE.md](./REVENUE.md) | Revenue ledger deep-dive |
+| [CLAUDE.md](./CLAUDE.md) | AI assistant context document |
 
 ---
 
-## Key Business Rules
+## Platform Assumptions
 
-1. Platform fee is always **15%** on all transactions
-2. All prices in **EGP** only
-3. Organizer must be **verified** before publishing to Sponsorship Radar
-4. Service provider listings require **staff approval** before appearing
-5. Sponsor cannot see tournament cost breakdown — only packages
-6. Staff login at `/admin` — never linked from public navigation
-7. Escrow: payment held at booking, released after organizer confirms delivery
-8. Coaching: 15% HERU cut on every session
-9. Subscriptions: full price goes to HERU (no cut — it is the cut)
-10. Max sponsorship packages per tournament: no hard limit, but guide is 1–3 tiers
+> **Important:** All of the following are **assumptions** that reflect the current business model. They are NOT hard technical constraints. Any of these can be changed by updating the relevant setting, code, or database entry. Staff can change fee-related assumptions directly from the Staff Settings page.
+
+### Fees & Revenue
+1. Platform fee is **15%** on all service bookings, sponsorship packages, and coaching sessions
+2. Subscription revenue is **100% to HERU** (it is the fee — no additional cut)
+3. All prices and fees are in **EGP only** — never USD or any other currency
+4. Escrow model: payment held at booking, released after organizer confirms delivery
+5. Minimum sponsorship package price is **1.5× the total service cost** (warning shown, not blocked)
+
+### Sponsor Model
+6. Sponsors **never see tournament cost breakdowns** — they see packages only (price, deliverables, reach)
+7. Organizer contribution percentage is **never shown publicly**
+8. Sponsor subscription plans: **Free** (basic radar browsing), **Pro** (EGP 1,500/mo), **Enterprise** (custom)
+9. Internal Campaign Builder requires **Enterprise subscription**
+10. Managed Services and HERU Consultant require **Pro or higher**
+11. No co-organizer model — sponsors buy structured packages, never partial ownership
+
+### Organizer Model
+12. Organizer must be **verified** (approved by staff) before publishing tournaments to Sponsorship Radar
+13. Organizer verification shows a badge on public profile
+14. Tournament Builder steps: Basic Info → Game Settings → Teams → Prizepool → **Service Providers** → Sponsorship Packages → Publish
+15. Sponsorship packages are created inside the Builder (not a separate Radar management page)
+
+### Service Provider Model
+16. Service provider listings require **staff approval** before appearing in Tournament Builder
+17. **Venue is a service category**, not a separate entity — providers select "Venue" as their service type
+18. Special service types with separate public pages: **Coaches** (`/coaches`), **Influencers** (`/influencers`)
+19. Coaches are service providers with `category = 'coaching'`
+20. Influencers are service providers with `category = 'influencer'`
+21. Custom fields per service category (e.g., venue shows capacity/location, marketing shows channel size)
+
+### Gamer Model
+22. Gamers have no talent or gig features — all "talent" (casting, hosting, etc.) is under Service Providers
+23. Gamer shop (`/gamer/orders`) sells merchandise/gaming items only
+24. Connected accounts: Discord + Riot currently integrated; Epic, Tencent, Steam planned (placeholders in .env)
+
+### Platform
+25. Staff login at `/admin` — **never linked** from public navigation
+26. Staff access keys: `HERU-STAFF-OMAR-2026`, `HERU-STAFF-OPS-2026`
+27. No public sponsorship radar page — radar is sponsor-authenticated only
+28. Public pages: Home, Tournaments, Teams, Organizer profiles, Provider profiles, Gamer profiles
+29. Platform fee percent is stored in `app_settings` table and readable via `/api/settings`
+30. All fee/pricing settings can be changed by staff from Staff → Settings → Platform Assumptions
