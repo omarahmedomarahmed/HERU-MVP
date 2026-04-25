@@ -74,7 +74,7 @@ export default function GamerLayout({ children, user: userProp, profile: profile
     { icon: Home, label: 'Home', path: '/gamer/home' },
     { icon: Trophy, label: 'Tournaments', path: '/gamer/tournaments' },
     { icon: Users, label: 'Teams', path: '/gamer/teams', badge: pendingTeamRequests },
-    { icon: BookOpen, label: 'Coaching', path: '/gamer/bookings' },
+    { icon: BookOpen, label: 'Coaching', path: '/coaches' },
     { icon: UserPlus, label: 'Friends', path: '/gamer/friends' },
     { icon: MessageSquare, label: 'Messages', path: '/gamer/messages' },
   ];
@@ -143,7 +143,6 @@ export default function GamerLayout({ children, user: userProp, profile: profile
                 className="relative p-2 text-gray-400 hover:text-white transition-colors opacity-0 pointer-events-none"
               >
                 <span className="w-5 h-5" />
-                )}
               </button>
             </div>
 
@@ -317,7 +316,7 @@ export default function GamerLayout({ children, user: userProp, profile: profile
                     )}
                   </Link>
                   <Link
-                    to={'/gamer/bookings'}
+                    to={'/coaches'}
                     onClick={() => setMobileMenuOpen(false)}
                     className="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-400 hover:text-white hover:bg-white/5"
                   >

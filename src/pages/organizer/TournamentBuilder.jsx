@@ -86,7 +86,7 @@ export default function TournamentBuilder() {
     main_organizer_id: null,
     organizer_contribution: 0,
     main_organizer_percent: 33,
-    on_radar: false,
+    sponsorship_enabled: false,
     venue_items: [],
     player_invites: [],
     prizepool_coins: 0,
@@ -1054,8 +1054,6 @@ export default function TournamentBuilder() {
               const missing = [];
               if (!profile?.brand_name) missing.push('Brand Name');
               if (!profile?.brand_logo) missing.push('Brand Logo');
-              if (!profile?.full_name) missing.push('Contact Name');
-              if (!profile?.contact_number) missing.push('Contact Number');
               if (missing.length > 0) {
                 toast({
                   title: 'Profile incomplete',
@@ -1084,7 +1082,7 @@ export default function TournamentBuilder() {
         <div className="grid md:grid-cols-2 gap-4 mb-4">
           <div
             onClick={() => {
-              setTournament(prev => ({ ...prev, tournament_type: 'solo', on_radar: false }));
+              setTournament(prev => ({ ...prev, tournament_type: 'solo', sponsorship_enabled: false }));
               setCommitmentConfirmed(false);
             }}
             className={`cursor-pointer rounded-xl border-2 p-5 transition-all ${
@@ -1108,7 +1106,7 @@ export default function TournamentBuilder() {
           </div>
 
           <div
-            onClick={() => setTournament(prev => ({ ...prev, tournament_type: 'shared', on_radar: true }))}
+            onClick={() => setTournament(prev => ({ ...prev, tournament_type: 'shared', sponsorship_enabled: true }))}
             className={`cursor-pointer rounded-xl border-2 p-5 transition-all ${
               tournament.tournament_type === 'shared'
                 ? 'border-yellow-500 bg-yellow-500/10 shadow-lg shadow-yellow-500/10'

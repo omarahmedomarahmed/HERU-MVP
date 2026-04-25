@@ -67,7 +67,7 @@ export default function StaffLayout({ children }) {
 
   const active = (path) => location.pathname === path || location.pathname.startsWith(path + '/')
 
-  const logout = () => { clearStaffSession(); navigate('/admin') }
+  const logout = () => { clearStaffSession(); navigate('/') }
 
   const toggleSection = (label) =>
     setExpandedSections(p => ({ ...p, [label]: !p[label] }))

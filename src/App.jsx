@@ -282,6 +282,7 @@ function App() {
             <Route path="/GamerSignup" element={<Navigate to="/auth/gamer/register" replace />} />
             <Route path="/OrganizerLogin" element={<Navigate to="/auth/organizer/login" replace />} />
             <Route path="/StaffLogin" element={<Navigate to="/admin" replace />} />
+            <Route path="/staff/gigs" element={<Navigate to="/staff/services" replace />} />
             <Route path="/staff/marketplace" element={<Navigate to="/staff/services" replace />} />
             <Route path="/staff/marketplace/new" element={<Navigate to="/staff/services" replace />} />
             <Route path="/staff/marketplace/:id" element={<Navigate to="/staff/services" replace />} />

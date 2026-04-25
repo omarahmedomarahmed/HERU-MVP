@@ -14,7 +14,7 @@ const TOURNAMENT_COLUMNS = new Set([
   'tournament_type','status','format','max_teams','schedule','description','is_offline','venue',
   'teams','invited_teams','join_requests','talents','branding_items','production_items',
   'prizepool_items','venue_items','total_cost','prizepool_total','platform_fee',
-  'platform_fee_percent','prizepool_in_total_cost','on_radar','sponsorship_radar_id',
+  'platform_fee_percent','prizepool_in_total_cost','sponsorship_enabled','sponsorship_radar_id',
   'radar_funding_percent','required_branding_committed','co_organizers','organizer_chat',
   'brackets','support_chat','general_chat','stream_link','tournament_log',
   'signup_banner','signup_description','signup_rules','signup_custom_fields','stream_embed_url',
@@ -329,7 +329,7 @@ router.post('/:id/publish', requireAuth, async (req, res) => {
         return res.status(500).json({ error: 'Failed to create radar listing: ' + (radarError?.message || 'unknown') });
       }
 
-      updateData.on_radar = true;
+      updateData.sponsorship_enabled = true;
       updateData.sponsorship_radar_id = radar.id;
 
       // Create bill for main organizer's share

@@ -9,16 +9,18 @@ function getAuthToken() {
 }
 
 const CATEGORIES = [
-  { value: 'branding', label: 'Branding & Design' },
-  { value: 'production', label: 'Stream & Media Production' },
-  { value: 'talent', label: 'Host / Caster / Analyst' },
-  { value: 'venue', label: 'Venue' },
-  { value: 'marketing', label: 'Marketing / Discord Server' },
+  { value: 'Branding', label: 'Branding & Design' },
+  { value: 'Production', label: 'Stream & Media Production' },
+  { value: 'Talent', label: 'Host / Caster / Analyst' },
+  { value: 'Venue', label: 'Venue' },
+  { value: 'Marketing', label: 'Marketing / Discord Server' },
+  { value: 'Coaching', label: 'Coaching' },
+  { value: 'Influencer', label: 'Influencer / Content Creator' },
 ];
 
 const PRICE_TYPES = [
   { value: 'fixed', label: 'Fixed price' },
-  { value: 'per_day', label: 'Per day' },
+  { value: 'hourly', label: 'Per hour' },
   { value: 'per_event', label: 'Per event' },
 ];
 
