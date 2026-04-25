@@ -54,6 +54,13 @@ async function apiCall(endpoint, options = {}) {
   // Handle 204 No Content
   if (response.status === 204) return null
 
+  // Handle gateway/server errors that return HTML instead of JSON
+  if (response.status === 502 || response.status === 503 || response.status === 504) {
+    const error = new Error('Server is temporarily unavailable. Please try again shortly.')
+    error.status = response.status
+    throw error
+  }
+
   const data = await response.json().catch(() => null)
 
   if (!response.ok) {

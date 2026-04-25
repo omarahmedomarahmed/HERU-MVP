@@ -32,8 +32,6 @@ import connectRoutes from './src/routes/connect.js';
 import botRoutes from './src/routes/bot.js';
 import riotTournamentRoutes from './src/routes/riot-tournament.js';
 import badgeRoutes from './src/routes/badges.js';
-import venueRoutes from './src/routes/venues.js';
-
 // New platform pivot routes
 import providerRoutes from './src/routes/providers.js';
 import serviceRoutes from './src/routes/services.js';
@@ -150,7 +148,6 @@ app.use('/api/connect', connectRoutes);
 app.use('/api/bot', botRoutes);
 app.use('/api/riot-tournament', riotTournamentRoutes);
 app.use('/api/badges', badgeRoutes);
-app.use('/api/venues', venueRoutes);
 
 // Platform pivot routes
 app.use('/api/providers', providerRoutes);
