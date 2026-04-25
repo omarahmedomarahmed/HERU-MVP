@@ -3,7 +3,6 @@ import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '@/lib/AuthContext';
 import { apiCall } from '@/api/heruClient';
-import SponsorLayout from '@/components/layouts/SponsorLayout';
 import { Briefcase, Plus, ChevronRight, Inbox, Clock, CheckCircle } from 'lucide-react';
 
 function formatEGP(n) { return `EGP ${(n || 0).toLocaleString()}`; }
@@ -31,8 +30,7 @@ export default function SponsorManagedServices() {
   const projects = Array.isArray(rawProjects) ? rawProjects : rawProjects.data || [];
 
   return (
-    <SponsorLayout>
-      <div>
+    <div>
         <div className="flex items-center justify-between mb-6">
           <div>
             <h1 className="text-2xl font-black text-white">Managed Services</h1>
@@ -96,7 +94,6 @@ export default function SponsorManagedServices() {
             ))}
           </div>
         )}
-      </div>
-    </SponsorLayout>
+    </div>
   );
 }
