@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { supabaseAdmin } from '../lib/supabase.js';
+import { runAgent } from '../lib/ai/agent.js';
 import { createRequire } from 'module';
 
 const router = Router();
@@ -54,12 +55,12 @@ router.get('/install-url', (req, res) => {
 // GET /api/bot/profile/by-discord/:discordId
 router.get('/profile/by-discord/:discordId', verifyBotSecret, async (req, res) => {
   try {
-    const { data: account } = await supabaseAdmin.from('connected_accounts').select('user_id').eq('platform', 'discord').eq('platform_user_id', req.params.discordId).eq('is_active', true).single();
+    const { data: account } = await supabaseAdmin.from('connected_accounts').select('user_id').eq('provider', 'discord').eq('provider_account_id', req.params.discordId).single();
     if (!account) return res.status(404).json({ error: 'No HERU account linked to this Discord user' });
 
     const [{ data: profile }, { data: riotAccounts }] = await Promise.all([
-      supabaseAdmin.from('gamer_profiles').select('id,username,bio,games,is_talent,team_ids').eq('user_id', account.user_id).single(),
-      supabaseAdmin.from('riot_accounts').select('game_key,game_name,tag_line,rank_tier,rank_division,is_primary').eq('user_id', account.user_id).eq('is_public', true),
+      supabaseAdmin.from('gamer_profiles').select('id,username,bio,games').eq('user_id', account.user_id).single(),
+      supabaseAdmin.from('connected_accounts').select('game_key,game_name,tag_line,rank_tier,rank_division').eq('user_id', account.user_id).eq('provider', 'riot'),
     ]);
     res.json({ userId: account.user_id, profile, riotAccounts: riotAccounts || [] });
   } catch (err) {
@@ -70,7 +71,7 @@ router.get('/profile/by-discord/:discordId', verifyBotSecret, async (req, res) =
 // GET /api/bot/tournaments/active
 router.get('/tournaments/active', verifyBotSecret, async (req, res) => {
   try {
-    const { data, error } = await supabaseAdmin.from('tournaments').select('id,name,game,status,format,max_teams,schedule,total_cost,prizepool_total,tournament_image').in('status', ['published', 'live']).order('schedule').limit(10);
+    const { data, error } = await supabaseAdmin.from('tournaments').select('id,name,game,status,format,max_teams,start_date,prizepool_total,tournament_image').in('status', ['published', 'live']).order('start_date').limit(10);
     if (error) throw error;
     res.json(data || []);
   } catch (err) {
@@ -82,14 +83,13 @@ router.get('/tournaments/active', verifyBotSecret, async (req, res) => {
 router.post('/tournaments/:id/join', verifyBotSecret, async (req, res) => {
   try {
     const { discordUserId, teamId } = req.body;
-    const { data: account } = await supabaseAdmin.from('connected_accounts').select('user_id').eq('platform', 'discord').eq('platform_user_id', discordUserId).single();
+    const { data: account } = await supabaseAdmin.from('connected_accounts').select('user_id').eq('provider', 'discord').eq('provider_account_id', discordUserId).single();
     if (!account) return res.status(404).json({ error: 'Please link your Discord on heru.gg/gamer/connect first' });
 
-    const { data: tournament } = await supabaseAdmin.from('tournaments').select('join_requests').eq('id', req.params.id).single();
+    const { data: tournament } = await supabaseAdmin.from('tournaments').select('id').eq('id', req.params.id).single();
     if (!tournament) return res.status(404).json({ error: 'Tournament not found' });
 
-    const updated = [...(tournament.join_requests || []), { team_id: teamId, user_id: account.user_id, status: 'pending', created_at: new Date().toISOString() }];
-    await supabaseAdmin.from('tournaments').update({ join_requests: updated }).eq('id', req.params.id);
+    await supabaseAdmin.from('tournament_join_requests').insert({ tournament_id: req.params.id, team_id: teamId || null, user_id: account.user_id, status: 'pending' });
     res.json({ success: true });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -139,6 +139,25 @@ router.post('/server/announce', verifyBotSecret, async (req, res) => {
     });
     if (!discordRes.ok) return res.status(500).json({ error: `Discord send failed: ${await discordRes.text()}` });
     res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// POST /api/bot/agent/message
+router.post('/agent/message', verifyBotSecret, async (req, res) => {
+  try {
+    const { message, discordUserId, discordChannelId, discordGuildId, sessionId, userRole, confirmed } = req.body;
+    if (!message) return res.status(400).json({ error: 'message required' });
+
+    let userId = null;
+    if (discordUserId) {
+      const { data: account } = await supabaseAdmin.from('connected_accounts').select('user_id').eq('provider', 'discord').eq('provider_account_id', discordUserId).single();
+      userId = account?.user_id || null;
+    }
+
+    const result = await runAgent({ userId, discordUserId, userRole: userRole || 'gamer', message, sessionId, channel: 'discord', discordChannelId, discordGuildId, confirmed });
+    res.json(result);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

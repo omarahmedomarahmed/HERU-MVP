@@ -1,6 +1,6 @@
 export function tournamentEmbed(t, frontendUrl) {
   const status = t.status === 'live' ? '🔴 LIVE' : t.status === 'published' ? '🟢 Open' : t.status;
-  const date = t.schedule ? new Date(t.schedule).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : 'TBA';
+  const date = t.start_date ? new Date(t.start_date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : 'TBA';
   return {
     title: t.name,
     color: 0xff1a1a,
@@ -31,7 +31,6 @@ export function profileEmbed(profile, riotAccounts, frontendUrl) {
     fields: [
       { name: 'Games', value: games, inline: false },
       { name: 'Riot Accounts', value: riotLines, inline: false },
-      ...(profile?.is_talent ? [{ name: '🎯 Talent', value: `${profile.talent_type || 'Yes'} — EGP ${profile.talent_price || '?'}`, inline: true }] : []),
     ],
     footer: { text: 'HERU.gg Profile' },
     url: profile ? `${frontendUrl}/gamers/${profile.id}` : frontendUrl,

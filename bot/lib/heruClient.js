@@ -28,6 +28,6 @@ export const heruClient = {
   setupServer: (data) => heruFetch('/bot/server/setup', { method: 'POST', body: data }),
   announce: (guildId, message, embed) => heruFetch('/bot/server/announce', { method: 'POST', body: { guildId, message, embed } }),
   getAgentSession: (discordId, channelId) => heruFetch(`/bot/agent/session/${discordId}?channelId=${channelId || ''}`),
-  sendAgentMessage: (data) => heruFetch('/ai-agent/bot/message', { method: 'POST', body: data }),
+  sendAgentMessage: (data) => heruFetch('/bot/agent/message', { method: 'POST', body: data }),
   getInstallUrl: () => heruFetch('/bot/install-url'),
 };
