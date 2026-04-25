@@ -1,101 +1,102 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   ChevronDown, Menu, X, Trophy, Users, Star, Briefcase,
-  ArrowRight, Zap, Target, Shield, TrendingUp, Award, Globe
+  ArrowRight, Zap, Target, Shield, TrendingUp, Award, Globe,
+  CheckCircle2, DollarSign, BarChart3, Package, Play,
+  Gamepad2, Building2, Sparkles, ChevronRight
 } from 'lucide-react';
 import HeruLogo from '@/components/shared/HeruLogo';
-import { Tournament } from '@/api/heruClient';
 import { useAuth } from '@/lib/AuthContext';
 
-const stakeholders = [
+// ─── Stakeholder data ───
+const products = [
   {
-    key: 'gamers',
-    label: 'Gamers',
-    icon: Users,
-    color: 'red',
+    key: 'gamers', label: 'HERU Arena', tagShort: 'For Gamers',
+    icon: Gamepad2, color: 'red', accentHex: '#ff1a1a',
     tagline: 'Compete. Connect. Level Up.',
-    desc: 'Find MENA tournaments, build a team, rank up, book coaching.',
-    cta: 'Start Competing',
-    link: '/auth/gamer/register',
-    forLink: '/for-gamers',
+    desc: 'Register for MENA tournaments, build your team, rank on leaderboards, book pro coaching sessions, and grow your gamer profile.',
+    features: ['Live tournament brackets', 'Team management', 'Ranked leaderboards', 'Coach booking', 'Gamer profile & stats'],
+    cta: 'Start Competing', link: '/auth/gamer/register', loginLink: '/auth/gamer/login',
+    forLink: '/for-gamers', pricingNote: 'Free to compete',
+    exampleBill: null,
   },
   {
-    key: 'organizers',
-    label: 'Organizers',
-    icon: Trophy,
-    color: 'purple',
+    key: 'organizers', label: 'HERU Organizer', tagShort: 'For Organizers',
+    icon: Trophy, color: 'purple', accentHex: '#7c3aed',
     tagline: 'Build Events That Sponsors Fund.',
-    desc: 'Use the Builder to hire service providers, create sponsorship packages, and get paid.',
-    cta: 'Build an Event',
-    link: '/auth/organizer/register',
-    forLink: '/for-organizers',
+    desc: 'Use the Tournament Builder to hire service providers, define deliverables, create sponsorship packages — and publish your event to the sponsorship radar.',
+    features: ['Tournament Builder', 'Service provider booking', 'Sponsorship packages', 'Income & billing dashboard', 'Verification badge'],
+    cta: 'Build an Event', link: '/auth/organizer/register', loginLink: '/auth/organizer/login',
+    forLink: '/for-organizers', pricingNote: '15% platform fee on sponsorships',
+    exampleBill: { label: 'Example', items: [{ name: 'Sponsorship Package Sold', val: 'EGP 10,000' }, { name: 'HERU Platform Fee (15%)', val: '– EGP 1,500' }, { name: 'Organizer Receives', val: 'EGP 8,500', bold: true }] },
   },
   {
-    key: 'sponsors',
-    label: 'Sponsors',
-    icon: Star,
-    color: 'yellow',
+    key: 'sponsors', label: 'HERU Sponsor', tagShort: 'For Sponsors',
+    icon: Star, color: 'yellow', accentHex: '#eab308',
     tagline: 'Put Your Brand Where Gamers Are.',
-    desc: 'Browse the radar, purchase sponsorship packages, get impressions, get reports.',
-    cta: 'Explore Radar',
-    link: '/auth/sponsor/register',
-    forLink: '/for-sponsors',
+    desc: 'Browse curated sponsorship packages, purchase exposure across MENA esports events, run influencer campaigns, and track ROI in real time.',
+    features: ['Sponsorship Radar', 'Influencer marketplace', 'Managed campaigns (Pro+)', 'Campaign ROI reports', 'Brand analytics'],
+    cta: 'Explore Packages', link: '/auth/sponsor/register', loginLink: '/auth/sponsor/login',
+    forLink: '/for-sponsors', pricingNote: 'Free • Pro (EGP 1,500/mo) • Enterprise',
+    exampleBill: { label: 'Example', items: [{ name: 'Package: Title Sponsor', val: 'EGP 15,000' }, { name: 'Platform fee', val: 'Included' }, { name: 'You pay', val: 'EGP 15,000', bold: true }] },
   },
   {
-    key: 'providers',
-    label: 'Service Providers',
-    icon: Briefcase,
-    color: 'cyan',
+    key: 'providers', label: 'HERU Services', tagShort: 'For Providers',
+    icon: Briefcase, color: 'cyan', accentHex: '#06b6d4',
     tagline: 'Get Paid to Power Esports Events.',
-    desc: 'List your services — casting, design, venues, marketing. Get booked by organizers.',
-    cta: 'List Your Services',
-    link: '/auth/provider/register',
-    forLink: '/for-providers',
+    desc: 'List your services — casting, design, venues, marketing, production, coaching, influencer reach. Get discovered by organizers and sponsors across MENA.',
+    features: ['Service listings', 'Custom category fields', 'Booking + escrow', 'Income dashboard', 'Public portfolio'],
+    cta: 'List Your Services', link: '/auth/provider/register', loginLink: '/auth/provider/login',
+    forLink: '/for-providers', pricingNote: '15% platform fee on bookings',
+    exampleBill: { label: 'Example', items: [{ name: 'Service Booking: Venue', val: 'EGP 5,000' }, { name: 'HERU Platform Fee (15%)', val: '– EGP 750' }, { name: 'You receive', val: 'EGP 4,250', bold: true }] },
   },
 ];
 
-const colorStyle = {
-  red:    'bg-red-600 hover:bg-red-700 shadow-red-600/30',
-  purple: 'bg-purple-600 hover:bg-purple-700 shadow-purple-600/30',
-  yellow: 'bg-yellow-500 hover:bg-yellow-600 shadow-yellow-500/30 text-black',
-  cyan:   'bg-cyan-600 hover:bg-cyan-700 shadow-cyan-600/30',
-};
-
-const iconColor = {
-  red: 'text-red-400', purple: 'text-purple-400', yellow: 'text-yellow-400', cyan: 'text-cyan-400',
-};
+const colorBorder = { red: 'border-red-500/40', purple: 'border-purple-500/40', yellow: 'border-yellow-500/40', cyan: 'border-cyan-500/40' };
+const colorBg    = { red: 'bg-red-600', purple: 'bg-purple-600', yellow: 'bg-yellow-500', cyan: 'bg-cyan-500' };
+const colorText  = { red: 'text-red-400', purple: 'text-purple-400', yellow: 'text-yellow-400', cyan: 'text-cyan-400' };
+const colorBtn   = { red: 'bg-red-600 hover:bg-red-500 text-white', purple: 'bg-purple-600 hover:bg-purple-500 text-white', yellow: 'bg-yellow-500 hover:bg-yellow-400 text-black font-bold', cyan: 'bg-cyan-500 hover:bg-cyan-400 text-white' };
+const colorGlow  = { red: 'shadow-red-500/20', purple: 'shadow-purple-500/20', yellow: 'shadow-yellow-500/20', cyan: 'shadow-cyan-500/20' };
 
 const stats = [
   { value: '500+', label: 'Registered Gamers', icon: Users },
-  { value: '10+', label: 'Tournaments Run', icon: Trophy },
+  { value: '10+', label: 'Tournaments Hosted', icon: Trophy },
   { value: '20+', label: 'Service Providers', icon: Briefcase },
   { value: 'EGP 130K+', label: 'Prize Pool Distributed', icon: Award },
 ];
 
+const pricingPlans = {
+  gamers: [
+    { name: 'Free', price: 'EGP 0', period: '/forever', features: ['Join tournaments', 'Manage 1 team', 'Basic leaderboard', 'Gamer profile'], cta: 'Start Free', highlight: false },
+  ],
+  organizers: [
+    { name: 'Pay-as-you-go', price: '15%', period: ' platform fee', features: ['Unlimited tournaments', 'Builder tool', 'Sponsorship packages', 'Income reports', 'Verification badge'], cta: 'Start Building', highlight: true },
+  ],
+  sponsors: [
+    { name: 'Free', price: 'EGP 0', period: '/mo', features: ['Browse radar', 'View packages', 'Basic analytics', '1 active sponsorship'], cta: 'Start Free', highlight: false },
+    { name: 'Pro', price: 'EGP 1,500', period: '/mo', features: ['Unlimited sponsorships', 'Influencer marketplace', 'Priority placement', 'ROI reports'], cta: 'Go Pro', highlight: true },
+    { name: 'Enterprise', price: 'Custom', period: '', features: ['Everything in Pro', 'Managed campaigns', 'Dedicated account mgr', 'Custom integrations'], cta: 'Contact Us', highlight: false },
+  ],
+  providers: [
+    { name: 'Pay-as-you-go', price: '15%', period: ' platform fee', features: ['Unlimited services', 'Booking management', 'Escrow payments', 'Public portfolio', 'Income analytics'], cta: 'List Services', highlight: true },
+  ],
+};
+
 export default function Home() {
   const [navOpen, setNavOpen] = useState(false);
   const [loginDropdown, setLoginDropdown] = useState(false);
+  const [pricingTab, setPricingTab] = useState('sponsors');
   const navigate = useNavigate();
   const { isAuthenticated, getDashboardPath, loading } = useAuth();
 
   useEffect(() => {
-    if (!loading && isAuthenticated) {
-      navigate(getDashboardPath(), { replace: true });
-    }
+    if (!loading && isAuthenticated) navigate(getDashboardPath(), { replace: true });
   }, [loading, isAuthenticated]); // eslint-disable-line
 
-  const { data: tournaments = [] } = useQuery({
-    queryKey: ['home-tournaments'],
-    queryFn: () => Tournament.list({ status: 'live', limit: 6 }),
-  });
-
-  const liveTournaments = tournaments.filter(t => ['live', 'published'].includes(t.status)).slice(0, 6);
-
   return (
-    <div className="bg-[#0a0a0a] text-white overflow-x-hidden min-h-screen">
+    <div className="bg-[#0a0a0a] text-white overflow-x-hidden min-h-screen font-['Inter',sans-serif]">
 
       {/* ── NAV ── */}
       <nav className="fixed top-0 left-0 right-0 z-50 bg-[#0a0a0a]/95 backdrop-blur-md border-b border-zinc-800/50">
@@ -104,75 +105,59 @@ export default function Home() {
             <HeruLogo className="h-8" />
           </Link>
 
-          <div className="hidden md:flex items-center gap-7">
-            <Link to="/tournaments" className="text-sm text-gray-300 hover:text-white transition">Tournaments</Link>
-            <Link to="/radar" className="text-sm text-gray-300 hover:text-white transition">Sponsor Radar</Link>
-            <Link to="/teams" className="text-sm text-gray-300 hover:text-white transition">Teams</Link>
+          <div className="hidden md:flex items-center gap-8">
+            <Link to="/tournaments" className="text-sm text-gray-400 hover:text-white transition">Tournaments</Link>
+            <Link to="/for-gamers" className="text-sm text-gray-400 hover:text-white transition">Products</Link>
+            <a href="#pricing" className="text-sm text-gray-400 hover:text-white transition">Pricing</a>
+            <Link to="/teams" className="text-sm text-gray-400 hover:text-white transition">Teams</Link>
           </div>
 
           <div className="flex items-center gap-4">
             <div className="relative hidden md:block">
-              <button
-                onClick={() => setLoginDropdown(!loginDropdown)}
-                className="text-sm text-gray-300 hover:text-white flex items-center gap-1 transition"
-              >
+              <button onClick={() => setLoginDropdown(v => !v)} className="text-sm text-gray-400 hover:text-white flex items-center gap-1 transition">
                 Login <ChevronDown className="w-3.5 h-3.5" />
               </button>
               <AnimatePresence>
                 {loginDropdown && (
-                  <motion.div
-                    initial={{ opacity: 0, y: -8 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -8 }}
-                    className="absolute right-0 mt-2 bg-zinc-900 border border-zinc-700 rounded-xl overflow-hidden min-w-52 shadow-xl"
-                  >
-                    {stakeholders.map(s => (
-                      <Link
-                        key={s.key}
-                        to={s.link.replace('/register', '/login')}
-                        onClick={() => setLoginDropdown(false)}
-                        className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-gray-300 hover:bg-zinc-800 hover:text-white transition"
-                      >
-                        <s.icon className={`w-4 h-4 ${iconColor[s.color]}`} />
-                        {s.label}
+                  <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}
+                    className="absolute right-0 mt-2 bg-zinc-900 border border-zinc-700 rounded-xl overflow-hidden min-w-56 shadow-2xl">
+                    {products.map(p => (
+                      <Link key={p.key} to={p.loginLink} onClick={() => setLoginDropdown(false)}
+                        className="flex items-center gap-3 px-4 py-3 text-sm text-gray-300 hover:bg-zinc-800 hover:text-white transition">
+                        <p.icon className={`w-4 h-4 ${colorText[p.color]}`} />
+                        <div>
+                          <div className="font-medium">{p.label}</div>
+                          <div className="text-xs text-gray-500">{p.tagShort}</div>
+                        </div>
                       </Link>
                     ))}
                   </motion.div>
                 )}
               </AnimatePresence>
             </div>
-
-            <Link
-              to="/auth"
-              className="bg-red-600 hover:bg-red-700 text-white px-5 py-2 rounded-lg text-sm font-bold transition hidden md:block"
-            >
-              Get Started
+            <Link to="/auth" className="bg-red-600 hover:bg-red-500 text-white px-5 py-2 rounded-lg text-sm font-bold transition hidden md:block shadow-lg shadow-red-600/20">
+              Get Started →
             </Link>
-
-            <button onClick={() => setNavOpen(!navOpen)} className="md:hidden p-2 text-gray-300 hover:text-white">
+            <button onClick={() => setNavOpen(v => !v)} className="md:hidden p-2 text-gray-300 hover:text-white">
               {navOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
             </button>
           </div>
         </div>
-
         <AnimatePresence>
           {navOpen && (
-            <motion.div
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: 'auto' }}
-              exit={{ opacity: 0, height: 0 }}
-              className="md:hidden bg-zinc-900 border-t border-zinc-800"
-            >
-              <div className="px-6 py-4 space-y-3">
-                <Link to="/tournaments" className="block text-sm text-gray-300 hover:text-white">Tournaments</Link>
-                <Link to="/radar" className="block text-sm text-gray-300 hover:text-white">Sponsor Radar</Link>
-                <Link to="/teams" className="block text-sm text-gray-300 hover:text-white">Teams</Link>
-                {stakeholders.map(s => (
-                  <Link key={s.key} to={s.link.replace('/register', '/login')} className="block text-sm text-gray-300 hover:text-white">
-                    Login as {s.label}
-                  </Link>
-                ))}
-                <Link to="/auth" className="block w-full bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg text-sm font-bold text-center">
+            <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }}
+              className="md:hidden bg-zinc-900/95 border-t border-zinc-800">
+              <div className="px-6 py-5 space-y-4">
+                <Link to="/tournaments" className="block text-sm text-gray-300 hover:text-white" onClick={() => setNavOpen(false)}>Tournaments</Link>
+                <a href="#pricing" className="block text-sm text-gray-300 hover:text-white" onClick={() => setNavOpen(false)}>Pricing</a>
+                <div className="border-t border-zinc-800 pt-4 space-y-3">
+                  {products.map(p => (
+                    <Link key={p.key} to={p.loginLink} className="flex items-center gap-2 text-sm text-gray-300 hover:text-white" onClick={() => setNavOpen(false)}>
+                      <p.icon className={`w-4 h-4 ${colorText[p.color]}`} /> Login as {p.tagShort.replace('For ', '')}
+                    </Link>
+                  ))}
+                </div>
+                <Link to="/auth" className="block w-full bg-red-600 hover:bg-red-500 text-white px-4 py-2.5 rounded-lg text-sm font-bold text-center" onClick={() => setNavOpen(false)}>
                   Get Started
                 </Link>
               </div>
@@ -183,105 +168,86 @@ export default function Home() {
 
       {/* ── HERO ── */}
       <section className="relative min-h-screen flex items-center justify-center pt-20 pb-16 overflow-hidden">
-        <div
-          className="absolute inset-0 z-0"
-          style={{
-            backgroundImage: 'url(https://variety.com/wp-content/uploads/2020/08/league-of-legends-world-championship.jpg)',
-            backgroundSize: 'cover',
-            backgroundPosition: 'center',
-          }}
-        />
-        <div className="absolute inset-0 bg-gradient-to-b from-[#0a0a0a]/60 via-[#0a0a0a]/85 to-[#0a0a0a]" />
+        <div className="absolute inset-0 z-0" style={{ background: 'radial-gradient(ellipse 80% 60% at 50% 0%, rgba(124,58,237,0.15) 0%, transparent 70%), radial-gradient(ellipse 60% 40% at 80% 80%, rgba(255,26,26,0.1) 0%, transparent 60%)' }} />
+        <div className="absolute inset-0 z-0" style={{ backgroundImage: 'url(https://images.unsplash.com/photo-1542751371-adc38448a05e?w=1600&q=80)', backgroundSize: 'cover', backgroundPosition: 'center', opacity: 0.06 }} />
 
-        <div className="relative z-10 text-center px-6 max-w-4xl mx-auto">
-          <motion.p
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.15 }}
-            className="text-xs font-bold text-red-500 mb-4 tracking-widest uppercase"
-          >
-            The Operating System for Esports in MENA
-          </motion.p>
-
-          <motion.h1
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3 }}
-            className="text-5xl md:text-7xl font-black mb-6 leading-tight"
-          >
-            Build. Compete.<br className="hidden md:block" /> Sponsor. Earn.
-          </motion.h1>
-
-          <motion.p
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.5 }}
-            className="text-lg md:text-xl text-gray-300 mb-10 max-w-2xl mx-auto"
-          >
-            The four-sided esports marketplace connecting Gamers, Organizers, Sponsors,
-            and Service Providers across Egypt, Saudi Arabia, and the UAE.
-          </motion.p>
-
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.65 }}
-            className="flex flex-col sm:flex-row gap-4 justify-center"
-          >
-            <Link to="/auth" className="bg-red-600 hover:bg-red-700 text-white px-8 py-4 rounded-xl font-bold text-base transition shadow-lg shadow-red-600/40">
-              Join HERU.gg
-            </Link>
-            <Link to="/radar" className="border border-white/20 hover:bg-white/10 text-white px-8 py-4 rounded-xl font-bold text-base transition">
-              Explore Sponsor Radar
-            </Link>
-          </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.9 }}
-            className="mt-16"
-          >
-            <ChevronDown className="w-7 h-7 text-red-500 mx-auto animate-bounce" />
+        <div className="relative z-10 text-center px-6 max-w-5xl mx-auto">
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}>
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-zinc-800/80 border border-zinc-700 text-xs text-gray-400 mb-8">
+              <Sparkles className="w-3.5 h-3.5 text-yellow-400" />
+              The #1 Esports Platform for MENA
+            </div>
+            <h1 className="text-5xl md:text-7xl font-black tracking-tight leading-none mb-6">
+              The Esports{' '}
+              <span className="bg-gradient-to-r from-red-500 via-purple-500 to-cyan-400 bg-clip-text text-transparent">
+                Operating System
+              </span>
+              <br />for MENA
+            </h1>
+            <p className="text-lg md:text-xl text-gray-400 max-w-2xl mx-auto mb-10 leading-relaxed">
+              Four products. One platform. HERU connects gamers, tournament organizers, sponsors, and service providers across Egypt, Saudi Arabia, and UAE.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <Link to="/auth" className="inline-flex items-center gap-2 bg-red-600 hover:bg-red-500 text-white px-8 py-3.5 rounded-xl text-base font-bold transition shadow-xl shadow-red-600/25">
+                Get Started Free <ArrowRight className="w-5 h-5" />
+              </Link>
+              <Link to="/tournaments" className="inline-flex items-center gap-2 bg-zinc-800 hover:bg-zinc-700 text-white px-8 py-3.5 rounded-xl text-base font-medium transition border border-zinc-700">
+                <Play className="w-4 h-4" /> Watch Live Events
+              </Link>
+            </div>
           </motion.div>
         </div>
       </section>
 
-      {/* ── 4 STAKEHOLDER TILES ── */}
-      <section className="py-20 px-6 bg-[#0a0a0a]">
-        <div className="max-w-6xl mx-auto">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl md:text-4xl font-black mb-3">One Platform. Four Roles.</h2>
-            <p className="text-gray-400 text-lg">Pick your path and unlock the full HERU experience.</p>
+      {/* ── STATS ── */}
+      <section className="py-12 border-y border-zinc-800/50">
+        <div className="max-w-7xl mx-auto px-6 grid grid-cols-2 md:grid-cols-4 gap-6">
+          {stats.map((s, i) => (
+            <motion.div key={i} initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.1 }}
+              className="text-center">
+              <div className="text-3xl md:text-4xl font-black text-white mb-1">{s.value}</div>
+              <div className="text-sm text-gray-500">{s.label}</div>
+            </motion.div>
+          ))}
+        </div>
+      </section>
+
+      {/* ── 4 PRODUCTS ── */}
+      <section className="py-24 px-6" id="products">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center mb-16">
+            <div className="text-xs font-bold text-red-400 uppercase tracking-widest mb-3">Four Products</div>
+            <h2 className="text-4xl md:text-5xl font-black mb-4">One Ecosystem. Every Role.</h2>
+            <p className="text-gray-400 max-w-xl mx-auto">HERU is a multi-sided marketplace. Each stakeholder gets a dedicated product built specifically for their needs.</p>
           </div>
 
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {stakeholders.map((s, i) => (
-              <motion.div
-                key={s.key}
-                initial={{ opacity: 0, y: 24 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: i * 0.1 }}
-                className="rounded-2xl border border-white/10 bg-white/[0.03] p-6 flex flex-col"
-              >
-                <s.icon className={`w-8 h-8 mb-4 ${iconColor[s.color]}`} />
-                <h3 className="text-lg font-bold text-white mb-1">{s.label}</h3>
-                <p className={`text-sm font-semibold mb-2 ${iconColor[s.color]}`}>{s.tagline}</p>
-                <p className="text-gray-400 text-sm leading-relaxed mb-6 flex-1">{s.desc}</p>
-                <div className="flex gap-2">
-                  <Link
-                    to={s.link}
-                    className={`flex-1 text-center text-xs font-bold py-2.5 rounded-lg text-white transition shadow ${colorStyle[s.color]}`}
-                  >
-                    {s.cta}
-                  </Link>
-                  <Link
-                    to={s.forLink}
-                    className="px-3 py-2.5 rounded-lg border border-white/10 hover:border-white/30 text-white/50 hover:text-white transition"
-                  >
-                    <ArrowRight className="w-4 h-4" />
-                  </Link>
+          <div className="grid md:grid-cols-2 gap-6">
+            {products.map((p, i) => (
+              <motion.div key={p.key} initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.1 }}
+                className={`relative bg-zinc-900/50 border ${colorBorder[p.color]} rounded-2xl p-8 hover:bg-zinc-900/80 transition-all duration-300 group overflow-hidden`}
+                style={{ boxShadow: `0 0 40px -10px ${p.accentHex}20` }}>
+                <div className="absolute top-0 right-0 w-64 h-64 rounded-full opacity-5 blur-3xl" style={{ background: p.accentHex, transform: 'translate(30%, -30%)' }} />
+                <div className="relative z-10">
+                  <div className="flex items-start justify-between mb-6">
+                    <div className={`w-14 h-14 rounded-2xl ${colorBg[p.color]} flex items-center justify-center shadow-xl`} style={{ boxShadow: `0 8px 24px ${p.accentHex}40` }}>
+                      <p.icon className="w-7 h-7 text-white" />
+                    </div>
+                    <span className={`text-xs font-bold ${colorText[p.color]} uppercase tracking-widest bg-zinc-800 px-3 py-1 rounded-full`}>{p.tagShort}</span>
+                  </div>
+                  <div className="mb-1 text-lg font-black text-white">{p.label}</div>
+                  <div className={`text-sm font-bold ${colorText[p.color]} mb-3`}>{p.tagline}</div>
+                  <p className="text-gray-400 text-sm mb-6 leading-relaxed">{p.desc}</p>
+                  <ul className="space-y-2 mb-8">
+                    {p.features.map(f => (
+                      <li key={f} className="flex items-center gap-2.5 text-sm text-gray-300">
+                        <CheckCircle2 className={`w-4 h-4 ${colorText[p.color]} flex-shrink-0`} /> {f}
+                      </li>
+                    ))}
+                  </ul>
+                  <div className="flex gap-3">
+                    <Link to={p.link} className={`flex-1 text-center py-2.5 rounded-xl text-sm font-bold transition ${colorBtn[p.color]}`}>{p.cta}</Link>
+                    <Link to={p.forLink} className="px-4 py-2.5 rounded-xl text-sm text-gray-400 hover:text-white bg-zinc-800 hover:bg-zinc-700 transition">Learn more</Link>
+                  </div>
                 </div>
               </motion.div>
             ))}
@@ -289,162 +255,152 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ── LIVE TOURNAMENTS ── */}
-      {liveTournaments.length > 0 && (
-        <section className="py-20 px-6 bg-zinc-950">
-          <div className="max-w-6xl mx-auto">
-            <div className="flex items-center justify-between mb-10">
-              <div>
-                <h2 className="text-3xl font-black mb-1">Live Tournaments</h2>
-                <p className="text-gray-400">Competitions happening right now across MENA</p>
-              </div>
-              <Link to="/tournaments" className="flex items-center gap-1.5 text-red-400 hover:text-red-300 text-sm font-medium transition">
-                View All <ArrowRight className="w-4 h-4" />
-              </Link>
-            </div>
-
-            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
-              {liveTournaments.map((t, i) => (
-                <motion.div
-                  key={t.id}
-                  initial={{ opacity: 0, scale: 0.96 }}
-                  whileInView={{ opacity: 1, scale: 1 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: i * 0.07 }}
-                >
-                  <Link to={`/tournaments/${t.id}`} className="block rounded-xl overflow-hidden border border-white/10 bg-zinc-900 hover:border-red-500/40 transition group">
-                    {t.tournament_image && (
-                      <div className="h-36 overflow-hidden">
-                        <img src={t.tournament_image} alt={t.name} className="w-full h-full object-cover group-hover:scale-105 transition duration-500" />
-                      </div>
-                    )}
-                    <div className="p-4">
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-xs font-bold text-red-400 uppercase tracking-wide">{t.game}</span>
-                        <span className="text-xs bg-green-500/20 text-green-400 border border-green-500/30 px-2 py-0.5 rounded-full font-medium">
-                          {t.status === 'live' ? 'LIVE' : 'Open'}
-                        </span>
-                      </div>
-                      <h3 className="font-bold text-white text-sm mb-1 truncate">{t.name}</h3>
-                      <p className="text-gray-500 text-xs">
-                        {t.teams?.length || 0} / {t.max_teams || '?'} teams
-                      </p>
-                    </div>
-                  </Link>
-                </motion.div>
-              ))}
-            </div>
+      {/* ── PRICING ── */}
+      <section className="py-24 px-6 bg-zinc-900/30" id="pricing">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center mb-12">
+            <div className="text-xs font-bold text-yellow-400 uppercase tracking-widest mb-3">Pricing</div>
+            <h2 className="text-4xl md:text-5xl font-black mb-4">Transparent. Simple. Fair.</h2>
+            <p className="text-gray-400 max-w-xl mx-auto">HERU takes a flat 15% platform fee on transactions. No hidden charges. The platform only earns when you earn.</p>
           </div>
-        </section>
-      )}
 
-      {/* ── STATS BAR ── */}
-      <section className="py-16 px-6 bg-[#0a0a0a] border-y border-white/5">
-        <div className="max-w-5xl mx-auto">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
-            {stats.map((s, i) => (
-              <motion.div
-                key={s.label}
-                initial={{ opacity: 0, y: 16 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: i * 0.1 }}
-              >
-                <s.icon className="w-6 h-6 text-red-500 mx-auto mb-3" />
-                <div className="text-3xl font-black text-white mb-1">{s.value}</div>
-                <p className="text-gray-500 text-sm">{s.label}</p>
-              </motion.div>
+          {/* Pricing tab selector */}
+          <div className="flex flex-wrap justify-center gap-2 mb-12">
+            {products.map(p => (
+              <button key={p.key} onClick={() => setPricingTab(p.key)}
+                className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-medium transition ${pricingTab === p.key ? `${colorBg[p.color]} text-white shadow-lg` : 'bg-zinc-800 text-gray-400 hover:text-white hover:bg-zinc-700'}`}>
+                <p.icon className="w-4 h-4" /> {p.tagShort}
+              </button>
             ))}
           </div>
+
+          {/* Plans for selected tab */}
+          <AnimatePresence mode="wait">
+            {products.filter(p => p.key === pricingTab).map(product => (
+              <motion.div key={product.key} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}>
+                <div className={`grid gap-6 ${pricingPlans[product.key].length === 1 ? 'max-w-sm mx-auto' : pricingPlans[product.key].length === 2 ? 'md:grid-cols-2 max-w-2xl mx-auto' : 'md:grid-cols-3 max-w-4xl mx-auto'}`}>
+                  {pricingPlans[product.key].map(plan => (
+                    <div key={plan.name} className={`relative bg-zinc-900 border rounded-2xl p-6 ${plan.highlight ? `${colorBorder[product.color]} ring-1` : 'border-zinc-800'}`}
+                      style={plan.highlight ? { ringColor: product.accentHex } : {}}>
+                      {plan.highlight && <div className={`absolute -top-3 left-1/2 -translate-x-1/2 px-4 py-1 rounded-full text-xs font-bold ${colorBg[product.color]} text-white`}>Recommended</div>}
+                      <div className="mb-4">
+                        <div className="text-sm text-gray-400 font-medium mb-1">{plan.name}</div>
+                        <div className="flex items-baseline gap-1">
+                          <span className="text-3xl font-black text-white">{plan.price}</span>
+                          <span className="text-sm text-gray-500">{plan.period}</span>
+                        </div>
+                      </div>
+                      <ul className="space-y-2.5 mb-6">
+                        {plan.features.map(f => (
+                          <li key={f} className="flex items-center gap-2 text-sm text-gray-300">
+                            <CheckCircle2 className={`w-3.5 h-3.5 ${colorText[product.color]} flex-shrink-0`} /> {f}
+                          </li>
+                        ))}
+                      </ul>
+                      <Link to={product.link} className={`block w-full text-center py-2.5 rounded-xl text-sm font-bold transition ${plan.highlight ? colorBtn[product.color] : 'bg-zinc-800 hover:bg-zinc-700 text-white'}`}>
+                        {plan.cta}
+                      </Link>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Example bill for this product */}
+                {product.exampleBill && (
+                  <div className="max-w-sm mx-auto mt-8 bg-zinc-900/70 border border-zinc-800 rounded-2xl p-5">
+                    <div className="flex items-center gap-2 mb-4 text-xs font-bold text-gray-500 uppercase tracking-widest">
+                      <DollarSign className="w-3.5 h-3.5" /> {product.exampleBill.label} Bill
+                    </div>
+                    <div className="space-y-2">
+                      {product.exampleBill.items.map(item => (
+                        <div key={item.name} className={`flex justify-between text-sm ${item.bold ? 'font-bold text-white pt-2 border-t border-zinc-800' : 'text-gray-400'}`}>
+                          <span>{item.name}</span>
+                          <span className={item.bold ? colorText[product.color] : ''}>{item.val}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </motion.div>
+            ))}
+          </AnimatePresence>
         </div>
       </section>
 
       {/* ── HOW IT WORKS ── */}
-      <section className="py-24 px-6 bg-zinc-950">
+      <section className="py-24 px-6">
         <div className="max-w-5xl mx-auto">
-          <div className="text-center mb-14">
-            <h2 className="text-3xl md:text-4xl font-black mb-3">How It Works</h2>
-            <p className="text-gray-400 text-lg">Each role has a clear, value-creating flow</p>
+          <div className="text-center mb-16">
+            <h2 className="text-4xl font-black mb-4">How HERU Works</h2>
+            <p className="text-gray-400">Three simple steps to launch an esports event ecosystem</p>
           </div>
-
-          <div className="grid md:grid-cols-2 gap-10">
+          <div className="grid md:grid-cols-3 gap-8">
             {[
-              {
-                role: 'Organizer',
-                color: 'purple',
-                steps: ['Build your tournament with the 5-step Builder', 'Hire service providers from the marketplace', 'Create sponsorship packages and publish to radar', 'Get fully funded and run your event'],
-              },
-              {
-                role: 'Sponsor',
-                color: 'yellow',
-                steps: ['Browse the Sponsorship Radar', 'View packages with reach, impressions, deliverables', 'Purchase a package via Paymob', 'Track campaign performance and get post-event report'],
-              },
-              {
-                role: 'Service Provider',
-                color: 'cyan',
-                steps: ['Register and list your services', 'Get approved by HERU staff', 'Appear in Tournament Builder for organizers', 'Accept bookings, deliver work, get paid (escrow)'],
-              },
-              {
-                role: 'Gamer',
-                color: 'red',
-                steps: ['Create your profile and register your games', 'Find tournaments and form or join a team', 'Compete in live brackets', 'Rank up on the leaderboard and book coaching'],
-              },
-            ].map((flow, i) => (
-              <motion.div
-                key={flow.role}
-                initial={{ opacity: 0, x: i % 2 === 0 ? -20 : 20 }}
-                whileInView={{ opacity: 1, x: 0 }}
-                viewport={{ once: true }}
-              >
-                <h3 className={`text-lg font-bold mb-4 ${iconColor[flow.color]}`}>{flow.role}</h3>
-                <ol className="space-y-3">
-                  {flow.steps.map((step, j) => (
-                    <li key={j} className="flex items-start gap-3 text-sm text-gray-300">
-                      <span className={`flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold text-white bg-${flow.color}-600 mt-0.5`}>
-                        {j + 1}
-                      </span>
-                      {step}
-                    </li>
-                  ))}
-                </ol>
-              </motion.div>
+              { num: '01', icon: Building2, title: 'Organizer Builds Event', desc: 'Organizer uses the Tournament Builder to plan their event, hire service providers, and define sponsorship packages.', color: 'purple' },
+              { num: '02', icon: Star, title: 'Sponsor Buys Package', desc: 'Sponsor browses the radar, selects a package, pays through HERU escrow. Organizer gets funded.', color: 'yellow' },
+              { num: '03', icon: Trophy, title: 'Event Goes Live', desc: 'Service providers deliver, gamers compete, organizer confirms delivery, HERU releases payment.', color: 'red' },
+            ].map(step => (
+              <div key={step.num} className="text-center">
+                <div className={`w-14 h-14 rounded-2xl ${colorBg[step.color]} flex items-center justify-center mx-auto mb-4 shadow-xl`}>
+                  <step.icon className="w-7 h-7 text-white" />
+                </div>
+                <div className={`text-xs font-bold ${colorText[step.color]} mb-2 uppercase tracking-widest`}>Step {step.num}</div>
+                <h3 className="text-lg font-bold text-white mb-2">{step.title}</h3>
+                <p className="text-gray-400 text-sm leading-relaxed">{step.desc}</p>
+              </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* ── FINAL CTA ── */}
-      <section id="cta-section" className="py-24 px-6 bg-[#0a0a0a]">
+      {/* ── CTA ── */}
+      <section className="py-24 px-6 bg-gradient-to-b from-zinc-900/0 via-red-950/10 to-zinc-900/0">
         <div className="max-w-3xl mx-auto text-center">
-          <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
-            <h2 className="text-4xl md:text-5xl font-black mb-5">
-              Ready to join HERU?
-            </h2>
-            <p className="text-gray-400 text-lg mb-10">
-              Whether you compete, organize, sponsor, or provide services —<br className="hidden md:block" />
-              there's a place for you in the MENA esports ecosystem.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link to="/auth" className="bg-red-600 hover:bg-red-700 text-white px-10 py-4 rounded-xl font-bold text-lg transition shadow-xl shadow-red-600/30">
-                Get Started Free
+          <h2 className="text-4xl md:text-5xl font-black mb-6">Ready to Join HERU?</h2>
+          <p className="text-gray-400 text-lg mb-10">Choose your role and get started in under 2 minutes.</p>
+          <div className="grid sm:grid-cols-2 md:grid-cols-4 gap-4">
+            {products.map(p => (
+              <Link key={p.key} to={p.link}
+                className={`flex flex-col items-center gap-2 p-4 rounded-2xl border ${colorBorder[p.color]} bg-zinc-900/50 hover:bg-zinc-900 transition group`}>
+                <div className={`w-10 h-10 rounded-xl ${colorBg[p.color]} flex items-center justify-center`}>
+                  <p.icon className="w-5 h-5 text-white" />
+                </div>
+                <div className="text-sm font-bold text-white">{p.tagShort.replace('For ', '')}</div>
+                <div className={`text-xs ${colorText[p.color]}`}>{p.pricingNote}</div>
               </Link>
-              <Link to="/tournaments" className="border border-white/20 hover:bg-white/10 text-white px-10 py-4 rounded-xl font-bold text-lg transition">
-                Browse Tournaments
-              </Link>
-            </div>
-          </motion.div>
+            ))}
+          </div>
         </div>
       </section>
 
       {/* ── FOOTER ── */}
-      <footer className="border-t border-white/5 py-10 px-6">
-        <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
-          <HeruLogo className="h-7" />
-          <p className="text-gray-600 text-sm">© 2026 HERU.gg — All rights reserved</p>
-          <div className="flex items-center gap-6 text-sm text-gray-500">
-            <Link to="/tournaments" className="hover:text-white transition">Tournaments</Link>
-            <Link to="/radar" className="hover:text-white transition">Radar</Link>
-            <Link to="/auth" className="hover:text-white transition">Sign Up</Link>
+      <footer className="border-t border-zinc-800 py-12 px-6">
+        <div className="max-w-7xl mx-auto">
+          <div className="flex flex-col md:flex-row justify-between items-start gap-8">
+            <div>
+              <HeruLogo className="h-8 mb-3" />
+              <p className="text-gray-500 text-sm max-w-xs">The esports operating system for the MENA region. Connecting gamers, organizers, sponsors, and service providers.</p>
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
+              {[
+                { title: 'Platform', links: [{ l: 'Tournaments', to: '/tournaments' }, { l: 'Teams', to: '/teams' }, { l: 'Leaderboards', to: '/leaderboards' }] },
+                { title: 'Products', links: products.map(p => ({ l: p.tagShort, to: p.forLink })) },
+                { title: 'Get Started', links: products.map(p => ({ l: `${p.tagShort.replace('For ', '')} Sign Up`, to: p.link })) },
+                { title: 'Login', links: products.map(p => ({ l: `${p.tagShort.replace('For ', '')} Login`, to: p.loginLink })) },
+              ].map(col => (
+                <div key={col.title}>
+                  <div className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-3">{col.title}</div>
+                  <ul className="space-y-2">
+                    {col.links.map(lnk => (
+                      <li key={lnk.l}><Link to={lnk.to} className="text-sm text-gray-400 hover:text-white transition">{lnk.l}</Link></li>
+                    ))}
+                  </ul>
+                </div>
+              ))}
+            </div>
+          </div>
+          <div className="border-t border-zinc-800 mt-10 pt-6 flex flex-col md:flex-row justify-between items-center gap-4">
+            <p className="text-xs text-gray-600">© 2026 HERU.gg — All rights reserved</p>
+            <p className="text-xs text-gray-600">Serving Egypt, Saudi Arabia & UAE 🌍</p>
           </div>
         </div>
       </footer>
