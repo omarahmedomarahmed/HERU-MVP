@@ -255,14 +255,14 @@ export default function OrganizerPublicProfile() {
         </div>
 
         {/* CTA */}
-        <div className="rounded-2xl bg-gradient-to-br from-red-900/15 to-zinc-900 border border-red-500/15 p-8 text-center">
-          <h3 className="text-xl font-black mb-2">Want to co-organize?</h3>
-          <p className="text-zinc-400 text-sm mb-6 max-w-md mx-auto">Browse open tournaments on the Sponsorship Radar and commit to co-organizer or sponsor slots.</p>
+        <div className="rounded-2xl bg-gradient-to-br from-yellow-900/15 to-zinc-900 border border-yellow-500/15 p-8 text-center">
+          <h3 className="text-xl font-black mb-2">Want to sponsor an event?</h3>
+          <p className="text-zinc-400 text-sm mb-6 max-w-md mx-auto">Create a sponsor account to browse sponsorship packages from this organizer's tournaments.</p>
           <Link
-            to="/radar"
-            className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl bg-red-600 hover:bg-red-500 text-white font-bold text-sm transition-colors"
+            to="/auth/sponsor/register"
+            className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl bg-yellow-500 hover:bg-yellow-400 text-black font-bold text-sm transition-colors"
           >
-            <Zap className="w-4 h-4" /> Explore Radar
+            <Zap className="w-4 h-4" /> Become a Sponsor
           </Link>
         </div>
 
