@@ -105,11 +105,11 @@ export default function GamerFriends() {
         <div className="space-y-4">
           <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-5">
             <h3 className="text-white font-bold mb-1">Find Players</h3>
-            <p className="text-gray-400 text-xs mb-4">Search by name to send a friend request</p>
+            <p className="text-gray-400 text-xs mb-4">Search by player name, gamer tag, or Riot ID (e.g. Name#TAG)</p>
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
               <input value={search} onChange={handleSearchChange}
-                placeholder="Search by player name..."
+                placeholder="Name, gamer tag, or Riot ID (Name#TAG)..."
                 className="w-full pl-9 pr-4 py-2.5 bg-zinc-800 border border-zinc-700 rounded-xl text-white text-sm placeholder-gray-500 focus:outline-none focus:border-red-500" />
               {searching && <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 animate-spin" />}
             </div>
@@ -127,8 +127,12 @@ export default function GamerFriends() {
                         {u.avatar_url ? <img src={u.avatar_url} alt="" className="w-full h-full object-cover" /> : <User2 className="w-5 h-5 text-white" />}
                       </div>
                       <div>
-                        <p className="text-white font-semibold text-sm">{u.full_name}</p>
-                        <p className="text-gray-500 text-xs capitalize">{u.role}</p>
+                        <p className="text-white font-semibold text-sm">{u.username || u.full_name}</p>
+                        {u.riot_id ? (
+                          <p className="text-xs text-yellow-500/80 font-mono">{u.riot_id} {u.riot_rank && <span className="text-yellow-400">· {u.riot_rank}</span>}</p>
+                        ) : (
+                          <p className="text-gray-500 text-xs capitalize">{u.match_source === 'gamer_tag' ? 'Gamer' : u.role}</p>
+                        )}
                       </div>
                     </div>
                     {isFriend ? (
