@@ -27,7 +27,7 @@ const NAV = [
       { to: '/staff/gamers',            icon: Gamepad2,    text: 'Gamers'           },
       { to: '/staff/teams',             icon: UsersRound,  text: 'Teams'            },
       { to: '/staff/organizers',        icon: Building2,   text: 'Organizers'       },
-      { to: '/staff/gigs',              icon: Briefcase,   text: 'Gig Requests'     },
+      { to: '/staff/services',              icon: Briefcase,   text: 'Gig Requests'     },
     ],
   },
   {
