@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import StaffLayout from '@/components/layouts/StaffLayout';
 import { apiCall } from '@/api/heruClient';
 import { FileText, Edit, Eye, EyeOff, Save, X, Plus } from 'lucide-react';
 
@@ -46,7 +45,7 @@ export default function StaffCMS() {
   }
 
   return (
-    <StaffLayout>
+    <div>
       <div>
         <div className="mb-6">
           <h1 className="text-2xl font-bold text-gray-900">CMS Pages</h1>
@@ -154,6 +153,6 @@ export default function StaffCMS() {
           </div>
         )}
       </div>
-    </StaffLayout>
+    </div>
   );
 }

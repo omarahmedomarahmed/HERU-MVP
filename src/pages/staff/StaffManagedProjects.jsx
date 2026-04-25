@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import StaffLayout from '@/components/layouts/StaffLayout';
 import { apiCall } from '@/api/heruClient';
 import {
   Briefcase, Inbox, ChevronDown, Send, CheckCircle, UserCheck, X,
@@ -73,7 +72,7 @@ export default function StaffManagedProjects() {
   });
 
   return (
-    <StaffLayout>
+    <div>
       <div>
         <div className="mb-6">
           <h1 className="text-2xl font-bold text-gray-900">Managed Projects</h1>
@@ -197,6 +196,6 @@ export default function StaffManagedProjects() {
           ))}
         </div>
       </div>
-    </StaffLayout>
+    </div>
   );
 }

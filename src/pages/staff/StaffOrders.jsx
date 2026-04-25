@@ -1,7 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import StaffLayout from '@/components/layouts/StaffLayout';
 import { apiCall } from '@/api/heruClient';
 import {
   ShoppingCart, Trophy, Search, ChevronLeft, ChevronRight, Inbox,
@@ -125,7 +124,7 @@ export default function StaffOrders() {
   React.useEffect(() => { setPage(1); }, [activeTab, search]);
 
   return (
-    <StaffLayout>
+    <div>
       <div>
         {/* Header */}
         <div className="mb-6">
@@ -313,6 +312,6 @@ export default function StaffOrders() {
           )}
         </div>
       </div>
-    </StaffLayout>
+    </div>
   );
 }

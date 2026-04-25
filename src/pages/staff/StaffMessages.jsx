@@ -1,7 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import StaffLayout from '@/components/layouts/StaffLayout';
 import { apiCall } from '@/api/heruClient';
 import {
   MessageSquare, Search, Clock, Trophy, ShoppingBag,
@@ -145,7 +144,7 @@ export default function StaffMessages() {
   const radarCount = threads.filter((t) => t.source === 'radar').length;
 
   return (
-    <StaffLayout>
+    <div>
       <div>
         {/* Header */}
         <div className="mb-6">
@@ -312,6 +311,6 @@ export default function StaffMessages() {
           </div>
         )}
       </div>
-    </StaffLayout>
+    </div>
   );
 }

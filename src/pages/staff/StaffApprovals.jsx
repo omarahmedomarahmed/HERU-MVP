@@ -1,7 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import StaffLayout from '@/components/layouts/StaffLayout';
 import { apiCall } from '@/api/heruClient';
 import {
   CheckCircle, XCircle, Clock, Search, Users, Trophy,
@@ -223,7 +222,7 @@ export default function StaffApprovals() {
   }
 
   return (
-    <StaffLayout>
+    <div>
       <div>
         {/* Header */}
         <div className="mb-6">
@@ -506,6 +505,6 @@ export default function StaffApprovals() {
           </div>
         )}
       </div>
-    </StaffLayout>
+    </div>
   );
 }
