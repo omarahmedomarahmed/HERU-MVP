@@ -178,18 +178,14 @@ Migrations are in `/supabase/migrations/`. Apply these in order on a fresh insta
 
 | File | Contents |
 |------|----------|
-| `100_fresh_schema_core.sql` | user_profiles, staff_access_keys, app_settings, cms_pages, audit_log, achievements, badges |
-| `101_fresh_schema_gamers.sql` | gamer_profiles, teams, tournaments, match_records, venues, leaderboard_entries, friendships, direct_messages |
-| `102_fresh_schema_organizers.sql` | organizer_profiles, organizer_verifications, deliverables, bills, orders |
-| `103_fresh_schema_providers.sql` | service_provider_profiles, services, service_bookings, coaching_sessions, reviews, portfolio items |
-| `104_fresh_schema_sponsors.sql` | sponsor_profiles, subscriptions, sponsorship_packages, sponsorships, managed_service_projects, heru_revenue_ledger |
-| `105_fresh_schema_rls.sql` | Row Level Security policies (Supabase-specific) |
-| `106_schema_updates.sql` | Adds Influencer category, custom_fields to services, fixes provider_type constraint |
-| `107_provider_slug_portfolio.sql` | Provider slug + enhanced portfolio fields (type, client_name, deliverables, links, testimonial) |
-| `108_internal_tournaments.sql` | is_internal flag for corporate/invite-only tournaments |
-| `109_schema_completeness.sql` | Fixes all gaps between 100-108 and backend routes: staff_sessions table, teams/tournaments/subscriptions/sponsor_profiles/heru_revenue_ledger/coaching_sessions/connected_accounts/service_bookings/user_profiles/organizer_profiles missing columns, games table, notifications table |
+| `100_core.sql` | Extensions, user_profiles (phone/whatsapp), staff_access_keys, staff_sessions, app_settings, cms_pages, audit_log, games (seeded), notifications, achievements, badges |
+| `101_gamers.sql` | gamer_profiles (talent fields, username_slug), connected_accounts (Riot/Val/region), teams (leader_id, members[], join_requests), tournaments (full column set incl. internal/Riot/stream/sponsor fields), tournament sub-tables, match_records, leaderboards, friendships, direct_messages (content/read_at/conversation_id), promo_codes, user_reports |
+| `102_organizers.sql` | organizer_profiles (contact_number, contact_email, tiktok, facebook), organizer_verifications, organizer_page_configs, organizer_ratings, deliverables, bills, orders, tournament_orders, approval_requests |
+| `103_providers.sql` | service_provider_profiles (slug, social_links, approval_status), services (Influencer category, custom_fields), provider_portfolio_items (type, client_name, deliverables, links, testimonial), provider_past_projects, service_bookings (total_price, net_to_provider, denorm columns), coaching_sessions (gamer_rating, session_type, duration_minutes generated), reviews |
+| `104_sponsors.sql` | sponsor_profiles (subscription_plan/status/renewal_date), subscriptions (plan, amount, billing_cycle, renewal_date), sponsorship_packages, sponsorships (package_name/sponsor_brand/tournament_name), managed_service_projects, heru_revenue_ledger (both stream/entity and source_type/source_id naming conventions) |
+| `105_rls.sql` | Row Level Security policies for all tables including staff_sessions, games, notifications |
 
-Legacy files `001–022` have been removed — they were pre-pivot and should never be applied.
+Apply in order 100 → 105 on a fresh database. No other migration files are needed.
 
 For migrating to a different database: see `DATABASE_MIGRATION.md`.
 For migrating to a different auth provider: see `AUTH_MIGRATION.md`.
