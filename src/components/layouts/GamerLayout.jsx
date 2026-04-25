@@ -6,7 +6,7 @@ import AnimatedBackground from '@/components/shared/AnimatedBackground';
 import HeruLogo from '@/components/shared/HeruLogo';
 import SupportChat from '@/components/ui/SupportChat';
 import { motion, AnimatePresence } from 'framer-motion';
-import { GamerProfile, Team } from '@/api/heruClient'
+import { GamerProfile, Team, apiCall } from '@/api/heruClient'
 import { useAuth } from '@/lib/AuthContext'
 
 import {
@@ -70,8 +70,6 @@ export default function GamerLayout({ children, user: userProp, profile: profile
   const { data: dmConversations = [] } = useQuery({
     queryKey: ['dm-conversations', user?.id],
     queryFn: async () => {
-      if (!user?.id) return [];
-      const { apiCall } = await import('@/api/heruClient');
       try {
         const data = await apiCall('/direct-messages/conversations');
         return Array.isArray(data) ? data : data?.data || [];

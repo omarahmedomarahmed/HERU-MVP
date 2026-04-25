@@ -187,6 +187,7 @@ Migrations are in `/supabase/migrations/`. Apply these in order on a fresh insta
 | `106_schema_updates.sql` | Adds Influencer category, custom_fields to services, fixes provider_type constraint |
 | `107_provider_slug_portfolio.sql` | Provider slug + enhanced portfolio fields (type, client_name, deliverables, links, testimonial) |
 | `108_internal_tournaments.sql` | is_internal flag for corporate/invite-only tournaments |
+| `109_schema_completeness.sql` | Fixes all gaps between 100-108 and backend routes: staff_sessions table, teams/tournaments/subscriptions/sponsor_profiles/heru_revenue_ledger/coaching_sessions/connected_accounts/service_bookings/user_profiles/organizer_profiles missing columns, games table, notifications table |
 
 Legacy files `001–022` have been removed — they were pre-pivot and should never be applied.
 
