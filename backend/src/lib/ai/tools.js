@@ -13,7 +13,7 @@ const TOOLS = [
       },
     },
     handler: async (args) => {
-      let query = supabaseAdmin.from('tournaments').select('id,name,game,status,format,max_teams,schedule,total_cost,prizepool_total,on_radar').order('created_at', { ascending: false }).limit(args.limit || 10);
+      let query = supabaseAdmin.from('tournaments').select('id,name,game,status,format,max_teams,schedule,total_cost,prizepool_total,sponsorship_enabled').order('created_at', { ascending: false }).limit(args.limit || 10);
       if (args.status) query = query.eq('status', args.status);
       if (args.game) query = query.ilike('game', `%${args.game}%`);
       const { data, error } = await query;
