@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { useAuth } from '@/lib/AuthContext';
 import { apiCall } from '@/api/heruClient';
+import GamerLayout from '@/components/layouts/GamerLayout';
 import { Users, UserPlus, Check, X, Search, Loader2, Clock, MessageSquare, User2 } from 'lucide-react';
 
 function debounce(fn, ms) {
@@ -84,7 +85,8 @@ export default function GamerFriends() {
   ];
 
   return (
-    <div className="max-w-2xl">
+    <GamerLayout>
+    <div className="max-w-2xl mx-auto p-4 sm:p-6">
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-xl font-black text-white">Friends</h2>
         <div className="flex gap-1 bg-zinc-800 rounded-lg p-1">
@@ -229,5 +231,6 @@ export default function GamerFriends() {
         </div>
       )}
     </div>
+    </GamerLayout>
   );
 }
