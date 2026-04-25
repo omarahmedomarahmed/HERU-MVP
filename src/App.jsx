@@ -3,12 +3,12 @@ import { QueryClientProvider } from '@tanstack/react-query'
 import { queryClientInstance } from '@/lib/query-client'
 import NavigationTracker from '@/lib/NavigationTracker'
 import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom'
-import NotFound from './pages/NotFound'
+import NotFound from './pages/public/NotFound'
 import { AuthProvider } from '@/lib/AuthContext'
 import { RequireGamer, RequireOrganizer, RequireSponsor, RequireProvider, RequireStaff } from '@/lib/auth-guards'
 
 // Auth pages
-import AuthChoice from './pages/AuthChoice'
+import AuthChoice from './pages/public/AuthChoice'
 import GamerAuthLogin from './pages/auth/GamerAuthLogin'
 import GamerAuthRegister from './pages/auth/GamerAuthRegister'
 import OrganizerAuthLogin from './pages/auth/OrganizerAuthLogin'
@@ -22,25 +22,24 @@ import ForgotPassword from './pages/auth/ForgotPassword'
 import ResetPassword from './pages/auth/ResetPassword'
 
 // Public pages
-import Home from './pages/Home'
-import Tournaments from './pages/Tournaments'
-import TournamentPublic from './pages/TournamentPublic'
-import Teams from './pages/Teams'
-import TeamProfile from './pages/TeamProfile'
-import OrganizerPublicProfile from './pages/OrganizerPublicProfile'
+import Home from './pages/public/Home'
+import Tournaments from './pages/public/Tournaments'
+import TournamentPublic from './pages/public/TournamentPublic'
+import Teams from './pages/public/Teams'
+import TeamProfile from './pages/public/TeamProfile'
+import OrganizerPublicProfile from './pages/public/OrganizerPublicProfile'
 import GamerDetail from './pages/gamer/GamerDetail'
-import SponsorshipRadar from './pages/SponsorshipRadar'
 import ProviderPublicProfile from './pages/provider/ProviderPublicProfile'
-import ForGamers from './pages/ForGamers'
-import ForOrganizers from './pages/ForOrganizers'
-import ForSponsors from './pages/ForSponsors'
-import ForProviders from './pages/ForProviders'
+import ForGamers from './pages/public/ForGamers'
+import ForOrganizers from './pages/public/ForOrganizers'
+import ForSponsors from './pages/public/ForSponsors'
+import ForProviders from './pages/public/ForProviders'
 
 // Public discovery pages
-import Coaches from './pages/Coaches'
-import CoachProfile from './pages/CoachProfile'
-import Leaderboards from './pages/Leaderboards'
-import Influencers from './pages/Influencers'
+import Coaches from './pages/public/Coaches'
+import CoachProfile from './pages/public/CoachProfile'
+import Leaderboards from './pages/public/Leaderboards'
+import Influencers from './pages/public/Influencers'
 
 // Gamer pages
 import GamerHome from './pages/gamer/GamerHome'
@@ -51,7 +50,7 @@ import TeamDetails from './pages/gamer/TeamDetails'
 import MyOrders from './pages/gamer/MyOrders'
 import GamerOrderDetail from './pages/gamer/GamerOrderDetail'
 import GamerNotifications from './pages/gamer/GamerNotifications'
-import TournamentDetails from './pages/TournamentDetails'
+import TournamentDetails from './pages/gamer/TournamentDetails'
 import Arena from './pages/gamer/Arena'
 import GamerBilling from './pages/gamer/GamerBilling'
 import BillDetail from './pages/gamer/BillDetail'
@@ -64,18 +63,18 @@ import GamerMessages from './pages/gamer/GamerMessages'
 import OrganizerLayout from '@/components/layouts/OrganizerLayout'
 import OrganizerDashboard from './pages/organizer/OrganizerDashboard'
 import OrganizerTournaments from './pages/organizer/OrganizerTournaments'
-import TournamentBuilder from './pages/TournamentBuilder'
+import TournamentBuilder from './pages/organizer/TournamentBuilder'
 import OrgTournamentManage from './pages/organizer/TournamentManage'
 import OrganizerProfile from './pages/organizer/OrganizerProfile'
 import OrganizerTeams from './pages/organizer/OrganizerTeams'
 import OrganizerMessages from './pages/organizer/OrganizerMessages'
-import OrganizerRadarPage from './pages/organizer/OrganizerRadar'
+
 import OrganizerVerification from './pages/organizer/OrganizerVerification'
 import OrganizerBilling from './pages/organizer/OrganizerBilling'
 import PaymentMethod from './pages/organizer/PaymentMethod'
 import TournamentSummaryReport from './pages/organizer/TournamentSummaryReport'
 import TournamentReportBuilder from './pages/organizer/TournamentReportBuilder'
-import VenueSubmissions from './pages/organizer/VenueSubmissions'
+
 
 // Sponsor pages
 import SponsorLayout from '@/components/layouts/SponsorLayout'
@@ -123,7 +122,7 @@ import StaffAnalytics from './pages/staff/StaffAnalytics'
 import StaffPlatformControl from './pages/staff/StaffPlatformControl'
 import StaffManagedProjects from './pages/staff/StaffManagedProjects'
 import StaffBadges from './pages/staff/StaffBadges'
-import StaffVenues from './pages/staff/StaffVenues'
+
 import StaffAuditTrail from './pages/staff/StaffAuditTrail'
 import StaffGamers from './pages/staff/StaffGamers'
 import StaffTeams from './pages/staff/StaffTeams'
@@ -143,7 +142,7 @@ function App() {
             <Route path="/teams" element={<Teams />} />
             <Route path="/teams/:id" element={<TeamProfile />} />
             <Route path="/organizer/:id" element={<OrganizerPublicProfile />} />
-            <Route path="/radar" element={<SponsorshipRadar />} />
+
             <Route path="/coaches" element={<Coaches />} />
             <Route path="/coaches/:id" element={<CoachProfile />} />
             <Route path="/leaderboards" element={<Leaderboards />} />
@@ -202,14 +201,14 @@ function App() {
             <Route path="/organizer/tournaments/:id/manage/brackets" element={<RequireOrganizer><OrganizerLayout><OrgTournamentManage defaultTab="brackets" /></OrganizerLayout></RequireOrganizer>} />
             <Route path="/organizer/tournaments/:id/manage/chat" element={<RequireOrganizer><OrganizerLayout><OrgTournamentManage defaultTab="chat" /></OrganizerLayout></RequireOrganizer>} />
             <Route path="/organizer/tournaments/:id/manage/settings" element={<RequireOrganizer><OrganizerLayout><OrgTournamentManage defaultTab="report" /></OrganizerLayout></RequireOrganizer>} />
-            <Route path="/organizer/radar" element={<RequireOrganizer><OrganizerLayout><OrganizerRadarPage /></OrganizerLayout></RequireOrganizer>} />
+
             <Route path="/organizer/billing" element={<RequireOrganizer><OrganizerLayout><OrganizerBilling /></OrganizerLayout></RequireOrganizer>} />
             <Route path="/organizer/billing/payment-method" element={<RequireOrganizer><OrganizerLayout><PaymentMethod /></OrganizerLayout></RequireOrganizer>} />
             <Route path="/organizer/billing/:bill_number" element={<RequireOrganizer><OrganizerLayout><BillDetail /></OrganizerLayout></RequireOrganizer>} />
             <Route path="/organizer/teams" element={<RequireOrganizer><OrganizerLayout><OrganizerTeams /></OrganizerLayout></RequireOrganizer>} />
             <Route path="/organizer/messages" element={<RequireOrganizer><OrganizerLayout><OrganizerMessages /></OrganizerLayout></RequireOrganizer>} />
             <Route path="/organizer/profile" element={<RequireOrganizer><OrganizerLayout><OrganizerProfile /></OrganizerLayout></RequireOrganizer>} />
-            <Route path="/organizer/venues" element={<RequireOrganizer><OrganizerLayout><VenueSubmissions /></OrganizerLayout></RequireOrganizer>} />
+
             <Route path="/organizer/verification" element={<RequireOrganizer><OrganizerVerification /></RequireOrganizer>} />
 
             {/* ============ SPONSOR ZONE ============ */}
@@ -254,7 +253,7 @@ function App() {
             <Route path="/staff/revenue" element={<RequireStaff><StaffLayout><StaffRevenue /></StaffLayout></RequireStaff>} />
             <Route path="/staff/settings" element={<RequireStaff><StaffLayout><StaffSettings /></StaffLayout></RequireStaff>} />
             <Route path="/staff/badges" element={<RequireStaff><StaffLayout><StaffBadges /></StaffLayout></RequireStaff>} />
-            <Route path="/staff/venues" element={<RequireStaff><StaffLayout><StaffVenues /></StaffLayout></RequireStaff>} />
+
             <Route path="/staff/audit" element={<RequireStaff><StaffLayout><StaffAuditTrail /></StaffLayout></RequireStaff>} />
             <Route path="/staff/gamers" element={<RequireStaff><StaffLayout><StaffGamers /></StaffLayout></RequireStaff>} />
             <Route path="/staff/teams" element={<RequireStaff><StaffLayout><StaffTeams /></StaffLayout></RequireStaff>} />
