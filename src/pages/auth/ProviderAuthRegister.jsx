@@ -4,7 +4,7 @@ import AnimatedBackground from '@/components/shared/AnimatedBackground';
 import HeruLogo from '@/components/shared/HeruLogo';
 import FloatingPanel from '@/components/ui/FloatingPanel';
 import { Input } from '@/components/ui/input';
-import { Briefcase, AlertTriangle } from 'lucide-react';
+import { Briefcase, AlertTriangle, ArrowLeft } from 'lucide-react';
 import { useAuth } from '@/lib/AuthContext';
 
 const CATEGORIES = [
@@ -44,10 +44,13 @@ export default function ProviderAuthRegister() {
     <div className="min-h-screen flex items-center justify-center p-4">
       <AnimatedBackground />
       <div className="w-full max-w-lg">
-        <div className="flex justify-center mb-8"><HeruLogo className="h-10" /></div>
+        <Link to="/" className="inline-flex items-center gap-2 text-gray-400 hover:text-cyan-400 mb-6 transition-colors">
+          <ArrowLeft className="w-4 h-4" /> Back to Home
+        </Link>
+        <div className="flex justify-center mb-6"><HeruLogo className="h-10" /></div>
         <FloatingPanel className="p-8">
           <div className="flex items-center gap-3 mb-6">
-            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-600 to-emerald-800 flex items-center justify-center"><Briefcase className="w-6 h-6 text-white" /></div>
+            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-cyan-500 to-cyan-700 flex items-center justify-center"><Briefcase className="w-6 h-6 text-white" /></div>
             <div><h1 className="text-xl font-bold text-white">Register as Service Provider</h1><p className="text-gray-400 text-sm">Get booked by tournament organizers</p></div>
           </div>
           {error && (<div className="flex items-start gap-2 p-3 rounded-lg bg-red-500/10 border border-red-500/30 mb-5"><AlertTriangle className="w-4 h-4 text-red-400 mt-0.5 flex-shrink-0" /><p className="text-red-400 text-sm">{error}</p></div>)}
@@ -61,8 +64,8 @@ export default function ProviderAuthRegister() {
               <label className="text-sm text-gray-400 mb-2 block">Service Categories * (select all that apply)</label>
               <div className="grid grid-cols-1 gap-2">
                 {CATEGORIES.map(cat => (
-                  <button key={cat.id} type="button" onClick={() => toggleCategory(cat.id)} className={`flex items-center gap-3 px-4 py-2.5 rounded-lg border text-sm text-left transition-all ${selectedCategories.includes(cat.id) ? 'bg-emerald-500/20 border-emerald-500/50 text-emerald-300' : 'bg-white/5 border-white/10 text-gray-400 hover:border-white/20'}`}>
-                    <div className={`w-4 h-4 rounded border flex-shrink-0 flex items-center justify-center ${selectedCategories.includes(cat.id) ? 'bg-emerald-500 border-emerald-500' : 'border-white/20'}`}>{selectedCategories.includes(cat.id) && <span className="text-white text-xs">✓</span>}</div>
+                  <button key={cat.id} type="button" onClick={() => toggleCategory(cat.id)} className={`flex items-center gap-3 px-4 py-2.5 rounded-lg border text-sm text-left transition-all ${selectedCategories.includes(cat.id) ? 'bg-cyan-500/20 border-cyan-500/50 text-cyan-300' : 'bg-white/5 border-white/10 text-gray-400 hover:border-white/20'}`}>
+                    <div className={`w-4 h-4 rounded border flex-shrink-0 flex items-center justify-center ${selectedCategories.includes(cat.id) ? 'bg-cyan-500 border-cyan-500' : 'border-white/20'}`}>{selectedCategories.includes(cat.id) && <span className="text-white text-xs">✓</span>}</div>
                     {cat.label}
                   </button>
                 ))}
@@ -73,10 +76,10 @@ export default function ProviderAuthRegister() {
               <div><label className="text-sm text-gray-400 mb-1.5 block">Confirm Password *</label><Input type="password" value={form.confirmPassword} onChange={set('confirmPassword')} placeholder="Repeat" className="bg-white/5 border-white/10 text-white placeholder:text-gray-600" required /></div>
             </div>
             <p className="text-xs text-gray-500">After registering, your account will be reviewed by HERU staff before your services are visible to organizers.</p>
-            <button type="submit" disabled={loading} className="w-full py-2.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-medium transition-colors disabled:opacity-50">{loading ? 'Creating account...' : 'Create Provider Account'}</button>
+            <button type="submit" disabled={loading} className="w-full py-2.5 rounded-lg bg-cyan-500 hover:bg-cyan-400 text-white font-medium transition-colors disabled:opacity-50">{loading ? 'Creating account...' : 'Create Provider Account'}</button>
           </form>
           <div className="mt-5 text-center space-y-2">
-            <p className="text-gray-500 text-sm">Already have an account? <Link to="/auth/provider/login" className="text-emerald-400 hover:text-emerald-300">Sign in</Link></p>
+            <p className="text-gray-500 text-sm">Already have an account? <Link to="/auth/provider/login" className="text-cyan-400 hover:text-cyan-300">Sign in</Link></p>
             <Link to="/auth" className="text-gray-600 hover:text-gray-500 text-xs block">← Back to account types</Link>
           </div>
         </FloatingPanel>

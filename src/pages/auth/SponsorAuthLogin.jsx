@@ -4,7 +4,7 @@ import AnimatedBackground from '@/components/shared/AnimatedBackground';
 import HeruLogo from '@/components/shared/HeruLogo';
 import FloatingPanel from '@/components/ui/FloatingPanel';
 import { Input } from '@/components/ui/input';
-import { TrendingUp, Eye, EyeOff, LogIn, AlertTriangle } from 'lucide-react';
+import { TrendingUp, Eye, EyeOff, LogIn, AlertTriangle, ArrowLeft } from 'lucide-react';
 import { useAuth } from '@/lib/AuthContext';
 
 export default function SponsorAuthLogin() {
@@ -46,13 +46,14 @@ export default function SponsorAuthLogin() {
     <div className="min-h-screen flex items-center justify-center p-4">
       <AnimatedBackground />
       <div className="w-full max-w-md">
-        <div className="flex justify-center mb-8">
-          <HeruLogo className="h-10" />
-        </div>
+        <Link to="/" className="inline-flex items-center gap-2 text-gray-400 hover:text-yellow-400 mb-6 transition-colors">
+          <ArrowLeft className="w-4 h-4" /> Back to Home
+        </Link>
+        <div className="flex justify-center mb-6"><HeruLogo className="h-10" /></div>
         <FloatingPanel className="p-8">
           <div className="flex items-center gap-3 mb-6">
-            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-600 to-blue-800 flex items-center justify-center">
-              <TrendingUp className="w-6 h-6 text-white" />
+            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-yellow-500 to-yellow-700 flex items-center justify-center">
+              <TrendingUp className="w-6 h-6 text-black" />
             </div>
             <div>
               <h1 className="text-xl font-bold text-white">Sponsor Login</h1>
@@ -79,7 +80,7 @@ export default function SponsorAuthLogin() {
                 </button>
               </div>
             </div>
-            <button type="submit" disabled={loading} className="w-full flex items-center justify-center gap-2 py-2.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-medium transition-colors disabled:opacity-50">
+            <button type="submit" disabled={loading} className="w-full flex items-center justify-center gap-2 py-2.5 rounded-lg bg-yellow-500 hover:bg-yellow-400 text-black font-bold transition-colors disabled:opacity-50">
               {loading ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <LogIn className="w-4 h-4" />}
               {loading ? 'Signing in...' : 'Sign In'}
             </button>

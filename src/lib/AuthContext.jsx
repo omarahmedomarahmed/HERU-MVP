@@ -147,7 +147,12 @@ export const AuthProvider = ({ children }) => {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, password, ...profileData }),
     })
-    const result = await res.json()
+    if (res.status === 502 || res.status === 503 || res.status === 504) {
+      const msg = 'Server is temporarily unavailable. Please try again shortly.'
+      setAuthError(msg)
+      throw new Error(msg)
+    }
+    const result = await res.json().catch(() => ({ error: 'Invalid server response' }))
     if (!res.ok) {
       const msg = result.error || 'Registration failed'
       setAuthError(msg)
@@ -170,7 +175,10 @@ export const AuthProvider = ({ children }) => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password, access_key }),
       })
-      const result = await res.json()
+      if (res.status === 502 || res.status === 503 || res.status === 504) {
+        throw new Error('Server is temporarily unavailable. Please try again shortly.')
+      }
+      const result = await res.json().catch(() => ({ error: 'Invalid server response' }))
       if (!res.ok) throw new Error(result.error || 'Staff login failed')
       localStorage.setItem('heru_staff_token', result.staff_session.session_token)
       localStorage.setItem('heru_staff_expires', result.staff_session.expires_at)
