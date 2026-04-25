@@ -65,8 +65,14 @@ JWT_SECRET=any-random-string-for-local-dev
 
 1. Go to [supabase.com](https://supabase.com), create a project
 2. Open SQL Editor
-3. Run migration files in order from `supabase/migrations/`
-4. Run `supabase/seed/seed.sql` to load demo data
+3. Run the canonical fresh schema files in order (skip 001–022 which are legacy):
+   - `100_fresh_schema_core.sql`
+   - `101_fresh_schema_gamers.sql`
+   - `102_fresh_schema_organizers.sql`
+   - `103_fresh_schema_providers.sql`
+   - `104_fresh_schema_sponsors.sql`
+   - `105_fresh_schema_rls.sql`
+4. Run `supabase/seed/seed.sql` to load demo data (optional)
 
 **Option B — Local Supabase**
 
