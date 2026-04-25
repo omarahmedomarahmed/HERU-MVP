@@ -27,7 +27,7 @@ const NAV = [
       { to: '/staff/gamers',            icon: Gamepad2,    text: 'Gamers'           },
       { to: '/staff/teams',             icon: UsersRound,  text: 'Teams'            },
       { to: '/staff/organizers',        icon: Building2,   text: 'Organizers'       },
-      { to: '/staff/gigs',              icon: Briefcase,   text: 'Gig Requests'     },
+      { to: '/staff/services',              icon: Briefcase,   text: 'Gig Requests'     },
     ],
   },
   {
@@ -67,7 +67,7 @@ export default function StaffLayout({ children }) {
 
   const active = (path) => location.pathname === path || location.pathname.startsWith(path + '/')
 
-  const logout = () => { clearStaffSession(); navigate('/admin') }
+  const logout = () => { clearStaffSession(); navigate('/') }
 
   const toggleSection = (label) =>
     setExpandedSections(p => ({ ...p, [label]: !p[label] }))

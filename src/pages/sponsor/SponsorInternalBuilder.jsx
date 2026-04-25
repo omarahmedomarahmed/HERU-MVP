@@ -79,7 +79,7 @@ export default function SponsorInternalBuilder() {
         schedule: form.date,
         notes: form.notes,
         status: 'draft',
-        on_radar: false,
+        sponsorship_enabled: false,
       },
     }),
     onSuccess: (data) => {

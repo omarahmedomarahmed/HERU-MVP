@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
+import GamerLayout from '@/components/layouts/GamerLayout';
 
 const REGIONS = [
   { value: 'euw1', label: 'EUW (Europe West)' },
@@ -251,7 +252,8 @@ export default function ConnectedAccounts() {
   const isComplete = status?.is_complete;
 
   return (
-    <div className="min-h-screen bg-gray-950 text-white">
+    <GamerLayout>
+    <div className="min-h-screen text-white">
       {toast && (
         <div className={`fixed top-4 right-4 z-50 px-4 py-3 rounded-xl text-sm font-medium shadow-lg ${toast.startsWith('❌') ? 'bg-red-600' : 'bg-green-600'}`}>
           {toast}
@@ -384,5 +386,6 @@ export default function ConnectedAccounts() {
         <LinkRiotModal game={linking} onClose={() => setLinking(null)} onLink={linkRiot} />
       )}
     </div>
+    </GamerLayout>
   );
 }

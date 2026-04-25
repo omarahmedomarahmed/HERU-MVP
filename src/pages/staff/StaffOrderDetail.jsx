@@ -1,7 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import StaffLayout from '@/components/layouts/StaffLayout';
 import { apiCall } from '@/api/heruClient';
 import {
   ArrowLeft, Package, Clock, Send, User, MessageSquare,
@@ -146,19 +145,19 @@ export default function StaffOrderDetail() {
   // Loading
   if (isLoading) {
     return (
-      <StaffLayout>
+      <div>
         <div className="flex items-center justify-center py-20">
           <Loader2 className="w-6 h-6 text-gray-400 animate-spin" />
           <span className="ml-2 text-sm text-gray-400">Loading order...</span>
         </div>
-      </StaffLayout>
+      </div>
     );
   }
 
   // Not found
   if (!order) {
     return (
-      <StaffLayout>
+      <div>
         <div className="text-center py-20">
           <Package className="w-12 h-12 text-gray-300 mx-auto mb-3" />
           <p className="text-gray-500 font-medium">Order not found</p>
@@ -170,12 +169,12 @@ export default function StaffOrderDetail() {
             Back to orders
           </Link>
         </div>
-      </StaffLayout>
+      </div>
     );
   }
 
   return (
-    <StaffLayout>
+    <div>
       <div>
         {/* Header */}
         <div className="flex items-center gap-3 mb-6">
@@ -406,6 +405,6 @@ export default function StaffOrderDetail() {
           </div>
         </div>
       </div>
-    </StaffLayout>
+    </div>
   );
 }

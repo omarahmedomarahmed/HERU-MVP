@@ -1,7 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import StaffLayout from '@/components/layouts/StaffLayout';
 import { apiCall } from '@/api/heruClient';
 import { Users, Trophy, TrendingUp, BarChart3, Briefcase, Star } from 'lucide-react';
 
@@ -75,7 +74,7 @@ export default function StaffAnalytics() {
   ).sort((a, b) => b[1] - a[1]).slice(0, 5);
 
   return (
-    <StaffLayout>
+    <div>
       <div>
         <div className="mb-6">
           <h1 className="text-2xl font-bold text-gray-900">Analytics</h1>
@@ -164,6 +163,6 @@ export default function StaffAnalytics() {
           </div>
         </div>
       </div>
-    </StaffLayout>
+    </div>
   );
 }

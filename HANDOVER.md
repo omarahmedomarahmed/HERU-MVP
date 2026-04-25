@@ -12,10 +12,10 @@ Four products, one platform:
 
 | Product | Audience | Dashboard |
 |---------|----------|-----------|
-| **HERU Arena** | Gamers | `/gamer/home` |
-| **HERU Organizer** | Tournament organizers | `/organizer/dashboard` |
-| **HERU Sponsor** | Brand sponsors | `/sponsor/dashboard` |
-| **HERU Services** | Service providers | `/provider/dashboard` |
+| **HERU ARENA** | Gamers | `/gamer/home` |
+| **HERU BUILDER** | Tournament organizers | `/organizer/dashboard` |
+| **HERU RADAR** | Brand sponsors | `/sponsor/dashboard` |
+| **HERU GIGS** | Service providers | `/provider/dashboard` |
 
 Revenue model: **15% platform fee** on all transactions (sponsorships, service bookings, coaching). Subscription revenue is 100% HERU.
 
@@ -136,8 +136,10 @@ Organizer books provider
 ### Sponsor Subscription
 ```
 Free:       Radar browsing + 1 active sponsorship
-Pro:        Unlimited sponsorships + influencer hub + managed projects
-Enterprise: Everything + Internal Campaign Builder + consultant access
+Starter:    EGP 150,000/mo — unlimited sponsorships
+Growth:     EGP 250,000/mo — + influencer hub + managed projects
+Premium:    EGP 500,000/mo — + Internal Campaign Builder + consultant access
+Annual:     1.5M / 2.5M / 5M EGP/year
 ```
 
 ---
@@ -153,7 +155,9 @@ All business-critical assumptions are configurable. Here's how:
 
 ### Change Subscription Prices
 1. **Staff Settings page** → Platform Assumptions → Subscription Pricing
-2. OR: Update `app_settings` table keys: `subscription_pro_price`, `subscription_enterprise_price`
+2. OR: Update `PLAN_PRICES` in `backend/src/routes/subscriptions.js`
+3. Plans: `starter` (EGP 150K/mo), `growth` (EGP 250K/mo), `premium` (EGP 500K/mo)
+4. Legacy aliases `pro` and `enterprise` still accepted by the backend
 
 ### Add a New Service Category
 1. Add to the categories array in `ProviderAuthRegister.jsx` and `ProviderServiceNew.jsx`

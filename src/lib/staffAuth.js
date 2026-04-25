@@ -102,6 +102,6 @@ export async function logoutStaff(navigate) {
   clearStaffSession()
 
   if (navigate) {
-    navigate('/admin', { replace: true })
+    navigate('/', { replace: true })
   }
 }

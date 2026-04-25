@@ -226,22 +226,25 @@ router.post('/portfolio', requireAuth, requireProvider, async (req, res) => {
 
     if (!title) return res.status(400).json({ error: 'title is required' });
 
+    const insertData = {
+      provider_id: profile.id,
+      service_id: service_id || null,
+      title,
+      description: description || '',
+      image_url: image_url || null,
+      video_url: video_url || null,
+      tournament_name: tournament_name || null,
+    };
+    // Extended fields added in migration 107 — include only if provided
+    if (type !== undefined) insertData.type = type || 'general';
+    if (client_name !== undefined) insertData.client_name = client_name || null;
+    if (deliverables !== undefined) insertData.deliverables = Array.isArray(deliverables) ? deliverables : [];
+    if (links !== undefined) insertData.links = Array.isArray(links) ? links : [];
+    if (testimonial !== undefined) insertData.testimonial = testimonial || null;
+
     const { data, error } = await supabaseAdmin
       .from('provider_portfolio_items')
-      .insert({
-        provider_id: profile.id,
-        service_id: service_id || null,
-        title,
-        description: description || '',
-        image_url: image_url || null,
-        video_url: video_url || null,
-        tournament_name: tournament_name || null,
-        type: type || 'general',
-        client_name: client_name || null,
-        deliverables: Array.isArray(deliverables) ? deliverables : [],
-        links: Array.isArray(links) ? links : [],
-        testimonial: testimonial || null,
-      })
+      .insert(insertData)
       .select()
       .single();
 

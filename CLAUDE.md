@@ -16,7 +16,7 @@ HERU.gg is a **four-sided esports marketplace** for the MENA region (Egypt, Saud
 **Platform Revenue: 15% fee on all transactions**
 - 15% of every service booking (held in escrow until organizer confirms delivery)
 - 15% of every sponsorship package purchase
-- Subscription MRR from Pro/Enterprise sponsor plans
+- Subscription MRR from Starter/Growth/Premium sponsor plans (EGP 150K/250K/500K per month)
 - All tracked in `heru_revenue_ledger`
 
 ---
@@ -174,7 +174,7 @@ Staff access keys: `HERU-STAFF-OMAR-2026`, `HERU-STAFF-OPS-2026`
 
 ## DATABASE MIGRATIONS
 
-Migrations are in `/supabase/migrations/`. The canonical fresh schema is in files `100–105`:
+Migrations are in `/supabase/migrations/`. Apply these in order on a fresh install:
 
 | File | Contents |
 |------|----------|
@@ -184,8 +184,11 @@ Migrations are in `/supabase/migrations/`. The canonical fresh schema is in file
 | `103_fresh_schema_providers.sql` | service_provider_profiles, services, service_bookings, coaching_sessions, reviews, portfolio items |
 | `104_fresh_schema_sponsors.sql` | sponsor_profiles, subscriptions, sponsorship_packages, sponsorships, managed_service_projects, heru_revenue_ledger |
 | `105_fresh_schema_rls.sql` | Row Level Security policies (Supabase-specific) |
+| `106_schema_updates.sql` | Adds Influencer category, custom_fields to services, fixes provider_type constraint |
+| `107_provider_slug_portfolio.sql` | Provider slug + enhanced portfolio fields (type, client_name, deliverables, links, testimonial) |
+| `108_internal_tournaments.sql` | is_internal flag for corporate/invite-only tournaments |
 
-Files `001–022` are legacy migrations from before the platform pivot — ignore them on fresh installs.
+Legacy files `001–022` have been removed — they were pre-pivot and should never be applied.
 
 For migrating to a different database: see `DATABASE_MIGRATION.md`.
 For migrating to a different auth provider: see `AUTH_MIGRATION.md`.

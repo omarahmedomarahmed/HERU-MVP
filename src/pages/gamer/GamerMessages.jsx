@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/lib/AuthContext';
 import { apiCall } from '@/api/heruClient';
+import GamerLayout from '@/components/layouts/GamerLayout';
 import { Send, MessageCircle, Loader2 } from 'lucide-react';
 
 export default function GamerMessages() {
@@ -50,7 +51,9 @@ export default function GamerMessages() {
   }
 
   return (
-    <div className="h-[600px] flex rounded-2xl overflow-hidden border border-zinc-800 bg-zinc-900">
+    <GamerLayout>
+    <div className="max-w-5xl mx-auto p-4 sm:p-6">
+    <div className="h-[calc(100vh-180px)] flex rounded-2xl overflow-hidden border border-zinc-800 bg-zinc-900">
       {/* Sidebar */}
       <div className="w-64 flex-shrink-0 border-r border-zinc-800 flex flex-col">
         <div className="p-4 border-b border-zinc-800">
@@ -137,5 +140,7 @@ export default function GamerMessages() {
         )}
       </div>
     </div>
+    </div>
+    </GamerLayout>
   );
 }

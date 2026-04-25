@@ -35,20 +35,73 @@ router.get('/requests', requireAuth, async (req, res) => {
   }
 });
 
-// GET /api/friends/search — search users to add as friends
+// GET /api/friends/search — search users by name, gamer tag, or Riot account
 router.get('/search', requireAuth, async (req, res) => {
   try {
     const { q } = req.query;
     if (!q || q.length < 2) return res.json({ users: [] });
-    const { data, error } = await supabaseAdmin
+
+    const userMap = new Map();
+
+    // 1. Search user_profiles by full_name
+    const { data: byName } = await supabaseAdmin
       .from('user_profiles')
       .select('id, full_name, avatar_url, role')
       .ilike('full_name', `%${q}%`)
       .neq('id', req.user.id)
       .in('role', ['gamer'])
       .limit(10);
-    if (error) throw error;
-    res.json({ users: data || [] });
+    (byName || []).forEach(u => userMap.set(u.id, { ...u, match_source: 'name' }));
+
+    // 2. Search gamer_profiles by username
+    const { data: byUsername } = await supabaseAdmin
+      .from('gamer_profiles')
+      .select('user_id, username, avatar')
+      .ilike('username', `%${q}%`)
+      .neq('user_id', req.user.id)
+      .limit(10);
+    if (byUsername?.length) {
+      const gpUserIds = byUsername.map(g => g.user_id);
+      const { data: gpProfiles } = await supabaseAdmin
+        .from('user_profiles')
+        .select('id, full_name, avatar_url, role')
+        .in('id', gpUserIds)
+        .in('role', ['gamer']);
+      (gpProfiles || []).forEach(u => {
+        const gp = byUsername.find(g => g.user_id === u.id);
+        userMap.set(u.id, { ...u, username: gp?.username, avatar_url: gp?.avatar || u.avatar_url, match_source: 'gamer_tag' });
+      });
+    }
+
+    // 3. Search connected_accounts by Riot game_name (supports "Name#TAG" pattern)
+    const riotQuery = q.includes('#') ? q.split('#')[0] : q;
+    const { data: byRiot } = await supabaseAdmin
+      .from('connected_accounts')
+      .select('user_id, game_name, tag_line, rank_tier, game_key')
+      .ilike('game_name', `%${riotQuery}%`)
+      .neq('user_id', req.user.id)
+      .limit(10);
+    if (byRiot?.length) {
+      const riotUserIds = [...new Set(byRiot.map(r => r.user_id))];
+      const { data: riotProfiles } = await supabaseAdmin
+        .from('user_profiles')
+        .select('id, full_name, avatar_url, role')
+        .in('id', riotUserIds)
+        .in('role', ['gamer']);
+      (riotProfiles || []).forEach(u => {
+        if (!userMap.has(u.id)) {
+          const acc = byRiot.find(r => r.user_id === u.id);
+          userMap.set(u.id, {
+            ...u,
+            riot_id: acc ? `${acc.game_name}#${acc.tag_line}` : null,
+            riot_rank: acc?.rank_tier || null,
+            match_source: 'riot_account',
+          });
+        }
+      });
+    }
+
+    res.json({ users: [...userMap.values()] });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

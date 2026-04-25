@@ -199,7 +199,7 @@ export default function OrganizerTournaments() {
 
   const goToTournament = (tournament) => {
     if (tournament.status === 'draft') {
-      navigate(`/organizer/tournaments/new?edit=${tournament.id}`)
+      navigate(`/organizer/tournaments/new/${tournament.id}`)
     } else {
       navigate(`/organizer/tournaments/${tournament.id}/manage`)
     }

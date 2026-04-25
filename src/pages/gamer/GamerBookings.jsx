@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { useAuth } from '@/lib/AuthContext';
 import { apiCall } from '@/api/heruClient';
+import GamerLayout from '@/components/layouts/GamerLayout';
 import { Calendar, Star, CheckCircle, Clock, XCircle, Loader2 } from 'lucide-react';
 
 function formatEGP(n) { return `EGP ${(n || 0).toLocaleString()}`; }
@@ -55,7 +56,8 @@ export default function GamerBookings() {
   }
 
   return (
-    <div className="space-y-4">
+    <GamerLayout>
+    <div className="max-w-3xl mx-auto p-4 sm:p-6 space-y-4">
       <div className="flex items-center justify-between mb-2">
         <h2 className="text-xl font-black text-white">My Coaching Sessions</h2>
         <Link to="/coaches" className="text-sm text-red-400 hover:text-red-300 font-medium">
@@ -109,5 +111,6 @@ export default function GamerBookings() {
         </div>
       ))}
     </div>
+    </GamerLayout>
   );
 }

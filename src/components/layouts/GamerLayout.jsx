@@ -66,6 +66,23 @@ export default function GamerLayout({ children, user: userProp, profile: profile
     return acc;
   }, 0);
 
+  // Unread DM count
+  const { data: dmConversations = [] } = useQuery({
+    queryKey: ['dm-conversations', user?.id],
+    queryFn: async () => {
+      if (!user?.id) return [];
+      const { apiCall } = await import('@/api/heruClient');
+      try {
+        const data = await apiCall('/direct-messages/conversations');
+        return Array.isArray(data) ? data : data?.data || [];
+      } catch { return []; }
+    },
+    enabled: !!user?.id,
+    staleTime: 15_000,
+    refetchInterval: 30_000,
+  });
+  const unreadDMs = dmConversations.filter(c => c.unread_count > 0).length;
+
   // Total alerts driving red dot on Profile nav
   const profileAlerts = pendingTournamentInvites;
 
@@ -74,7 +91,7 @@ export default function GamerLayout({ children, user: userProp, profile: profile
     { icon: Home, label: 'Home', path: '/gamer/home' },
     { icon: Trophy, label: 'Tournaments', path: '/gamer/tournaments' },
     { icon: Users, label: 'Teams', path: '/gamer/teams', badge: pendingTeamRequests },
-    { icon: BookOpen, label: 'Coaching', path: '/gamer/bookings' },
+    { icon: BookOpen, label: 'Coaching', path: '/coaches' },
     { icon: UserPlus, label: 'Friends', path: '/gamer/friends' },
     { icon: MessageSquare, label: 'Messages', path: '/gamer/messages' },
   ];
@@ -137,15 +154,18 @@ export default function GamerLayout({ children, user: userProp, profile: profile
           </div>
 
           <div className="flex items-center gap-2">
-            {/* Placeholder to keep spacing */}
-            <div className="relative hidden md:block">
-              <button
-                className="relative p-2 text-gray-400 hover:text-white transition-colors opacity-0 pointer-events-none"
-              >
-                <span className="w-5 h-5" />
-                )}
-              </button>
-            </div>
+            {/* Messages icon */}
+            <Link
+              to="/gamer/messages"
+              className="relative p-2 text-gray-400 hover:text-white transition-colors hidden md:block"
+            >
+              <MessageSquare className="w-5 h-5" />
+              {unreadDMs > 0 && (
+                <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full text-white text-[10px] flex items-center justify-center font-bold">
+                  {unreadDMs > 9 ? '9+' : unreadDMs}
+                </span>
+              )}
+            </Link>
 
             {/* Notifications Bell */}
             <div className="relative">
@@ -317,7 +337,7 @@ export default function GamerLayout({ children, user: userProp, profile: profile
                     )}
                   </Link>
                   <Link
-                    to={'/gamer/bookings'}
+                    to={'/coaches'}
                     onClick={() => setMobileMenuOpen(false)}
                     className="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-400 hover:text-white hover:bg-white/5"
                   >

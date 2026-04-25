@@ -4,7 +4,14 @@ import { requireAuth } from '../middleware/auth.js';
 import { requireSponsor } from '../middleware/roleGuard.js';
 
 const router = Router();
-const PLAN_PRICES = { pro: { monthly: 299, annual: 2990 }, enterprise: { monthly: 799, annual: 7990 } };
+const PLAN_PRICES = {
+  starter:  { monthly: 150000, annual: 1500000 },
+  growth:   { monthly: 250000, annual: 2500000 },
+  premium:  { monthly: 500000, annual: 5000000 },
+  // legacy aliases kept for existing DB rows
+  pro:        { monthly: 150000, annual: 1500000 },
+  enterprise: { monthly: 500000, annual: 5000000 },
+};
 
 router.get('/me', requireAuth, requireSponsor, async (req, res) => {
   try {
@@ -19,7 +26,7 @@ router.get('/me', requireAuth, requireSponsor, async (req, res) => {
 router.post('/', requireAuth, requireSponsor, async (req, res) => {
   try {
     const { plan, billing_cycle = 'monthly' } = req.body;
-    if (!plan || !PLAN_PRICES[plan]) return res.status(400).json({ error: 'Invalid plan. Choose: pro or enterprise' });
+    if (!plan || !PLAN_PRICES[plan]) return res.status(400).json({ error: 'Invalid plan. Choose: starter, growth, or premium' });
     if (!['monthly','annual'].includes(billing_cycle)) return res.status(400).json({ error: 'billing_cycle must be monthly or annual' });
     await supabaseAdmin.from('subscriptions').update({ status: 'cancelled' }).eq('sponsor_id', req.user.id).eq('status', 'active');
     const amount = PLAN_PRICES[plan][billing_cycle];

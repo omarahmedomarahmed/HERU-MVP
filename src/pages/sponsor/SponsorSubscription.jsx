@@ -210,11 +210,11 @@ export default function SponsorSubscription() {
 
               <div className="mb-5">
                 <span className={`text-2xl font-black ${colorText[plan.color]}`}>
-                  EGP {(price / 1000).toLocaleString()}K
+                  EGP {price >= 1000000 ? (price / 1000000).toLocaleString() + 'M' : (price / 1000).toLocaleString() + 'K'}
                 </span>
                 <span className="text-gray-400 text-sm ml-1">/{billing === 'annual' ? 'year' : 'mo'}</span>
                 {billing === 'annual' && (
-                  <p className="text-xs text-gray-500 mt-1">≈ EGP {Math.round(price / 12 / 1000).toLocaleString()}K /month</p>
+                  <p className="text-xs text-gray-500 mt-1">≈ EGP {Math.round(price / 12) >= 1000000 ? (price / 12 / 1000000).toFixed(2) + 'M' : Math.round(price / 12 / 1000).toLocaleString() + 'K'} /month</p>
                 )}
               </div>
 

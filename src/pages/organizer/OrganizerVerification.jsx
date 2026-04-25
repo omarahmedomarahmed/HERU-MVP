@@ -33,8 +33,17 @@ export default function OrganizerVerification() {
   });
 
   const submitMutation = useMutation({
-    mutationFn: (data) => apiCall('/organizer-verifications', { method: 'POST', body: data }),
+    mutationFn: async (data) => {
+      const res = await apiCall('/organizer-verifications', { method: 'POST', body: data });
+      return res;
+    },
     onSuccess: () => setSubmitted(true),
+    onError: (err) => {
+      // 409 means already pending — treat it as success (show pending state)
+      if (err?.status === 409 || err?.message?.includes('already have a pending')) {
+        setSubmitted(true);
+      }
+    },
   });
 
   const status = verification?.status;

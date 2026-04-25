@@ -5,10 +5,12 @@ import {
   ChevronDown, Menu, X, Trophy, Users, Star, Briefcase,
   ArrowRight, Zap, Target, Shield, TrendingUp, Award, Globe,
   CheckCircle2, DollarSign, BarChart3, Package, Play,
-  Gamepad2, Building2, Sparkles, ChevronRight
+  Gamepad2, Building2, Sparkles, ChevronRight, Medal
 } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
 import HeruLogo from '@/components/shared/HeruLogo';
 import { useAuth } from '@/lib/AuthContext';
+import { apiCall } from '@/api/heruClient';
 
 // ─── Stakeholder data ───
 const PRODUCT_IMAGES = {
@@ -98,6 +100,17 @@ export default function Home() {
   const [pricingTab, setPricingTab] = useState('sponsors');
   const navigate = useNavigate();
   const { isAuthenticated, getDashboardPath, loading } = useAuth();
+
+  const { data: leaderboard = [] } = useQuery({
+    queryKey: ['public-leaderboard'],
+    queryFn: async () => {
+      try {
+        const data = await apiCall('/leaderboards?limit=10');
+        return Array.isArray(data) ? data : data?.entries || data?.data || [];
+      } catch { return []; }
+    },
+    staleTime: 5 * 60 * 1000,
+  });
 
   useEffect(() => {
     if (!loading && isAuthenticated) navigate(getDashboardPath(), { replace: true });
@@ -360,6 +373,58 @@ export default function Home() {
                 <p className="text-gray-400 text-sm leading-relaxed">{step.desc}</p>
               </div>
             ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── LEADERBOARD ── */}
+      <section className="py-24 px-6 bg-zinc-900/30">
+        <div className="max-w-4xl mx-auto">
+          <div className="text-center mb-12">
+            <span className="text-xs font-black uppercase tracking-widest text-red-400 mb-3 block">HERU ARENA</span>
+            <h2 className="text-4xl font-black mb-4">Top Gamers</h2>
+            <p className="text-gray-400">The highest-ranked competitors on HERU across the MENA region</p>
+          </div>
+          <div className="rounded-2xl border border-zinc-800 overflow-hidden">
+            {leaderboard.length === 0 ? (
+              <div className="py-16 text-center">
+                <Trophy className="w-12 h-12 text-zinc-700 mx-auto mb-4" />
+                <p className="text-zinc-500 text-sm">Leaderboard data loading…</p>
+              </div>
+            ) : (
+              <div>
+                {leaderboard.slice(0, 10).map((entry, i) => (
+                  <div
+                    key={entry.id || i}
+                    className={`flex items-center gap-4 px-6 py-4 border-b border-zinc-800/60 last:border-0 hover:bg-zinc-900/50 transition-colors ${i === 0 ? 'bg-yellow-500/5' : i === 1 ? 'bg-zinc-400/5' : i === 2 ? 'bg-amber-700/5' : ''}`}
+                  >
+                    <div className={`w-8 text-center font-black text-sm shrink-0 ${i === 0 ? 'text-yellow-400' : i === 1 ? 'text-zinc-300' : i === 2 ? 'text-amber-600' : 'text-zinc-600'}`}>
+                      {i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `#${i + 1}`}
+                    </div>
+                    <div className="w-10 h-10 rounded-full bg-zinc-800 flex items-center justify-center shrink-0 overflow-hidden">
+                      {entry.avatar_url ? (
+                        <img src={entry.avatar_url} alt="" className="w-full h-full object-cover" />
+                      ) : (
+                        <span className="text-white font-bold text-sm">{(entry.username || entry.gamer_tag || '?').slice(0, 2).toUpperCase()}</span>
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-white font-bold text-sm truncate">{entry.username || entry.gamer_tag || 'Unknown'}</p>
+                      <p className="text-zinc-500 text-xs">{entry.game || 'All Games'}</p>
+                    </div>
+                    <div className="text-right shrink-0">
+                      <p className="text-white font-black">{(entry.score || entry.elo_rating || 0).toLocaleString()}</p>
+                      <p className="text-zinc-600 text-xs">pts</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+          <div className="text-center mt-6">
+            <Link to="/leaderboards" className="inline-flex items-center gap-2 text-sm text-red-400 hover:text-red-300 transition-colors font-medium">
+              View full leaderboard <ChevronRight className="w-4 h-4" />
+            </Link>
           </div>
         </div>
       </section>
