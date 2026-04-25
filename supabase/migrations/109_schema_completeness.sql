@@ -42,11 +42,17 @@ ALTER TABLE teams
   ADD COLUMN IF NOT EXISTS tournament_invites JSONB   DEFAULT '[]',
   ADD COLUMN IF NOT EXISTS updated_at         TIMESTAMPTZ NOT NULL DEFAULT NOW();
 
--- Back-fill leader_id from owner_id for existing rows
-UPDATE teams SET leader_id = owner_id WHERE leader_id IS NULL AND owner_id IS NOT NULL;
-
--- Back-fill members array from owner_id
-UPDATE teams SET members = ARRAY[owner_id] WHERE members = '{}' AND owner_id IS NOT NULL;
+-- Back-fill leader_id and members from owner_id if that column exists
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_name = 'teams' AND column_name = 'owner_id'
+  ) THEN
+    UPDATE teams SET leader_id = owner_id WHERE leader_id IS NULL AND owner_id IS NOT NULL;
+    UPDATE teams SET members = ARRAY[owner_id] WHERE members = '{}' AND owner_id IS NOT NULL;
+  END IF;
+END $$;
 
 CREATE INDEX IF NOT EXISTS idx_teams_leader_id ON teams(leader_id);
 
