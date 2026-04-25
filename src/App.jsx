@@ -71,6 +71,7 @@ import OrganizerMessages from './pages/organizer/OrganizerMessages'
 
 import OrganizerVerification from './pages/organizer/OrganizerVerification'
 import OrganizerBilling from './pages/organizer/OrganizerBilling'
+import OrganizerIncome from './pages/organizer/OrganizerIncome'
 import PaymentMethod from './pages/organizer/PaymentMethod'
 import TournamentSummaryReport from './pages/organizer/TournamentSummaryReport'
 import TournamentReportBuilder from './pages/organizer/TournamentReportBuilder'
@@ -89,6 +90,7 @@ import SponsorManagedServices from './pages/sponsor/SponsorManagedServices'
 import SponsorManagedServiceNew from './pages/sponsor/SponsorManagedServiceNew'
 import SponsorManagedServiceDetail from './pages/sponsor/SponsorManagedServiceDetail'
 import SponsorInfluencers from './pages/sponsor/SponsorInfluencers'
+import SponsorBilling from './pages/sponsor/SponsorBilling'
 
 // Provider pages
 import ProviderLayout from '@/components/layouts/ProviderLayout'
@@ -98,6 +100,7 @@ import ProviderServiceNew from './pages/provider/ProviderServiceNew'
 import ProviderBookings from './pages/provider/ProviderBookings'
 import ProviderBookingDetail from './pages/provider/ProviderBookingDetail'
 import ProviderProfile from './pages/provider/ProviderProfile'
+import ProviderIncome from './pages/provider/ProviderIncome'
 
 // Staff pages
 import StaffLayout from '@/components/layouts/StaffLayout'
@@ -202,6 +205,7 @@ function App() {
             <Route path="/organizer/tournaments/:id/manage/chat" element={<RequireOrganizer><OrganizerLayout><OrgTournamentManage defaultTab="chat" /></OrganizerLayout></RequireOrganizer>} />
             <Route path="/organizer/tournaments/:id/manage/settings" element={<RequireOrganizer><OrganizerLayout><OrgTournamentManage defaultTab="report" /></OrganizerLayout></RequireOrganizer>} />
 
+            <Route path="/organizer/income" element={<RequireOrganizer><OrganizerLayout><OrganizerIncome /></OrganizerLayout></RequireOrganizer>} />
             <Route path="/organizer/billing" element={<RequireOrganizer><OrganizerLayout><OrganizerBilling /></OrganizerLayout></RequireOrganizer>} />
             <Route path="/organizer/billing/payment-method" element={<RequireOrganizer><OrganizerLayout><PaymentMethod /></OrganizerLayout></RequireOrganizer>} />
             <Route path="/organizer/billing/:bill_number" element={<RequireOrganizer><OrganizerLayout><BillDetail /></OrganizerLayout></RequireOrganizer>} />
@@ -223,6 +227,7 @@ function App() {
             <Route path="/sponsor/managed-services/new" element={<RequireSponsor><SponsorLayout><SponsorManagedServiceNew /></SponsorLayout></RequireSponsor>} />
             <Route path="/sponsor/managed-services/:id" element={<RequireSponsor><SponsorLayout><SponsorManagedServiceDetail /></SponsorLayout></RequireSponsor>} />
             <Route path="/sponsor/influencers" element={<RequireSponsor><SponsorLayout><SponsorInfluencers /></SponsorLayout></RequireSponsor>} />
+            <Route path="/sponsor/billing" element={<RequireSponsor><SponsorLayout><SponsorBilling /></SponsorLayout></RequireSponsor>} />
 
             {/* ============ SERVICE PROVIDER ZONE ============ */}
             <Route path="/provider/dashboard" element={<RequireProvider><ProviderLayout><ProviderDashboard /></ProviderLayout></RequireProvider>} />
@@ -231,6 +236,7 @@ function App() {
             <Route path="/provider/bookings" element={<RequireProvider><ProviderLayout><ProviderBookings /></ProviderLayout></RequireProvider>} />
             <Route path="/provider/bookings/:id" element={<RequireProvider><ProviderLayout><ProviderBookingDetail /></ProviderLayout></RequireProvider>} />
             <Route path="/provider/profile" element={<RequireProvider><ProviderLayout><ProviderProfile /></ProviderLayout></RequireProvider>} />
+            <Route path="/provider/income" element={<RequireProvider><ProviderLayout><ProviderIncome /></ProviderLayout></RequireProvider>} />
 
             {/* ============ STAFF ZONE ============ */}
             <Route path="/staff/dashboard" element={<RequireStaff><StaffLayout><StaffDashboard /></StaffLayout></RequireStaff>} />
