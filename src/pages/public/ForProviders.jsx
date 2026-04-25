@@ -50,7 +50,7 @@ export default function ForProviders() {
       <section className="relative max-w-6xl mx-auto px-4 py-20 md:py-28">
         <div className="max-w-2xl">
           <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 text-xs font-bold mb-6">
-            <Briefcase className="w-3.5 h-3.5" /> FOR SERVICE PROVIDERS
+            <Briefcase className="w-3.5 h-3.5" /> HERU GIGS — For Providers
           </div>
           <h1 className="text-5xl md:text-6xl font-black leading-tight mb-6">
             Get Paid to Power{' '}

@@ -50,7 +50,7 @@ export default function ForOrganizers() {
       <section className="relative max-w-6xl mx-auto px-4 py-20 md:py-28">
         <div className="max-w-2xl">
           <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-purple-500/10 border border-purple-500/20 text-purple-400 text-xs font-bold mb-6">
-            <Trophy className="w-3.5 h-3.5" /> FOR ORGANIZERS
+            <Trophy className="w-3.5 h-3.5" /> HERU BUILDER — For Organizers
           </div>
           <h1 className="text-5xl md:text-6xl font-black leading-tight mb-6">
             Build Events That{' '}

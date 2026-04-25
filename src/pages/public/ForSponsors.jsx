@@ -4,7 +4,7 @@ import AnimatedBackground from '@/components/shared/AnimatedBackground';
 import HeruLogo from '@/components/shared/HeruLogo';
 import {
   Star, Package, TrendingUp, Zap, Target, FileText,
-  ArrowRight, CheckCircle, BarChart3,
+  ArrowRight, CheckCircle, BarChart3, Crown,
 } from 'lucide-react';
 
 const HOW_IT_WORKS = [
@@ -17,28 +17,41 @@ const VALUE_PROPS = [
   { icon: Package,    title: 'Structured Packages',     desc: 'Every package has a fixed price, clear deliverables, and expected reach. No negotiation, no surprises.' },
   { icon: Target,     title: 'Verified Organizers',     desc: 'Sponsors only see verified organizers. Verification requires documentation and staff approval.' },
   { icon: FileText,   title: 'Post-Tournament Reports', desc: 'Every sponsorship comes with a post-event report: impressions, reach, clips, photos.' },
-  { icon: TrendingUp, title: 'Subscription Analytics', desc: 'Pro and Enterprise subscribers get full campaign analytics, ROI tracking, and a HERU consultant.' },
+  { icon: TrendingUp, title: 'Corporate Gaming Events', desc: 'Growth and Premium subscribers can create internal gaming tournaments for their teams.' },
 ];
 
 const TIERS = [
   {
-    name: 'Basic',
-    price: 'Free',
+    name: 'Free',
+    price: 'EGP 0',
+    period: '/mo',
     color: 'border-zinc-700',
-    features: ['Browse Radar', 'Buy packages', 'Basic dashboard', 'Post-event report'],
+    features: ['Browse Radar', 'View packages', '1 active sponsorship', 'Basic dashboard'],
+    highlight: false,
   },
   {
-    name: 'Pro',
-    price: 'EGP 999/mo',
-    color: 'border-yellow-500/50',
+    name: 'Starter',
+    price: 'EGP 150K',
+    period: '/mo',
+    color: 'border-yellow-500/40',
+    features: ['5 active sponsorships', 'Full Radar access', 'Analytics dashboard', 'Priority placement', 'Email support'],
+    highlight: false,
+  },
+  {
+    name: 'Growth',
+    price: 'EGP 250K',
+    period: '/mo',
+    color: 'border-yellow-400/60',
+    features: ['15 active sponsorships', 'Everything in Starter', 'Influencer marketplace', 'Corporate gaming events', 'Dedicated support'],
     highlight: true,
-    features: ['Everything in Basic', 'Priority Radar placement', 'Advanced analytics', 'Dedicated account manager'],
   },
   {
-    name: 'Enterprise',
-    price: 'Custom',
-    color: 'border-purple-500/50',
-    features: ['Everything in Pro', 'Custom campaigns', 'HERU managed services', 'Influencer marketplace access'],
+    name: 'Premium',
+    price: 'EGP 500K',
+    period: '/mo',
+    color: 'border-purple-500/40',
+    features: ['Unlimited sponsorships', 'Everything in Growth', 'Managed campaigns', 'HERU Consultant booking', 'Custom reporting'],
+    highlight: false,
   },
 ];
 
@@ -53,7 +66,7 @@ export default function ForSponsors() {
           <div className="flex items-center gap-3">
             <Link to="/auth/sponsor/login" className="text-sm text-gray-400 hover:text-white transition-colors">Sign In</Link>
             <Link to="/auth/sponsor/register" className="px-4 py-2 rounded-lg bg-yellow-500 hover:bg-yellow-400 text-black text-sm font-bold transition-colors">
-              Register as Sponsor
+              Register Brand
             </Link>
           </div>
         </div>
@@ -63,7 +76,7 @@ export default function ForSponsors() {
       <section className="relative max-w-6xl mx-auto px-4 py-20 md:py-28">
         <div className="max-w-2xl">
           <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-yellow-500/10 border border-yellow-500/20 text-yellow-400 text-xs font-bold mb-6">
-            <Star className="w-3.5 h-3.5" /> FOR SPONSORS
+            <Star className="w-3.5 h-3.5" /> HERU RADAR — For Brands
           </div>
           <h1 className="text-5xl md:text-6xl font-black leading-tight mb-6">
             Put Your Brand{' '}
@@ -101,8 +114,8 @@ export default function ForSponsors() {
 
       {/* Value props */}
       <section className="max-w-6xl mx-auto px-4 py-12">
-        <h2 className="text-3xl font-black text-white text-center mb-4">Why Sponsors Choose HERU</h2>
-        <p className="text-gray-400 text-center mb-12 max-w-xl mx-auto">Structured, transparent, measurable.</p>
+        <h2 className="text-3xl font-black text-white text-center mb-4">Why Brands Choose HERU RADAR</h2>
+        <p className="text-gray-400 text-center mb-12 max-w-xl mx-auto">Structured, transparent, measurable esports marketing for the MENA region.</p>
         <div className="grid sm:grid-cols-2 gap-5">
           {VALUE_PROPS.map((vp, i) => (
             <div key={i} className="p-6 rounded-2xl bg-zinc-900 border border-zinc-800 flex gap-4">
@@ -120,35 +133,38 @@ export default function ForSponsors() {
 
       {/* Pricing */}
       <section className="max-w-6xl mx-auto px-4 py-20">
-        <h2 className="text-3xl font-black text-white text-center mb-4">Subscription Plans</h2>
-        <p className="text-gray-400 text-center mb-12 max-w-xl mx-auto">Start free. Upgrade when you need more.</p>
-        <div className="grid md:grid-cols-3 gap-5">
+        <h2 className="text-3xl font-black text-white text-center mb-4">Brand Plans</h2>
+        <p className="text-gray-400 text-center mb-12 max-w-xl mx-auto">Start free. Scale with Starter, Growth, or Premium.</p>
+        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
           {TIERS.map((tier) => (
-            <div key={tier.name} className={`p-6 rounded-2xl bg-zinc-900 border ${tier.color} ${tier.highlight ? 'ring-1 ring-yellow-500/30' : ''}`}>
+            <div key={tier.name} className={`p-6 rounded-2xl bg-zinc-900 border ${tier.color} ${tier.highlight ? 'ring-1 ring-yellow-400/40' : ''}`}>
               {tier.highlight && (
                 <div className="mb-3 inline-flex items-center gap-1 text-xs font-bold px-2 py-0.5 rounded-full bg-yellow-500/20 text-yellow-400">
                   <Star className="w-3 h-3 fill-current" /> Most Popular
                 </div>
               )}
               <h3 className="text-white font-black text-xl mb-1">{tier.name}</h3>
-              <p className="text-2xl font-black text-white mb-5">{tier.price}</p>
-              <ul className="space-y-2">
+              <div className="mb-5">
+                <span className="text-2xl font-black text-yellow-400">{tier.price}</span>
+                <span className="text-gray-500 text-sm">{tier.period}</span>
+              </div>
+              <ul className="space-y-2 mb-5">
                 {tier.features.map((f, i) => (
                   <li key={i} className="flex items-center gap-2 text-sm text-gray-300">
-                    <CheckCircle className="w-4 h-4 text-yellow-400 flex-shrink-0" />
+                    <CheckCircle className="w-3.5 h-3.5 text-yellow-400 flex-shrink-0" />
                     {f}
                   </li>
                 ))}
               </ul>
               <Link
                 to="/auth/sponsor/register"
-                className={`w-full mt-5 py-2.5 rounded-xl font-bold text-sm transition-colors block text-center ${
+                className={`w-full mt-auto py-2.5 rounded-xl font-bold text-sm transition-colors block text-center ${
                   tier.highlight
                     ? 'bg-yellow-500 hover:bg-yellow-400 text-black'
                     : 'bg-zinc-800 hover:bg-zinc-700 text-white'
                 }`}
               >
-                Get Started
+                {tier.name === 'Free' ? 'Start Free' : `Get ${tier.name}`}
               </Link>
             </div>
           ))}
@@ -159,9 +175,9 @@ export default function ForSponsors() {
       <section className="max-w-6xl mx-auto px-4 py-20">
         <div className="rounded-2xl bg-gradient-to-br from-yellow-900/20 to-zinc-900 border border-yellow-500/20 p-10 md:p-16 text-center">
           <h2 className="text-3xl md:text-4xl font-black text-white mb-4">Ready to reach MENA gamers?</h2>
-          <p className="text-gray-400 mb-8 max-w-md mx-auto">Join sponsors already building brand presence across the MENA esports scene.</p>
+          <p className="text-gray-400 mb-8 max-w-md mx-auto">Join brands already building presence across the MENA esports scene with HERU RADAR.</p>
           <Link to="/auth/sponsor/register" className="inline-flex items-center gap-2 px-10 py-4 rounded-xl bg-yellow-500 hover:bg-yellow-400 text-black font-black text-base transition-colors shadow-lg shadow-yellow-900/20">
-            <Star className="w-4 h-4" /> Register as Sponsor
+            <Star className="w-4 h-4" /> Register Your Brand Free
           </Link>
         </div>
       </section>

@@ -11,9 +11,16 @@ import HeruLogo from '@/components/shared/HeruLogo';
 import { useAuth } from '@/lib/AuthContext';
 
 // ─── Stakeholder data ───
+const PRODUCT_IMAGES = {
+  gamers: 'https://images.unsplash.com/photo-1542751371-adc38448a05e?w=800&q=80',
+  organizers: 'https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=800&q=80',
+  sponsors: 'https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?w=800&q=80',
+  providers: 'https://images.unsplash.com/photo-1598550476439-6847785fcea6?w=800&q=80',
+};
+
 const products = [
   {
-    key: 'gamers', label: 'HERU Arena', tagShort: 'For Gamers',
+    key: 'gamers', label: 'HERU ARENA', tagShort: 'For Gamers',
     icon: Gamepad2, color: 'red', accentHex: '#ff1a1a',
     tagline: 'Compete. Connect. Level Up.',
     desc: 'Register for MENA tournaments, build your team, rank on leaderboards, book pro coaching sessions, and grow your gamer profile.',
@@ -23,7 +30,7 @@ const products = [
     exampleBill: null,
   },
   {
-    key: 'organizers', label: 'HERU Organizer', tagShort: 'For Organizers',
+    key: 'organizers', label: 'HERU BUILDER', tagShort: 'For Organizers',
     icon: Trophy, color: 'purple', accentHex: '#7c3aed',
     tagline: 'Build Events That Sponsors Fund.',
     desc: 'Use the Tournament Builder to hire service providers, define deliverables, create sponsorship packages — and publish your event to the sponsorship radar.',
@@ -33,17 +40,17 @@ const products = [
     exampleBill: { label: 'Example', items: [{ name: 'Sponsorship Package Sold', val: 'EGP 10,000' }, { name: 'HERU Platform Fee (15%)', val: '– EGP 1,500' }, { name: 'Organizer Receives', val: 'EGP 8,500', bold: true }] },
   },
   {
-    key: 'sponsors', label: 'HERU Sponsor', tagShort: 'For Sponsors',
+    key: 'sponsors', label: 'HERU RADAR', tagShort: 'For Brands',
     icon: Star, color: 'yellow', accentHex: '#eab308',
     tagline: 'Put Your Brand Where Gamers Are.',
-    desc: 'Browse curated sponsorship packages, purchase exposure across MENA esports events, run influencer campaigns, and track ROI in real time.',
-    features: ['Sponsorship Radar', 'Influencer marketplace', 'Managed campaigns (Pro+)', 'Campaign ROI reports', 'Brand analytics'],
+    desc: 'Browse curated sponsorship packages, run influencer campaigns, and book managed esports campaigns across the MENA region — all tracked with ROI dashboards.',
+    features: ['Sponsorship Radar', 'Influencer marketplace', 'Managed campaigns', 'Corporate gaming events', 'Campaign ROI reports'],
     cta: 'Explore Packages', link: '/auth/sponsor/register', loginLink: '/auth/sponsor/login',
-    forLink: '/for-sponsors', pricingNote: 'Free • Pro (EGP 1,500/mo) • Enterprise',
-    exampleBill: { label: 'Example', items: [{ name: 'Package: Title Sponsor', val: 'EGP 15,000' }, { name: 'Platform fee', val: 'Included' }, { name: 'You pay', val: 'EGP 15,000', bold: true }] },
+    forLink: '/for-sponsors', pricingNote: 'Free • Starter • Growth • Premium',
+    exampleBill: { label: 'Plans from', items: [{ name: 'Starter', val: 'EGP 150K/mo' }, { name: 'Growth', val: 'EGP 250K/mo' }, { name: 'Premium', val: 'EGP 500K/mo', bold: true }] },
   },
   {
-    key: 'providers', label: 'HERU Services', tagShort: 'For Providers',
+    key: 'providers', label: 'HERU GIGS', tagShort: 'For Providers',
     icon: Briefcase, color: 'cyan', accentHex: '#06b6d4',
     tagline: 'Get Paid to Power Esports Events.',
     desc: 'List your services — casting, design, venues, marketing, production, coaching, influencer reach. Get discovered by organizers and sponsors across MENA.',
@@ -76,8 +83,9 @@ const pricingPlans = {
   ],
   sponsors: [
     { name: 'Free', price: 'EGP 0', period: '/mo', features: ['Browse radar', 'View packages', 'Basic analytics', '1 active sponsorship'], cta: 'Start Free', highlight: false },
-    { name: 'Pro', price: 'EGP 1,500', period: '/mo', features: ['Unlimited sponsorships', 'Influencer marketplace', 'Priority placement', 'ROI reports'], cta: 'Go Pro', highlight: true },
-    { name: 'Enterprise', price: 'Custom', period: '', features: ['Everything in Pro', 'Managed campaigns', 'Dedicated account mgr', 'Custom integrations'], cta: 'Contact Us', highlight: false },
+    { name: 'Starter', price: 'EGP 150K', period: '/mo', features: ['5 active sponsorships', 'Influencer marketplace', 'ROI reports', 'Priority placement'], cta: 'Get Starter', highlight: false },
+    { name: 'Growth', price: 'EGP 250K', period: '/mo', features: ['15 active sponsorships', 'Everything in Starter', 'Corporate gaming events', 'Dedicated support'], cta: 'Go Growth', highlight: true },
+    { name: 'Premium', price: 'EGP 500K', period: '/mo', features: ['Unlimited sponsorships', 'Everything in Growth', 'Managed campaigns', 'Custom integrations'], cta: 'Go Premium', highlight: false },
   ],
   providers: [
     { name: 'Pay-as-you-go', price: '15%', period: ' platform fee', features: ['Unlimited services', 'Booking management', 'Escrow payments', 'Public portfolio', 'Income analytics'], cta: 'List Services', highlight: true },
@@ -168,7 +176,7 @@ export default function Home() {
 
       {/* ── HERO ── */}
       <section className="relative min-h-screen flex items-center justify-center pt-20 pb-16 overflow-hidden">
-        <div className="absolute inset-0 z-0" style={{ background: 'radial-gradient(ellipse 80% 60% at 50% 0%, rgba(124,58,237,0.15) 0%, transparent 70%), radial-gradient(ellipse 60% 40% at 80% 80%, rgba(255,26,26,0.1) 0%, transparent 60%)' }} />
+        <div className="absolute inset-0 z-0" style={{ background: 'radial-gradient(ellipse 80% 60% at 50% 0%, rgba(255,26,26,0.18) 0%, transparent 70%), radial-gradient(ellipse 60% 40% at 80% 80%, rgba(220,38,38,0.12) 0%, transparent 60%)' }} />
         <div className="absolute inset-0 z-0" style={{ backgroundImage: 'url(https://images.unsplash.com/photo-1542751371-adc38448a05e?w=1600&q=80)', backgroundSize: 'cover', backgroundPosition: 'center', opacity: 0.06 }} />
 
         <div className="relative z-10 text-center px-6 max-w-5xl mx-auto">
@@ -179,7 +187,7 @@ export default function Home() {
             </div>
             <h1 className="text-5xl md:text-7xl font-black tracking-tight leading-none mb-6">
               The Esports{' '}
-              <span className="bg-gradient-to-r from-red-500 via-purple-500 to-cyan-400 bg-clip-text text-transparent">
+              <span className="bg-gradient-to-r from-red-400 via-red-500 to-red-600 bg-clip-text text-transparent">
                 Operating System
               </span>
               <br />for MENA
@@ -226,6 +234,10 @@ export default function Home() {
               <motion.div key={p.key} initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.1 }}
                 className={`relative bg-zinc-900/50 border ${colorBorder[p.color]} rounded-2xl p-8 hover:bg-zinc-900/80 transition-all duration-300 group overflow-hidden`}
                 style={{ boxShadow: `0 0 40px -10px ${p.accentHex}20` }}>
+                <div className="absolute inset-0 rounded-2xl overflow-hidden">
+                  <div className="absolute inset-0" style={{ backgroundImage: `url(${PRODUCT_IMAGES[p.key]})`, backgroundSize: 'cover', backgroundPosition: 'center', opacity: 0.07 }} />
+                  <div className="absolute inset-0 bg-gradient-to-t from-zinc-900 via-zinc-900/80 to-zinc-900/60" />
+                </div>
                 <div className="absolute top-0 right-0 w-64 h-64 rounded-full opacity-5 blur-3xl" style={{ background: p.accentHex, transform: 'translate(30%, -30%)' }} />
                 <div className="relative z-10">
                   <div className="flex items-start justify-between mb-6">
@@ -278,7 +290,7 @@ export default function Home() {
           <AnimatePresence mode="wait">
             {products.filter(p => p.key === pricingTab).map(product => (
               <motion.div key={product.key} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}>
-                <div className={`grid gap-6 ${pricingPlans[product.key].length === 1 ? 'max-w-sm mx-auto' : pricingPlans[product.key].length === 2 ? 'md:grid-cols-2 max-w-2xl mx-auto' : 'md:grid-cols-3 max-w-4xl mx-auto'}`}>
+                <div className={`grid gap-6 ${pricingPlans[product.key].length === 1 ? 'max-w-sm mx-auto' : pricingPlans[product.key].length === 2 ? 'md:grid-cols-2 max-w-2xl mx-auto' : pricingPlans[product.key].length === 4 ? 'sm:grid-cols-2 lg:grid-cols-4 max-w-5xl mx-auto' : 'md:grid-cols-3 max-w-4xl mx-auto'}`}>
                   {pricingPlans[product.key].map(plan => (
                     <div key={plan.name} className={`relative bg-zinc-900 border rounded-2xl p-6 ${plan.highlight ? `${colorBorder[product.color]} ring-1` : 'border-zinc-800'}`}
                       style={plan.highlight ? { ringColor: product.accentHex } : {}}>
