@@ -31,3 +31,4 @@ backend/node_modules
 *.sw?
 
 .env
+supabase/.temp/
