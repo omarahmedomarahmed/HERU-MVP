@@ -1,20 +1,22 @@
-const express = require('express');
-const router = express.Router();
-const { supabase } = require('../lib/supabase');
-const { requireAuth } = require('../middleware/auth');
+// reviewed 2026-04-25
+import { Router } from 'express';
+import { supabaseAdmin } from '../lib/supabase.js';
+import { requireAuth } from '../middleware/auth.js';
 
-// GET /api/leaderboards — public leaderboard list
+const router = Router();
+
+// GET /api/leaderboards — public leaderboard (filter by game, region, season)
 router.get('/', async (req, res) => {
   try {
-    const { game, region = 'MENA', season = '2026-S1', limit = 50 } = req.query;
-    let query = supabase
+    const { game, region, season, limit = 50, offset = 0 } = req.query;
+    let query = supabaseAdmin
       .from('leaderboard_entries')
-      .select('*, gamer:gamer_id(id)')
-      .eq('region', region)
-      .eq('season', season)
+      .select('id, user_id, game, region, season, score, wins, losses, rank_position, updated_at')
       .order('score', { ascending: false })
-      .limit(Number(limit));
+      .range(Number(offset), Number(offset) + Number(limit) - 1);
     if (game) query = query.eq('game', game);
+    if (region) query = query.eq('region', region);
+    if (season) query = query.eq('season', season);
     const { data, error } = await query;
     if (error) throw error;
     res.json(data);
@@ -23,17 +25,14 @@ router.get('/', async (req, res) => {
   }
 });
 
-// GET /api/leaderboards/me — get my rank (auth required)
+// GET /api/leaderboards/me — authenticated user's own rank entries
 router.get('/me', requireAuth, async (req, res) => {
   try {
-    const { game, season = '2026-S1' } = req.query;
-    let query = supabase
+    const { data, error } = await supabaseAdmin
       .from('leaderboard_entries')
       .select('*')
-      .eq('gamer_id', req.user.id)
-      .eq('season', season);
-    if (game) query = query.eq('game', game);
-    const { data, error } = await query;
+      .eq('user_id', req.user.id)
+      .order('score', { ascending: false });
     if (error) throw error;
     res.json(data);
   } catch (err) {
@@ -41,4 +40,4 @@ router.get('/me', requireAuth, async (req, res) => {
   }
 });
 
-module.exports = router;
+export default router;

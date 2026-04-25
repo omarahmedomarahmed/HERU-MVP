@@ -1,7 +1,9 @@
+// reviewed 2026-04-25
 import React, { useState, useEffect } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '@/lib/AuthContext'
 import HeruLogo from '@/components/shared/HeruLogo'
+import SupportChat from '@/components/ui/SupportChat'
 import {
   LayoutDashboard, Trophy, Plus, Radar, CreditCard, Share2,
   MessageSquare, User, Menu, X, LogOut, ChevronLeft, ChevronRight,
@@ -318,6 +320,7 @@ export default function OrganizerLayout({ children, isDashboard }) {
           })}
         </nav>
       </div>
+      <SupportChat accentColor="#7c3aed" />
     </div>
   )
 }

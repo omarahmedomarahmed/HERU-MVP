@@ -1,8 +1,10 @@
+// reviewed 2026-04-25
 import React, { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import AnimatedBackground from '@/components/shared/AnimatedBackground';
 import HeruLogo from '@/components/shared/HeruLogo';
+import SupportChat from '@/components/ui/SupportChat';
 import OrdersDropdown from '@/components/navigation/OrdersDropdown.jsx';
 import { motion, AnimatePresence } from 'framer-motion';
 import { GamerProfile, Order, Team } from '@/api/heruClient'
@@ -401,6 +403,7 @@ export default function GamerLayout({ children, user: userProp, profile: profile
       <main className="pt-20 pb-8 px-4 max-w-7xl mx-auto">
         {children}
       </main>
+      <SupportChat accentColor="#ef4444" />
     </div>
   );
 }

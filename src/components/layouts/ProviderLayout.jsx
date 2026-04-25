@@ -1,7 +1,9 @@
+// reviewed 2026-04-25
 import React, { useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '@/lib/AuthContext'
 import HeruLogo from '@/components/shared/HeruLogo'
+import SupportChat from '@/components/ui/SupportChat'
 import { LayoutDashboard, Package, BookOpen, User, Menu, LogOut, ChevronLeft, ChevronRight, Briefcase } from 'lucide-react'
 
 const NAV_SECTIONS = [
@@ -89,6 +91,7 @@ export default function ProviderLayout({ children }) {
           ))}
         </nav>
       </div>
+      <SupportChat accentColor="#06b6d4" />
     </div>
   )
 }

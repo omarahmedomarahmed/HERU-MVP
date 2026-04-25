@@ -1,15 +1,19 @@
-const express = require('express');
-const router = express.Router();
-const { supabase } = require('../lib/supabase');
-const { requireAuth } = require('../middleware/auth');
-const { requireSponsor, requireAdmin } = require('../middleware/roleGuard');
+// reviewed 2026-04-25
+import { Router } from 'express';
+import { supabaseAdmin } from '../lib/supabase.js';
+import { requireAuth } from '../middleware/auth.js';
+import { requireSponsor, requireAdmin } from '../middleware/roleGuard.js';
 
-// GET /api/managed-services — sponsor sees own projects; staff sees all
+const router = Router();
+
+// GET /api/managed-services — sponsor sees own; staff sees all
 router.get('/', requireAuth, async (req, res) => {
   try {
-    const { role } = req.user;
-    let query = supabase.from('managed_service_projects').select('*').order('created_at', { ascending: false });
-    if (role !== 'admin') {
+    let query = supabaseAdmin
+      .from('managed_service_projects')
+      .select('*')
+      .order('created_at', { ascending: false });
+    if (req.user.role !== 'admin') {
       query = query.eq('sponsor_id', req.user.id);
     }
     const { data, error } = await query;
@@ -23,7 +27,7 @@ router.get('/', requireAuth, async (req, res) => {
 // GET /api/managed-services/:id
 router.get('/:id', requireAuth, async (req, res) => {
   try {
-    const { data, error } = await supabase
+    const { data, error } = await supabaseAdmin
       .from('managed_service_projects')
       .select('*')
       .eq('id', req.params.id)
@@ -38,12 +42,12 @@ router.get('/:id', requireAuth, async (req, res) => {
   }
 });
 
-// POST /api/managed-services — sponsor submits new project request
+// POST /api/managed-services — sponsor creates project request
 router.post('/', requireAuth, requireSponsor, async (req, res) => {
   try {
     const { title, description, budget } = req.body;
     if (!title) return res.status(400).json({ error: 'title is required' });
-    const { data, error } = await supabase
+    const { data, error } = await supabaseAdmin
       .from('managed_service_projects')
       .insert({ sponsor_id: req.user.id, title, description, budget, status: 'submitted' })
       .select()
@@ -58,10 +62,10 @@ router.post('/', requireAuth, requireSponsor, async (req, res) => {
 // PUT /api/managed-services/:id/assign — staff assigns consultant
 router.put('/:id/assign', requireAuth, requireAdmin, async (req, res) => {
   try {
-    const { staff_id } = req.body;
-    const { data, error } = await supabase
+    const { consultant_id } = req.body;
+    const { data, error } = await supabaseAdmin
       .from('managed_service_projects')
-      .update({ assigned_staff_id: staff_id, status: 'reviewing', updated_at: new Date() })
+      .update({ consultant_id, status: 'reviewing', updated_at: new Date().toISOString() })
       .eq('id', req.params.id)
       .select()
       .single();
@@ -76,9 +80,9 @@ router.put('/:id/assign', requireAuth, requireAdmin, async (req, res) => {
 router.put('/:id/proposal', requireAuth, requireAdmin, async (req, res) => {
   try {
     const { proposal_text, proposal_amount, deliverables } = req.body;
-    const { data, error } = await supabase
+    const { data, error } = await supabaseAdmin
       .from('managed_service_projects')
-      .update({ proposal_text, proposal_amount, deliverables, status: 'proposal_sent', updated_at: new Date() })
+      .update({ proposal_text, proposal_amount, deliverables, status: 'proposal_sent', updated_at: new Date().toISOString() })
       .eq('id', req.params.id)
       .select()
       .single();
@@ -92,17 +96,17 @@ router.put('/:id/proposal', requireAuth, requireAdmin, async (req, res) => {
 // PUT /api/managed-services/:id/approve — sponsor approves proposal
 router.put('/:id/approve', requireAuth, requireSponsor, async (req, res) => {
   try {
-    const { data: project } = await supabase
+    const { data: proj, error: fetchErr } = await supabaseAdmin
       .from('managed_service_projects')
-      .select('sponsor_id')
+      .select('sponsor_id, status')
       .eq('id', req.params.id)
       .single();
-    if (!project || project.sponsor_id !== req.user.id) {
-      return res.status(403).json({ error: 'Forbidden' });
-    }
-    const { data, error } = await supabase
+    if (fetchErr) return res.status(404).json({ error: 'Not found' });
+    if (proj.sponsor_id !== req.user.id) return res.status(403).json({ error: 'Forbidden' });
+    if (proj.status !== 'proposal_sent') return res.status(400).json({ error: 'No proposal to approve' });
+    const { data, error } = await supabaseAdmin
       .from('managed_service_projects')
-      .update({ status: 'approved', updated_at: new Date() })
+      .update({ status: 'approved', updated_at: new Date().toISOString() })
       .eq('id', req.params.id)
       .select()
       .single();
@@ -116,9 +120,9 @@ router.put('/:id/approve', requireAuth, requireSponsor, async (req, res) => {
 // PUT /api/managed-services/:id/complete — staff marks complete
 router.put('/:id/complete', requireAuth, requireAdmin, async (req, res) => {
   try {
-    const { data, error } = await supabase
+    const { data, error } = await supabaseAdmin
       .from('managed_service_projects')
-      .update({ status: 'completed', updated_at: new Date() })
+      .update({ status: 'completed', completed_at: new Date().toISOString(), updated_at: new Date().toISOString() })
       .eq('id', req.params.id)
       .select()
       .single();
@@ -129,25 +133,30 @@ router.put('/:id/complete', requireAuth, requireAdmin, async (req, res) => {
   }
 });
 
-// POST /api/managed-services/:id/chat — send a chat message
+// POST /api/managed-services/:id/chat — send chat message
 router.post('/:id/chat', requireAuth, async (req, res) => {
   try {
     const { message } = req.body;
-    if (!message) return res.status(400).json({ error: 'message required' });
-    const { data: project, error: fetchErr } = await supabase
+    if (!message?.trim()) return res.status(400).json({ error: 'message required' });
+    const { data: proj, error: fetchErr } = await supabaseAdmin
       .from('managed_service_projects')
-      .select('chat, sponsor_id')
+      .select('sponsor_id, chat')
       .eq('id', req.params.id)
       .single();
     if (fetchErr) return res.status(404).json({ error: 'Not found' });
-    if (req.user.role !== 'admin' && project.sponsor_id !== req.user.id) {
+    if (req.user.role !== 'admin' && proj.sponsor_id !== req.user.id) {
       return res.status(403).json({ error: 'Forbidden' });
     }
-    const chat = project.chat || [];
-    chat.push({ sender_id: req.user.id, sender_role: req.user.role, message, sent_at: new Date() });
-    const { data, error } = await supabase
+    const newMsg = {
+      sender_id: req.user.id,
+      sender_role: req.user.role,
+      message: message.trim(),
+      sent_at: new Date().toISOString(),
+    };
+    const chat = [...(proj.chat || []), newMsg];
+    const { data, error } = await supabaseAdmin
       .from('managed_service_projects')
-      .update({ chat, updated_at: new Date() })
+      .update({ chat, updated_at: new Date().toISOString() })
       .eq('id', req.params.id)
       .select()
       .single();
@@ -158,4 +167,4 @@ router.post('/:id/chat', requireAuth, async (req, res) => {
   }
 });
 
-module.exports = router;
+export default router;

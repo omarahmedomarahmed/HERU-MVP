@@ -1,15 +1,17 @@
-const express = require('express');
-const router = express.Router();
-const { supabase } = require('../lib/supabase');
-const { requireAuth } = require('../middleware/auth');
+// reviewed 2026-04-25
+import { Router } from 'express';
+import { supabaseAdmin } from '../lib/supabase.js';
+import { requireAuth } from '../middleware/auth.js';
+
+const router = Router();
 
 // GET /api/friends — list accepted friends
 router.get('/', requireAuth, async (req, res) => {
   try {
-    const { data, error } = await supabase
+    const { data, error } = await supabaseAdmin
       .from('friendships')
-      .select('*, requester:requester_id(id), addressee:addressee_id(id)')
-      .or(`requester_id.eq.${req.user.id},addressee_id.eq.${req.user.id}`)
+      .select('id, user_id, friend_id, status, created_at')
+      .or(`user_id.eq.${req.user.id},friend_id.eq.${req.user.id}`)
       .eq('status', 'accepted');
     if (error) throw error;
     res.json(data);
@@ -21,10 +23,10 @@ router.get('/', requireAuth, async (req, res) => {
 // GET /api/friends/requests — incoming pending requests
 router.get('/requests', requireAuth, async (req, res) => {
   try {
-    const { data, error } = await supabase
+    const { data, error } = await supabaseAdmin
       .from('friendships')
-      .select('*')
-      .eq('addressee_id', req.user.id)
+      .select('id, user_id, friend_id, status, created_at')
+      .eq('friend_id', req.user.id)
       .eq('status', 'pending');
     if (error) throw error;
     res.json(data);
@@ -36,12 +38,12 @@ router.get('/requests', requireAuth, async (req, res) => {
 // POST /api/friends/request — send friend request
 router.post('/request', requireAuth, async (req, res) => {
   try {
-    const { addressee_id } = req.body;
-    if (!addressee_id) return res.status(400).json({ error: 'addressee_id required' });
-    if (addressee_id === req.user.id) return res.status(400).json({ error: 'Cannot friend yourself' });
-    const { data, error } = await supabase
+    const { friend_id } = req.body;
+    if (!friend_id) return res.status(400).json({ error: 'friend_id required' });
+    if (friend_id === req.user.id) return res.status(400).json({ error: 'Cannot friend yourself' });
+    const { data, error } = await supabaseAdmin
       .from('friendships')
-      .insert({ requester_id: req.user.id, addressee_id, status: 'pending' })
+      .insert({ user_id: req.user.id, friend_id, status: 'pending' })
       .select()
       .single();
     if (error) throw error;
@@ -54,18 +56,11 @@ router.post('/request', requireAuth, async (req, res) => {
 // PUT /api/friends/:id/accept
 router.put('/:id/accept', requireAuth, async (req, res) => {
   try {
-    const { data: friendship } = await supabase
+    const { data, error } = await supabaseAdmin
       .from('friendships')
-      .select('addressee_id')
+      .update({ status: 'accepted' })
       .eq('id', req.params.id)
-      .single();
-    if (!friendship || friendship.addressee_id !== req.user.id) {
-      return res.status(403).json({ error: 'Forbidden' });
-    }
-    const { data, error } = await supabase
-      .from('friendships')
-      .update({ status: 'accepted', updated_at: new Date() })
-      .eq('id', req.params.id)
+      .eq('friend_id', req.user.id)
       .select()
       .single();
     if (error) throw error;
@@ -78,11 +73,11 @@ router.put('/:id/accept', requireAuth, async (req, res) => {
 // PUT /api/friends/:id/block
 router.put('/:id/block', requireAuth, async (req, res) => {
   try {
-    const { data, error } = await supabase
+    const { data, error } = await supabaseAdmin
       .from('friendships')
-      .update({ status: 'blocked', updated_at: new Date() })
+      .update({ status: 'blocked' })
       .eq('id', req.params.id)
-      .or(`requester_id.eq.${req.user.id},addressee_id.eq.${req.user.id}`)
+      .or(`user_id.eq.${req.user.id},friend_id.eq.${req.user.id}`)
       .select()
       .single();
     if (error) throw error;
@@ -95,16 +90,16 @@ router.put('/:id/block', requireAuth, async (req, res) => {
 // DELETE /api/friends/:id — remove friend
 router.delete('/:id', requireAuth, async (req, res) => {
   try {
-    const { error } = await supabase
+    const { error } = await supabaseAdmin
       .from('friendships')
       .delete()
       .eq('id', req.params.id)
-      .or(`requester_id.eq.${req.user.id},addressee_id.eq.${req.user.id}`);
+      .or(`user_id.eq.${req.user.id},friend_id.eq.${req.user.id}`);
     if (error) throw error;
-    res.json({ success: true });
+    res.status(204).send();
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
-module.exports = router;
+export default router;

@@ -174,9 +174,21 @@ Staff access keys: `HERU-STAFF-OMAR-2026`, `HERU-STAFF-OPS-2026`
 
 ## DATABASE MIGRATIONS
 
-Migrations are in `/supabase/migrations/`. Key files:
-- `021_platform_pivot.sql` — 4-stakeholder schema (sponsor_profiles, service_provider_profiles, services, service_bookings, sponsorship_packages, sponsorships, subscriptions, reviews, heru_revenue_ledger, cms_pages, organizer_verifications)
-- `022_phase2_features.sql` — coaching_sessions, friendships, direct_messages, leaderboard_entries, managed_service_projects, user_reports, organizer_ratings, provider_portfolio_items, provider_past_projects
+Migrations are in `/supabase/migrations/`. The canonical fresh schema is in files `100–105`:
+
+| File | Contents |
+|------|----------|
+| `100_fresh_schema_core.sql` | user_profiles, staff_access_keys, app_settings, cms_pages, audit_log, achievements, badges |
+| `101_fresh_schema_gamers.sql` | gamer_profiles, teams, tournaments, match_records, venues, leaderboard_entries, friendships, direct_messages |
+| `102_fresh_schema_organizers.sql` | organizer_profiles, organizer_verifications, deliverables, bills, orders |
+| `103_fresh_schema_providers.sql` | service_provider_profiles, services, service_bookings, coaching_sessions, reviews, portfolio items |
+| `104_fresh_schema_sponsors.sql` | sponsor_profiles, subscriptions, sponsorship_packages, sponsorships, managed_service_projects, heru_revenue_ledger |
+| `105_fresh_schema_rls.sql` | Row Level Security policies (Supabase-specific) |
+
+Files `001–022` are legacy migrations from before the platform pivot — ignore them on fresh installs.
+
+For migrating to a different database: see `DATABASE_MIGRATION.md`.
+For migrating to a different auth provider: see `AUTH_MIGRATION.md`.
 
 ---
 

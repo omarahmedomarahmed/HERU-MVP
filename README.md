@@ -57,10 +57,19 @@ supabase db push
 # OR apply manually via Supabase dashboard SQL editor
 ```
 
-Migrations are in `supabase/migrations/` numbered sequentially:
-- `001–020`: Core schema (users, tournaments, teams, billing, etc.)
-- `021_platform_pivot.sql`: Sponsor/provider tables, packages, revenue ledger
-- `022_phase2_features.sql`: Coaching, friends, DMs, leaderboards, managed services
+Migrations are in `supabase/migrations/`. Use the canonical fresh schema (`100–105`):
+
+```bash
+# Apply in order (fresh install — skip 001-022 legacy files)
+psql "$DATABASE_URL" -f supabase/migrations/100_fresh_schema_core.sql
+psql "$DATABASE_URL" -f supabase/migrations/101_fresh_schema_gamers.sql
+psql "$DATABASE_URL" -f supabase/migrations/102_fresh_schema_organizers.sql
+psql "$DATABASE_URL" -f supabase/migrations/103_fresh_schema_providers.sql
+psql "$DATABASE_URL" -f supabase/migrations/104_fresh_schema_sponsors.sql
+psql "$DATABASE_URL" -f supabase/migrations/105_fresh_schema_rls.sql
+```
+
+If using Supabase CLI: `supabase db push` (only runs files not yet applied).
 
 ### 4. Run locally
 
@@ -175,6 +184,18 @@ Quick summary:
 | Admin/Staff | omarabdelgawad001@gmail.com | Staff key: `HERU-STAFF-OMAR-2026` |
 | Organizer | mr.3omar.a7mad@gmail.com | Nexus Esports |
 | Gamer | habibaheikal27@gmail.com | — |
+
+---
+
+## Documentation
+
+| File | Contents |
+|------|----------|
+| `CLAUDE.md` | Full architecture handover for AI assistants |
+| `REVENUE.md` | Where every fee is stored, applied, and how to change it |
+| `DATABASE_MIGRATION.md` | How to migrate to MySQL, Firebase, or plain PostgreSQL |
+| `AUTH_MIGRATION.md` | How to swap Supabase Auth for Firebase, Auth0, Clerk, or custom JWT |
+| `SETUP.md` | Step-by-step VPS deployment instructions |
 
 ---
 

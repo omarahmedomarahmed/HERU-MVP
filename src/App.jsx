@@ -17,7 +17,7 @@ import SponsorAuthLogin from './pages/auth/SponsorAuthLogin'
 import SponsorAuthRegister from './pages/auth/SponsorAuthRegister'
 import ProviderAuthLogin from './pages/auth/ProviderAuthLogin'
 import ProviderAuthRegister from './pages/auth/ProviderAuthRegister'
-import StaffLogin from './pages/StaffLogin'
+import StaffLogin from './pages/staff/StaffLogin'
 import ForgotPassword from './pages/auth/ForgotPassword'
 import ResetPassword from './pages/auth/ResetPassword'
 
@@ -28,8 +28,7 @@ import TournamentPublic from './pages/TournamentPublic'
 import Teams from './pages/Teams'
 import TeamProfile from './pages/TeamProfile'
 import OrganizerPublicProfile from './pages/OrganizerPublicProfile'
-import GamerDetail from './pages/GamerDetail'
-import SharedBillPage from './pages/SharedBillPage'
+import GamerDetail from './pages/gamer/GamerDetail'
 import SponsorshipRadar from './pages/SponsorshipRadar'
 import ProviderPublicProfile from './pages/provider/ProviderPublicProfile'
 import ForGamers from './pages/ForGamers'
@@ -44,17 +43,18 @@ import Leaderboards from './pages/Leaderboards'
 import Influencers from './pages/Influencers'
 
 // Gamer pages
-import GamerHome from './pages/GamerHome'
-import GamerProfile from './pages/GamerProfile'
-import GamerProfileView from './pages/GamerProfileView'
-import CreateTeam from './pages/CreateTeam'
-import TeamDetails from './pages/TeamDetails'
-import MyOrders from './pages/MyOrders'
-import GamerOrderDetail from './pages/GamerOrderDetail'
-import GamerNotifications from './pages/GamerNotifications'
+import GamerHome from './pages/gamer/GamerHome'
+import GamerProfile from './pages/gamer/GamerProfile'
+import GamerProfileView from './pages/gamer/GamerProfileView'
+import CreateTeam from './pages/gamer/CreateTeam'
+import TeamDetails from './pages/gamer/TeamDetails'
+import MyOrders from './pages/gamer/MyOrders'
+import GamerOrderDetail from './pages/gamer/GamerOrderDetail'
+import GamerNotifications from './pages/gamer/GamerNotifications'
 import TournamentDetails from './pages/TournamentDetails'
 import Arena from './pages/gamer/Arena'
-import GamerBilling from './pages/GamerBilling'
+import GamerBilling from './pages/gamer/GamerBilling'
+import BillDetail from './pages/gamer/BillDetail'
 import ConnectedAccounts from './pages/gamer/ConnectedAccounts'
 import GamerBookings from './pages/gamer/GamerBookings'
 import GamerFriends from './pages/gamer/GamerFriends'
@@ -67,11 +67,10 @@ import OrganizerTournaments from './pages/organizer/OrganizerTournaments'
 import TournamentBuilder from './pages/TournamentBuilder'
 import OrgTournamentManage from './pages/organizer/TournamentManage'
 import OrganizerProfile from './pages/organizer/OrganizerProfile'
-import OrganizerTeams from './pages/OrganizerTeams'
+import OrganizerTeams from './pages/organizer/OrganizerTeams'
 import OrganizerMessages from './pages/organizer/OrganizerMessages'
 import OrganizerRadarPage from './pages/organizer/OrganizerRadar'
 import OrganizerVerification from './pages/organizer/OrganizerVerification'
-import BillDetail from './pages/BillDetail'
 import OrganizerBilling from './pages/organizer/OrganizerBilling'
 import PaymentMethod from './pages/organizer/PaymentMethod'
 import TournamentSummaryReport from './pages/organizer/TournamentSummaryReport'
@@ -125,10 +124,10 @@ import StaffPlatformControl from './pages/staff/StaffPlatformControl'
 import StaffManagedProjects from './pages/staff/StaffManagedProjects'
 import StaffBadges from './pages/staff/StaffBadges'
 import StaffVenues from './pages/staff/StaffVenues'
-import StaffAuditTrail from './pages/StaffAuditTrail'
-import StaffGamers from './pages/StaffGamers'
-import StaffTeams from './pages/StaffTeams'
-import StaffTournamentBuilder from './pages/StaffTournamentBuilder'
+import StaffAuditTrail from './pages/staff/StaffAuditTrail'
+import StaffGamers from './pages/staff/StaffGamers'
+import StaffTeams from './pages/staff/StaffTeams'
+import StaffTournamentBuilder from './pages/staff/StaffTournamentBuilder'
 
 function App() {
   return (
@@ -186,6 +185,7 @@ function App() {
             <Route path="/gamer/orders/:id" element={<RequireGamer><GamerOrderDetail /></RequireGamer>} />
             <Route path="/gamer/notifications" element={<RequireGamer><GamerNotifications /></RequireGamer>} />
             <Route path="/gamer/connect" element={<RequireGamer><ConnectedAccounts /></RequireGamer>} />
+            <Route path="/gamer/connected-accounts" element={<RequireGamer><ConnectedAccounts /></RequireGamer>} />
             <Route path="/gamer/bookings" element={<RequireGamer><GamerBookings /></RequireGamer>} />
             <Route path="/gamer/friends" element={<RequireGamer><GamerFriends /></RequireGamer>} />
             <Route path="/gamer/messages" element={<RequireGamer><GamerMessages /></RequireGamer>} />
@@ -265,7 +265,7 @@ function App() {
             <Route path="/staff/managed-projects" element={<RequireStaff><StaffLayout><StaffManagedProjects /></StaffLayout></RequireStaff>} />
 
             {/* ============ SHARED PAGES ============ */}
-            <Route path="/bill/:bill_number" element={<SharedBillPage />} />
+            <Route path="/bill/:bill_number" element={<BillDetail />} />
 
             {/* ============ LEGACY REDIRECTS ============ */}
             <Route path="/dashboard/gamer" element={<Navigate to="/gamer/home" replace />} />

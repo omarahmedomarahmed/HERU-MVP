@@ -287,10 +287,6 @@ export const Staff = {
   updateTournamentStatus: (id, data) => apiCall(`/staff/tournaments/${id}/status`, { method: 'PUT', body: data }),
   allBills:         (filters)     => apiCall(`/staff/bills/all${buildQuery(filters)}`),
   updateBill:       (id, data)    => apiCall(`/staff/bills/${id}`, { method: 'PUT', body: data }),
-  setMarketplaceRequired: (id, data) => apiCall(`/staff/marketplace/${id}/required`, { method: 'PUT', body: data }),
-  allRadar:         (filters)     => apiCall(`/staff/radar${buildQuery(filters)}`),
-  updateRadar:      (id, data)    => apiCall(`/staff/radar/${id}`, { method: 'PUT', body: data }),
-  radarViews:       ()            => apiCall('/staff/radar-views'),
   // Gamers
   gamers:           (filters)     => apiCall(`/staff/gamers${buildQuery(filters)}`),
   updateGamer:      (id, data)    => apiCall(`/staff/gamers/${id}`, { method: 'PUT', body: data }),
@@ -298,9 +294,6 @@ export const Staff = {
   teams:            (filters)     => apiCall(`/staff/teams${buildQuery(filters)}`),
   updateTeam:       (id, data)    => apiCall(`/staff/teams/${id}`, { method: 'PUT', body: data }),
   deleteTeam:       (id)          => apiCall(`/staff/teams/${id}`, { method: 'DELETE' }),
-  // Gigs
-  gigs:             (filters)     => apiCall(`/staff/gigs${buildQuery(filters)}`),
-  updateGig:        (id, data)    => apiCall(`/staff/gigs/${id}`, { method: 'PUT', body: data }),
   // Organizer profiles
   updateOrganizer:  (id, data)    => apiCall(`/staff/organizers/${id}`, { method: 'PUT', body: data }),
   // Tournament CRUD

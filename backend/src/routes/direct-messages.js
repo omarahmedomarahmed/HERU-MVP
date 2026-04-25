@@ -1,27 +1,27 @@
-const express = require('express');
-const router = express.Router();
-const { supabase } = require('../lib/supabase');
-const { requireAuth } = require('../middleware/auth');
+// reviewed 2026-04-25
+import { Router } from 'express';
+import { supabaseAdmin } from '../lib/supabase.js';
+import { requireAuth } from '../middleware/auth.js';
 
-// GET /api/direct-messages/conversations — list unique conversation partners
-router.get('/conversations', requireAuth, async (req, res) => {
+const router = Router();
+
+// GET /api/direct-messages — list conversations (latest message per partner)
+router.get('/', requireAuth, async (req, res) => {
   try {
-    const userId = req.user.id;
-    const { data, error } = await supabase
+    const { data, error } = await supabaseAdmin
       .from('direct_messages')
-      .select('sender_id, recipient_id, content, created_at')
-      .or(`sender_id.eq.${userId},recipient_id.eq.${userId}`)
+      .select('id, sender_id, recipient_id, message, is_read, created_at')
+      .or(`sender_id.eq.${req.user.id},recipient_id.eq.${req.user.id}`)
       .order('created_at', { ascending: false });
     if (error) throw error;
-
-    // Deduplicate to get unique conversation partners
+    // Deduplicate by conversation partner
     const seen = new Set();
     const conversations = [];
     for (const msg of data) {
-      const partnerId = msg.sender_id === userId ? msg.recipient_id : msg.sender_id;
+      const partnerId = msg.sender_id === req.user.id ? msg.recipient_id : msg.sender_id;
       if (!seen.has(partnerId)) {
         seen.add(partnerId);
-        conversations.push({ partner_id: partnerId, last_message: msg.content, last_at: msg.created_at });
+        conversations.push({ partner_id: partnerId, last_message: msg });
       }
     }
     res.json(conversations);
@@ -30,34 +30,36 @@ router.get('/conversations', requireAuth, async (req, res) => {
   }
 });
 
-// GET /api/direct-messages/:partnerId — get message thread with one user
+// GET /api/direct-messages/:partnerId — full thread with one user
 router.get('/:partnerId', requireAuth, async (req, res) => {
   try {
     const { partnerId } = req.params;
-    const userId = req.user.id;
-    const { data, error } = await supabase
+    const { data, error } = await supabaseAdmin
       .from('direct_messages')
       .select('*')
-      .or(
-        `and(sender_id.eq.${userId},recipient_id.eq.${partnerId}),` +
-        `and(sender_id.eq.${partnerId},recipient_id.eq.${userId})`
-      )
+      .or(`and(sender_id.eq.${req.user.id},recipient_id.eq.${partnerId}),and(sender_id.eq.${partnerId},recipient_id.eq.${req.user.id})`)
       .order('created_at', { ascending: true });
     if (error) throw error;
+    // Mark messages to current user as read
+    await supabaseAdmin
+      .from('direct_messages')
+      .update({ is_read: true })
+      .eq('recipient_id', req.user.id)
+      .eq('sender_id', partnerId);
     res.json(data);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
-// POST /api/direct-messages — send a message
+// POST /api/direct-messages — send message
 router.post('/', requireAuth, async (req, res) => {
   try {
-    const { recipient_id, content } = req.body;
-    if (!recipient_id || !content) return res.status(400).json({ error: 'recipient_id and content required' });
-    const { data, error } = await supabase
+    const { recipient_id, message } = req.body;
+    if (!recipient_id || !message?.trim()) return res.status(400).json({ error: 'recipient_id and message required' });
+    const { data, error } = await supabaseAdmin
       .from('direct_messages')
-      .insert({ sender_id: req.user.id, recipient_id, content })
+      .insert({ sender_id: req.user.id, recipient_id, message: message.trim(), is_read: false })
       .select()
       .single();
     if (error) throw error;
@@ -67,20 +69,19 @@ router.post('/', requireAuth, async (req, res) => {
   }
 });
 
-// PUT /api/direct-messages/:partnerId/read — mark all messages from partner as read
+// PUT /api/direct-messages/:partnerId/read — mark thread as read
 router.put('/:partnerId/read', requireAuth, async (req, res) => {
   try {
-    const { error } = await supabase
+    const { error } = await supabaseAdmin
       .from('direct_messages')
-      .update({ read_at: new Date() })
-      .eq('sender_id', req.params.partnerId)
+      .update({ is_read: true })
       .eq('recipient_id', req.user.id)
-      .is('read_at', null);
+      .eq('sender_id', req.params.partnerId);
     if (error) throw error;
-    res.json({ success: true });
+    res.json({ ok: true });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
-module.exports = router;
+export default router;
