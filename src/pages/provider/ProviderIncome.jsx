@@ -13,7 +13,7 @@ export default function ProviderIncome() {
 
   const { data: bookings = [], isLoading } = useQuery({
     queryKey: ['provider-bookings-income', user?.id],
-    queryFn: () => apiCall('/service-bookings'),
+    queryFn: () => apiCall('/service-bookings').then(d => d?.bookings || []),
     enabled: !!user?.id,
   })
 
