@@ -12,11 +12,8 @@ import tournamentRoutes from './src/routes/tournaments.js';
 import teamRoutes from './src/routes/teams.js';
 import gamerRoutes from './src/routes/gamers.js';
 import organizerRoutes from './src/routes/organizers.js';
-import marketplaceRoutes from './src/routes/marketplace.js';
 import orderRoutes from './src/routes/orders.js';
 import tournamentOrderRoutes from './src/routes/tournament-orders.js';
-import radarRoutes from './src/routes/radar.js';
-import gigRoutes from './src/routes/gigs.js';
 import billRoutes from './src/routes/bills.js';
 import approvalRoutes from './src/routes/approvals.js';
 import staffRoutes from './src/routes/staff.js';
@@ -32,33 +29,40 @@ import auditRoutes from './src/routes/audit.js';
 import promoRoutes from './src/routes/promos.js';
 import gameRoutes from './src/routes/games.js';
 import connectRoutes from './src/routes/connect.js';
-import aiAgentRoutes from './src/routes/ai-agent.js';
 import botRoutes from './src/routes/bot.js';
 import riotTournamentRoutes from './src/routes/riot-tournament.js';
 import badgeRoutes from './src/routes/badges.js';
-import venueRoutes from './src/routes/venues.js';
+// New platform pivot routes
+import providerRoutes from './src/routes/providers.js';
+import serviceRoutes from './src/routes/services.js';
+import serviceBookingRoutes from './src/routes/service-bookings.js';
+import sponsorRoutes from './src/routes/sponsors.js';
+import sponsorshipPackageRoutes from './src/routes/sponsorship-packages.js';
+import sponsorshipRoutes from './src/routes/sponsorships.js';
+import subscriptionRoutes from './src/routes/subscriptions.js';
+import reviewRoutes from './src/routes/reviews.js';
+import organizerVerificationRoutes from './src/routes/organizer-verifications.js';
+import cmsRoutes from './src/routes/cms.js';
+import revenueRoutes from './src/routes/revenue.js';
+import managedServicesRoutes from './src/routes/managed-services.js';
+import coachingRoutes from './src/routes/coaching.js';
+import friendsRoutes from './src/routes/friends.js';
+import directMessagesRoutes from './src/routes/direct-messages.js';
+import leaderboardsRoutes from './src/routes/leaderboards.js';
+import reportsRoutes from './src/routes/reports.js';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-// Trust Nginx reverse proxy (required for express-rate-limit behind Nginx)
 app.set('trust proxy', 1);
-
-// Disable x-powered-by header (Helmet also does this but explicit is better)
 app.disable('x-powered-by');
 
-// ---------------------------------------------------------------------------
-// Global middleware
-// ---------------------------------------------------------------------------
-
-// Assign a unique request ID for tracing and audit logs
 app.use((req, _res, next) => {
   req.requestId = crypto.randomBytes(8).toString('hex');
   next();
 });
 
 app.use(helmet({
-  // Helmet CSP here is a fallback; Nginx sets the authoritative CSP header
   contentSecurityPolicy: process.env.NODE_ENV === 'production' ? {
     directives: {
       defaultSrc: ["'self'"],
@@ -78,7 +82,6 @@ app.use(helmet({
   } : false,
 }));
 
-// In production, strip Authorization header from Morgan logs to avoid logging tokens
 app.use(morgan(
   process.env.NODE_ENV === 'production' ? 'combined' : 'dev',
   process.env.NODE_ENV === 'production' ? {
@@ -95,55 +98,38 @@ app.use(
   })
 );
 
-// Strict rate limiter for auth/register (prevent brute force & account enumeration)
 const authLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,   // 15 minutes
-  max: 10,                     // 10 attempts per IP per window
+  windowMs: 15 * 60 * 1000,
+  max: 10,
   standardHeaders: true,
   legacyHeaders: false,
-  skipSuccessfulRequests: true, // Only count failed attempts
+  skipSuccessfulRequests: true,
   message: { error: 'Too many login attempts, please try again in 15 minutes.' },
 });
 app.use('/api/auth/login', authLimiter);
 app.use('/api/auth/staff/login', authLimiter);
 app.use('/api/auth/register', authLimiter);
 
-// General rate limiter
 const limiter = rateLimit({
-  windowMs: 1 * 60 * 1000, // 1 minute window
-  max: 200,                  // 200 req/min per IP
+  windowMs: 1 * 60 * 1000,
+  max: 200,
   standardHeaders: true,
   legacyHeaders: false,
   message: { error: 'Too many requests, please try again later.' },
 });
 app.use('/api', limiter);
 
-// ---------------------------------------------------------------------------
-// Health check
-// ---------------------------------------------------------------------------
-
 app.get('/api/health', (_req, res) => {
-  res.json({
-    status: 'ok',
-    timestamp: new Date().toISOString(),
-    version: '1.0.0',
-  });
+  res.json({ status: 'ok', timestamp: new Date().toISOString(), version: '1.0.0' });
 });
-
-// ---------------------------------------------------------------------------
-// Route mounts
-// ---------------------------------------------------------------------------
 
 app.use('/api/auth', authRoutes);
 app.use('/api/tournaments', tournamentRoutes);
 app.use('/api/teams', teamRoutes);
 app.use('/api/gamers', gamerRoutes);
 app.use('/api/organizers', organizerRoutes);
-app.use('/api/marketplace', marketplaceRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/tournament-orders', tournamentOrderRoutes);
-app.use('/api/radar', radarRoutes);
-app.use('/api/gigs', gigRoutes);
 app.use('/api/bills', billRoutes);
 app.use('/api/approvals', approvalRoutes);
 app.use('/api/staff', staffRoutes);
@@ -159,55 +145,53 @@ app.use('/api/audit', auditRoutes);
 app.use('/api/promos', promoRoutes);
 app.use('/api/games', gameRoutes);
 app.use('/api/connect', connectRoutes);
-app.use('/api/ai-agent', aiAgentRoutes);
 app.use('/api/bot', botRoutes);
 app.use('/api/riot-tournament', riotTournamentRoutes);
 app.use('/api/badges', badgeRoutes);
-app.use('/api/venues', venueRoutes);
 
-// ---------------------------------------------------------------------------
-// 404 handler
-// ---------------------------------------------------------------------------
+// Platform pivot routes
+app.use('/api/providers', providerRoutes);
+app.use('/api/services', serviceRoutes);
+app.use('/api/service-bookings', serviceBookingRoutes);
+app.use('/api/sponsors', sponsorRoutes);
+app.use('/api/sponsorship-packages', sponsorshipPackageRoutes);
+app.use('/api/sponsorships', sponsorshipRoutes);
+app.use('/api/subscriptions', subscriptionRoutes);
+app.use('/api/reviews', reviewRoutes);
+app.use('/api/organizer-verifications', organizerVerificationRoutes);
+app.use('/api/cms', cmsRoutes);
+app.use('/api/revenue', revenueRoutes);
+app.use('/api/managed-services', managedServicesRoutes);
+app.use('/api/coaching', coachingRoutes);
+app.use('/api/friends', friendsRoutes);
+app.use('/api/direct-messages', directMessagesRoutes);
+app.use('/api/leaderboards', leaderboardsRoutes);
+app.use('/api/reports', reportsRoutes);
 
 app.use((_req, res) => {
   res.status(404).json({ error: 'Route not found' });
 });
 
-// ---------------------------------------------------------------------------
-// Global error handler
-// ---------------------------------------------------------------------------
-
 // eslint-disable-next-line no-unused-vars
 app.use((err, _req, res, _next) => {
   console.error('[ERROR]', err.stack || err.message || err);
-
   const status = err.status || err.statusCode || 500;
-  const message =
-    process.env.NODE_ENV === 'production' && status === 500
-      ? 'Internal server error'
-      : err.message || 'Internal server error';
-
+  const message = process.env.NODE_ENV === 'production' && status === 500
+    ? 'Internal server error'
+    : err.message || 'Internal server error';
   res.status(status).json({ error: message });
 });
 
-// ---------------------------------------------------------------------------
-// Start server with Supabase connection check
-// ---------------------------------------------------------------------------
-
 (async () => {
-  // Verify Supabase connection on startup
   const { error: pingError } = await supabaseAdmin
     .from('app_settings')
     .select('setting_key')
     .limit(1);
-
   if (pingError) {
     console.error('[startup] ⚠️  Supabase connection failed:', pingError.message);
-    console.error('[startup] Make sure SUPABASE_SERVICE_ROLE_KEY is set in backend/.env');
   } else {
     console.log('[startup] ✅ Supabase connection verified');
   }
-
   app.listen(PORT, () => {
     console.log(`[HERU.gg] Backend running on port ${PORT}`);
     console.log(`[HERU.gg] Environment: ${process.env.NODE_ENV || 'development'}`);

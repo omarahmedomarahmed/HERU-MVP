@@ -1,309 +1,294 @@
-# HERU.gg — Complete Project Handover Document
+# HERU.gg — Master Handover Document
 
-**Last updated:** April 18, 2026  
-**Branch:** `main` (production-ready)  
-**Status:** All code complete and pushed to main. Manual setup steps required before going live.
+> **For anyone new to this codebase.** Read this file first, then follow the links in order.
 
 ---
 
-## What Was Built — Plain English Summary
+## What Is HERU.gg?
 
-### The Core Platform (Built Previously)
-HERU.gg started as a web app exported from Base44 (a no-code builder). All the Base44 backend was replaced with a real Node.js/Express server connected to a Supabase (PostgreSQL) database.
+HERU.gg is a **four-sided esports marketplace** for the MENA region (Egypt, Saudi Arabia, UAE).
 
-**What exists today:**
-- A full website with three separate user experiences: Gamers, Organizers, and Staff
-- Tournament Builder — a multi-step form that lets organizers create a tournament from scratch, add items, set a prizepool, and the system auto-calculates everything including HERU's 15% fee
-- Sponsorship Radar — organizers who don't want to fund a tournament alone can list it; other brands commit 33% (co-organizer) or 66% (sponsor) of the cost
-- Marketplace — physical/digital items; gamers can buy, organizers can hire talent
-- Full billing and invoicing system in EGP
-- Staff admin panel with full control over every part of the platform
+Four products, one platform:
 
-### What Was Just Added (This Session)
+| Product | Audience | Dashboard |
+|---------|----------|-----------|
+| **HERU Arena** | Gamers | `/gamer/home` |
+| **HERU Organizer** | Tournament organizers | `/organizer/dashboard` |
+| **HERU Sponsor** | Brand sponsors | `/sponsor/dashboard` |
+| **HERU Services** | Service providers | `/provider/dashboard` |
 
-#### 1. HERU CONNECT (`/gamer/connect`)
-Gamers can now link two types of external accounts to their HERU profile:
-
-**Discord** — Full OAuth2 login. Gamer clicks "Connect Discord", authorizes on Discord's website, and comes back with their Discord account linked. This is used to identify them in Discord servers.
-
-**Riot Games** — Gamers type their Riot ID (e.g., `Faker#KR1`) and pick their region. The system looks up their account using Riot's API, stores their stats (rank, win rate, top champions for LoL; equivalent for Valorant), and displays them on their profile. Note: Full Valorant match history requires a Production Riot API key — the current dev key gives rank and basic stats.
-
-#### 2. AI Agent (`/gamer/ai-agent`)
-A chat interface powered by Claude (Anthropic's AI). Gamers can ask anything about HERU — tournaments, teams, their stats, how things work — and get intelligent answers. The AI can also take actions (like registering for a tournament) after asking for confirmation.
-
-The same AI is available inside Discord via the bot (just @mention it or use `/heru-ask`).
-
-#### 3. HERU Discord Bot
-A Discord bot that lives in organizers' Discord servers. When an organizer adds it to their server:
-- Gamers can use slash commands like `/heru-tournaments` to browse tournaments
-- Gamers can link their HERU account with `/heru-link`
-- Organizers can build a tournament by talking to the AI naturally ("I want to run a Valorant tournament for 16 teams with a 50,000 EGP prizepool")
-- The bot announces new tournaments and bracket updates automatically
+Revenue model: **15% platform fee** on all transactions (sponsorships, service bookings, coaching). Subscription revenue is 100% HERU.
 
 ---
 
-## Current Code State
+## How to Read This Codebase
 
-### ✅ Everything That Is Fully Written and Pushed
-
-**Frontend (React)**
-- 61 page files covering every route
-- `/gamer/connect` — Full Discord + Riot connect page
-- `/gamer/ai-agent` — Full AI chat interface
-- Organizer Dashboard — "Add HERU Bot to Discord" card
-- GamerLayout mobile menu — links to Connected Accounts and AI Assistant
-
-**Backend (Express API)**
-- 27 route modules covering every feature
-- `/api/connect` — Discord OAuth flow + Riot account linking
-- `/api/ai-agent` — Claude AI chat with session memory (20 messages/hour limit)
-- `/api/bot` — Discord webhook endpoint + Ed25519 signature verification
-- Claude AI agent with 12 tools (search tournaments, get profiles, join tournaments, etc.)
-
-**Discord Bot**
-- 11 slash commands fully implemented
-- Natural language mode (mentions → AI agent)
-- Confirmation flow for actions (shows ✅/❌ buttons before doing anything)
-
-**Database**
-- Migration `014_heru_connect.sql` — 4 new tables:
-  - `connected_accounts` — one Discord link per user
-  - `riot_accounts` — multiple Riot accounts per user (LoL + Valorant)
-  - `bot_servers` — links Discord guilds to HERU organizers
-  - `ai_agent_sessions` — stores conversation history per user
-
-**Documentation**
-- `README.md` — full developer guide (updated)
-- `HANDOVER.md` — this file (created)
-- `CLAUDE.md` — technical context for future AI coding sessions (updated)
-- `.env.example` — all required environment variables
+Read in this order:
+1. **This file (HANDOVER.md)** — understand the platform
+2. **[README.md](./README.md)** — quick start and Platform Assumptions
+3. **[PRODUCT_REQUIREMENTS.md](./PRODUCT_REQUIREMENTS.md)** — full feature specifications
+4. **[SETUP.md](./SETUP.md)** — deploy to production (VPS)
+5. **[DATABASE_MIGRATION.md](./DATABASE_MIGRATION.md)** — switch databases
+6. **[AUTH_MIGRATION.md](./AUTH_MIGRATION.md)** — switch auth providers
+7. **[REVENUE.md](./REVENUE.md)** — revenue ledger details
 
 ---
 
-## ⚠️ What You Still Need To Do (Manual Steps)
+## Current Tech Stack
 
-**None of these require coding.** They are configuration steps in external services.
-
----
-
-### Step 1 — Supabase: Apply the New Migration
-
-This adds the 4 new database tables (Discord connections, Riot accounts, bot servers, AI sessions).
-
-1. Go to your Supabase project dashboard
-2. Click **SQL Editor** in the left sidebar
-3. Click **New query**
-4. Open the file `supabase/migrations/014_heru_connect.sql` from the repo
-5. Copy all the text and paste it into the SQL Editor
-6. Click **Run**
-7. You should see "Success. No rows returned."
-
----
-
-### Step 2 — Discord Developer Portal: Set Up OAuth & Bot
-
-Go to **discord.com/developers/applications** → click your app "HERU BOT" (App ID: `1494378715709313064`)
-
-**A) Get your Bot Token:**
-1. Click **Bot** in the left menu
-2. Click **Reset Token** → copy the token
-3. This is your `DISCORD_BOT_TOKEN` — paste it in `backend/.env` and `bot/.env`
-
-**B) Enable required permissions:**
-1. Still on the **Bot** tab
-2. Scroll to "Privileged Gateway Intents"
-3. Turn ON: **Message Content Intent**, **Server Members Intent**, **Presence Intent**
-4. Click **Save Changes**
-
-**C) Get your Client Secret (for the "Connect Discord" button):**
-1. Click **OAuth2** in the left menu
-2. Copy the **Client Secret** (click Reset if needed)
-3. This is your `DISCORD_CLIENT_SECRET`
-
-**D) Add the callback URL:**
-1. Still on **OAuth2**
-2. Under "Redirects", click **Add Redirect**
-3. Add: `https://heru.gg/api/connect/discord/callback`
-4. Also add: `http://localhost:3001/api/connect/discord/callback` (for local testing)
-5. Click **Save Changes**
-
-**E) Set the bot's webhook URL (after going live on VPS):**
-1. Click **General Information**
-2. Set **Interactions Endpoint URL** to: `https://heru.gg/api/bot/webhook`
-3. Click **Save Changes**
-
----
-
-### Step 3 — Get Your Anthropic API Key (for AI Agent)
-
-1. Go to **console.anthropic.com**
-2. Sign in or create an account
-3. Go to **API Keys** → **Create Key**
-4. Copy the key → paste it as `ANTHROPIC_API_KEY` in `backend/.env`
-
----
-
-### Step 4 — Get Your Riot API Key
-
-1. Go to **developer.riotgames.com**
-2. Sign in with your Riot account
-3. On the Dashboard, copy the **Development API Key**
-4. Paste it as `RIOT_API_KEY` in `backend/.env`
-5. ⚠️ This key expires every 24 hours. For production, apply for a **Production Key** on the same page.
-
----
-
-### Step 5 — Generate the Bot Secret
-
-This is a random password shared between the backend and the bot so they can communicate securely.
-
-On any computer with a terminal:
-```bash
-openssl rand -hex 32
 ```
-Copy the output. Paste it as `HERU_BOT_SECRET` in **both** `backend/.env` **and** `bot/.env`.
-
----
-
-### Step 6 — Update All .env Files on the VPS
-
-SSH into your VPS and update `backend/.env` with all the new values:
-```
-DISCORD_CLIENT_SECRET=    (from Step 2C)
-DISCORD_BOT_TOKEN=        (from Step 2A)
-ANTHROPIC_API_KEY=        (from Step 3)
-RIOT_API_KEY=             (from Step 4)
-HERU_BOT_SECRET=          (from Step 5)
-DISCORD_REDIRECT_URI=https://heru.gg/api/connect/discord/callback
-```
-
-Also create/update `bot/.env`:
-```
-DISCORD_BOT_TOKEN=        (same as above)
-DISCORD_APPLICATION_ID=1494378715709313064
-HERU_API_URL=https://heru.gg
-HERU_FRONTEND_URL=https://heru.gg
-HERU_BOT_SECRET=          (same as above)
+Frontend:    React 18 + Vite + TailwindCSS + shadcn/ui
+Backend:     Node.js 20 + Express 4 (REST API on port 3001)
+Database:    Supabase (PostgreSQL 15) + Row Level Security
+Auth:        Supabase Auth (JWT) + custom staff session tokens
+Payments:    Paymob API (MENA gateway, EGP only)
+Email:       Resend API
+Realtime:    Supabase Realtime (direct messages, live brackets)
+Hosting:     Hostinger VPS (Ubuntu 22.04, Nginx, PM2)
 ```
 
 ---
 
-### Step 7 — Register Discord Slash Commands
+## Directory Guide
 
-This teaches Discord about the 11 `/heru-*` commands. You only need to do this once (or when commands change).
-
-On the VPS:
-```bash
-cd /var/www/heru/bot
-node register-commands.js
 ```
-You should see "Registered 11 commands."
+/src/pages/
+  public/         Public pages (no auth required)
+  auth/           Login & register pages per role
+  gamer/          Gamer dashboard pages
+  organizer/      Organizer dashboard pages
+  sponsor/        Sponsor dashboard pages
+  provider/       Provider dashboard pages
+  staff/          Staff admin pages
 
----
+/src/components/
+  layouts/        Per-stakeholder sidebar/header layouts
+  shared/         HeruLogo, AnimatedBackground, etc.
+  ui/             shadcn/ui component library
+  navigation/     Navbar components
 
-### Step 8 — Pull Latest Code and Redeploy
+/backend/src/
+  routes/         One file per API resource (/api/tournaments, etc.)
+  middleware/     auth.js, roleGuard.js, staffGuard.js
+  lib/            supabase.js, paymob.js, resend.js
+  logic/          tournament.js, billing.js, notifications.js
 
-On the VPS:
-```bash
-cd /var/www/heru.gg
-git pull origin main
-npm install
-cd backend && npm install && cd ..
-cd bot && npm install && cd ..
-npm run build
-pm2 restart all
-pm2 save
+/supabase/migrations/
+  100_fresh_schema_core.sql        user_profiles, staff, settings, CMS
+  101_fresh_schema_gamers.sql      gamers, teams, tournaments, matches
+  102_fresh_schema_organizers.sql  organizers, deliverables, bills
+  103_fresh_schema_providers.sql   providers, services, bookings, coaching
+  104_fresh_schema_sponsors.sql    sponsors, subscriptions, packages, revenue
+  105_fresh_schema_rls.sql         Row Level Security policies
 ```
 
-If the bot isn't running yet as a PM2 process:
-```bash
-cd /var/www/heru/bot
-pm2 start ecosystem.config.cjs --env production --name heru-bot
-pm2 save
+> Files 001–022 are legacy migrations from before the platform pivot — **ignore on fresh installs**.
+
+---
+
+## Authentication Flows
+
+### Normal users (gamer/organizer/sponsor/provider)
+1. Frontend calls `supabase.auth.signInWithPassword()`
+2. On success, `AuthContext` fetches `/api/auth/me` to get role + profile
+3. `RequireGamer`, `RequireOrganizer`, etc. guards check `userProfile.role`
+
+### Staff
+1. Frontend calls `POST /api/auth/staff/login` with email + password + access key
+2. Backend validates Supabase auth → checks `user_profiles.role === 'admin'` → validates `staff_access_keys`
+3. Returns `session_token` stored in `localStorage` as `heru_staff_token`
+4. Staff API calls send `X-Staff-Token` header verified by `staffGuard.js`
+
+### Staff access keys
+```
+HERU-STAFF-OMAR-2026
+HERU-STAFF-OPS-2026
 ```
 
 ---
 
-### Step 9 — Add the Bot to Your Discord Server
+## Key Flows (End-to-End)
 
-1. Go to Discord Developer Portal → your app → **OAuth2 → URL Generator**
-2. Select scopes: `bot`, `applications.commands`
-3. Select permissions: Send Messages, Embed Links, Read Message History, Use Application Commands, Manage Channels
-4. Copy the generated URL and open it in your browser
-5. Select your Discord server → Authorize
+### Tournament Lifecycle
+```
+Organizer builds in Builder
+  → Adds service providers (auto-booked, escrow)
+  → Adds sponsorship packages
+  → Publishes (requires verification)
+  → Sponsor buys package via Paymob
+  → Tournament runs (brackets, teams)
+  → Organizer confirms service delivery
+  → Escrow released to service providers
+  → HERU takes 15% from sponsorship + booking
+```
 
-Or click **"Add to Discord"** from the Organizer Dashboard on HERU.gg (once deployed).
+### Booking Escrow
+```
+Organizer books provider
+  → Payment captured via Paymob
+  → Booking status = 'confirmed' (payment held)
+  → Service delivered
+  → Organizer marks as 'delivered'
+  → Payment released to provider (minus 15%)
+  → Revenue entry added to heru_revenue_ledger
+```
 
----
-
-## How Each Feature Works
-
-### HERU CONNECT — Discord
-1. Gamer clicks "Connect Discord" on `/gamer/connect`
-2. Frontend redirects to Discord OAuth
-3. Gamer authorizes → Discord sends them back with a code
-4. Backend exchanges code for tokens, stores in `connected_accounts` table
-5. Discord username now shows on gamer's HERU profile
-
-### HERU CONNECT — Riot
-1. Gamer types `Faker#KR1` and selects region
-2. Backend calls Riot ACCOUNT-V1 → gets PUUID
-3. Calls LEAGUE-V4 → gets rank (Iron/Gold/Diamond etc.), LP, wins/losses
-4. Stores in `riot_accounts` table
-5. Stats shown on profile with rank badge
-
-### AI Agent
-1. Gamer types a message → backend calls Claude API
-2. Claude can look up tournaments, profiles, teams using built-in tools
-3. For actions (join tournament, update profile) → asks for confirmation first
-4. Conversation history saved in Supabase
-5. Limited to 20 messages/hour per user
-
-### Discord Bot Natural Language
-1. Someone @mentions the bot
-2. Bot looks up if that Discord user has linked their HERU account
-3. Forwards message to AI agent with their user context
-4. AI responds → bot posts formatted embed card in Discord
+### Sponsor Subscription
+```
+Free:       Radar browsing + 1 active sponsorship
+Pro:        Unlimited sponsorships + influencer hub + managed projects
+Enterprise: Everything + Internal Campaign Builder + consultant access
+```
 
 ---
 
-## Business Rules (Never Change These)
+## Changing Platform Assumptions
 
-- Platform fee is **always 15%** added on top of tournament cost
-- Minimum organizer commitment on Sponsorship Radar is **always 33%**
-- Maximum 3 parties per shared tournament
-- 33% = "co-organizer", 66% = "sponsor"
-- Co-organizer access only after paying their invoice
-- Tournament type (solo/shared) never shown publicly
-- All currency is **EGP** — never USD
-- `/admin` login page never linked from any public navigation
+All business-critical assumptions are configurable. Here's how:
 
----
+### Change Platform Fee (currently 15%)
+1. **Staff Settings page** → Platform Assumptions → Platform Fee
+2. OR: Update `app_settings` table: `UPDATE app_settings SET value = '12' WHERE key = 'platform_fee_percent'`
+3. The backend reads this from `/api/settings` — all billing logic uses it dynamically
 
-## Credentials Needed
+### Change Subscription Prices
+1. **Staff Settings page** → Platform Assumptions → Subscription Pricing
+2. OR: Update `app_settings` table keys: `subscription_pro_price`, `subscription_enterprise_price`
 
-| Service | What you need | Where to get it |
-|---------|--------------|----------------|
-| Supabase | URL + anon key + service role key | Supabase Dashboard → Settings → API |
-| Discord OAuth | Client Secret | Discord Developer Portal → OAuth2 |
-| Discord Bot | Bot Token | Discord Developer Portal → Bot → Reset Token |
-| Riot API | API Key (renew daily) | developer.riotgames.com |
-| Anthropic | API Key | console.anthropic.com |
-| Paymob | API Key + Integration ID | Paymob merchant dashboard |
-| Resend | API Key | resend.com dashboard |
+### Add a New Service Category
+1. Add to the categories array in `ProviderAuthRegister.jsx` and `ProviderServiceNew.jsx`
+2. Add custom fields to the service schema in `supabase/migrations/103_fresh_schema_providers.sql`
+3. Add the category display to public provider profile
+
+### Add a New Admin Staff Member
+1. Insert into `user_profiles` with `role = 'admin'`
+2. Insert into `staff_access_keys` with a new key
 
 ---
 
-## Known Limitations
+## Migrating the Database
 
-| Limitation | Why | Fix |
-|-----------|-----|-----|
-| Valorant rank only, no match history | Dev Riot key limitation | Apply for Production key |
-| Riot API key expires daily | Dev key limitation | Get Production key |
-| AI Agent: 20 messages/hour | Cost control | Change `AI_AGENT_HOURLY_LIMIT` in `.env` |
-| Paymob disabled by default | Not yet configured | Set `PAYMOB_ENABLED=true` when ready |
-| Bot Interactions URL needs setting | Requires live domain | Do Step 2E after VPS deploy |
+See [DATABASE_MIGRATION.md](./DATABASE_MIGRATION.md) for complete guide. Summary paths:
+
+| Target | Effort | Guide Section |
+|--------|--------|---------------|
+| Hosted PostgreSQL (RDS, Neon, etc.) | Low | Section 2 |
+| MySQL / PlanetScale | Medium | Section 3 |
+| Firebase Firestore | High | Section 4 |
+| Keep Supabase, change project | Very Low | Section 1 |
+
+Key things to replace when migrating away from Supabase:
+- `@supabase/supabase-js` calls in `backend/src/lib/supabase.js`
+- Row Level Security policies in `105_fresh_schema_rls.sql` (implement at app level)
+- Supabase Auth (see AUTH_MIGRATION.md)
+- Supabase Realtime (replace with socket.io or Pusher)
+- Supabase Storage (replace with S3 or Cloudinary)
 
 ---
 
-*Built April 17–18, 2026. Branch: `main` (production-ready)*
+## Migrating Auth
+
+See [AUTH_MIGRATION.md](./AUTH_MIGRATION.md). Options:
+- **Firebase Auth** — good for mobile-first
+- **Auth0 / Clerk** — good for enterprise SSO
+- **Custom JWT** — most control, most work
+- **NextAuth** — if migrating to Next.js
+
+Key files to update: `src/lib/supabase.js`, `src/lib/AuthContext.jsx`, `backend/src/middleware/auth.js`
+
+---
+
+## Migrating Hosting
+
+### Moving to AWS
+1. Replace Hostinger VPS → EC2 (t3.small for start)
+2. Replace Nginx config (same `nginx/heru.gg.conf` works)
+3. Replace PM2 with ECS Fargate or Elastic Beanstalk (or keep PM2)
+4. Replace `dist/` static serving → S3 + CloudFront
+5. Environment: use SSM Parameter Store or Secrets Manager for `.env`
+
+### Moving to Vercel (frontend) + Railway (backend)
+1. Frontend: `npm run build` → deploy `dist/` to Vercel
+2. Backend: deploy `backend/` to Railway (it already has `package.json`)
+3. Update `VITE_API_URL` to point to Railway URL
+4. Update `CORS_ORIGIN` in backend env
+
+### Moving to Docker
+1. Frontend: `Dockerfile` in root → `npm run build` → serve with nginx
+2. Backend: `Dockerfile` in `backend/` → `node index.js`
+3. Use `docker-compose.yml` for local dev
+
+---
+
+## Changing the Tech Stack
+
+### Frontend: React → Next.js
+- Pages map 1:1 (App Router file-based routing)
+- `react-router-dom` → Next.js `Link` and `useRouter`
+- `@tanstack/react-query` stays the same
+- `shadcn/ui` stays the same (it's built for Next.js too)
+
+### Frontend: React → Vue 3 / Nuxt
+- Component logic stays similar (Composition API ≈ React hooks)
+- Replace `react-query` with `@pinia/colada` or `useAsyncData`
+- Replace `react-router-dom` with `vue-router`
+
+### Backend: Express → Fastify
+- Performance improvement, same REST API structure
+- Replace `app.use(...)` with `fastify.register(...)`
+- Middleware → plugins
+
+### Backend: Express → Next.js API Routes
+- Move all `backend/src/routes/*.js` to `app/api/*/route.ts`
+- Supabase client stays the same
+
+### Database: Move away from Supabase
+1. Export all data: `supabase db dump` or `pg_dump`
+2. Apply schema to new database
+3. Update connection string in `backend/src/lib/supabase.js`
+4. Remove Supabase-specific features (RLS, Realtime, Storage)
+5. Implement equivalent features at app layer
+
+---
+
+## Maintenance Checklist
+
+### Weekly
+- [ ] Check PM2 logs: `pm2 logs heru-backend`
+- [ ] Check Supabase dashboard for slow queries
+- [ ] Review any pending provider approvals in Staff → Approvals
+
+### Monthly
+- [ ] Renew Riot API dev key (expires daily for dev keys)
+- [ ] Review revenue ledger for anomalies
+- [ ] Update dependencies: `npm audit fix`
+
+### When Something Breaks
+1. Check PM2: `pm2 status` and `pm2 logs heru-backend`
+2. Check Nginx: `sudo nginx -t` and `sudo systemctl status nginx`
+3. Check Supabase status: https://status.supabase.com
+4. Check frontend build: `npm run build` (look for TypeScript/build errors)
+
+---
+
+## Environment Variables Reference
+
+See `.env.example` for all variables. Critical ones:
+
+| Variable | Used In | Required |
+|----------|---------|---------|
+| `VITE_SUPABASE_URL` | Frontend | Yes |
+| `VITE_SUPABASE_ANON_KEY` | Frontend | Yes |
+| `SUPABASE_SERVICE_ROLE_KEY` | Backend | Yes |
+| `PAYMOB_API_KEY` | Backend | For payments |
+| `RESEND_API_KEY` | Backend | For emails |
+| `DISCORD_CLIENT_SECRET` | Backend | For Discord connect |
+| `RIOT_API_KEY` | Backend | For Riot connect (expires daily in dev) |
+
+---
+
+## Contact & Support
+
+Platform built for HERU.gg by the development team.
+Staff access: `/admin` (hidden from public nav)
+Staff keys: `HERU-STAFF-OMAR-2026`, `HERU-STAFF-OPS-2026`

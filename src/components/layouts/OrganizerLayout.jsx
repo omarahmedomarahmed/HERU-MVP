@@ -1,11 +1,13 @@
+// reviewed 2026-04-25
 import React, { useState, useEffect } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '@/lib/AuthContext'
 import HeruLogo from '@/components/shared/HeruLogo'
+import SupportChat from '@/components/ui/SupportChat'
 import {
-  LayoutDashboard, Trophy, Plus, Radar, CreditCard, Share2,
+  LayoutDashboard, Trophy, Plus, CreditCard, TrendingUp,
   MessageSquare, User, Menu, X, LogOut, ChevronLeft, ChevronRight,
-  Zap, Bell, Search, Settings, Building2,
+  Zap, Bell, Search, Settings, CheckCircle2, ShieldCheck,
 } from 'lucide-react'
 
 const NAV_SECTIONS = [
@@ -13,21 +15,20 @@ const NAV_SECTIONS = [
     label: 'Overview',
     items: [
       { to: '/organizer/dashboard', icon: LayoutDashboard, text: 'Dashboard' },
-      { to: '/organizer/radar', icon: Radar, text: 'Sponsorship Radar', badge: 'NEW' },
     ],
   },
   {
     label: 'Tournaments',
     items: [
       { to: '/organizer/tournaments', icon: Trophy, text: 'My Tournaments' },
-      { to: '/organizer/sponsored', icon: Share2, text: 'Co-Organized' },
       { to: '/organizer/tournaments/new', icon: Plus, text: 'Build Tournament', highlight: true },
     ],
   },
   {
     label: 'Finance',
     items: [
-      { to: '/organizer/billing', icon: CreditCard, text: 'Billing' },
+      { to: '/organizer/income', icon: TrendingUp, text: 'Income' },
+      { to: '/organizer/billing', icon: CreditCard, text: 'Billing & Payments' },
     ],
   },
   {
@@ -37,15 +38,10 @@ const NAV_SECTIONS = [
     ],
   },
   {
-    label: 'Marketplace',
-    items: [
-      { to: '/organizer/venues', icon: Building2, text: 'Submit Venue' },
-    ],
-  },
-  {
     label: 'Account',
     items: [
       { to: '/organizer/profile', icon: User, text: 'My Profile' },
+      { to: '/organizer/verification', icon: ShieldCheck, text: 'Verification' },
     ],
   },
 ]
@@ -54,7 +50,7 @@ const BOTTOM_TABS = [
   { to: '/organizer/dashboard', icon: LayoutDashboard, text: 'Home' },
   { to: '/organizer/tournaments', icon: Trophy, text: 'Tournaments' },
   { to: '/organizer/tournaments/new', icon: Plus, text: 'Build', highlight: true },
-  { to: '/organizer/radar', icon: Radar, text: 'Radar' },
+  { to: '/organizer/income', icon: TrendingUp, text: 'Income' },
   { to: '/organizer/billing', icon: CreditCard, text: 'Billing' },
 ]
 
@@ -318,6 +314,7 @@ export default function OrganizerLayout({ children, isDashboard }) {
           })}
         </nav>
       </div>
+      <SupportChat accentColor="#7c3aed" />
     </div>
   )
 }

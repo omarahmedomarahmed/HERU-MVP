@@ -1,85 +1,45 @@
 import { Router } from 'express';
 import { supabaseAdmin } from '../lib/supabase.js';
 import { requireAuth } from '../middleware/auth.js';
-import { requireRole } from '../middleware/roleGuard.js';
+import { requireOrganizer } from '../middleware/roleGuard.js';
 
 const router = Router();
 
-// GET / - list reports (filter by organizer_id, tournament_id)
-router.get('/', async (req, res) => {
+router.get('/', requireAuth, async (req, res) => {
   try {
-    const { organizer_id, tournament_id, is_published, limit = 50, offset = 0 } = req.query;
-    let query = supabaseAdmin.from('tournament_reports').select('*');
-    if (organizer_id) query = query.eq('organizer_id', organizer_id);
-    if (tournament_id) query = query.eq('tournament_id', tournament_id);
-    if (is_published !== undefined) query = query.eq('is_published', is_published === 'true');
-    query = query.order('created_at', { ascending: false }).range(offset, Number(offset) + Number(limit) - 1);
-    const { data, error } = await query;
+    const { tournament_id } = req.query;
+    if (!tournament_id) return res.status(400).json({ error: 'tournament_id is required' });
+    const { data, error } = await supabaseAdmin.from('tournament_reports').select('*').eq('tournament_id', tournament_id).order('created_at', { ascending: false });
     if (error) throw error;
-    res.json(data || []);
+    res.json({ reports: data || [] });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
-// GET /:id - get single report
-router.get('/:id', async (req, res) => {
+router.get('/:id', requireAuth, async (req, res) => {
   try {
-    const { data, error } = await supabaseAdmin
-      .from('tournament_reports')
-      .select('*')
-      .eq('id', req.params.id)
-      .single();
-    if (error) throw error;
-    if (!data) return res.status(404).json({ error: 'Report not found' });
-    res.json(data);
+    const { data: report, error } = await supabaseAdmin.from('tournament_reports').select('*').eq('id', req.params.id).single();
+    if (error) return res.status(404).json({ error: 'Report not found' });
+    if (report.organizer_id !== req.user.id) {
+      const { data: sponsorship } = await supabaseAdmin.from('sponsorships').select('id').eq('tournament_id', report.tournament_id).eq('sponsor_id', req.user.id).in('status', ['paid','active','completed']).limit(1).single();
+      if (!sponsorship) return res.status(403).json({ error: 'Access denied' });
+    }
+    res.json({ report });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
-// POST / - create report
-router.post('/', requireAuth, requireRole('organizer', 'admin'), async (req, res) => {
+router.post('/', requireAuth, requireOrganizer, async (req, res) => {
   try {
-    const { data, error } = await supabaseAdmin
-      .from('tournament_reports')
-      .insert({ ...req.body, organizer_id: req.user.id })
-      .select()
-      .single();
+    const { tournament_id, total_views, unique_viewers, engagement_rate, clicks, conversions, report_file_url, notes } = req.body;
+    if (!tournament_id) return res.status(400).json({ error: 'tournament_id is required' });
+    const { data: tournament } = await supabaseAdmin.from('tournaments').select('organizer_id').eq('id', tournament_id).single();
+    if (!tournament || tournament.organizer_id !== req.user.id) return res.status(403).json({ error: 'You do not own this tournament' });
+    const { data, error } = await supabaseAdmin.from('tournament_reports').insert({ tournament_id, organizer_id: req.user.id, total_views: total_views || 0, unique_viewers: unique_viewers || 0, engagement_rate: engagement_rate || 0, clicks: clicks || 0, conversions: conversions || 0, report_file_url: report_file_url || null, notes: notes || '' }).select().single();
     if (error) throw error;
-    res.status(201).json(data);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-// PUT /:id - update report
-router.put('/:id', requireAuth, async (req, res) => {
-  try {
-    const { data, error } = await supabaseAdmin
-      .from('tournament_reports')
-      .update({ ...req.body, updated_at: new Date().toISOString() })
-      .eq('id', req.params.id)
-      .eq('organizer_id', req.user.id)
-      .select()
-      .single();
-    if (error) throw error;
-    res.json(data);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-// DELETE /:id - delete report
-router.delete('/:id', requireAuth, async (req, res) => {
-  try {
-    const { error } = await supabaseAdmin
-      .from('tournament_reports')
-      .delete()
-      .eq('id', req.params.id)
-      .eq('organizer_id', req.user.id);
-    if (error) throw error;
-    res.json({ message: 'Report deleted' });
+    res.status(201).json({ report: data });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

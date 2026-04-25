@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '@/lib/AuthContext'
-import { Tournament, Team, Deliverable, GigRequest, apiCall } from '@/api/heruClient'
+import { Tournament, Team, Deliverable, apiCall } from '@/api/heruClient'
 
 const riotApi = (path, opts = {}) => apiCall(`/riot-tournament${path}`, opts)
 import { uploadFile } from '@/lib/uploadFile'

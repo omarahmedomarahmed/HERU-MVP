@@ -17,3 +17,11 @@ export function requireRole(...roles) {
     next();
   };
 }
+
+// Named convenience exports used by route files
+export const requireGamer        = requireRole('gamer');
+export const requireOrganizer    = requireRole('organizer');
+export const requireSponsor      = requireRole('sponsor');
+export const requireProvider     = requireRole('service_provider');
+export const requireAdmin        = requireRole('admin');
+export const requireOrgOrAdmin   = requireRole('organizer', 'admin');

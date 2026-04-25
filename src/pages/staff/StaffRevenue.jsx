@@ -2,9 +2,9 @@ import React, { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import {
   DollarSign, TrendingUp, Trophy, FileText,
-  ArrowUpRight, ArrowDownRight,
+  ArrowUpRight, ArrowDownRight, Briefcase, Star, CreditCard,
 } from 'lucide-react';
-import { Staff } from '@/api/heruClient';
+import { Staff, apiCall } from '@/api/heruClient';
 
 function formatEGP(value) {
   return `EGP ${(value || 0).toLocaleString('en-EG', { minimumFractionDigits: 0 })}`;
@@ -88,6 +88,26 @@ export default function StaffRevenue() {
     queryFn: () => Staff.revenue(),
     staleTime: 60_000,
   });
+
+  // Fetch revenue ledger for fee stream breakdown
+  const { data: rawLedger = [] } = useQuery({
+    queryKey: ['staff-revenue-ledger'],
+    queryFn: () => apiCall('/revenue'),
+    staleTime: 60_000,
+  });
+
+  const ledger = Array.isArray(rawLedger) ? rawLedger : rawLedger.data || [];
+
+  // Compute per-stream totals
+  const streamTotals = useMemo(() => {
+    const totals = { service_booking: 0, sponsorship: 0, subscription: 0, other: 0 };
+    ledger.forEach((entry) => {
+      const key = entry.fee_type || entry.source || 'other';
+      if (totals[key] !== undefined) totals[key] += entry.amount || 0;
+      else totals.other += entry.amount || 0;
+    });
+    return totals;
+  }, [ledger]);
 
   // Fetch ALL bills for tournament breakdown (staff endpoint returns every bill)
   const { data: rawBills = [], isLoading: billsLoading } = useQuery({
@@ -190,6 +210,34 @@ export default function StaffRevenue() {
           sub="With platform fees"
           color="violet"
         />
+      </div>
+
+      {/* Fee Streams */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-5 flex items-start gap-4">
+          <div className="rounded-lg p-2.5 bg-cyan-500/20 text-cyan-400"><Briefcase className="w-5 h-5" /></div>
+          <div>
+            <p className="text-xs text-gray-400 mb-1">Service Booking Fees</p>
+            <p className="text-xl font-bold text-white">{formatEGP(streamTotals.service_booking)}</p>
+            <p className="text-xs text-gray-500 mt-0.5">15% of booking value</p>
+          </div>
+        </div>
+        <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-5 flex items-start gap-4">
+          <div className="rounded-lg p-2.5 bg-yellow-500/20 text-yellow-400"><Star className="w-5 h-5" /></div>
+          <div>
+            <p className="text-xs text-gray-400 mb-1">Sponsorship Fees</p>
+            <p className="text-xl font-bold text-white">{formatEGP(streamTotals.sponsorship)}</p>
+            <p className="text-xs text-gray-500 mt-0.5">15% of package value</p>
+          </div>
+        </div>
+        <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-5 flex items-start gap-4">
+          <div className="rounded-lg p-2.5 bg-purple-500/20 text-purple-400"><CreditCard className="w-5 h-5" /></div>
+          <div>
+            <p className="text-xs text-gray-400 mb-1">Subscription Revenue</p>
+            <p className="text-xl font-bold text-white">{formatEGP(streamTotals.subscription)}</p>
+            <p className="text-xs text-gray-500 mt-0.5">Pro / Enterprise plans</p>
+          </div>
+        </div>
       </div>
 
       {/* Two column layout */}
