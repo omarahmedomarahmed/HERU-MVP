@@ -76,7 +76,7 @@ export default function GamerLayout({ children, user: userProp, profile: profile
     { icon: Home, label: 'Home', path: '/gamer/home' },
     { icon: Trophy, label: 'Tournaments', path: '/gamer/tournaments' },
     { icon: Users, label: 'Teams', path: '/gamer/teams', badge: pendingTeamRequests },
-    { icon: ShoppingBag, label: 'Shop', path: '/gamer/marketplace' },
+    { icon: ShoppingBag, label: 'Shop', path: '/gamer/orders' },
     { icon: Link2, label: 'Connect', path: '/gamer/profile', search: 'tab=connect' },
   ];
 
