@@ -260,8 +260,8 @@ function TeamCard({ team }) {
 // ---------------------------------------------------------------------------
 
 const PROFILE_TABS = [
-  { id: 'overview', label: 'Overview' },
   { id: 'games',    label: 'Games' },
+  { id: 'overview', label: 'Overview' },
   { id: 'teams',    label: 'Teams' },
   { id: 'friends',  label: 'Friends' },
 ]
@@ -269,7 +269,7 @@ const PROFILE_TABS = [
 export default function GamerProfileView() {
   const { slug, id: paramId } = useParams()
   const identifier = slug || paramId
-  const [activeTab, setActiveTab] = useState('overview')
+  const [activeTab, setActiveTab] = useState('games')
 
   // Current auth user (may be null for guests)
   const { user: authUser } = useAuth()
