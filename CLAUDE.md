@@ -7,17 +7,20 @@
 
 HERU.gg is a **four-sided esports marketplace** for the MENA region (Egypt, Saudi Arabia, UAE).
 
-**4 Stakeholders:**
-- **Gamers** — Compete in tournaments, manage teams, book coaches, climb leaderboards
-- **Organizers** — Build tournaments, hire service providers, create sponsorship packages, get funded
-- **Sponsors** — Browse packages, buy sponsorships, track ROI, request managed campaigns
-- **Service Providers** — List services (branding, production, talent, venue, marketing), get booked, get paid
+**4 Stakeholders + 4 Product brands:**
+- **Gamers** → **HERU ARENA** — Compete in tournaments, community bracket builder, manage teams, book coaches, climb leaderboards
+- **Organizers** → **HERU BUILDER** — Build tournaments, hire service providers, create sponsorship packages, get funded
+- **Sponsors** → **HERU RADAR** — Browse packages, buy sponsorships, track ROI, request managed campaigns
+- **Service Providers** → **HERU GIGs** — List services (9 categories), get booked, get paid via escrow
 
 **Platform Revenue: 15% fee on all transactions**
 - 15% of every service booking (held in escrow until organizer confirms delivery)
 - 15% of every sponsorship package purchase
-- Subscription MRR from Starter/Growth/Premium sponsor plans (EGP 150K/250K/500K per month)
+- Subscription MRR from HERU RADAR plans: Free (EGP 0) / Community (EGP 150K/mo) / Premium (EGP 300K/mo)
 - All tracked in `heru_revenue_ledger`
+
+**HERU GIGs Service Categories (9):**
+`Venue`, `Coaching`, `Talent`, `Production`, `Marketing`, `Community`, `Hardware`, `EventVendor`, `TournamentMgmt`
 
 ---
 
@@ -75,7 +78,8 @@ Staff access keys: `HERU-STAFF-OMAR-2026`, `HERU-STAFF-OPS-2026`
 
 ### Gamer (/gamer/*)
 ```
-/gamer/home                 Feed
+/gamer/home                 Feed + quick actions
+/gamer/build                Community Tournament Builder (private scrims & bracket events)
 /gamer/profile              My profile (edit)
 /gamer/teams                My teams
 /gamer/teams/:id            Team detail
@@ -181,8 +185,8 @@ Migrations are in `/supabase/migrations/`. Apply these in order on a fresh insta
 | `100_core.sql` | Extensions, user_profiles (phone/whatsapp), staff_access_keys, staff_sessions, app_settings, cms_pages, audit_log, games (seeded), notifications, achievements, badges |
 | `101_gamers.sql` | gamer_profiles (talent fields, username_slug), connected_accounts (Riot/Val/region), teams (leader_id, members[], join_requests), tournaments (full column set incl. internal/Riot/stream/sponsor fields), tournament sub-tables, match_records, leaderboards, friendships, direct_messages (content/read_at/conversation_id), promo_codes, user_reports |
 | `102_organizers.sql` | organizer_profiles (contact_number, contact_email, tiktok, facebook), organizer_verifications, organizer_page_configs, organizer_ratings, deliverables, bills, orders, tournament_orders, approval_requests |
-| `103_providers.sql` | service_provider_profiles (slug, social_links, approval_status), services (Influencer category, custom_fields), provider_portfolio_items (type, client_name, deliverables, links, testimonial), provider_past_projects, service_bookings (total_price, net_to_provider, denorm columns), coaching_sessions (gamer_rating, session_type, duration_minutes generated), reviews |
-| `104_sponsors.sql` | sponsor_profiles (subscription_plan/status/renewal_date), subscriptions (plan, amount, billing_cycle, renewal_date), sponsorship_packages, sponsorships (package_name/sponsor_brand/tournament_name), managed_service_projects, heru_revenue_ledger (both stream/entity and source_type/source_id naming conventions) |
+| `103_providers.sql` | service_provider_profiles (slug, social_links, approval_status), services (9 categories: Venue/Coaching/Talent/Production/Marketing/Community/Hardware/EventVendor/TournamentMgmt, custom_fields), provider_portfolio_items, provider_past_projects, service_bookings (total_price, net_to_provider, denorm columns), coaching_sessions (duration_minutes generated), reviews |
+| `104_sponsors.sql` | sponsor_profiles (subscription_plan/status/renewal_date), subscriptions (plan CHECK: free/community/premium/starter/growth for legacy, amount, billing_cycle, renewal_date), sponsorship_packages, sponsorships (package_name/sponsor_brand/tournament_name), managed_service_projects, heru_revenue_ledger |
 | `105_rls.sql` | Row Level Security policies for all tables including staff_sessions, games, notifications |
 
 Apply in order 100 → 105 on a fresh database. No other migration files are needed.

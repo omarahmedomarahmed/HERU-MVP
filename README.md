@@ -46,13 +46,13 @@ cp .env.example .env
 ### 3. Database setup
 
 ```bash
-# Apply canonical fresh schema (skip 001–022 legacy files)
-psql "$DATABASE_URL" -f supabase/migrations/100_fresh_schema_core.sql
-psql "$DATABASE_URL" -f supabase/migrations/101_fresh_schema_gamers.sql
-psql "$DATABASE_URL" -f supabase/migrations/102_fresh_schema_organizers.sql
-psql "$DATABASE_URL" -f supabase/migrations/103_fresh_schema_providers.sql
-psql "$DATABASE_URL" -f supabase/migrations/104_fresh_schema_sponsors.sql
-psql "$DATABASE_URL" -f supabase/migrations/105_fresh_schema_rls.sql
+# Apply canonical fresh schema in order
+psql "$DATABASE_URL" -f supabase/migrations/100_core.sql
+psql "$DATABASE_URL" -f supabase/migrations/101_gamers.sql
+psql "$DATABASE_URL" -f supabase/migrations/102_organizers.sql
+psql "$DATABASE_URL" -f supabase/migrations/103_providers.sql
+psql "$DATABASE_URL" -f supabase/migrations/104_sponsors.sql
+psql "$DATABASE_URL" -f supabase/migrations/105_rls.sql
 ```
 
 ### 4. Run locally
@@ -71,28 +71,32 @@ Visit `http://localhost:5173`
 
 ## Stakeholder Flows
 
-### Gamers (`/auth/gamer/*` → `/gamer/*`)
+### Gamers → HERU ARENA (`/auth/gamer/*` → `/gamer/*`)
 - Register, compete in tournaments, manage teams
+- **Community Tournament Builder** (`/gamer/build`) — private scrims, clan wars, mini brackets
 - Browse coaches and book 1:1 sessions
 - View cross-tournament leaderboards, add friends, send DMs
 - Gamer Shop (`/gamer/orders`) for marketplace items
 
-### Organizers (`/auth/organizer/*` → `/organizer/*`)
-- Tournament Builder (4-step): game setup → details → prize pool → publish
+### Organizers → HERU BUILDER (`/auth/organizer/*` → `/organizer/*`)
+- Tournament Builder (5-step): game setup → details → prize pool → **services** → publish
+- Registration link: public or private (invite-only toggle)
 - Tournament Management CRM: overview, teams, brackets, providers, chat, settings
 - Service providers bookable via /providers; payment held in escrow
-- Verification required before enabling Sponsorship Radar (sponsorship_enabled flag)
+- Verification required before enabling Sponsorship Radar
+- "Build It For Me" consultant CTA on dashboard
 
-### Sponsors (`/auth/sponsor/*` → `/sponsor/*`)
-- Browse Sponsorship Radar (HERU RADAR) to find tournaments with packages
+### Sponsors → HERU RADAR (`/auth/sponsor/*` → `/sponsor/*`)
+- Browse Sponsorship Radar to find tournaments with packages
 - Purchase packages via Paymob, track deliverables
-- Subscribe: Free / Starter (EGP 150K/mo) / Growth (EGP 250K/mo) / Premium (EGP 500K/mo)
-- Influencer Hub (Growth+), Managed Projects (Growth+), Billing page
+- Subscribe: **Free (EGP 0)** / **Community (EGP 150K/mo)** / **Premium (EGP 300K/mo)**
+- Community: 2 online sponsorships/month. Premium: 2 online + 1 offline/month
+- Influencer marketplace, Managed Projects, Billing page
 
-### Service Providers (`/auth/provider/*` → `/provider/*`)
-- List services in categories (Branding, Production, Talent, Venue, Marketing, Coaching, Influencer)
-- Venue = service category, not a separate database entity
-- Special types: Coaches (visible at `/coaches`), Influencers (visible at `/influencers`)
+### Service Providers → HERU GIGs (`/auth/provider/*` → `/provider/*`)
+- List services in 9 categories: Venue, Coaching, Talent, Production, Marketing, Community, Hardware, EventVendor, TournamentMgmt
+- Staff must approve listing before it appears in Tournament Builder
+- Escrow payments — organizer confirms delivery before 85% is released
 - Income breakdown page showing earnings after 15% platform fee
 
 ### Staff (`/admin` — hidden, not linked publicly)
@@ -110,7 +114,7 @@ Visit `http://localhost:5173`
 | Service booking fee | 15% of booking price | `heru_revenue_ledger` |
 | Sponsorship package fee | 15% of package price | `heru_revenue_ledger` |
 | Coaching session fee | 15% of session price | `heru_revenue_ledger` |
-| Subscription (Pro/Enterprise) | Full price → HERU | `heru_revenue_ledger` |
+| Subscription (Community/Premium) | Full price → HERU | `heru_revenue_ledger` |
 
 All currency is **EGP** — never USD.
 
