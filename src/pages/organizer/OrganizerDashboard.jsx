@@ -5,7 +5,7 @@ import { useQuery } from '@tanstack/react-query'
 import { Tournament, SponsorshipRadar, OrganizerProfile } from '@/api/heruClient'
 import {
   Trophy, Zap, DollarSign, Shield, Plus, Radar,
-  ChevronRight, Calendar, Gamepad2, TrendingUp, Loader2,
+  ChevronRight, Calendar, Gamepad2, TrendingUp, Loader2, Headphones,
 } from 'lucide-react'
 
 // ---------------------------------------------------------------------------
@@ -369,6 +369,28 @@ export default function OrganizerDashboard() {
           )}
         </section>
       )}
+
+      {/* Build It For Me CTA */}
+      <section className="rounded-xl border border-blue-500/20 bg-blue-900/10 p-5">
+        <div className="flex items-start gap-3">
+          <div className="p-2 rounded-lg bg-blue-500/15 shrink-0">
+            <Headphones className="w-5 h-5 text-blue-400" />
+          </div>
+          <div className="flex-1">
+            <h3 className="text-white font-semibold">Want us to build it for you?</h3>
+            <p className="text-sm text-gray-400 mt-1">
+              HERU consultants can plan, staff, fund, and execute your entire event from scratch.
+              Request a consultation and our team will reach out within 24 hours.
+            </p>
+          </div>
+          <button
+            onClick={() => navigate('/organizer/profile')}
+            className="shrink-0 flex items-center gap-1.5 px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-sm font-medium transition-colors"
+          >
+            Request Consultation <ChevronRight className="w-4 h-4" />
+          </button>
+        </div>
+      </section>
 
       {/* Nudge for unverified organizers */}
       {!orgLoading && !isVerified && (

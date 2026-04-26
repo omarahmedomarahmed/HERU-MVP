@@ -10,12 +10,14 @@ import {
   Trophy, Gamepad2, Users, MapPin, Award, Calendar,
   ChevronRight, ChevronLeft, Check, Save, Send, Image,
   Zap, Globe, Building, Loader2, AlertCircle, Eye,
+  Briefcase, Plus, X,
 } from 'lucide-react';
 
 const STEPS = [
   { id: 'setup',     label: 'Game Setup',   icon: Gamepad2 },
   { id: 'details',   label: 'Details',      icon: Trophy },
   { id: 'prizepool', label: 'Prize Pool',   icon: Award },
+  { id: 'services',  label: 'Services',     icon: Briefcase },
   { id: 'publish',   label: 'Publish',      icon: Send },
 ];
 
@@ -115,6 +117,16 @@ export default function TournamentBuilder() {
     sponsorship_enabled: false,
     status: 'draft',
     organizer_brand: {},
+    is_private: false,
+  });
+
+  const [bookedServices, setBookedServices] = useState([]);
+
+  // Load approved service providers for the services step
+  const { data: approvedServices = [] } = useQuery({
+    queryKey: ['services-approved'],
+    queryFn: () => apiCall('/services?status=approved').then(d => d?.services || []),
+    staleTime: 5 * 60_000,
   });
 
   // Load existing tournament when editing
@@ -481,6 +493,31 @@ export default function TournamentBuilder() {
                 </label>
               </div>
             </div>
+
+            {/* Registration Type */}
+            <div className="bg-zinc-800/50 rounded-xl border border-zinc-700 p-4">
+              <div className="flex items-center justify-between gap-4">
+                <div>
+                  <p className="text-sm font-semibold text-white">Registration Link</p>
+                  <p className="text-xs text-zinc-400 mt-0.5">
+                    {form.is_private
+                      ? 'Private — only participants with the invite link can register'
+                      : 'Public — open registration visible on the tournament browser'}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => set('is_private', !form.is_private)}
+                  className={`relative w-12 h-6 rounded-full transition-colors shrink-0 ${form.is_private ? 'bg-purple-600' : 'bg-zinc-600'}`}
+                >
+                  <span className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${form.is_private ? 'translate-x-6' : 'translate-x-0.5'}`} />
+                </button>
+              </div>
+              <div className="mt-2 flex gap-4 text-xs">
+                <span className={!form.is_private ? 'text-purple-400 font-semibold' : 'text-zinc-500'}>Public</span>
+                <span className={form.is_private ? 'text-purple-400 font-semibold' : 'text-zinc-500'}>Private (invite-only)</span>
+              </div>
+            </div>
           </div>
         )}
 
@@ -558,8 +595,79 @@ export default function TournamentBuilder() {
           </div>
         )}
 
-        {/* Step 3: Publish */}
+        {/* Step 3: Services */}
         {step === 3 && (
+          <div className="space-y-5">
+            <div>
+              <h2 className="text-lg font-bold text-white mb-1">Book Service Providers</h2>
+              <p className="text-sm text-zinc-400">
+                Browse HERU-verified service providers. Add them to your tournament — you'll confirm bookings after publishing.
+              </p>
+            </div>
+
+            {approvedServices.length === 0 ? (
+              <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-8 text-center">
+                <Briefcase className="w-10 h-10 text-zinc-700 mx-auto mb-3" />
+                <p className="text-zinc-400 text-sm">No approved service providers available yet.</p>
+              </div>
+            ) : (
+              <div className="grid sm:grid-cols-2 gap-3">
+                {approvedServices.map(svc => {
+                  const isAdded = bookedServices.some(b => b.id === svc.id);
+                  return (
+                    <div key={svc.id} className={`rounded-xl border p-4 transition-all ${isAdded ? 'bg-purple-500/10 border-purple-500/30' : 'bg-zinc-900 border-zinc-800'}`}>
+                      <div className="flex items-start justify-between gap-2 mb-2">
+                        <div className="flex-1 min-w-0">
+                          <p className="text-white font-semibold text-sm truncate">{svc.title}</p>
+                          <p className="text-zinc-500 text-xs capitalize">{svc.category}</p>
+                        </div>
+                        <span className="text-white font-black text-sm shrink-0">EGP {Number(svc.price).toLocaleString()}</span>
+                      </div>
+                      {svc.description && (
+                        <p className="text-zinc-400 text-xs line-clamp-2 mb-3">{svc.description}</p>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (isAdded) setBookedServices(bs => bs.filter(b => b.id !== svc.id));
+                          else setBookedServices(bs => [...bs, svc]);
+                        }}
+                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                          isAdded
+                            ? 'bg-purple-500/20 text-purple-300 hover:bg-red-500/20 hover:text-red-300'
+                            : 'bg-white/5 text-zinc-300 hover:bg-purple-500/20 hover:text-purple-300'
+                        }`}
+                      >
+                        {isAdded ? <><X className="w-3.5 h-3.5" /> Remove</> : <><Plus className="w-3.5 h-3.5" /> Add</>}
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            {bookedServices.length > 0 && (
+              <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-4">
+                <p className="text-sm font-semibold text-white mb-3">Selected Services ({bookedServices.length})</p>
+                <div className="space-y-2">
+                  {bookedServices.map(svc => (
+                    <div key={svc.id} className="flex items-center justify-between gap-2 text-sm">
+                      <span className="text-zinc-300">{svc.title}</span>
+                      <span className="text-white font-semibold">EGP {Number(svc.price).toLocaleString()}</span>
+                    </div>
+                  ))}
+                  <div className="border-t border-zinc-800 pt-2 flex items-center justify-between text-sm font-bold">
+                    <span className="text-zinc-400">Estimated Total</span>
+                    <span className="text-purple-400">EGP {bookedServices.reduce((s, b) => s + Number(b.price), 0).toLocaleString()}</span>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Step 4: Publish */}
+        {step === 4 && (
           <div className="space-y-5">
             {/* Summary */}
             <div className="bg-zinc-900 rounded-2xl border border-zinc-800 p-6 space-y-3">
