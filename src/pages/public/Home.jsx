@@ -167,14 +167,15 @@ export default function Home() {
   const medals = ['🥇', '🥈', '🥉']
 
   return (
-    <div className="min-h-screen bg-[#080808] text-white">
+    <div className="min-h-screen bg-zinc-950 text-white">
       <PublicNav />
 
       {/* HERO */}
       <section className="relative pt-32 pb-24 px-4 overflow-hidden">
+        <img src="https://images.unsplash.com/photo-1542751371-adc38448a05e?w=1920&q=70" alt="" className="absolute inset-0 w-full h-full object-cover opacity-[0.07] pointer-events-none" />
         <div className="absolute inset-0 pointer-events-none">
-          <div className="absolute top-0 left-1/4 w-96 h-96 rounded-full bg-red-600/8 blur-[120px]" />
-          <div className="absolute top-20 right-1/4 w-80 h-80 rounded-full bg-purple-600/8 blur-[120px]" />
+          <div className="absolute top-0 left-1/4 w-96 h-96 rounded-full bg-red-600/10 blur-[120px]" />
+          <div className="absolute top-20 right-1/4 w-80 h-80 rounded-full bg-purple-600/10 blur-[120px]" />
         </div>
         <div className="relative max-w-5xl mx-auto text-center">
           <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-red-500/10
@@ -209,7 +210,8 @@ export default function Home() {
       </section>
 
       {/* STATS */}
-      <section className="py-12 px-4 border-y border-white/5">
+      <section className="relative py-12 px-4 border-y border-white/5 overflow-hidden">
+        <img src="https://images.unsplash.com/photo-1560253023-3ec5d502959f?w=1920&q=70" alt="" className="absolute inset-0 w-full h-full object-cover opacity-[0.06] pointer-events-none" />
         <div className="max-w-5xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-6">
           {STATS.map(({ label, value, Icon }) => (
             <div key={label} className="text-center">
@@ -222,8 +224,9 @@ export default function Home() {
       </section>
 
       {/* PRODUCTS */}
-      <section className="py-24 px-4">
-        <div className="max-w-7xl mx-auto">
+      <section className="relative py-24 px-4 overflow-hidden">
+        <img src="https://images.unsplash.com/photo-1511512578047-dfb367046420?w=1920&q=70" alt="" className="absolute inset-0 w-full h-full object-cover opacity-[0.05] pointer-events-none" />
+        <div className="relative max-w-7xl mx-auto">
           <div className="text-center mb-14">
             <p className="text-xs font-bold uppercase tracking-widest text-red-400 mb-3">Four Products</p>
             <h2 className="text-4xl font-black text-white">Everything esports needs.</h2>
@@ -238,8 +241,9 @@ export default function Home() {
       </section>
 
       {/* HOW IT WORKS */}
-      <section className="py-24 px-4 bg-gradient-to-b from-white/2 to-transparent">
-        <div className="max-w-5xl mx-auto">
+      <section className="relative py-24 px-4 bg-gradient-to-b from-white/2 to-transparent overflow-hidden">
+        <img src="https://images.unsplash.com/photo-1493711662062-fa541adb3fc8?w=1920&q=70" alt="" className="absolute inset-0 w-full h-full object-cover opacity-[0.05] pointer-events-none" />
+        <div className="relative max-w-5xl mx-auto">
           <div className="text-center mb-14">
             <p className="text-xs font-bold uppercase tracking-widest text-gray-500 mb-3">The Flywheel</p>
             <h2 className="text-4xl font-black text-white">How it works</h2>
@@ -264,8 +268,9 @@ export default function Home() {
 
       {/* LIVE TOURNAMENTS */}
       {liveTournaments.length > 0 && (
-        <section className="py-20 px-4">
-          <div className="max-w-3xl mx-auto">
+        <section className="relative py-20 px-4 overflow-hidden">
+          <img src="https://images.unsplash.com/photo-1538481199705-c710c4e965fc?w=1920&q=70" alt="" className="absolute inset-0 w-full h-full object-cover opacity-[0.07] pointer-events-none" />
+          <div className="relative max-w-3xl mx-auto">
             <div className="flex items-center justify-between mb-6">
               <div>
                 <p className="text-xs font-bold uppercase tracking-widest text-green-400 mb-1">Live now</p>

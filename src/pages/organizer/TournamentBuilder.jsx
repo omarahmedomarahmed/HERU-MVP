@@ -108,6 +108,8 @@ export default function TournamentBuilder() {
     entry_fee: 0,
     is_online: true,
     venue_name: '',
+    venue_address: '',
+    venue_google_maps: '',
     skill_level: 'open',
     rules: '',
     description: '',
@@ -153,6 +155,8 @@ export default function TournamentBuilder() {
       entry_fee:          t.entry_fee || 0,
       is_online:          t.is_online !== false,
       venue_name:         t.venue_name || '',
+      venue_address:      t.venue_address || '',
+      venue_google_maps:  t.venue_google_maps || '',
       skill_level:        t.skill_level || 'open',
       rules:              t.rules || '',
       description:        t.organizer_brand?.description || '',
@@ -162,6 +166,7 @@ export default function TournamentBuilder() {
       sponsorship_enabled: t.sponsorship_enabled || false,
       status:             t.status || 'draft',
       organizer_brand:    t.organizer_brand || {},
+      is_private:         t.is_private || false,
     });
   }, [existing]);
 
@@ -179,8 +184,11 @@ export default function TournamentBuilder() {
       entry_fee:          Number(form.entry_fee),
       is_online:          form.is_online,
       venue_name:         form.is_online ? null : (form.venue_name || null),
+      venue_address:      form.is_online ? null : (form.venue_address || null),
+      venue_google_maps:  form.is_online ? null : (form.venue_google_maps || null),
       skill_level:        form.skill_level,
       rules:              form.rules || null,
+      is_private:         form.is_private,
       tournament_image:   form.tournament_image || null,
       prizepool_total:    Number(form.prizepool_total),
       sponsorship_enabled: form.sponsorship_enabled,
@@ -429,12 +437,31 @@ export default function TournamentBuilder() {
                 </button>
               </div>
               {!form.is_online && (
-                <div className="mt-3">
-                  <Input
-                    placeholder="Venue name / address"
-                    value={form.venue_name}
-                    onChange={e => set('venue_name', e.target.value)}
-                  />
+                <div className="mt-3 space-y-3">
+                  <div>
+                    <FieldLabel>Venue Name</FieldLabel>
+                    <Input
+                      placeholder="Venue name / address"
+                      value={form.venue_name}
+                      onChange={e => set('venue_name', e.target.value)}
+                    />
+                  </div>
+                  <div>
+                    <FieldLabel>Venue Address</FieldLabel>
+                    <Input
+                      placeholder="Street address, city"
+                      value={form.venue_address || ''}
+                      onChange={e => set('venue_address', e.target.value)}
+                    />
+                  </div>
+                  <div>
+                    <FieldLabel>Google Maps Link</FieldLabel>
+                    <Input
+                      placeholder="https://maps.google.com/..."
+                      value={form.venue_google_maps || ''}
+                      onChange={e => set('venue_google_maps', e.target.value)}
+                    />
+                  </div>
                 </div>
               )}
             </div>

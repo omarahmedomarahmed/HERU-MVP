@@ -901,7 +901,7 @@ export default function GamerProfile() {
 
       {/* Main Tabs */}
       <Tabs defaultValue={defaultTab === 'games' ? 'teams' : defaultTab} className="space-y-6">
-        <TabsList className="bg-zinc-900 border border-zinc-800 p-1">
+        <TabsList className="bg-zinc-900 border border-zinc-800 p-1 flex-wrap h-auto gap-1">
           <TabsTrigger value="teams" className="data-[state=active]:bg-red-600 data-[state=active]:text-white text-gray-400">
             <Users className="w-4 h-4 mr-1.5" /> Teams
           </TabsTrigger>
@@ -913,6 +913,12 @@ export default function GamerProfile() {
           </TabsTrigger>
           <TabsTrigger value="tournaments" className="data-[state=active]:bg-red-600 data-[state=active]:text-white text-gray-400">
             <Bell className="w-4 h-4 mr-1.5" /> Invites
+          </TabsTrigger>
+          <TabsTrigger value="friends" className="data-[state=active]:bg-red-600 data-[state=active]:text-white text-gray-400">
+            <UserPlus className="w-4 h-4 mr-1.5" /> Friends
+          </TabsTrigger>
+          <TabsTrigger value="messages" className="data-[state=active]:bg-red-600 data-[state=active]:text-white text-gray-400">
+            <MessageSquare className="w-4 h-4 mr-1.5" /> Messages
           </TabsTrigger>
           <TabsTrigger value="orders" className="data-[state=active]:bg-red-600 data-[state=active]:text-white text-gray-400">
             <Package className="w-4 h-4 mr-1.5" /> Orders

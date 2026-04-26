@@ -1,13 +1,8 @@
 import { useState, useEffect, useRef } from 'react'
 import { Link, useLocation } from 'react-router-dom'
-import {
-  Gamepad2, Building2, Radar, Briefcase,
-  ChevronDown, Menu, X, LogIn, UserPlus, Zap
-} from 'lucide-react'
+import { Gamepad2, Building2, Radar, Briefcase, ChevronDown, Menu, X, LogIn, Zap } from 'lucide-react'
+import HeruLogo from '@/components/shared/HeruLogo'
 
-// ─────────────────────────────────────────────
-// Product definitions
-// ─────────────────────────────────────────────
 const PRODUCTS = [
   {
     name: 'HERU ARENA',
@@ -54,30 +49,25 @@ const LOGIN_LINKS = [
   { label: 'Service Provider', href: '/auth/provider/login',  color: 'text-cyan-400' },
 ]
 
-// ─────────────────────────────────────────────
-// ProductDropdown
-// ─────────────────────────────────────────────
 function ProductDropdown({ onClose }) {
   return (
-    <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 w-[600px] rounded-2xl
-                    bg-[#111]/95 border border-white/10 backdrop-blur-xl shadow-2xl z-50 p-4">
-      <p className="text-xs font-semibold text-gray-500 uppercase tracking-widest mb-3 px-1">Products</p>
+    <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 w-[620px] rounded-2xl bg-zinc-950/98 border border-zinc-800/50 backdrop-blur-xl shadow-2xl z-50 p-4">
+      <p className="text-xs font-semibold text-zinc-500 uppercase tracking-widest mb-3 px-1">Products</p>
       <div className="grid grid-cols-2 gap-2">
         {PRODUCTS.map((p) => (
           <Link
             key={p.name}
             to={p.href}
             onClick={onClose}
-            className={`group flex items-start gap-3 p-3 rounded-xl border transition-all duration-150
-                        hover:scale-[1.02] ${p.bg}`}
+            className={`group flex items-start gap-3 p-3 rounded-xl border transition-all duration-150 hover:scale-[1.02] ${p.bg}`}
           >
             <div className={`mt-0.5 shrink-0 ${p.color}`}>
               <p.Icon className="h-5 w-5" />
             </div>
             <div>
               <p className={`text-sm font-bold ${p.color}`}>{p.name}</p>
-              <p className="text-xs text-gray-400 mt-0.5 leading-snug">{p.tagline}</p>
-              <p className="text-xs text-gray-500 mt-1 leading-snug hidden group-hover:block">{p.desc}</p>
+              <p className="text-xs text-zinc-400 mt-0.5 leading-snug">{p.tagline}</p>
+              <p className="text-xs text-zinc-500 mt-1 leading-snug hidden group-hover:block">{p.desc}</p>
             </div>
           </Link>
         ))}
@@ -86,20 +76,16 @@ function ProductDropdown({ onClose }) {
   )
 }
 
-// ─────────────────────────────────────────────
-// LoginDropdown
-// ─────────────────────────────────────────────
 function LoginDropdown({ onClose }) {
   return (
-    <div className="absolute top-full right-0 mt-2 w-52 rounded-xl
-                    bg-[#111]/95 border border-white/10 backdrop-blur-xl shadow-2xl z-50 py-2">
-      <p className="text-xs font-semibold text-gray-500 uppercase tracking-widest px-4 pb-2">Login as</p>
+    <div className="absolute top-full right-0 mt-2 w-56 rounded-xl bg-zinc-950/98 border border-zinc-800/50 backdrop-blur-xl shadow-2xl z-50 py-2">
+      <p className="text-xs font-semibold text-zinc-500 uppercase tracking-widest px-4 pb-2">Sign in as</p>
       {LOGIN_LINKS.map((l) => (
         <Link
           key={l.href}
           to={l.href}
           onClick={onClose}
-          className={`flex items-center gap-2 px-4 py-2 text-sm font-medium hover:bg-white/5 transition-colors ${l.color}`}
+          className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium hover:bg-white/5 transition-colors ${l.color}`}
         >
           <LogIn className="h-3.5 w-3.5" />
           {l.label}
@@ -109,11 +95,7 @@ function LoginDropdown({ onClose }) {
   )
 }
 
-// ─────────────────────────────────────────────
-// PublicNav
-// ─────────────────────────────────────────────
 export default function PublicNav() {
-  const [scrolled, setScrolled] = useState(false)
   const [productsOpen, setProductsOpen] = useState(false)
   const [loginOpen, setLoginOpen] = useState(false)
   const [mobileOpen, setMobileOpen] = useState(false)
@@ -123,19 +105,11 @@ export default function PublicNav() {
   const loginRef = useRef(null)
 
   useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 20)
-    window.addEventListener('scroll', onScroll, { passive: true })
-    return () => window.removeEventListener('scroll', onScroll)
-  }, [])
-
-  // Close dropdowns on route change
-  useEffect(() => {
     setProductsOpen(false)
     setLoginOpen(false)
     setMobileOpen(false)
   }, [location.pathname])
 
-  // Close on outside click
   useEffect(() => {
     function onClickOutside(e) {
       if (productsRef.current && !productsRef.current.contains(e.target)) setProductsOpen(false)
@@ -147,78 +121,60 @@ export default function PublicNav() {
 
   return (
     <>
-      <header
-        className={`fixed top-0 inset-x-0 z-40 transition-all duration-300
-          ${scrolled
-            ? 'bg-black/85 backdrop-blur-md border-b border-white/8 shadow-lg'
-            : 'bg-transparent'
-          }`}
-      >
+      <header className="fixed top-0 inset-x-0 z-40 bg-zinc-950/95 backdrop-blur-xl border-b border-zinc-800/50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
 
-          {/* Logo */}
-          <Link to="/" className="flex items-center gap-2 group">
-            <span className="text-2xl font-black tracking-tight text-white group-hover:text-red-400 transition-colors">
-              HERU<span className="text-red-500">.</span>gg
-            </span>
+          <Link to="/" className="flex items-center">
+            <HeruLogo className="h-8" />
           </Link>
 
-          {/* Desktop centre links */}
           <nav className="hidden md:flex items-center gap-1">
-            {/* Products dropdown trigger */}
             <div ref={productsRef} className="relative">
               <button
                 onClick={() => { setProductsOpen(p => !p); setLoginOpen(false) }}
                 className={`flex items-center gap-1 px-3 py-2 rounded-lg text-sm font-medium transition-colors
-                  ${productsOpen ? 'text-white bg-white/10' : 'text-gray-300 hover:text-white hover:bg-white/5'}`}
+                  ${productsOpen ? 'text-white bg-white/10' : 'text-zinc-300 hover:text-white hover:bg-white/5'}`}
               >
                 Products
                 <ChevronDown className={`h-3.5 w-3.5 transition-transform duration-200 ${productsOpen ? 'rotate-180' : ''}`} />
               </button>
               {productsOpen && <ProductDropdown onClose={() => setProductsOpen(false)} />}
             </div>
-
-            <Link to="/tournaments"
-              className="px-3 py-2 rounded-lg text-sm font-medium text-gray-300 hover:text-white hover:bg-white/5 transition-colors">
+            <Link to="/tournaments" className="px-3 py-2 rounded-lg text-sm font-medium text-zinc-300 hover:text-white hover:bg-white/5 transition-colors">
               Tournaments
             </Link>
-            <Link to="/coaches"
-              className="px-3 py-2 rounded-lg text-sm font-medium text-gray-300 hover:text-white hover:bg-white/5 transition-colors">
-              Coaches
-            </Link>
-            <Link to="/leaderboards"
-              className="px-3 py-2 rounded-lg text-sm font-medium text-gray-300 hover:text-white hover:bg-white/5 transition-colors">
+            <Link to="/leaderboards" className="px-3 py-2 rounded-lg text-sm font-medium text-zinc-300 hover:text-white hover:bg-white/5 transition-colors">
               Leaderboards
+            </Link>
+            <Link to="/coaches" className="px-3 py-2 rounded-lg text-sm font-medium text-zinc-300 hover:text-white hover:bg-white/5 transition-colors">
+              Coaches
             </Link>
           </nav>
 
-          {/* Desktop right actions */}
           <div className="hidden md:flex items-center gap-2">
             <div ref={loginRef} className="relative">
               <button
                 onClick={() => { setLoginOpen(l => !l); setProductsOpen(false) }}
                 className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors
-                  ${loginOpen ? 'text-white bg-white/10' : 'text-gray-300 hover:text-white hover:bg-white/5'}`}
+                  ${loginOpen ? 'text-white bg-white/10' : 'text-zinc-300 hover:text-white hover:bg-white/5'}`}
               >
                 <LogIn className="h-4 w-4" />
-                Login
+                Sign In
                 <ChevronDown className={`h-3 w-3 transition-transform duration-200 ${loginOpen ? 'rotate-180' : ''}`} />
               </button>
               {loginOpen && <LoginDropdown onClose={() => setLoginOpen(false)} />}
             </div>
             <Link
               to="/auth"
-              className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold
-                         bg-red-600 hover:bg-red-500 text-white transition-colors"
+              className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold bg-red-600 hover:bg-red-500 text-white transition-colors"
             >
               <Zap className="h-3.5 w-3.5" />
               Get Started
             </Link>
           </div>
 
-          {/* Mobile hamburger */}
           <button
-            className="md:hidden p-2 rounded-lg text-gray-300 hover:text-white hover:bg-white/10 transition-colors"
+            className="md:hidden p-2 rounded-lg text-zinc-300 hover:text-white hover:bg-white/10 transition-colors"
             onClick={() => setMobileOpen(o => !o)}
           >
             {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
@@ -226,18 +182,15 @@ export default function PublicNav() {
         </div>
       </header>
 
-      {/* Mobile menu */}
       {mobileOpen && (
-        <div className="fixed inset-0 z-30 pt-16 bg-black/98 overflow-y-auto md:hidden">
+        <div className="fixed inset-0 z-30 pt-16 bg-zinc-950/99 overflow-y-auto md:hidden">
           <div className="p-4 space-y-2">
-            {/* Products section */}
             <button
               onClick={() => setMobileProducts(p => !p)}
-              className="w-full flex items-center justify-between px-4 py-3 rounded-xl bg-white/5
-                         text-white font-semibold text-sm"
+              className="w-full flex items-center justify-between px-4 py-3 rounded-xl bg-white/5 text-white font-semibold text-sm"
             >
               Products
-              <ChevronDown className={`h-4 w-4 text-gray-400 transition-transform ${mobileProducts ? 'rotate-180' : ''}`} />
+              <ChevronDown className={`h-4 w-4 text-zinc-400 transition-transform ${mobileProducts ? 'rotate-180' : ''}`} />
             </button>
             {mobileProducts && (
               <div className="space-y-1 ml-2">
@@ -251,28 +204,17 @@ export default function PublicNav() {
                     <p.Icon className={`h-4 w-4 ${p.color}`} />
                     <div>
                       <p className={`text-sm font-bold ${p.color}`}>{p.name}</p>
-                      <p className="text-xs text-gray-400">{p.tagline}</p>
+                      <p className="text-xs text-zinc-400">{p.tagline}</p>
                     </div>
                   </Link>
                 ))}
               </div>
             )}
-
-            <Link to="/tournaments" onClick={() => setMobileOpen(false)}
-              className="block px-4 py-3 rounded-xl text-white font-medium text-sm bg-white/5">
-              Tournaments
-            </Link>
-            <Link to="/coaches" onClick={() => setMobileOpen(false)}
-              className="block px-4 py-3 rounded-xl text-white font-medium text-sm bg-white/5">
-              Coaches
-            </Link>
-            <Link to="/leaderboards" onClick={() => setMobileOpen(false)}
-              className="block px-4 py-3 rounded-xl text-white font-medium text-sm bg-white/5">
-              Leaderboards
-            </Link>
-
+            <Link to="/tournaments" onClick={() => setMobileOpen(false)} className="block px-4 py-3 rounded-xl text-white font-medium text-sm bg-white/5">Tournaments</Link>
+            <Link to="/leaderboards" onClick={() => setMobileOpen(false)} className="block px-4 py-3 rounded-xl text-white font-medium text-sm bg-white/5">Leaderboards</Link>
+            <Link to="/coaches" onClick={() => setMobileOpen(false)} className="block px-4 py-3 rounded-xl text-white font-medium text-sm bg-white/5">Coaches</Link>
             <div className="border-t border-white/10 pt-4 mt-2 space-y-2">
-              <p className="text-xs font-semibold text-gray-500 uppercase tracking-widest px-1">Login as</p>
+              <p className="text-xs font-semibold text-zinc-500 uppercase tracking-widest px-1">Sign in as</p>
               {LOGIN_LINKS.map((l) => (
                 <Link key={l.href} to={l.href} onClick={() => setMobileOpen(false)}
                   className={`flex items-center gap-2 px-4 py-3 rounded-xl bg-white/5 text-sm font-medium ${l.color}`}>
@@ -281,8 +223,7 @@ export default function PublicNav() {
                 </Link>
               ))}
               <Link to="/auth" onClick={() => setMobileOpen(false)}
-                className="flex items-center justify-center gap-2 px-4 py-3 rounded-xl
-                           bg-red-600 text-white font-semibold text-sm mt-2">
+                className="flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-red-600 text-white font-semibold text-sm mt-2">
                 <Zap className="h-4 w-4" />
                 Get Started Free
               </Link>

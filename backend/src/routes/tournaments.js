@@ -11,7 +11,7 @@ const router = Router();
 // Valid columns for the tournaments table — used to strip unknown fields on insert/update
 const TOURNAMENT_COLUMNS = new Set([
   'name','game','tournament_image','organizer_id','main_organizer_id','organizer_brand',
-  'tournament_type','status','format','max_teams','schedule','description','is_offline','venue',
+  'tournament_type','status','format','max_teams','schedule','description','is_offline','is_online','venue',
   'teams','invited_teams','join_requests','talents','branding_items','production_items',
   'prizepool_items','venue_items','total_cost','prizepool_total','platform_fee',
   'platform_fee_percent','prizepool_in_total_cost','sponsorship_enabled','sponsorship_radar_id',
@@ -20,6 +20,9 @@ const TOURNAMENT_COLUMNS = new Set([
   'signup_banner','signup_description','signup_rules','signup_custom_fields','stream_embed_url',
   'participant_type','player_participants','gamer_participants','player_invites',
   'gamer_invites','prize_breakdown','prizepool_coins',
+  // Tournament builder fields
+  'start_date','end_date','entry_fee','skill_level','venue_name','venue_address','venue_google_maps',
+  'rules','is_private','registration_open',
   // Riot integration (015_riot_tournament.sql)
   'riot_provider_id','riot_tournament_id','riot_region',
   // Valorant (016_schema_fixes.sql)

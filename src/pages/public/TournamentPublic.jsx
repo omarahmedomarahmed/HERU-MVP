@@ -6,6 +6,7 @@ import FloatingPanel from '@/components/ui/FloatingPanel';
 import GlowButton from '@/components/ui/GlowButton';
 import GameCard from '@/components/ui/GameCard';
 import HeruLogo from '@/components/shared/HeruLogo';
+import BracketVisual from '@/components/tournament/BracketVisual';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
@@ -543,25 +544,12 @@ export default function TournamentPublic() {
 
             {tournament.brackets?.length > 0 && (
               <TabsContent value="brackets">
-                <FloatingPanel className="p-6">
-                  <div className="space-y-4">
-                    {tournament.brackets.map((round, i) => (
-                      <div key={i}>
-                        <p className="text-white font-bold mb-3">Round {round.round}</p>
-                        <div className="space-y-2">
-                          {round.matches?.map((match, j) => (
-                            <div key={j} className="bg-zinc-800/50 rounded-lg p-4 flex items-center justify-between">
-                              <p className="text-white font-bold text-sm">{match.team1 || 'TBD'} vs {match.team2 || 'TBD'}</p>
-                              {match.winner && <p className="text-green-400 text-xs">Winner: {match.winner}</p>}
-                              {match.score1 !== undefined && (
-                                <p className="text-white font-bold ml-4">{match.score1} – {match.score2}</p>
-                              )}
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
+                <FloatingPanel className="p-4 overflow-x-auto">
+                  <BracketVisual
+                    brackets={tournament.brackets}
+                    teams={teamsInTournament}
+                    allTeams={allTeams}
+                  />
                 </FloatingPanel>
               </TabsContent>
             )}

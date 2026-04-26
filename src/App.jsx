@@ -70,6 +70,7 @@ import OrganizerProfile from './pages/organizer/OrganizerProfile'
 import OrganizerTeams from './pages/organizer/OrganizerTeams'
 import OrganizerMessages from './pages/organizer/OrganizerMessages'
 
+import OrganizerRadar from './pages/organizer/OrganizerRadar'
 import OrganizerVerification from './pages/organizer/OrganizerVerification'
 import OrganizerBilling from './pages/organizer/OrganizerBilling'
 import OrganizerIncome from './pages/organizer/OrganizerIncome'
@@ -215,6 +216,8 @@ function App() {
             <Route path="/organizer/teams" element={<RequireOrganizer><OrganizerLayout><OrganizerTeams /></OrganizerLayout></RequireOrganizer>} />
             <Route path="/organizer/messages" element={<RequireOrganizer><OrganizerLayout><OrganizerMessages /></OrganizerLayout></RequireOrganizer>} />
             <Route path="/organizer/profile" element={<RequireOrganizer><OrganizerLayout><OrganizerProfile /></OrganizerLayout></RequireOrganizer>} />
+
+            <Route path="/organizer/radar" element={<RequireOrganizer><OrganizerRadar /></RequireOrganizer>} />
 
             <Route path="/organizer/verification" element={<RequireOrganizer><OrganizerVerification /></RequireOrganizer>} />
 

@@ -12,7 +12,8 @@ import { useAuth } from '@/lib/AuthContext'
 import {
   Home, Trophy, Users, User, Bell,
   Menu, X, LogOut, LayoutDashboard,
-  Swords, UserPlus, BookOpen, MessageSquare, ChevronRight
+  Swords, UserPlus, BookOpen, MessageSquare, ChevronRight,
+  Link2, Bot
 } from 'lucide-react';
 
 export default function GamerLayout({ children, user: userProp, profile: profileProp }) {
@@ -84,12 +85,18 @@ export default function GamerLayout({ children, user: userProp, profile: profile
   // Total alerts driving red dot on Profile nav
   const profileAlerts = pendingTournamentInvites;
 
+  // Desktop nav — Friends & Messages are accessible via Profile tabs and header icon
   const navItems = [
     { icon: Swords, label: 'Arena', path: '/gamer/arena', prominent: true },
     { icon: Home, label: 'Home', path: '/gamer/home' },
     { icon: Trophy, label: 'Tournaments', path: '/gamer/tournaments' },
     { icon: Users, label: 'Teams', path: '/gamer/teams', badge: pendingTeamRequests },
     { icon: BookOpen, label: 'Coaching', path: '/coaches' },
+  ];
+
+  // Mobile menu items (includes all items including Friends & Messages)
+  const mobileNavItems = [
+    ...navItems,
     { icon: UserPlus, label: 'Friends', path: '/gamer/friends' },
     { icon: MessageSquare, label: 'Messages', path: '/gamer/messages' },
   ];
@@ -283,7 +290,7 @@ export default function GamerLayout({ children, user: userProp, profile: profile
               className="lg:hidden border-t border-zinc-800"
             >
               <nav className="p-4 space-y-1">
-                {navItems.map((item) => (
+                {mobileNavItems.map((item) => (
                   <Link
                     key={item.path + (item.search || '')}
                     to={item.search ? `${item.path}?${item.search}` : item.path}

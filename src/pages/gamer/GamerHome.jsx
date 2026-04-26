@@ -236,6 +236,34 @@ export default function GamerHome() {
         </section>
       )}
 
+      {/* Community Tournament Builder CTA */}
+      <section className="mb-8">
+        <div className="relative rounded-2xl overflow-hidden border border-red-500/20 bg-gradient-to-br from-red-950/30 to-zinc-900">
+          <img src="https://images.unsplash.com/photo-1493711662062-fa541adb3fc8?w=800&q=70" alt="" className="absolute inset-0 w-full h-full object-cover opacity-10 pointer-events-none" />
+          <div className="relative p-6 md:p-8">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-red-500/20 text-red-400 text-xs font-bold border border-red-500/20 mb-3">
+                  NEW — HERU ARENA
+                </span>
+                <h2 className="text-2xl font-black text-white mb-2">Community Tournament Builder</h2>
+                <p className="text-zinc-400 text-sm max-w-lg">Create private scrims, 1v1 challenges, or invite-only bracket tournaments with your squad. No organizer account needed.</p>
+                <div className="flex gap-3 mt-4">
+                  <Link to="/gamer/build" className="px-5 py-2.5 bg-red-600 hover:bg-red-500 text-white text-sm font-bold rounded-lg transition-colors">Build Tournament</Link>
+                  <Link to="/gamer/build" className="px-5 py-2.5 border border-zinc-700 hover:border-zinc-600 text-zinc-300 text-sm font-medium rounded-lg transition-colors">View My Brackets</Link>
+                </div>
+              </div>
+              <div className="hidden md:flex items-center justify-center w-24 h-24 rounded-2xl bg-red-500/10 border border-red-500/20 flex-shrink-0">
+                <Trophy className="w-10 h-10 text-red-400" />
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* HERU Leaderboard */}
+      <LeaderboardSection />
+
       {/* Leaderboard Quick Stats */}
       <section className="mb-10">
         <div className="flex items-center justify-between mb-4">
@@ -397,6 +425,70 @@ export default function GamerHome() {
           </div>
         </FloatingPanel>
       </section>
+
+      <footer className="mt-16 pt-8 border-t border-zinc-800 text-center">
+        <p className="text-zinc-600 text-xs">© 2026 HERU.gg — The Esports OS for MENA</p>
+      </footer>
     </GamerLayout>
+  );
+}
+
+function LeaderboardSection() {
+  const { data: leaderboard = [] } = useQuery({
+    queryKey: ['home-leaderboard'],
+    queryFn: () => apiCall('/api/leaderboards?limit=5&game=all'),
+    staleTime: 5 * 60_000,
+    enabled: true,
+  });
+
+  const entries = Array.isArray(leaderboard) ? leaderboard : leaderboard?.data || [];
+
+  return (
+    <section className="mb-10">
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-2">
+          <Trophy className="w-5 h-5 text-red-500" />
+          <h2 className="text-lg font-bold text-white">HERU Leaderboard</h2>
+        </div>
+        <Link to="/leaderboards" className="text-sm text-red-400 hover:text-red-300 font-medium transition-colors flex items-center gap-1">
+          View Full <ArrowRight className="w-3.5 h-3.5" />
+        </Link>
+      </div>
+      <FloatingPanel className="overflow-hidden">
+        {entries.length === 0 ? (
+          <div className="p-8 text-center">
+            <Trophy className="w-10 h-10 text-zinc-700 mx-auto mb-2" />
+            <p className="text-zinc-500 text-sm">No leaderboard data yet</p>
+          </div>
+        ) : (
+          <div className="divide-y divide-zinc-800/50">
+            {entries.slice(0, 5).map((entry, i) => {
+              const rank = entry.rank || i + 1;
+              const rankColor = rank === 1 ? 'text-yellow-400' : rank === 2 ? 'text-slate-300' : rank === 3 ? 'text-amber-600' : 'text-zinc-500';
+              return (
+                <div key={entry.id || i} className="flex items-center gap-4 px-5 py-3 hover:bg-white/5 transition-colors">
+                  <span className={`w-7 text-center font-black text-lg ${rankColor}`}>{rank}</span>
+                  <div className="w-9 h-9 rounded-full bg-gradient-to-br from-red-600/30 to-zinc-800 flex items-center justify-center overflow-hidden border border-zinc-700/50 flex-shrink-0">
+                    {entry.avatar ? (
+                      <img src={entry.avatar} alt="" className="w-full h-full object-cover" />
+                    ) : (
+                      <Star className="w-4 h-4 text-red-400" />
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-white font-bold truncate">{entry.username || entry.display_name || 'Player'}</p>
+                    {entry.game && <p className="text-zinc-500 text-xs">{entry.game}</p>}
+                  </div>
+                  <div className="text-right flex-shrink-0">
+                    {entry.wins != null && <p className="text-emerald-400 text-xs font-bold">{entry.wins}W</p>}
+                    {entry.points != null && <p className="text-red-400 text-sm font-black">{entry.points?.toLocaleString()} pts</p>}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </FloatingPanel>
+    </section>
   );
 }
