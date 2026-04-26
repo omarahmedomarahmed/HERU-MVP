@@ -36,7 +36,7 @@ export default function ProviderServices() {
         </div>
         <Link
           to="/provider/services/new"
-          className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-sm font-medium transition-colors"
+          className="flex items-center gap-2 px-4 py-2 bg-cyan-600 hover:bg-cyan-700 text-white rounded-lg text-sm font-medium transition-colors"
         >
           <Plus className="w-4 h-4" /> Add Service
         </Link>
@@ -48,7 +48,7 @@ export default function ProviderServices() {
         <div className="bg-white/5 border border-white/10 rounded-xl p-12 text-center">
           <Package className="w-12 h-12 text-gray-600 mx-auto mb-4 opacity-40" />
           <p className="text-gray-400 mb-4">No services yet</p>
-          <Link to="/provider/services/new" className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-sm font-medium transition-colors">
+          <Link to="/provider/services/new" className="inline-flex items-center gap-2 px-4 py-2 bg-cyan-600 hover:bg-cyan-700 text-white rounded-lg text-sm font-medium transition-colors">
             <Plus className="w-4 h-4" /> Add your first service
           </Link>
         </div>

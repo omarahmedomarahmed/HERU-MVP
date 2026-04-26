@@ -9,13 +9,15 @@ function getAuthToken() {
 }
 
 const CATEGORIES = [
-  { value: 'Branding', label: 'Branding & Design' },
-  { value: 'Production', label: 'Stream & Media Production' },
-  { value: 'Talent', label: 'Host / Caster / Analyst' },
-  { value: 'Venue', label: 'Venue' },
-  { value: 'Marketing', label: 'Marketing / Discord Server' },
-  { value: 'Coaching', label: 'Coaching' },
-  { value: 'Influencer', label: 'Influencer / Content Creator' },
+  { value: 'Venue',         label: 'Specialized Gaming Venue',    note: 'Organizers' },
+  { value: 'Coaching',      label: 'Coach',                       note: 'Gamers only' },
+  { value: 'Talent',        label: 'Talent & Influencer',         note: 'Organizers & Sponsors' },
+  { value: 'Production',    label: 'Media Production',            note: 'Organizers' },
+  { value: 'Marketing',     label: 'Marketing',                   note: 'Organizers' },
+  { value: 'Community',     label: 'Gaming Community',            note: 'Organizers & Sponsors' },
+  { value: 'Hardware',      label: 'Gaming Hardware & Setup',     note: 'Organizers' },
+  { value: 'EventVendor',   label: 'Offline Event Vendors',       note: 'Organizers' },
+  { value: 'TournamentMgmt', label: 'Tournament Management',      note: 'Organizers' },
 ];
 
 const PRICE_TYPES = [
@@ -92,16 +94,19 @@ export default function ProviderServiceNew() {
                 key={cat.value}
                 type="button"
                 onClick={() => setForm(f => ({ ...f, category: cat.value }))}
-                className={`flex items-center gap-3 px-4 py-2.5 rounded-lg border text-sm text-left transition-all ${
+                className={`flex items-start gap-3 px-4 py-2.5 rounded-lg border text-sm text-left transition-all ${
                   form.category === cat.value
-                    ? 'bg-emerald-500/20 border-emerald-500/50 text-emerald-300'
+                    ? 'bg-cyan-500/20 border-cyan-500/50 text-cyan-300'
                     : 'bg-white/5 border-white/10 text-gray-400 hover:border-white/20'
                 }`}
               >
-                <div className={`w-4 h-4 rounded border flex-shrink-0 flex items-center justify-center ${form.category === cat.value ? 'bg-emerald-500 border-emerald-500' : 'border-white/20'}`}>
+                <div className={`w-4 h-4 rounded border flex-shrink-0 flex items-center justify-center mt-0.5 ${form.category === cat.value ? 'bg-cyan-500 border-cyan-500' : 'border-white/20'}`}>
                   {form.category === cat.value && <span className="text-white text-xs">✓</span>}
                 </div>
-                {cat.label}
+                <div>
+                  <div>{cat.label}</div>
+                  {cat.note && <div className="text-xs opacity-60 mt-0.5">{cat.note}</div>}
+                </div>
               </button>
             ))}
           </div>
@@ -121,7 +126,7 @@ export default function ProviderServiceNew() {
             onChange={set('description')}
             rows={4}
             placeholder="Describe what you offer, your process, turnaround time, etc."
-            className="w-full px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-white text-sm placeholder:text-gray-600 focus:outline-none focus:border-emerald-500 resize-none"
+            className="w-full px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-white text-sm placeholder:text-gray-600 focus:outline-none focus:border-cyan-500 resize-none"
           />
         </div>
 
@@ -136,7 +141,7 @@ export default function ProviderServiceNew() {
             <select
               value={form.price_type}
               onChange={set('price_type')}
-              className="w-full px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-white text-sm focus:outline-none focus:border-emerald-500"
+              className="w-full px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-white text-sm focus:outline-none focus:border-cyan-500"
             >
               {PRICE_TYPES.map(pt => <option key={pt.value} value={pt.value} className="bg-gray-900">{pt.label}</option>)}
             </select>
@@ -162,7 +167,7 @@ export default function ProviderServiceNew() {
                 )}
               </div>
             ))}
-            <button type="button" onClick={addDeliverable} className="flex items-center gap-1.5 text-emerald-400 hover:text-emerald-300 text-sm transition-colors">
+            <button type="button" onClick={addDeliverable} className="flex items-center gap-1.5 text-cyan-400 hover:text-cyan-300 text-sm transition-colors">
               <Plus className="w-4 h-4" /> Add deliverable
             </button>
           </div>
@@ -182,7 +187,7 @@ export default function ProviderServiceNew() {
           <button type="button" onClick={() => navigate('/provider/services')} className="flex-1 py-2.5 rounded-lg bg-white/5 border border-white/10 text-white font-medium hover:bg-white/10 transition-colors text-sm">
             Cancel
           </button>
-          <button type="submit" disabled={loading} className="flex-1 py-2.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-semibold transition-colors disabled:opacity-50 flex items-center justify-center gap-2">
+          <button type="submit" disabled={loading} className="flex-1 py-2.5 rounded-lg bg-cyan-600 hover:bg-cyan-700 text-white font-semibold transition-colors disabled:opacity-50 flex items-center justify-center gap-2">
             {loading ? <><Loader2 className="w-4 h-4 animate-spin" /> Submitting...</> : 'Submit for Review'}
           </button>
         </div>

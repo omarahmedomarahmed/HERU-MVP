@@ -63,7 +63,8 @@ CREATE TABLE IF NOT EXISTS services (
   description           TEXT,
   category              TEXT        NOT NULL
                         CHECK (category IN
-                          ('Branding','Production','Talent','Venue','Marketing','Coaching','Influencer')),
+                          ('Branding','Production','Talent','Venue','Marketing','Coaching','Influencer',
+                           'Community','Hardware','EventVendor','TournamentMgmt')),
   custom_fields         JSONB       DEFAULT '{}',
   price                 NUMERIC(10,2) NOT NULL DEFAULT 0,
   price_type            TEXT        DEFAULT 'fixed'

@@ -117,6 +117,9 @@ export default function GamerHome() {
                   <Link to="/tournaments">
                     <GlowButton variant="secondary" size="lg"><Trophy className="w-5 h-5" /> FIND TOURNAMENTS</GlowButton>
                   </Link>
+                  <Link to="/gamer/build">
+                    <GlowButton variant="ghost" size="lg"><Swords className="w-5 h-5" /> QUICK SCRIM</GlowButton>
+                  </Link>
                   <Link to="/coaches">
                     <GlowButton variant="ghost" size="lg"><BookOpen className="w-5 h-5" /> FIND A COACH</GlowButton>
                   </Link>

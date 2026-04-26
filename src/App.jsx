@@ -58,6 +58,7 @@ import ConnectedAccounts from './pages/gamer/ConnectedAccounts'
 import GamerBookings from './pages/gamer/GamerBookings'
 import GamerFriends from './pages/gamer/GamerFriends'
 import GamerMessages from './pages/gamer/GamerMessages'
+import GamerTournamentBuilder from './pages/gamer/GamerTournamentBuilder'
 
 // Organizer pages
 import OrganizerLayout from '@/components/layouts/OrganizerLayout'
@@ -189,6 +190,7 @@ function App() {
             <Route path="/gamer/notifications" element={<RequireGamer><GamerNotifications /></RequireGamer>} />
             <Route path="/gamer/connect" element={<RequireGamer><ConnectedAccounts /></RequireGamer>} />
             <Route path="/gamer/connected-accounts" element={<RequireGamer><ConnectedAccounts /></RequireGamer>} />
+            <Route path="/gamer/build" element={<RequireGamer><GamerTournamentBuilder /></RequireGamer>} />
             <Route path="/gamer/bookings" element={<RequireGamer><GamerBookings /></RequireGamer>} />
             <Route path="/gamer/friends" element={<RequireGamer><GamerFriends /></RequireGamer>} />
             <Route path="/gamer/messages" element={<RequireGamer><GamerMessages /></RequireGamer>} />
