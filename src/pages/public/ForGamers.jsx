@@ -1,131 +1,218 @@
-import React from 'react';
-import { Link } from 'react-router-dom';
-import AnimatedBackground from '@/components/shared/AnimatedBackground';
-import HeruLogo from '@/components/shared/HeruLogo';
+import { Link } from 'react-router-dom'
+import PublicNav from '@/components/public/PublicNav'
 import {
-  Trophy, Users, Star, Zap, Target, TrendingUp,
-  ChevronRight, CheckCircle, ArrowRight,
-} from 'lucide-react';
+  Gamepad2, Trophy, Users, Star, MessageSquare,
+  Zap, Target, Swords, UserCheck, ArrowRight,
+  ChevronRight, Sparkles
+} from 'lucide-react'
 
-const HOW_IT_WORKS = [
-  { step: 1, title: 'Register', desc: 'Create your gamer profile, add your games and region.' },
-  { step: 2, title: 'Find & Join', desc: 'Browse tournaments by game, format, and skill level. Join or form a team.' },
-  { step: 3, title: 'Compete & Rank', desc: 'Win matches, climb the leaderboard, and build your esports resume.' },
-];
+const FEATURES = [
+  {
+    Icon: Trophy,
+    title: 'Live Bracket Tournaments',
+    desc: 'Join published tournaments from professional organizers. Real brackets, real competition, real prizes in EGP.',
+    color: 'text-red-400', bg: 'bg-red-500/10',
+  },
+  {
+    Icon: Swords,
+    title: 'Community Tournament Builder',
+    label: 'NEW',
+    desc: 'Create private 1v1 or team scrims instantly. Invite friends, set the rules, run a bracket — no organizer needed.',
+    color: 'text-orange-400', bg: 'bg-orange-500/10',
+  },
+  {
+    Icon: Users,
+    title: 'Team Creation & Management',
+    desc: 'Build a roster, set roles, invite members, and enter tournaments as a team. Browse open rosters looking for players.',
+    color: 'text-red-400', bg: 'bg-red-500/10',
+  },
+  {
+    Icon: UserCheck,
+    title: 'Coaching Marketplace',
+    desc: 'Book 1-on-1 sessions with verified coaches across Valorant, CS2, LoL, FIFA, and more.',
+    color: 'text-orange-400', bg: 'bg-orange-500/10',
+  },
+  {
+    Icon: Star,
+    title: 'HERU Rank Leaderboard',
+    desc: 'Every tournament win earns rank points. Climb the MENA leaderboard and earn your HERU badge.',
+    color: 'text-red-400', bg: 'bg-red-500/10',
+  },
+  {
+    Icon: MessageSquare,
+    title: 'Friends, Teams & DMs',
+    desc: 'Add friends by gamer tag or Riot ID, build your network, and message anyone directly on the platform.',
+    color: 'text-orange-400', bg: 'bg-orange-500/10',
+  },
+  {
+    Icon: Target,
+    title: 'In-Game Stats & Profiles',
+    desc: 'Link your Riot account to show real rank, champion mastery, and match history directly on your public profile.',
+    color: 'text-red-400', bg: 'bg-red-500/10',
+  },
+  {
+    Icon: Gamepad2,
+    title: 'Gamer Profile & Portfolio',
+    desc: 'Showcase your tournament history, team affiliations, achievements, and talent profile — all in one public page.',
+    color: 'text-orange-400', bg: 'bg-orange-500/10',
+  },
+]
 
-const VALUE_PROPS = [
-  { icon: Trophy, title: 'Tournament Discovery', desc: 'Find MENA tournaments filtered by game, format, skill level, and date. No more missing out.' },
-  { icon: Users,  title: 'Team System',           desc: 'Create or join teams. Manage rosters, send invites, lock lineup before tournaments.' },
-  { icon: TrendingUp, title: 'Live Leaderboards', desc: 'Cross-tournament rankings by game. Your win record follows you everywhere.' },
-  { icon: Star,   title: 'Coaching Marketplace',  desc: 'Book 1:1 sessions with verified coaches. VOD reviews, strategy calls, live coaching.' },
-];
+const GAMES = ['Valorant', 'CS2', 'League of Legends', 'Dota 2', 'Fortnite', 'FIFA / EA FC', 'PUBG', 'Apex Legends', 'Rocket League', 'Overwatch 2', 'Rainbow Six Siege', 'Mobile Legends', 'Free Fire', 'Call of Duty']
 
-const STATS = [
-  { value: '500+', label: 'Gamers Registered' },
-  { value: '10+',  label: 'Tournaments Live' },
-  { value: '5+',   label: 'Games Covered' },
-  { value: 'EGP 130K+', label: 'Prizes Distributed' },
-];
+const HOW = [
+  { step: '01', title: 'Create your profile', desc: 'Sign up, set your gamer tag, link your Riot/Discord, and choose your games.' },
+  { step: '02', title: 'Join or build a team', desc: 'Find a team looking for your role, or create your own and recruit.' },
+  { step: '03', title: 'Compete & climb', desc: 'Enter tournaments, win matches, earn rank points, move up the MENA leaderboard.' },
+  { step: '04', title: 'Get discovered', desc: 'Organizers and sponsors browse top players. Stand out with your stats and portfolio.' },
+]
 
 export default function ForGamers() {
   return (
-    <div className="min-h-screen bg-zinc-950 text-white">
-      <AnimatedBackground />
+    <div className="min-h-screen bg-[#080808] text-white">
+      <PublicNav />
 
-      {/* Nav */}
-      <header className="sticky top-0 z-50 bg-zinc-950/95 backdrop-blur-xl border-b border-zinc-800/50">
-        <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
-          <Link to="/"><HeruLogo className="h-7" /></Link>
-          <div className="flex items-center gap-3">
-            <Link to="/auth/gamer/login" className="text-sm text-gray-400 hover:text-white transition-colors">Sign In</Link>
-            <Link to="/auth/gamer/register" className="px-4 py-2 rounded-lg bg-red-600 hover:bg-red-500 text-white text-sm font-bold transition-colors">
-              Get Started
-            </Link>
-          </div>
+      {/* HERO */}
+      <section className="relative pt-32 pb-24 px-4 overflow-hidden">
+        <div className="absolute inset-0 pointer-events-none">
+          <div className="absolute top-0 left-1/3 w-[500px] h-[500px] rounded-full bg-red-600/10 blur-[140px]" />
         </div>
-      </header>
-
-      {/* Hero */}
-      <section className="relative max-w-6xl mx-auto px-4 py-20 md:py-28">
-        <div className="max-w-2xl">
-          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-red-500/10 border border-red-500/20 text-red-400 text-xs font-bold mb-6">
-            <Zap className="w-3.5 h-3.5" /> HERU ARENA — For Gamers
+        <div className="relative max-w-4xl mx-auto text-center">
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-red-500/10
+                          border border-red-500/20 text-red-400 text-xs font-semibold mb-6 uppercase tracking-wider">
+            <Gamepad2 className="h-3.5 w-3.5" />
+            HERU ARENA — For Gamers
           </div>
-          <h1 className="text-5xl md:text-6xl font-black leading-tight mb-6">
-            Compete. Connect.{' '}
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-red-500 to-red-300">Level Up.</span>
+          <h1 className="text-5xl sm:text-6xl lg:text-7xl font-black leading-[1.05] tracking-tight mb-6">
+            Compete.{' '}
+            <span className="bg-gradient-to-r from-red-400 to-red-600 bg-clip-text text-transparent">
+              Climb.
+            </span>
+            {' '}Connect.
           </h1>
-          <p className="text-gray-400 text-xl leading-relaxed mb-8">
-            HERU.gg is the hub for MENA competitive gamers. Find tournaments, build your team, climb leaderboards, and book world-class coaches.
+          <p className="text-lg sm:text-xl text-gray-400 max-w-2xl mx-auto leading-relaxed mb-10">
+            The competitive home for MENA gamers. Join tournaments, build teams,
+            book coaches, and rise to the top of the HERU rank leaderboard — all free.
           </p>
-          <div className="flex flex-wrap gap-3">
-            <Link to="/auth/gamer/register" className="inline-flex items-center gap-2 px-8 py-4 rounded-xl bg-red-600 hover:bg-red-500 text-white font-bold text-base transition-colors shadow-lg shadow-red-900/30">
-              <Zap className="w-4 h-4" /> Create Free Account
+          <div className="flex flex-wrap items-center justify-center gap-3">
+            <Link to="/auth/gamer/register"
+              className="inline-flex items-center gap-2 px-7 py-3.5 rounded-xl font-semibold
+                         bg-red-600 hover:bg-red-500 text-white transition-colors text-sm">
+              <Zap className="h-4 w-4" />Create Free Profile
             </Link>
-            <Link to="/tournaments" className="inline-flex items-center gap-2 px-8 py-4 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-white font-bold text-base transition-colors">
-              Browse Tournaments <ArrowRight className="w-4 h-4" />
+            <Link to="/tournaments"
+              className="inline-flex items-center gap-2 px-7 py-3.5 rounded-xl font-semibold
+                         bg-white/8 hover:bg-white/12 text-white border border-white/10 transition-colors text-sm">
+              Browse Tournaments <ArrowRight className="h-4 w-4" />
             </Link>
           </div>
         </div>
       </section>
 
-      {/* Stats */}
-      <section className="border-y border-zinc-800/50 bg-zinc-900/30">
-        <div className="max-w-6xl mx-auto px-4 py-6 grid grid-cols-2 md:grid-cols-4 gap-6">
-          {STATS.map((s, i) => (
-            <div key={i} className="text-center">
-              <p className="text-3xl font-black text-white">{s.value}</p>
-              <p className="text-xs text-gray-500 mt-1">{s.label}</p>
+      {/* COMMUNITY BUILDER SPOTLIGHT */}
+      <section className="py-16 px-4">
+        <div className="max-w-4xl mx-auto rounded-2xl bg-gradient-to-br from-red-900/20 to-orange-950/10
+                        border border-red-500/20 p-8 md:p-12">
+          <div className="flex flex-col md:flex-row items-start md:items-center gap-6">
+            <div className="p-4 rounded-2xl bg-red-500/15 border border-red-500/20 shrink-0">
+              <Swords className="h-8 w-8 text-red-400" />
             </div>
-          ))}
+            <div className="flex-1">
+              <div className="flex items-center gap-2 mb-2">
+                <p className="text-xs font-bold uppercase tracking-widest text-red-400">New Feature</p>
+                <span className="px-2 py-0.5 rounded-full bg-red-500/20 border border-red-500/30 text-red-300 text-xs font-bold">NEW</span>
+              </div>
+              <h2 className="text-2xl font-black text-white mb-2">Community Tournament Builder</h2>
+              <p className="text-gray-400 text-sm leading-relaxed">
+                Create your own private 1v1 match, team scrim, or mini bracket tournament — instantly.
+                Invite friends via link, set the format, and track results. No organizer account needed.
+                Perfect for practice matches, clan wars, and community events.
+              </p>
+            </div>
+            <Link to="/auth/gamer/register"
+              className="shrink-0 inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold
+                         bg-red-600 hover:bg-red-500 text-white transition-colors">
+              Try It <ChevronRight className="h-4 w-4" />
+            </Link>
+          </div>
         </div>
       </section>
 
-      {/* How it works */}
-      <section className="max-w-6xl mx-auto px-4 py-20">
-        <h2 className="text-3xl font-black text-white text-center mb-12">How It Works</h2>
-        <div className="grid md:grid-cols-3 gap-6">
-          {HOW_IT_WORKS.map((step) => (
-            <div key={step.step} className="text-center p-8 rounded-2xl bg-zinc-900 border border-zinc-800">
-              <div className="w-12 h-12 rounded-full bg-red-600 flex items-center justify-center text-white font-black text-lg mx-auto mb-4">
-                {step.step}
+      {/* FEATURES */}
+      <section className="py-20 px-4">
+        <div className="max-w-6xl mx-auto">
+          <div className="text-center mb-14">
+            <p className="text-xs font-bold uppercase tracking-widest text-red-400 mb-3">Everything You Need</p>
+            <h2 className="text-4xl font-black text-white">Built for competitive gamers.</h2>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {FEATURES.map(({ Icon, title, label, desc, color, bg }) => (
+              <div key={title} className="p-5 rounded-2xl bg-white/4 border border-white/8 hover:border-red-500/20 transition-colors">
+                <div className={`p-2.5 rounded-xl ${bg} ${color} w-fit mb-4`}>
+                  <Icon className="h-5 w-5" />
+                </div>
+                <div className="flex items-center gap-2 mb-1">
+                  <h3 className="text-sm font-bold text-white">{title}</h3>
+                  {label && <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-red-500/20 text-red-300 border border-red-500/30">{label}</span>}
+                </div>
+                <p className="text-xs text-gray-400 leading-relaxed">{desc}</p>
               </div>
-              <h3 className="text-white font-bold text-lg mb-2">{step.title}</h3>
-              <p className="text-gray-400 text-sm leading-relaxed">{step.desc}</p>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
       </section>
 
-      {/* Value props */}
-      <section className="max-w-6xl mx-auto px-4 py-12">
-        <h2 className="text-3xl font-black text-white text-center mb-4">Everything You Need to Compete</h2>
-        <p className="text-gray-400 text-center mb-12 max-w-xl mx-auto">Built for MENA gamers who take their game seriously.</p>
-        <div className="grid sm:grid-cols-2 gap-5">
-          {VALUE_PROPS.map((vp, i) => (
-            <div key={i} className="p-6 rounded-2xl bg-zinc-900 border border-zinc-800 flex gap-4">
-              <div className="w-10 h-10 rounded-xl bg-red-500/10 flex items-center justify-center flex-shrink-0">
-                <vp.icon className="w-5 h-5 text-red-400" />
+      {/* HOW IT WORKS */}
+      <section className="py-20 px-4 bg-gradient-to-b from-white/2 to-transparent">
+        <div className="max-w-4xl mx-auto">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl font-black text-white">From signup to champion</h2>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {HOW.map(({ step, title, desc }) => (
+              <div key={step} className="p-5 rounded-2xl bg-white/4 border border-white/8">
+                <p className="text-4xl font-black text-red-500/25 mb-3">{step}</p>
+                <h3 className="text-sm font-bold text-white mb-1">{title}</h3>
+                <p className="text-xs text-gray-400 leading-relaxed">{desc}</p>
               </div>
-              <div>
-                <h3 className="text-white font-bold mb-1">{vp.title}</h3>
-                <p className="text-gray-400 text-sm leading-relaxed">{vp.desc}</p>
-              </div>
-            </div>
-          ))}
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* GAMES */}
+      <section className="py-20 px-4">
+        <div className="max-w-4xl mx-auto text-center">
+          <p className="text-xs font-bold uppercase tracking-widest text-red-400 mb-4">Supported Games</p>
+          <h2 className="text-3xl font-black text-white mb-8">Your game is here.</h2>
+          <div className="flex flex-wrap justify-center gap-2">
+            {GAMES.map(g => (
+              <span key={g} className="px-3 py-1.5 rounded-full bg-white/5 border border-white/10
+                                       text-sm text-gray-300 hover:border-red-500/30 hover:text-white transition-colors">
+                {g}
+              </span>
+            ))}
+          </div>
         </div>
       </section>
 
       {/* CTA */}
-      <section className="max-w-6xl mx-auto px-4 py-20">
-        <div className="rounded-2xl bg-gradient-to-br from-red-900/30 to-zinc-900 border border-red-500/20 p-10 md:p-16 text-center">
-          <h2 className="text-3xl md:text-4xl font-black text-white mb-4">Ready to compete?</h2>
-          <p className="text-gray-400 mb-8 max-w-md mx-auto">Join 500+ MENA gamers already competing on HERU.gg.</p>
-          <Link to="/auth/gamer/register" className="inline-flex items-center gap-2 px-10 py-4 rounded-xl bg-red-600 hover:bg-red-500 text-white font-black text-base transition-colors shadow-lg shadow-red-900/30">
-            <Zap className="w-4 h-4" /> Start Competing Free
+      <section className="py-24 px-4">
+        <div className="max-w-2xl mx-auto text-center">
+          <Sparkles className="h-8 w-8 text-red-400 mx-auto mb-4" />
+          <h2 className="text-4xl font-black text-white mb-4">Free to compete. Forever.</h2>
+          <p className="text-gray-400 mb-8">
+            HERU ARENA is free for all gamers. No subscription, no pay-to-play.
+            Just compete, climb, and connect.
+          </p>
+          <Link to="/auth/gamer/register"
+            className="inline-flex items-center gap-2 px-8 py-4 rounded-xl font-bold
+                       bg-red-600 hover:bg-red-500 text-white transition-colors">
+            Create Your Profile <ArrowRight className="h-5 w-5" />
           </Link>
+          <p className="text-xs text-gray-600 mt-4">Already have an account? <Link to="/auth/gamer/login" className="text-red-400 hover:underline">Log in</Link></p>
         </div>
       </section>
     </div>
-  );
+  )
 }

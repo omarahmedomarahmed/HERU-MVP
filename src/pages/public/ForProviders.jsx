@@ -1,150 +1,302 @@
-import React from 'react';
-import { Link } from 'react-router-dom';
-import AnimatedBackground from '@/components/shared/AnimatedBackground';
-import HeruLogo from '@/components/shared/HeruLogo';
+import { Link } from 'react-router-dom'
+import PublicNav from '@/components/public/PublicNav'
 import {
-  Briefcase, Star, TrendingUp, Zap, Shield, DollarSign,
-  ArrowRight, CheckCircle, Mic, Camera, MapPin, Megaphone,
-} from 'lucide-react';
-
-const HOW_IT_WORKS = [
-  { step: 1, title: 'Create Your Listing', desc: 'Register as a service provider, pick your category, write your service description, and set your price.' },
-  { step: 2, title: 'Staff Approves', desc: 'HERU staff reviews your listing. Once approved, you appear inside the Tournament Builder for organizers.' },
-  { step: 3, title: 'Get Booked & Paid', desc: 'Organizer books you. Payment is held in escrow. You deliver, they confirm, you get paid (minus 15% HERU fee).' },
-];
+  Briefcase, Building2, Users, Mic2, Megaphone, Wifi,
+  Cpu, ShoppingBag, ClipboardList, Star, Shield,
+  Zap, ArrowRight, CheckCircle2, ChevronRight,
+  DollarSign, TrendingUp, Sparkles, BadgeCheck
+} from 'lucide-react'
 
 const CATEGORIES = [
-  { icon: Camera,    name: 'Production',  desc: 'Streaming setup, video editing, live production.' },
-  { icon: Briefcase, name: 'Branding',    desc: 'Logo design, tournament assets, overlays, jerseys.' },
-  { icon: Mic,       name: 'Talent',      desc: 'Host/MC, caster, analyst, observer.' },
-  { icon: MapPin,    name: 'Venue',       desc: 'Gaming centers, gaming cafes, offline event spaces.' },
-  { icon: Megaphone, name: 'Marketing',   desc: 'Discord servers, influencers, social media campaigns.' },
-  { icon: Star,      name: 'Coaching',    desc: 'Book gamers for 1:1 sessions via the coaches marketplace.' },
-];
+  {
+    Icon: Building2, name: 'Specialized Gaming Venue',
+    desc: 'Offer your gaming center, arena, or LAN hall for offline tournaments. Get discovered by organizers building events in your city.',
+    color: 'text-cyan-400', bg: 'bg-cyan-500/10',
+  },
+  {
+    Icon: Star, name: 'Coach',
+    desc: 'Offer 1-on-1 and group coaching sessions in Valorant, CS2, LoL, FIFA, and more. Players book directly via the HERU coaching marketplace.',
+    color: 'text-cyan-400', bg: 'bg-cyan-500/10',
+    note: 'Visible to gamers only',
+  },
+  {
+    Icon: Users, name: 'Talent & Influencer',
+    desc: 'Streamers, casters, cosplayers, and esports personalities. Get booked by organizers for activations and sponsors for brand campaigns.',
+    color: 'text-cyan-400', bg: 'bg-cyan-500/10',
+    note: 'Visible to organizers & sponsors',
+  },
+  {
+    Icon: Mic2, name: 'Media Production',
+    desc: 'Live streaming crews, broadcast engineering, on-site production, and post-event video editing. Power the coverage that makes events worth watching.',
+    color: 'text-cyan-400', bg: 'bg-cyan-500/10',
+  },
+  {
+    Icon: Megaphone, name: 'Marketing',
+    desc: 'Social media campaigns, paid ads, content plans, and event promotion. Help organizers sell out registrations and grow their brand.',
+    color: 'text-cyan-400', bg: 'bg-cyan-500/10',
+  },
+  {
+    Icon: Wifi, name: 'Gaming Community',
+    desc: 'Discord servers, Facebook groups, Instagram pages, and TikTok channels with engaged MENA gaming audiences. Offer reach to organizers and sponsors.',
+    color: 'text-cyan-400', bg: 'bg-cyan-500/10',
+  },
+  {
+    Icon: Cpu, name: 'Gaming Hardware & Setup',
+    desc: 'Peripheral rentals, gaming PC setups, monitor walls, and tech infrastructure for offline events. Provide the gear that makes tournaments run.',
+    color: 'text-cyan-400', bg: 'bg-cyan-500/10',
+  },
+  {
+    Icon: ShoppingBag, name: 'Offline Event Vendors',
+    desc: 'Food & beverage, printing & merchandising, signage, trophies, swag bags, and booth setups. Everything an offline event needs to look professional.',
+    color: 'text-cyan-400', bg: 'bg-cyan-500/10',
+  },
+  {
+    Icon: ClipboardList, name: 'Tournament Management',
+    desc: 'Referee services, bracket administration, on-site staff, registration desk management, and day-of event operations. Run the show behind the scenes.',
+    color: 'text-cyan-400', bg: 'bg-cyan-500/10',
+  },
+]
 
-const VALUE_PROPS = [
-  { icon: TrendingUp, title: 'Built-In Distribution',    desc: 'Once approved, your service appears inside the Tournament Builder. Organizers find you as they plan events.' },
-  { icon: Shield,     title: 'Escrow Payment Protection', desc: 'Payment held until you deliver. Then released automatically. No chasing invoices.' },
-  { icon: Star,       title: 'Rating & Reviews',          desc: 'Every booking generates a review. High-rated providers rank higher in search.' },
-  { icon: DollarSign, title: '85% Payout',                desc: 'HERU takes 15%. You keep 85% of every booking. Paid directly to your account after confirmation.' },
-];
+const FEATURES = [
+  {
+    Icon: Briefcase, title: 'Multi-Service Listings',
+    desc: 'List multiple services under one account. Each gets its own profile, pricing, portfolio, and reviews.',
+    color: 'text-cyan-400', bg: 'bg-cyan-500/10',
+  },
+  {
+    Icon: BadgeCheck, title: 'Staff Verification Flow',
+    desc: 'Submit your listing for HERU staff review. Approved providers appear inside the Tournament Builder for organizers to discover and book.',
+    color: 'text-teal-400', bg: 'bg-teal-500/10',
+  },
+  {
+    Icon: Shield, title: 'Escrow Payments',
+    desc: "Payment is held securely at booking. Once the organizer confirms delivery, your 85% is released instantly. You're always protected.",
+    color: 'text-cyan-400', bg: 'bg-cyan-500/10',
+  },
+  {
+    Icon: Star, title: 'Portfolio Showcase',
+    desc: 'Add past projects, client testimonials, photos, and links to build a credible public profile that wins bookings.',
+    color: 'text-teal-400', bg: 'bg-teal-500/10',
+  },
+  {
+    Icon: TrendingUp, title: 'Ratings & Reviews',
+    desc: 'Every completed booking generates a verified review. Build your reputation on the platform and stand out from the crowd.',
+    color: 'text-cyan-400', bg: 'bg-cyan-500/10',
+  },
+  {
+    Icon: Zap, title: 'Premium Visibility',
+    desc: 'Upgrade for priority placement in the Tournament Builder pool. Get in front of more organizers and land more bookings.',
+    color: 'text-teal-400', bg: 'bg-teal-500/10',
+  },
+]
+
+const HOW = [
+  { step: '01', title: 'Create your provider account', desc: 'Sign up, complete your profile, and choose your service category.' },
+  { step: '02', title: 'Submit a listing', desc: 'Add pricing, description, portfolio, and service details. Submit for staff review.' },
+  { step: '03', title: 'Get booked via Builder', desc: 'Once approved, organizers discover and book you directly inside their tournament builder.' },
+  { step: '04', title: 'Deliver & get paid', desc: 'Complete the job, get confirmed by the organizer, and receive 85% via escrow release.' },
+]
 
 export default function ForProviders() {
   return (
-    <div className="min-h-screen bg-zinc-950 text-white">
-      <AnimatedBackground />
+    <div className="min-h-screen bg-[#080f0f] text-white">
+      <PublicNav />
 
-      <header className="sticky top-0 z-50 bg-zinc-950/95 backdrop-blur-xl border-b border-zinc-800/50">
-        <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
-          <Link to="/"><HeruLogo className="h-7" /></Link>
-          <div className="flex items-center gap-3">
-            <Link to="/auth/provider/login" className="text-sm text-gray-400 hover:text-white transition-colors">Sign In</Link>
-            <Link to="/auth/provider/register" className="px-4 py-2 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white text-sm font-bold transition-colors">
-              List Your Services
-            </Link>
-          </div>
+      {/* HERO */}
+      <section className="relative pt-32 pb-24 px-4 overflow-hidden">
+        <div className="absolute inset-0 pointer-events-none">
+          <div className="absolute top-0 left-1/3 w-[500px] h-[500px] rounded-full bg-cyan-600/8 blur-[140px]" />
+          <div className="absolute top-20 right-1/4 w-80 h-80 rounded-full bg-teal-600/6 blur-[120px]" />
         </div>
-      </header>
-
-      {/* Hero */}
-      <section className="relative max-w-6xl mx-auto px-4 py-20 md:py-28">
-        <div className="max-w-2xl">
-          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 text-xs font-bold mb-6">
-            <Briefcase className="w-3.5 h-3.5" /> HERU GIGS — For Providers
+        <div className="relative max-w-4xl mx-auto text-center">
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-cyan-500/10
+                          border border-cyan-500/20 text-cyan-400 text-xs font-semibold mb-6 uppercase tracking-wider">
+            <Briefcase className="h-3.5 w-3.5" />
+            HERU GIGs — For Service Providers
           </div>
-          <h1 className="text-5xl md:text-6xl font-black leading-tight mb-6">
-            Get Paid to Power{' '}
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-cyan-300">Esports Events.</span>
+          <h1 className="text-5xl sm:text-6xl lg:text-7xl font-black leading-[1.05] tracking-tight mb-6">
+            Get paid to{' '}
+            <span className="bg-gradient-to-r from-cyan-400 to-teal-400 bg-clip-text text-transparent">
+              power esports.
+            </span>
           </h1>
-          <p className="text-gray-400 text-xl leading-relaxed mb-8">
-            List your services once. Appear in front of every organizer building a tournament. Get booked, deliver, get paid.
+          <p className="text-lg sm:text-xl text-gray-400 max-w-2xl mx-auto leading-relaxed mb-10">
+            List your services. Get discovered by tournament organizers and sponsors across MENA.
+            Deliver. Get paid 85% via escrow — every time.
           </p>
-          <div className="flex flex-wrap gap-3">
-            <Link to="/auth/provider/register" className="inline-flex items-center gap-2 px-8 py-4 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-base transition-colors shadow-lg shadow-cyan-900/20">
-              <Zap className="w-4 h-4" /> List Your Services
+          <div className="flex flex-wrap items-center justify-center gap-3">
+            <Link to="/auth/provider/register"
+              className="inline-flex items-center gap-2 px-7 py-3.5 rounded-xl font-semibold
+                         bg-cyan-600 hover:bg-cyan-500 text-white transition-colors text-sm">
+              <Zap className="h-4 w-4" />List Your Services
             </Link>
-            <Link to="/auth/provider/login" className="inline-flex items-center gap-2 px-8 py-4 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-white font-bold text-base transition-colors">
-              Sign In <ArrowRight className="w-4 h-4" />
+            <Link to="/auth/provider/login"
+              className="inline-flex items-center gap-2 px-7 py-3.5 rounded-xl font-semibold
+                         bg-white/8 hover:bg-white/12 text-white border border-white/10 transition-colors text-sm">
+              Log in <ArrowRight className="h-4 w-4" />
             </Link>
           </div>
         </div>
       </section>
 
-      {/* Categories */}
-      <section className="max-w-6xl mx-auto px-4 py-12">
-        <h2 className="text-2xl font-black text-white mb-8 text-center">Service Categories</h2>
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-          {CATEGORIES.map((cat, i) => (
-            <div key={i} className="p-5 rounded-2xl bg-zinc-900 border border-zinc-800 flex gap-3">
-              <div className="w-9 h-9 rounded-xl bg-cyan-500/10 flex items-center justify-center flex-shrink-0">
-                <cat.icon className="w-4 h-4 text-cyan-400" />
+      {/* ECONOMICS BANNER */}
+      <section className="py-10 px-4">
+        <div className="max-w-3xl mx-auto rounded-2xl bg-gradient-to-br from-cyan-900/20 to-teal-950/10
+                        border border-cyan-500/20 p-6 md:p-8">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 text-center">
+            <div>
+              <p className="text-4xl font-black text-cyan-400 mb-1">85%</p>
+              <p className="text-xs text-gray-400">You keep on every booking</p>
+            </div>
+            <div>
+              <p className="text-4xl font-black text-cyan-400 mb-1">15%</p>
+              <p className="text-xs text-gray-400">HERU platform fee — that's it</p>
+            </div>
+            <div>
+              <p className="text-4xl font-black text-cyan-400 mb-1">100%</p>
+              <p className="text-xs text-gray-400">Escrow-protected payments</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* CATEGORIES */}
+      <section className="py-20 px-4">
+        <div className="max-w-6xl mx-auto">
+          <div className="text-center mb-14">
+            <p className="text-xs font-bold uppercase tracking-widest text-cyan-400 mb-3">Service Categories</p>
+            <h2 className="text-4xl font-black text-white">9 ways to get booked.</h2>
+            <p className="text-gray-400 mt-3 max-w-xl mx-auto">
+              Every type of esports service provider has a home on HERU GIGs.
+            </p>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {CATEGORIES.map(({ Icon, name, desc, color, bg, note }) => (
+              <div key={name} className="p-5 rounded-2xl bg-white/4 border border-white/8 hover:border-cyan-500/20 transition-colors">
+                <div className={`p-2.5 rounded-xl ${bg} ${color} w-fit mb-4`}><Icon className="h-5 w-5" /></div>
+                <div className="flex items-center gap-2 mb-1">
+                  <h3 className="text-sm font-bold text-white">{name}</h3>
+                  {note && (
+                    <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-cyan-500/15 text-cyan-400 border border-cyan-500/25 shrink-0">
+                      {note}
+                    </span>
+                  )}
+                </div>
+                <p className="text-xs text-gray-400 leading-relaxed">{desc}</p>
               </div>
-              <div>
-                <p className="text-white font-bold text-sm">{cat.name}</p>
-                <p className="text-gray-500 text-xs mt-0.5 leading-relaxed">{cat.desc}</p>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* HOW IT WORKS */}
+      <section className="py-20 px-4 bg-gradient-to-b from-white/2 to-transparent">
+        <div className="max-w-4xl mx-auto">
+          <div className="text-center mb-12">
+            <p className="text-xs font-bold uppercase tracking-widest text-gray-500 mb-3">How It Works</p>
+            <h2 className="text-3xl font-black text-white">From listing to payout in 4 steps.</h2>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {HOW.map(({ step, title, desc }) => (
+              <div key={step} className="p-5 rounded-2xl bg-white/4 border border-white/8">
+                <p className="text-4xl font-black text-cyan-500/25 mb-3">{step}</p>
+                <h3 className="text-sm font-bold text-white mb-1">{title}</h3>
+                <p className="text-xs text-gray-400 leading-relaxed">{desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* FEATURES */}
+      <section className="py-20 px-4">
+        <div className="max-w-6xl mx-auto">
+          <div className="text-center mb-14">
+            <p className="text-xs font-bold uppercase tracking-widest text-cyan-400 mb-3">Platform Features</p>
+            <h2 className="text-4xl font-black text-white">Everything you need to run your gig.</h2>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {FEATURES.map(({ Icon, title, desc, color, bg }) => (
+              <div key={title} className="p-5 rounded-2xl bg-white/4 border border-white/8 hover:border-cyan-500/20 transition-colors">
+                <div className={`p-2.5 rounded-xl ${bg} ${color} w-fit mb-4`}><Icon className="h-5 w-5" /></div>
+                <h3 className="text-sm font-bold text-white mb-1">{title}</h3>
+                <p className="text-xs text-gray-400 leading-relaxed">{desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ESCROW SPOTLIGHT */}
+      <section className="py-16 px-4">
+        <div className="max-w-4xl mx-auto rounded-2xl bg-gradient-to-br from-cyan-900/20 to-teal-950/10
+                        border border-cyan-500/20 p-8 md:p-12">
+          <div className="flex flex-col md:flex-row items-start gap-6">
+            <div className="p-4 rounded-2xl bg-cyan-500/15 border border-cyan-500/20 shrink-0">
+              <Shield className="h-8 w-8 text-cyan-400" />
+            </div>
+            <div>
+              <p className="text-xs font-bold uppercase tracking-widest text-cyan-400 mb-2">Escrow Protection</p>
+              <h2 className="text-2xl font-black text-white mb-3">You deliver. You get paid. Guaranteed.</h2>
+              <p className="text-gray-400 text-sm leading-relaxed mb-5">
+                When an organizer books you, payment is locked in escrow before the event.
+                You complete the job, the organizer confirms delivery, and your 85% is released.
+                No chasing invoices, no payment disputes — just clean payouts.
+              </p>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                {['Payment secured at booking', 'Organizer confirms delivery', 'Your share released instantly'].map((f, i) => (
+                  <div key={f} className="flex items-center gap-2 text-xs text-gray-300">
+                    <span className="flex-shrink-0 w-5 h-5 rounded-full bg-cyan-500/20 text-cyan-400 text-xs flex items-center justify-center font-bold">
+                      {i + 1}
+                    </span>
+                    {f}
+                  </div>
+                ))}
               </div>
             </div>
-          ))}
+          </div>
         </div>
       </section>
 
-      {/* How it works */}
-      <section className="max-w-6xl mx-auto px-4 py-20">
-        <h2 className="text-3xl font-black text-white text-center mb-12">How It Works</h2>
-        <div className="grid md:grid-cols-3 gap-6">
-          {HOW_IT_WORKS.map((step) => (
-            <div key={step.step} className="text-center p-8 rounded-2xl bg-zinc-900 border border-zinc-800">
-              <div className="w-12 h-12 rounded-full bg-cyan-600 flex items-center justify-center text-white font-black text-lg mx-auto mb-4">
-                {step.step}
+      {/* APPROVAL FLOW */}
+      <section className="py-16 px-4">
+        <div className="max-w-3xl mx-auto rounded-2xl bg-white/3 border border-white/8 p-8 text-center">
+          <BadgeCheck className="h-8 w-8 text-cyan-400 mx-auto mb-3" />
+          <h2 className="text-2xl font-black text-white mb-2">Quality-verified by HERU staff</h2>
+          <p className="text-sm text-gray-400 max-w-lg mx-auto mb-6">
+            Every service listing goes through a manual review before appearing in the Tournament Builder.
+            This keeps quality high for organizers — and makes your listing more valuable once approved.
+          </p>
+          <div className="flex flex-wrap justify-center gap-3">
+            {['Submit your listing', 'Staff reviews within 48h', 'Approved → visible in Builder', 'Bookings start coming in'].map((step, i) => (
+              <div key={step} className="flex items-center gap-2">
+                {i > 0 && <ChevronRight className="h-3.5 w-3.5 text-gray-600" />}
+                <span className="px-3 py-1.5 rounded-full bg-white/5 border border-white/10 text-xs text-gray-300">{step}</span>
               </div>
-              <h3 className="text-white font-bold text-lg mb-2">{step.title}</h3>
-              <p className="text-gray-400 text-sm leading-relaxed">{step.desc}</p>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
       </section>
 
-      {/* Value props */}
-      <section className="max-w-6xl mx-auto px-4 py-12">
-        <h2 className="text-3xl font-black text-white text-center mb-4">Built for Esports Professionals</h2>
-        <p className="text-gray-400 text-center mb-12 max-w-xl mx-auto">No cold pitching. No unpaid invoices. Just esports work, paid fairly.</p>
-        <div className="grid sm:grid-cols-2 gap-5">
-          {VALUE_PROPS.map((vp, i) => (
-            <div key={i} className="p-6 rounded-2xl bg-zinc-900 border border-zinc-800 flex gap-4">
-              <div className="w-10 h-10 rounded-xl bg-cyan-500/10 flex items-center justify-center flex-shrink-0">
-                <vp.icon className="w-5 h-5 text-cyan-400" />
-              </div>
-              <div>
-                <h3 className="text-white font-bold mb-1">{vp.title}</h3>
-                <p className="text-gray-400 text-sm leading-relaxed">{vp.desc}</p>
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* Pricing */}
-      <section className="max-w-6xl mx-auto px-4 py-12">
-        <div className="rounded-2xl bg-zinc-900 border border-zinc-800 p-8 max-w-md mx-auto text-center">
-          <h2 className="text-2xl font-black text-white mb-2">Simple Pricing</h2>
-          <p className="text-gray-400 text-sm mb-6">No monthly fee. HERU only earns when you earn.</p>
-          <div className="text-5xl font-black text-white mb-2">15%</div>
-          <p className="text-gray-400 text-sm">HERU fee per completed booking</p>
-          <p className="text-2xl font-black text-cyan-400 mt-4">You keep 85%</p>
-          <p className="text-xs text-gray-500 mt-2">Paid out after organizer confirms delivery</p>
-        </div>
-      </section>
-
-      {/* CTA */}
-      <section className="max-w-6xl mx-auto px-4 py-20">
-        <div className="rounded-2xl bg-gradient-to-br from-cyan-900/20 to-zinc-900 border border-cyan-500/20 p-10 md:p-16 text-center">
-          <h2 className="text-3xl md:text-4xl font-black text-white mb-4">Start getting booked today</h2>
-          <p className="text-gray-400 mb-8 max-w-md mx-auto">Hundreds of esports events need your skills. Join the HERU marketplace.</p>
-          <Link to="/auth/provider/register" className="inline-flex items-center gap-2 px-10 py-4 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white font-black text-base transition-colors shadow-lg shadow-cyan-900/20">
-            <Briefcase className="w-4 h-4" /> List Your Services
+      {/* FINAL CTA */}
+      <section className="py-24 px-4">
+        <div className="max-w-2xl mx-auto text-center">
+          <Sparkles className="h-8 w-8 text-cyan-400 mx-auto mb-4" />
+          <h2 className="text-4xl font-black text-white mb-4">Ready to power MENA esports?</h2>
+          <p className="text-gray-400 mb-8">
+            Create your provider account, list your first service, and start getting discovered by tournament organizers today.
+          </p>
+          <Link to="/auth/provider/register"
+            className="inline-flex items-center gap-2 px-8 py-4 rounded-xl font-bold
+                       bg-cyan-600 hover:bg-cyan-500 text-white transition-colors">
+            Create Provider Account <ArrowRight className="h-5 w-5" />
           </Link>
+          <p className="text-xs text-gray-600 mt-4">
+            Already have an account?{' '}
+            <Link to="/auth/provider/login" className="text-cyan-400 hover:underline">Log in</Link>
+          </p>
         </div>
       </section>
     </div>
-  );
+  )
 }
