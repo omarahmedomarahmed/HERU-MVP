@@ -23,8 +23,8 @@ const STEPS = [
   {
     Icon: Swords,
     title: 'Build Your Own Community Bracket',
-    desc: 'Create private scrims, 1v1s, or invite-only brackets instantly — no organizer needed.',
     badge: 'NEW',
+    desc: 'Create private scrims, 1v1s, or invite-only brackets instantly — no organizer needed.',
   },
   {
     Icon: Users,
@@ -46,6 +46,28 @@ const STEPS = [
     title: 'Climb the HERU Leaderboard',
     desc: 'Every win earns you points. Compete for top spots on the global and Egypt leaderboards.',
   },
+]
+
+const STATS = [
+  { label: 'Free to Use', value: '100%' },
+  { label: 'Tournaments', value: '500+' },
+  { label: 'Gamers', value: '25K+' },
+  { label: 'Live Brackets', value: '✓' },
+]
+
+const HOW_STEPS = [
+  { num: '01', title: 'Register', desc: 'Create your free gamer account in under 2 minutes.' },
+  { num: '02', title: 'Compete', desc: 'Join tournaments, build brackets, or book a coach.' },
+  { num: '03', title: 'Climb', desc: 'Rack up wins and rise on the MENA leaderboard.' },
+]
+
+const FREE_FEATURES = [
+  'Join tournaments',
+  'Create teams',
+  'Book coaches',
+  'Community builder',
+  'Add friends & message',
+  'View leaderboards',
 ]
 
 function Footer() {
@@ -73,23 +95,24 @@ export default function ForGamers() {
     <div className="min-h-screen bg-zinc-950 text-white flex flex-col">
       <PublicNav />
 
-      {/* Hero */}
+      {/* HERO */}
       <section className="relative py-28 px-4 overflow-hidden">
         <img
           src="https://images.unsplash.com/photo-1542751371-adc38448a05e?w=1920&q=70"
           alt=""
           className="absolute inset-0 w-full h-full object-cover opacity-[0.12] pointer-events-none"
         />
-        <div className="relative max-w-6xl mx-auto text-center">
-          <div className="inline-flex items-center gap-2 bg-red-500/10 border border-red-500/20 rounded-full px-4 py-1.5 mb-6">
-            <Zap className="w-3.5 h-3.5 text-red-400" />
-            <span className="text-red-400 text-sm font-semibold tracking-wide">HERU ARENA — For Gamers</span>
+        <div className="absolute inset-0 bg-gradient-to-b from-zinc-950/60 via-transparent to-zinc-950 pointer-events-none" />
+        <div className="relative max-w-4xl mx-auto text-center">
+          <div className="inline-flex items-center gap-2 bg-red-500/10 border border-red-500/20 text-red-400 text-xs font-bold px-4 py-2 rounded-full mb-6 tracking-widest uppercase">
+            <Zap className="w-3 h-3" />
+            HERU ARENA — For Gamers
           </div>
-          <h1 className="text-5xl md:text-7xl font-black mb-6 leading-tight">
-            <span className="bg-gradient-to-r from-red-500 to-red-400 bg-clip-text text-transparent">Compete.</span>{' '}
+          <h1 className="text-5xl md:text-7xl font-black mb-6 leading-tight tracking-tight">
+            <span className="bg-gradient-to-r from-red-400 to-red-600 bg-clip-text text-transparent">Compete.</span>{' '}
             Climb. Connect.
           </h1>
-          <p className="text-zinc-400 text-xl md:text-2xl max-w-2xl mx-auto mb-10 leading-relaxed">
+          <p className="text-xl text-zinc-400 mb-10 max-w-2xl mx-auto leading-relaxed">
             Join tournaments, build teams, book coaches, and climb the MENA leaderboard — all for free.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
@@ -101,7 +124,7 @@ export default function ForGamers() {
             </Link>
             <Link
               to="/tournaments"
-              className="inline-flex items-center gap-2 border border-zinc-700 hover:border-zinc-500 text-white font-semibold px-8 py-4 rounded-xl transition-colors text-lg"
+              className="inline-flex items-center gap-2 border border-zinc-700 hover:border-zinc-500 text-zinc-300 hover:text-white font-bold px-8 py-4 rounded-xl transition-colors text-lg"
             >
               Browse Tournaments <ChevronRight className="w-5 h-5" />
             </Link>
@@ -109,25 +132,20 @@ export default function ForGamers() {
         </div>
       </section>
 
-      {/* Stats bar */}
+      {/* STATS BAR */}
       <section className="border-y border-zinc-800 bg-zinc-900/50 py-6 px-4">
-        <div className="max-w-6xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
-          {[
-            { label: 'Free to Use', value: '100%' },
-            { label: 'Tournaments', value: '500+' },
-            { label: 'Gamers', value: '25K+' },
-            { label: 'Live Brackets', value: 'Real-time' },
-          ].map((s) => (
-            <div key={s.label}>
-              <div className="text-2xl font-black text-red-400">{s.value}</div>
-              <div className="text-zinc-500 text-sm mt-1">{s.label}</div>
+        <div className="max-w-4xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-6">
+          {STATS.map((s) => (
+            <div key={s.label} className="text-center">
+              <div className="text-2xl font-black text-white mb-1">{s.value}</div>
+              <div className="text-xs text-zinc-500 uppercase tracking-widest">{s.label}</div>
             </div>
           ))}
         </div>
       </section>
 
-      {/* Features Timeline */}
-      <section className="relative py-20 px-4 overflow-hidden" id="features">
+      {/* FEATURES TIMELINE */}
+      <section className="relative py-20 px-4 overflow-hidden">
         <img
           src="https://images.unsplash.com/photo-1511512578047-dfb367046420?w=1920&q=70"
           alt=""
@@ -135,8 +153,8 @@ export default function ForGamers() {
         />
         <div className="relative max-w-6xl mx-auto">
           <div className="text-center mb-16">
-            <h2 className="text-4xl md:text-5xl font-black mb-4">Everything you need to compete</h2>
-            <p className="text-zinc-400 text-lg">One platform for every part of your esports journey.</p>
+            <h2 className="text-4xl font-black text-white mb-4">Everything you need to compete</h2>
+            <p className="text-zinc-400 text-lg">One platform. Every tool a gamer needs to grow.</p>
           </div>
 
           <div className="relative">
@@ -153,7 +171,7 @@ export default function ForGamers() {
                   {i + 1}
                 </div>
                 {/* Content card */}
-                <div className={`md:w-[calc(50%-2.5rem)] w-full ${i % 2 === 0 ? 'md:mr-auto' : 'md:ml-auto'}`}>
+                <div className={`w-full md:w-[calc(50%-2.5rem)] ${i % 2 === 0 ? 'md:mr-auto' : 'md:ml-auto'}`}>
                   <div className="p-6 rounded-xl bg-zinc-900 border border-zinc-800 hover:border-red-500/40 transition-colors">
                     <div className="flex items-center gap-3 mb-3">
                       <div className="w-8 h-8 rounded-lg bg-red-500/15 flex items-center justify-center flex-shrink-0">
@@ -175,68 +193,57 @@ export default function ForGamers() {
         </div>
       </section>
 
-      {/* How It Works */}
-      <section className="py-20 px-4 bg-zinc-900/40">
-        <div className="max-w-6xl mx-auto">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl md:text-5xl font-black mb-4">How It Works</h2>
-            <p className="text-zinc-400 text-lg">Get into the game in minutes.</p>
+      {/* HOW IT WORKS */}
+      <section className="py-20 px-4 bg-zinc-900/30">
+        <div className="max-w-5xl mx-auto">
+          <div className="text-center mb-14">
+            <h2 className="text-4xl font-black text-white mb-4">How It Works</h2>
+            <p className="text-zinc-400">Three steps to your first win.</p>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {[
-              { number: '01', title: 'Register', desc: 'Create your free gamer account in under 2 minutes — no credit card required.' },
-              { number: '02', title: 'Compete', desc: 'Browse tournaments, join brackets, and go head-to-head against MENA\'s best.' },
-              { number: '03', title: 'Climb', desc: 'Earn points with every win. Climb the leaderboard and build your reputation.' },
-            ].map((step) => (
-              <div key={step.number} className="text-center p-8 rounded-2xl bg-zinc-900 border border-zinc-800 hover:border-red-500/30 transition-colors">
-                <div className="text-6xl font-black text-red-500/20 mb-4">{step.number}</div>
-                <h3 className="text-2xl font-black text-white mb-3">{step.title}</h3>
-                <p className="text-zinc-400 leading-relaxed">{step.desc}</p>
+          <div className="grid md:grid-cols-3 gap-8">
+            {HOW_STEPS.map((s) => (
+              <div key={s.num} className="text-center p-8 rounded-2xl bg-zinc-900 border border-zinc-800 hover:border-red-500/30 transition-colors">
+                <div className="text-6xl font-black text-red-500/20 mb-4 leading-none">{s.num}</div>
+                <h3 className="text-xl font-black text-white mb-3">{s.title}</h3>
+                <p className="text-zinc-400 text-sm leading-relaxed">{s.desc}</p>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* Pricing */}
+      {/* PRICING */}
       <section className="relative py-20 px-4 overflow-hidden">
         <img
           src="https://images.unsplash.com/photo-1560253023-3ec5d502959f?w=1920&q=70"
           alt=""
           className="absolute inset-0 w-full h-full object-cover opacity-[0.07] pointer-events-none"
         />
-        <div className="relative max-w-6xl mx-auto text-center">
-          <h2 className="text-4xl md:text-5xl font-black mb-4">Simple Pricing</h2>
-          <p className="text-zinc-400 text-lg mb-12">No surprises. No subscriptions.</p>
+        <div className="relative max-w-2xl mx-auto text-center">
+          <h2 className="text-4xl font-black text-white mb-4">Pricing</h2>
+          <p className="text-zinc-400 mb-10">No hidden costs. No subscriptions. No BS.</p>
 
-          <div className="max-w-md mx-auto bg-zinc-900 border border-red-500/30 rounded-2xl p-10">
-            <div className="inline-flex items-center gap-2 bg-red-500/10 border border-red-500/20 rounded-full px-4 py-1.5 mb-6">
-              <span className="text-red-400 text-sm font-bold">Free. Always.</span>
-            </div>
+          <div className="p-10 rounded-2xl bg-zinc-900 border border-red-500/20 shadow-2xl shadow-red-500/5">
+            <div className="text-lg font-bold text-red-400 mb-2">Free. Always.</div>
             <div className="text-7xl font-black text-white mb-2">EGP 0</div>
-            <div className="text-zinc-400 text-lg mb-10">/ month</div>
-            <ul className="text-left space-y-4 mb-10">
-              {[
-                'Join tournaments',
-                'Create teams',
-                'Book coaches',
-                'Community builder',
-                'Add friends & message',
-                'View leaderboards',
-              ].map((item) => (
-                <li key={item} className="flex items-center gap-3 text-zinc-300">
+            <div className="text-zinc-500 mb-8">per month</div>
+
+            <ul className="space-y-3 mb-10 text-left max-w-xs mx-auto">
+              {FREE_FEATURES.map((f) => (
+                <li key={f} className="flex items-center gap-3 text-zinc-300 text-sm">
                   <div className="w-5 h-5 rounded-full bg-red-500/20 flex items-center justify-center flex-shrink-0">
                     <ChevronRight className="w-3 h-3 text-red-400" />
                   </div>
-                  {item}
+                  {f}
                 </li>
               ))}
             </ul>
+
             <Link
               to="/auth/gamer/register"
-              className="block w-full text-center bg-red-600 hover:bg-red-500 text-white font-bold py-4 rounded-xl transition-colors text-lg"
+              className="inline-flex items-center gap-2 bg-red-600 hover:bg-red-500 text-white font-bold px-10 py-4 rounded-xl transition-colors text-lg"
             >
-              Join Free
+              Join Free <ArrowRight className="w-5 h-5" />
             </Link>
           </div>
         </div>

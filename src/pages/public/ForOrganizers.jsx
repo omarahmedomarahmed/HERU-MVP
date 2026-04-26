@@ -1,124 +1,175 @@
+import React from 'react'
 import { Link } from 'react-router-dom'
 import PublicNav from '@/components/public/PublicNav'
-import {
-  Building2, Trophy, Briefcase, Radar, Users,
-  Zap, ArrowRight, CheckCircle2, ChevronRight,
-  LayoutGrid, Link2, BarChart3, Headphones, Sparkles
-} from 'lucide-react'
+import HeruLogo from '@/components/shared/HeruLogo'
+import { Trophy, Users, Package, Building2, DollarSign, Settings, FileText, BarChart3, Layers, ChevronRight, ArrowRight } from 'lucide-react'
 
-const FEATURES = [
+const STEPS = [
   {
-    Icon: LayoutGrid, title: 'Tournament Builder',
-    desc: 'Create online or offline tournaments in minutes — format, prize pool, entry fee, skill level, and registration rules in a guided builder.',
-    color: 'text-purple-400', bg: 'bg-purple-500/10',
+    Icon: Users,
+    title: 'Create Your Organizer Account',
+    desc: 'Register, complete your profile, add your branding and banking details.',
   },
   {
-    Icon: Briefcase, title: 'Service Provider Marketplace',
-    desc: 'Browse and book approved venues, streaming crews, branding designers, marketing teams, and talent — all inside the tournament builder.',
-    color: 'text-blue-400', bg: 'bg-blue-500/10',
+    Icon: Trophy,
+    title: 'Use the Tournament Builder',
+    desc: '5-step wizard: game setup, details, prize pool, services, publish. Online or offline support.',
   },
   {
-    Icon: Radar, title: 'Sponsorship Package Creator',
-    desc: 'Design gold, silver, and title sponsor tiers with deliverables. List them on HERU RADAR to attract brand sponsors automatically.',
-    color: 'text-yellow-400', bg: 'bg-yellow-500/10',
+    Icon: Package,
+    title: 'Select Service Providers',
+    desc: 'Browse HERU GIGs providers: venue, production, branding, talent, marketing and more.',
   },
   {
-    Icon: BarChart3, title: 'Tournament CRM',
-    desc: 'Manage teams, brackets, service providers, sponsor deliverables, and chat from one command center while your event runs live.',
-    color: 'text-purple-400', bg: 'bg-purple-500/10',
+    Icon: DollarSign,
+    title: 'Create Sponsorship Packages',
+    desc: 'Design tiered packages (Title/Gold/Silver/Bronze). Sponsors see packages on the RADAR — never your internal costs.',
   },
   {
-    Icon: Trophy, title: 'Brackets & Seeding Manager',
-    desc: 'Single elimination, double elimination, round robin, or Swiss. Auto-generate brackets or seed teams manually.',
-    color: 'text-blue-400', bg: 'bg-blue-500/10',
+    Icon: Settings,
+    title: 'Manage with the Tournament CRM',
+    desc: 'Full management: teams, brackets, seeding, sponsor chat, files, tasks, ROI tracking.',
   },
   {
-    Icon: Link2, title: 'Registration Links',
-    desc: 'Every tournament gets a shareable link. Public (open registration) or private (link-only) for invite-only corporate events.',
-    color: 'text-purple-400', bg: 'bg-purple-500/10',
+    Icon: BarChart3,
+    title: 'Brackets & Seeding',
+    desc: 'Visual bracket generator. Seed teams, set match scores, advance winners automatically.',
   },
   {
-    Icon: Users, title: 'Organizer Public Portfolio',
-    desc: 'Every published tournament builds your public organizer profile — stats, past events, reviews, and sponsor-ready credentials.',
-    color: 'text-blue-400', bg: 'bg-blue-500/10',
+    Icon: FileText,
+    title: 'Public & Private Registration',
+    desc: 'Toggle public (open) or private (invite-only). Share your registration link.',
   },
   {
-    Icon: Headphones, title: 'Build It For Me',
-    desc: "HERU consultants can plan, build, staff, and fund your event from scratch. Request a consultation directly from your dashboard.",
-    color: 'text-purple-400', bg: 'bg-purple-500/10',
+    Icon: Layers,
+    title: 'Get Paid',
+    desc: '85% of all sponsorship income goes to you. Platform fee is only 15%.',
   },
 ]
 
-const HOW = [
-  { step: '01', title: 'Create your tournament', desc: 'Set game, format, dates, prize pool, and entry fee using the step-by-step builder.' },
-  { step: '02', title: 'Book service providers', desc: 'Browse approved venues, streaming crews, and marketing teams. Book inside the builder.' },
-  { step: '03', title: 'Create sponsorship packages', desc: 'Design sponsor tiers and list them on HERU RADAR to attract brand investment.' },
-  { step: '04', title: 'Publish & manage', desc: 'Share your registration link, run brackets, and coordinate everything from the CRM.' },
+const STATS = [
+  { label: 'Free to Build', value: '100%' },
+  { label: 'Platform Fee', value: '15%' },
+  { label: 'Event Types', value: '2' },
+  { label: 'Full CRM', value: '✓' },
 ]
 
-const BILLING_FEATURES = [
-  'Itemized invoices for every service provider booked',
-  'Sponsorship income ledger with payment tracking',
-  'Automatic bill generation on tournament completion',
-  'Escrow release controls — you confirm delivery, then funds release',
+const HOW_STEPS = [
+  { num: '01', title: 'Build', desc: 'Create your tournament in minutes with the 5-step wizard.' },
+  { num: '02', title: 'Add Services', desc: 'Hire venue, production, talent — all from one marketplace.' },
+  { num: '03', title: 'Create Packages', desc: 'Design sponsorship tiers and list them on the RADAR.' },
+  { num: '04', title: 'Get Funded', desc: 'Sponsors buy in. You keep 85% of every deal.' },
 ]
+
+function Footer() {
+  return (
+    <footer className="border-t border-zinc-800 py-12 px-4 mt-auto">
+      <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
+        <div className="flex items-center gap-2">
+          <HeruLogo className="h-6" />
+          <span className="text-zinc-500 text-sm">The Esports OS for MENA</span>
+        </div>
+        <div className="flex gap-6 text-sm text-zinc-500">
+          <Link to="/for-gamers" className="hover:text-white transition-colors">ARENA</Link>
+          <Link to="/for-organizers" className="hover:text-white transition-colors">BUILDER</Link>
+          <Link to="/for-sponsors" className="hover:text-white transition-colors">RADAR</Link>
+          <Link to="/for-providers" className="hover:text-white transition-colors">GIGs</Link>
+        </div>
+        <p className="text-zinc-600 text-xs">© 2026 HERU.gg — All rights reserved.</p>
+      </div>
+    </footer>
+  )
+}
 
 export default function ForOrganizers() {
   return (
-    <div className="min-h-screen bg-[#0f0f1a] text-white">
+    <div className="min-h-screen bg-zinc-950 text-white flex flex-col">
       <PublicNav />
 
       {/* HERO */}
-      <section className="relative pt-32 pb-24 px-4 overflow-hidden">
-        <div className="absolute inset-0 pointer-events-none">
-          <div className="absolute top-0 left-1/3 w-[500px] h-[500px] rounded-full bg-purple-600/10 blur-[140px]" />
-          <div className="absolute top-20 right-1/4 w-80 h-80 rounded-full bg-blue-600/8 blur-[120px]" />
-        </div>
+      <section className="relative py-28 px-4 overflow-hidden">
+        <img
+          src="https://images.unsplash.com/photo-1560253023-3ec5d502959f?w=1920&q=70"
+          alt=""
+          className="absolute inset-0 w-full h-full object-cover opacity-[0.10] pointer-events-none"
+        />
+        <div className="absolute inset-0 bg-gradient-to-b from-zinc-950/60 via-transparent to-zinc-950 pointer-events-none" />
         <div className="relative max-w-4xl mx-auto text-center">
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-purple-500/10
-                          border border-purple-500/20 text-purple-400 text-xs font-semibold mb-6 uppercase tracking-wider">
-            <Building2 className="h-3.5 w-3.5" />
+          <div className="inline-flex items-center gap-2 bg-purple-500/10 border border-purple-500/20 text-purple-400 text-xs font-bold px-4 py-2 rounded-full mb-6 tracking-widest uppercase">
+            <Trophy className="w-3 h-3" />
             HERU BUILDER — For Organizers
           </div>
-          <h1 className="text-5xl sm:text-6xl lg:text-7xl font-black leading-[1.05] tracking-tight mb-6">
-            Build events{' '}
-            <span className="bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent">
-              that get funded.
-            </span>
+          <h1 className="text-5xl md:text-7xl font-black mb-6 leading-tight tracking-tight">
+            Build Events That Get{' '}
+            <span className="bg-gradient-to-r from-purple-400 to-purple-600 bg-clip-text text-transparent">Funded.</span>
           </h1>
-          <p className="text-lg sm:text-xl text-gray-400 max-w-2xl mx-auto leading-relaxed mb-10">
-            The complete tournament operating system for MENA esports organizers.
-            Build, staff, monetize, and manage — from first draft to final bracket.
+          <p className="text-xl text-zinc-400 mb-10 max-w-2xl mx-auto leading-relaxed">
+            Create professional online and offline tournaments, hire service providers, attach sponsorship packages, and manage everything from one CRM.
           </p>
-          <div className="flex flex-wrap items-center justify-center gap-3">
-            <Link to="/auth/organizer/register"
-              className="inline-flex items-center gap-2 px-7 py-3.5 rounded-xl font-semibold
-                         bg-purple-700 hover:bg-purple-600 text-white transition-colors text-sm">
-              <Zap className="h-4 w-4" />Start Building
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <Link
+              to="/auth/organizer/register"
+              className="inline-flex items-center gap-2 bg-purple-700 hover:bg-purple-600 text-white font-bold px-8 py-4 rounded-xl transition-colors text-lg"
+            >
+              Start Building Free <ArrowRight className="w-5 h-5" />
             </Link>
-            <Link to="/auth/organizer/login"
-              className="inline-flex items-center gap-2 px-7 py-3.5 rounded-xl font-semibold
-                         bg-white/8 hover:bg-white/12 text-white border border-white/10 transition-colors text-sm">
-              Log in <ArrowRight className="h-4 w-4" />
-            </Link>
+            <a
+              href="#features"
+              className="inline-flex items-center gap-2 border border-zinc-700 hover:border-zinc-500 text-zinc-300 hover:text-white font-bold px-8 py-4 rounded-xl transition-colors text-lg"
+            >
+              See Features <ChevronRight className="w-5 h-5" />
+            </a>
           </div>
         </div>
       </section>
 
-      {/* FEATURES */}
-      <section className="py-20 px-4">
-        <div className="max-w-6xl mx-auto">
-          <div className="text-center mb-14">
-            <p className="text-xs font-bold uppercase tracking-widest text-purple-400 mb-3">Full Feature Set</p>
-            <h2 className="text-4xl font-black text-white">One platform. End-to-end.</h2>
-            <p className="text-gray-400 mt-3 max-w-xl mx-auto">From the first planning step to the final sponsor report.</p>
+      {/* STATS BAR */}
+      <section className="border-y border-zinc-800 bg-zinc-900/50 py-6 px-4">
+        <div className="max-w-4xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-6">
+          {STATS.map((s) => (
+            <div key={s.label} className="text-center">
+              <div className="text-2xl font-black text-white mb-1">{s.value}</div>
+              <div className="text-xs text-zinc-500 uppercase tracking-widest">{s.label}</div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* FEATURES TIMELINE */}
+      <section id="features" className="relative py-20 px-4 overflow-hidden">
+        <img
+          src="https://images.unsplash.com/photo-1511512578047-dfb367046420?w=1920&q=70"
+          alt=""
+          className="absolute inset-0 w-full h-full object-cover opacity-[0.05] pointer-events-none"
+        />
+        <div className="relative max-w-6xl mx-auto">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl font-black text-white mb-4">Everything you need to run pro events</h2>
+            <p className="text-zinc-400 text-lg">From idea to funded tournament in days, not months.</p>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            {FEATURES.map(({ Icon, title, desc, color, bg }) => (
-              <div key={title} className="p-5 rounded-2xl bg-white/4 border border-white/8 hover:border-purple-500/20 transition-colors">
-                <div className={`p-2.5 rounded-xl ${bg} ${color} w-fit mb-4`}><Icon className="h-5 w-5" /></div>
-                <h3 className="text-sm font-bold text-white mb-1">{title}</h3>
-                <p className="text-xs text-gray-400 leading-relaxed">{desc}</p>
+
+          <div className="relative">
+            <div className="absolute left-1/2 top-0 bottom-0 w-px bg-gradient-to-b from-transparent via-purple-500/40 to-transparent hidden md:block" />
+
+            {STEPS.map((step, i) => (
+              <div
+                key={i}
+                className={`relative flex items-start gap-6 mb-12 ${i % 2 === 0 ? 'md:flex-row' : 'md:flex-row-reverse'}`}
+              >
+                <div className="hidden md:flex absolute left-1/2 top-2 -translate-x-1/2 w-10 h-10 rounded-full bg-purple-700 border-2 border-purple-500 items-center justify-center text-white font-black text-sm z-10">
+                  {i + 1}
+                </div>
+                <div className={`w-full md:w-[calc(50%-2.5rem)] ${i % 2 === 0 ? 'md:mr-auto' : 'md:ml-auto'}`}>
+                  <div className="p-6 rounded-xl bg-zinc-900 border border-zinc-800 hover:border-purple-500/40 transition-colors">
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className="w-8 h-8 rounded-lg bg-purple-500/15 flex items-center justify-center flex-shrink-0">
+                        <step.Icon className="w-4 h-4 text-purple-400" />
+                      </div>
+                      <h3 className="text-white font-bold">{step.title}</h3>
+                    </div>
+                    <p className="text-zinc-400 text-sm leading-relaxed">{step.desc}</p>
+                  </div>
+                </div>
               </div>
             ))}
           </div>
@@ -126,125 +177,123 @@ export default function ForOrganizers() {
       </section>
 
       {/* HOW IT WORKS */}
-      <section className="py-20 px-4 bg-gradient-to-b from-white/2 to-transparent">
-        <div className="max-w-4xl mx-auto">
+      <section className="py-20 px-4 bg-zinc-900/30">
+        <div className="max-w-5xl mx-auto">
+          <div className="text-center mb-14">
+            <h2 className="text-4xl font-black text-white mb-4">How It Works</h2>
+            <p className="text-zinc-400">Four steps from concept to funded event.</p>
+          </div>
+          <div className="grid md:grid-cols-4 gap-6">
+            {HOW_STEPS.map((s, i) => (
+              <div key={s.num} className="relative text-center p-6 rounded-2xl bg-zinc-900 border border-zinc-800 hover:border-purple-500/30 transition-colors">
+                {i < HOW_STEPS.length - 1 && (
+                  <div className="hidden md:block absolute top-1/2 -right-3 w-6 h-px bg-purple-500/30 z-10" />
+                )}
+                <div className="text-5xl font-black text-purple-500/20 mb-3 leading-none">{s.num}</div>
+                <h3 className="text-lg font-black text-white mb-2">{s.title}</h3>
+                <p className="text-zinc-400 text-sm leading-relaxed">{s.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* PRICING */}
+      <section className="relative py-20 px-4 overflow-hidden">
+        <img
+          src="https://images.unsplash.com/photo-1538481199705-c710c4e965fc?w=1920&q=70"
+          alt=""
+          className="absolute inset-0 w-full h-full object-cover opacity-[0.07] pointer-events-none"
+        />
+        <div className="relative max-w-4xl mx-auto">
           <div className="text-center mb-12">
-            <p className="text-xs font-bold uppercase tracking-widest text-gray-500 mb-3">Workflow</p>
-            <h2 className="text-3xl font-black text-white">From idea to live event in 4 steps.</h2>
+            <h2 className="text-4xl font-black text-white mb-4">Pricing</h2>
+            <p className="text-zinc-400 text-lg">Free to create. We only earn when you do.</p>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            {HOW.map(({ step, title, desc }) => (
-              <div key={step} className="p-5 rounded-2xl bg-white/4 border border-white/8">
-                <p className="text-4xl font-black text-purple-500/25 mb-3">{step}</p>
-                <h3 className="text-sm font-bold text-white mb-1">{title}</h3>
-                <p className="text-xs text-gray-400 leading-relaxed">{desc}</p>
+
+          <div className="grid md:grid-cols-2 gap-6 mb-10">
+            {/* Service Bookings */}
+            <div className="p-8 rounded-2xl bg-zinc-900 border border-zinc-800 hover:border-purple-500/30 transition-colors">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="w-10 h-10 rounded-xl bg-purple-500/15 flex items-center justify-center">
+                  <Package className="w-5 h-5 text-purple-400" />
+                </div>
+                <h3 className="text-white font-black text-xl">Service Bookings</h3>
               </div>
-            ))}
+              <div className="space-y-3 mb-6">
+                <div className="flex items-center justify-between py-2 border-b border-zinc-800">
+                  <span className="text-zinc-400 text-sm">Organizer pays provider</span>
+                  <span className="text-white font-bold">EGP amount</span>
+                </div>
+                <div className="flex items-center justify-between py-2 border-b border-zinc-800">
+                  <span className="text-zinc-400 text-sm">HERU platform fee</span>
+                  <span className="text-purple-400 font-bold">15%</span>
+                </div>
+                <div className="flex items-center justify-between py-2">
+                  <span className="text-zinc-400 text-sm">Provider receives</span>
+                  <span className="text-green-400 font-bold">85%</span>
+                </div>
+              </div>
+              <p className="text-zinc-500 text-xs">You manage the budget. HERU holds escrow until delivery is confirmed.</p>
+            </div>
+
+            {/* Sponsorship Income */}
+            <div className="p-8 rounded-2xl bg-zinc-900 border border-purple-500/20 hover:border-purple-500/40 transition-colors">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="w-10 h-10 rounded-xl bg-purple-500/15 flex items-center justify-center">
+                  <DollarSign className="w-5 h-5 text-purple-400" />
+                </div>
+                <h3 className="text-white font-black text-xl">Sponsorship Income</h3>
+              </div>
+              <div className="space-y-3 mb-6">
+                <div className="flex items-center justify-between py-2 border-b border-zinc-800">
+                  <span className="text-zinc-400 text-sm">Sponsor pays package</span>
+                  <span className="text-white font-bold">EGP amount</span>
+                </div>
+                <div className="flex items-center justify-between py-2 border-b border-zinc-800">
+                  <span className="text-zinc-400 text-sm">HERU platform fee</span>
+                  <span className="text-purple-400 font-bold">15%</span>
+                </div>
+                <div className="flex items-center justify-between py-2">
+                  <span className="text-zinc-400 text-sm">You receive</span>
+                  <span className="text-green-400 font-bold text-2xl">85%</span>
+                </div>
+              </div>
+              <p className="text-zinc-500 text-xs">You keep the majority. Every sponsorship deal goes directly to your account.</p>
+            </div>
+          </div>
+
+          <div className="text-center">
+            <Link
+              to="/auth/organizer/register"
+              className="inline-flex items-center gap-2 bg-purple-700 hover:bg-purple-600 text-white font-bold px-10 py-4 rounded-xl transition-colors text-lg"
+            >
+              Free to create tournaments <ArrowRight className="w-5 h-5" />
+            </Link>
           </div>
         </div>
       </section>
 
-      {/* CRM SPOTLIGHT */}
+      {/* BUILD IT FOR ME CTA */}
       <section className="py-16 px-4">
-        <div className="max-w-4xl mx-auto rounded-2xl bg-gradient-to-br from-purple-900/20 to-blue-950/10
-                        border border-purple-500/20 p-8 md:p-12">
-          <div className="flex flex-col md:flex-row items-start gap-6">
-            <div className="p-4 rounded-2xl bg-purple-500/15 border border-purple-500/20 shrink-0">
-              <BarChart3 className="h-8 w-8 text-purple-400" />
-            </div>
-            <div>
-              <p className="text-xs font-bold uppercase tracking-widest text-purple-400 mb-2">Tournament CRM</p>
-              <h2 className="text-2xl font-black text-white mb-3">More than a bracket — a full event command center.</h2>
-              <p className="text-gray-400 text-sm leading-relaxed mb-5">
-                Once live, the CRM gives you 6 dedicated tabs: Overview, Teams, Brackets, Providers,
-                Organizer Chat, and Settings. Service providers also get CRM access to coordinate delivery.
-              </p>
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                {['Teams & check-in','Bracket management','Provider coordination',
-                  'Sponsor communication','Status workflow','Registration controls'].map(f => (
-                  <div key={f} className="flex items-center gap-2 text-xs text-gray-300">
-                    <CheckCircle2 className="h-3.5 w-3.5 text-purple-400 shrink-0" />{f}
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ECONOMICS */}
-      <section className="py-20 px-4">
         <div className="max-w-3xl mx-auto">
-          <div className="text-center mb-10">
-            <p className="text-xs font-bold uppercase tracking-widest text-gray-500 mb-3">Transparent Pricing</p>
-            <h2 className="text-3xl font-black text-white">Simple. Fair. 15% platform fee.</h2>
-            <p className="text-gray-400 mt-3 text-sm max-w-lg mx-auto">
-              HERU takes 15% on service bookings and sponsorship income. You keep 85%.
-              Tournament entry fees go to your prize pool — HERU takes nothing from prizes.
+          <div className="p-10 rounded-2xl bg-gradient-to-br from-zinc-900 to-zinc-800 border border-zinc-700 text-center">
+            <Building2 className="w-10 h-10 text-purple-400 mx-auto mb-4" />
+            <h2 className="text-2xl font-black text-white mb-3">Not sure where to start?</h2>
+            <p className="text-zinc-400 mb-6">
+              Book a HERU consultant to build your tournament for you. We handle everything from planning to execution.
             </p>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
-            {[
-              { label: 'Platform fee on service bookings', value: '15%' },
-              { label: 'Platform fee on sponsorship income', value: '15%' },
-              { label: 'You keep from every transaction', value: '85%' },
-            ].map(({ label, value }) => (
-              <div key={label} className="p-5 rounded-2xl bg-white/4 border border-white/8 text-center">
-                <p className="text-3xl font-black text-purple-400 mb-1">{value}</p>
-                <p className="text-xs text-gray-400">{label}</p>
-              </div>
-            ))}
-          </div>
-          <div className="p-6 rounded-2xl bg-white/4 border border-white/8">
-            <p className="text-sm font-bold text-white mb-3">Billing & Invoicing includes:</p>
-            <ul className="space-y-2">
-              {BILLING_FEATURES.map(f => (
-                <li key={f} className="flex items-start gap-2 text-sm text-gray-400">
-                  <CheckCircle2 className="h-4 w-4 text-purple-400 shrink-0 mt-0.5" />{f}
-                </li>
-              ))}
-            </ul>
+            <Link
+              to="/sponsor/managed-services"
+              className="inline-flex items-center gap-2 bg-purple-700 hover:bg-purple-600 text-white font-bold px-8 py-3 rounded-xl transition-colors"
+            >
+              Talk to a Consultant <ArrowRight className="w-4 h-4" />
+            </Link>
           </div>
         </div>
       </section>
 
-      {/* BUILD IT FOR ME */}
-      <section className="py-16 px-4">
-        <div className="max-w-3xl mx-auto rounded-2xl bg-gradient-to-br from-blue-900/20 to-blue-950/10
-                        border border-blue-500/20 p-8 text-center">
-          <Headphones className="h-8 w-8 text-blue-400 mx-auto mb-3" />
-          <h2 className="text-2xl font-black text-white mb-2">Want us to build it for you?</h2>
-          <p className="text-sm text-gray-400 max-w-lg mx-auto mb-6">
-            HERU consultants can plan, staff, fund, and execute your entire event.
-            Request a consultation from your organizer dashboard after signing up.
-          </p>
-          <Link to="/auth/organizer/register"
-            className="inline-flex items-center gap-2 px-6 py-3 rounded-xl text-sm font-semibold
-                       bg-blue-600 hover:bg-blue-500 text-white transition-colors">
-            Get Started <ChevronRight className="h-4 w-4" />
-          </Link>
-        </div>
-      </section>
-
-      {/* FINAL CTA */}
-      <section className="py-24 px-4">
-        <div className="max-w-2xl mx-auto text-center">
-          <Sparkles className="h-8 w-8 text-purple-400 mx-auto mb-4" />
-          <h2 className="text-4xl font-black text-white mb-4">Ready to build your next event?</h2>
-          <p className="text-gray-400 mb-8">
-            Join organizers across Egypt, Saudi Arabia, and UAE running their events on HERU BUILDER.
-          </p>
-          <Link to="/auth/organizer/register"
-            className="inline-flex items-center gap-2 px-8 py-4 rounded-xl font-bold
-                       bg-purple-700 hover:bg-purple-600 text-white transition-colors">
-            Create Organizer Account <ArrowRight className="h-5 w-5" />
-          </Link>
-          <p className="text-xs text-gray-600 mt-4">
-            Already have an account?{' '}
-            <Link to="/auth/organizer/login" className="text-purple-400 hover:underline">Log in</Link>
-          </p>
-        </div>
-      </section>
+      <Footer />
     </div>
   )
 }

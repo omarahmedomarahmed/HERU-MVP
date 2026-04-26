@@ -34,6 +34,7 @@ import ForGamers from './pages/public/ForGamers'
 import ForOrganizers from './pages/public/ForOrganizers'
 import ForSponsors from './pages/public/ForSponsors'
 import ForProviders from './pages/public/ForProviders'
+import Pricing from './pages/public/Pricing'
 
 // Public discovery pages
 import Coaches from './pages/public/Coaches'
@@ -157,6 +158,7 @@ function App() {
             <Route path="/for-organizers" element={<ForOrganizers />} />
             <Route path="/for-sponsors" element={<ForSponsors />} />
             <Route path="/for-providers" element={<ForProviders />} />
+            <Route path="/pricing" element={<Pricing />} />
             <Route path="/providers/:id" element={<ProviderPublicProfile />} />
             <Route path="/gamer/:id" element={<GamerProfileView />} />
 

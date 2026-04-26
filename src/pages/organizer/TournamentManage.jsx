@@ -4,12 +4,14 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '@/lib/AuthContext'
 import { apiCall } from '@/api/heruClient'
 import { useToast } from '@/components/ui/use-toast'
+import { uploadFile } from '@/lib/uploadFile'
 import {
   Trophy, Users, GitBranch, MessageSquare, Settings,
   Loader2, Calendar, Gamepad2, DollarSign, Globe,
   Building, ArrowLeft, Play, Flag, CheckCircle2,
   Pencil, Trash2, UserPlus, Package, Send, ChevronRight,
-  Clock, Zap, BarChart3,
+  Clock, Zap, BarChart3, Star, FolderOpen, CheckSquare2,
+  Upload, Download, FileText, Plus, X,
 } from 'lucide-react'
 
 const formatEGP = (n) => `EGP ${(n || 0).toLocaleString()}`
@@ -34,12 +36,16 @@ function StatusBadge({ status }) {
 }
 
 const TABS = [
-  { id: 'overview',   label: 'Overview',   icon: Trophy },
-  { id: 'teams',      label: 'Teams',      icon: Users },
-  { id: 'brackets',   label: 'Brackets',   icon: GitBranch },
-  { id: 'providers',  label: 'Providers',  icon: Package },
-  { id: 'chat',       label: 'Chat',       icon: MessageSquare },
-  { id: 'settings',   label: 'Settings',   icon: Settings },
+  { id: 'overview',   label: 'Overview',    icon: Trophy },
+  { id: 'teams',      label: 'Teams',       icon: Users },
+  { id: 'brackets',   label: 'Brackets',    icon: GitBranch },
+  { id: 'providers',  label: 'Providers',   icon: Package },
+  { id: 'sponsors',   label: 'Sponsors',    icon: Star },
+  { id: 'files',      label: 'Files',       icon: FolderOpen },
+  { id: 'roi',        label: 'ROI & Reach', icon: BarChart3 },
+  { id: 'tasks',      label: 'Tasks',       icon: CheckSquare2 },
+  { id: 'chat',       label: 'Chat',        icon: MessageSquare },
+  { id: 'settings',   label: 'Settings',    icon: Settings },
 ]
 
 // ─── Overview Tab ──────────────────────────────────────────────────────────────
@@ -399,6 +405,412 @@ function SettingsTab({ tournament }) {
   )
 }
 
+// ─── Sponsors Tab ─────────────────────────────────────────────────────────────
+
+function SponsorsTab({ tournament }) {
+  const { data: raw, isLoading } = useQuery({
+    queryKey: ['tournament-sponsorships', tournament.id],
+    queryFn: () => apiCall(`/sponsorships?tournament_id=${tournament.id}`),
+    staleTime: 30_000,
+  })
+  const sponsorships = Array.isArray(raw) ? raw : raw?.sponsorships || raw?.data || []
+
+  const totalIncome = sponsorships.reduce((s, sp) => s + Number(sp.amount || 0), 0)
+  const heruFee = totalIncome * 0.15
+  const netToOrg = totalIncome * 0.85
+
+  const statusStyle = {
+    pending:   'bg-yellow-500/20 text-yellow-400',
+    paid:      'bg-green-500/20 text-green-400',
+    active:    'bg-blue-500/20 text-blue-400',
+    completed: 'bg-purple-500/20 text-purple-400',
+    refunded:  'bg-zinc-500/20 text-zinc-400',
+    cancelled: 'bg-zinc-500/20 text-zinc-400',
+  }
+
+  if (isLoading) return <div className="flex justify-center py-16"><Loader2 className="w-5 h-5 animate-spin text-purple-400" /></div>
+
+  if (sponsorships.length === 0) {
+    return (
+      <div className="text-center py-16 bg-zinc-900 rounded-xl border border-zinc-800">
+        <Star className="w-10 h-10 text-zinc-700 mx-auto mb-3" />
+        <p className="text-zinc-500 text-sm">No active sponsorships yet. Enable radar listing in Settings.</p>
+      </div>
+    )
+  }
+
+  return (
+    <div className="space-y-4">
+      {/* Summary */}
+      <div className="grid grid-cols-3 gap-3">
+        {[
+          { label: 'Total Income', value: formatEGP(totalIncome), color: 'text-yellow-400' },
+          { label: 'HERU Fee (15%)', value: formatEGP(heruFee), color: 'text-orange-400' },
+          { label: 'Net to You (85%)', value: formatEGP(netToOrg), color: 'text-green-400' },
+        ].map(card => (
+          <div key={card.label} className="p-4 rounded-xl bg-zinc-900 border border-zinc-800">
+            <p className="text-zinc-500 text-xs mb-1">{card.label}</p>
+            <p className={`text-lg font-bold ${card.color}`}>{card.value}</p>
+          </div>
+        ))}
+      </div>
+
+      {/* Table */}
+      <div className="rounded-xl bg-zinc-900 border border-zinc-800 overflow-hidden">
+        <table className="w-full text-sm">
+          <thead className="border-b border-zinc-800">
+            <tr className="text-zinc-500 text-xs uppercase">
+              <th className="text-left p-4">Brand</th>
+              <th className="text-left p-4 hidden md:table-cell">Package</th>
+              <th className="text-right p-4">Amount</th>
+              <th className="text-center p-4">Status</th>
+              <th className="text-right p-4 hidden md:table-cell">Date</th>
+            </tr>
+          </thead>
+          <tbody>
+            {sponsorships.map(s => (
+              <tr key={s.id} className="border-b border-zinc-800/50 hover:bg-zinc-800/30 transition-colors">
+                <td className="p-4 text-white font-medium">{s.sponsor_brand || s.sponsor_id || '—'}</td>
+                <td className="p-4 text-zinc-400 hidden md:table-cell">{s.package_name || '—'}</td>
+                <td className="p-4 text-yellow-400 font-semibold text-right">{formatEGP(s.amount)}</td>
+                <td className="p-4 text-center">
+                  <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${statusStyle[s.status] || statusStyle.pending}`}>
+                    {s.status || 'pending'}
+                  </span>
+                </td>
+                <td className="p-4 text-zinc-500 text-right hidden md:table-cell">{fmtDate(s.paid_at || s.created_at)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  )
+}
+
+// ─── Files Tab ─────────────────────────────────────────────────────────────────
+
+function FilesTab({ tournament, qc }) {
+  const { toast } = useToast()
+  const [uploading, setUploading] = useState(false)
+  const existingFiles = tournament?.organizer_brand?.files || []
+
+  async function handleUpload(e) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setUploading(true)
+    try {
+      const result = await uploadFile(file, 'tournament-files')
+      const newFile = { name: file.name, url: result?.url || result, uploaded_at: new Date().toISOString() }
+      await apiCall(`/tournaments/${tournament.id}`, {
+        method: 'PUT',
+        body: {
+          organizer_brand: {
+            ...tournament.organizer_brand,
+            files: [...existingFiles, newFile],
+          },
+        },
+      })
+      qc.invalidateQueries({ queryKey: ['tournament', tournament.id] })
+      toast({ title: 'File uploaded' })
+    } catch {
+      toast({ title: 'Upload failed', variant: 'destructive' })
+    } finally {
+      setUploading(false)
+      e.target.value = ''
+    }
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <p className="text-sm text-zinc-400">{existingFiles.length} file{existingFiles.length !== 1 ? 's' : ''}</p>
+        <label className={`flex items-center gap-2 px-4 py-2 rounded-lg border border-zinc-700 text-zinc-300 text-sm hover:border-zinc-600 hover:text-white transition-colors cursor-pointer ${uploading ? 'opacity-50 pointer-events-none' : ''}`}>
+          {uploading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5" />}
+          {uploading ? 'Uploading…' : 'Upload File'}
+          <input type="file" className="hidden" onChange={handleUpload} />
+        </label>
+      </div>
+
+      {existingFiles.length === 0 ? (
+        <div className="text-center py-16 bg-zinc-900 rounded-xl border border-zinc-800">
+          <FolderOpen className="w-10 h-10 text-zinc-700 mx-auto mb-3" />
+          <p className="text-zinc-500 text-sm">No files uploaded yet</p>
+        </div>
+      ) : (
+        <div className="space-y-2">
+          {existingFiles.map((f, i) => (
+            <div key={i} className="flex items-center justify-between p-4 rounded-xl bg-zinc-900 border border-zinc-800">
+              <div className="flex items-center gap-3 min-w-0">
+                <FileText className="w-4 h-4 text-purple-400 flex-shrink-0" />
+                <div className="min-w-0">
+                  <p className="text-white text-sm font-medium truncate">{f.name}</p>
+                  <p className="text-zinc-500 text-xs">{fmtDate(f.uploaded_at)}</p>
+                </div>
+              </div>
+              <a
+                href={f.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-1.5 text-xs text-zinc-400 hover:text-white transition-colors px-3 py-1.5 rounded-lg hover:bg-zinc-800"
+              >
+                <Download className="w-3.5 h-3.5" /> Download
+              </a>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ─── ROI Tab ───────────────────────────────────────────────────────────────────
+
+function RoiTab({ tournament, qc }) {
+  const { toast } = useToast()
+  const [roiState, setRoiState] = useState({
+    estimated_reach: '',
+    actual_views: '',
+    engagement_rate: '',
+    social_impressions: '',
+    sponsor_score: '',
+    notes: '',
+    ...tournament?.roi_data,
+  })
+  const [saving, setSaving] = useState(false)
+
+  const set = (k) => (e) => setRoiState(prev => ({ ...prev, [k]: e.target.value }))
+
+  async function handleSave() {
+    setSaving(true)
+    try {
+      await apiCall(`/tournaments/${tournament.id}`, { method: 'PUT', body: { roi_data: roiState } })
+      qc.invalidateQueries({ queryKey: ['tournament', tournament.id] })
+      toast({ title: 'ROI data saved' })
+    } catch {
+      toast({ title: 'Save failed', variant: 'destructive' })
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const fields = [
+    { key: 'estimated_reach', label: 'Estimated Reach', type: 'number', placeholder: '10000' },
+    { key: 'actual_views', label: 'Actual Views', type: 'number', placeholder: '8500' },
+    { key: 'engagement_rate', label: 'Engagement Rate (%)', type: 'number', placeholder: '4.5' },
+    { key: 'social_impressions', label: 'Social Impressions', type: 'number', placeholder: '25000' },
+    { key: 'sponsor_score', label: 'Sponsor Satisfaction (1–10)', type: 'number', placeholder: '8' },
+  ]
+
+  return (
+    <div className="space-y-4">
+      {tournament?.roi_data?.updated_at && (
+        <p className="text-xs text-zinc-500">Last updated: {fmtDate(tournament.roi_data.updated_at)}</p>
+      )}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        {fields.map(f => (
+          <div key={f.key} className="p-4 rounded-xl bg-zinc-900 border border-zinc-800">
+            <label className="block text-xs font-bold text-zinc-400 uppercase tracking-wider mb-2">{f.label}</label>
+            <input
+              type={f.type}
+              value={roiState[f.key]}
+              onChange={set(f.key)}
+              placeholder={f.placeholder}
+              className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white text-sm placeholder-zinc-600 focus:outline-none focus:border-purple-500"
+            />
+          </div>
+        ))}
+        <div className="p-4 rounded-xl bg-zinc-900 border border-zinc-800 sm:col-span-2">
+          <label className="block text-xs font-bold text-zinc-400 uppercase tracking-wider mb-2">Notes</label>
+          <textarea
+            value={roiState.notes}
+            onChange={set('notes')}
+            rows={3}
+            placeholder="Add campaign notes or observations…"
+            className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white text-sm placeholder-zinc-600 focus:outline-none focus:border-purple-500 resize-none"
+          />
+        </div>
+      </div>
+      <div className="flex justify-end">
+        <button
+          onClick={handleSave}
+          disabled={saving}
+          className="flex items-center gap-2 px-5 py-2.5 rounded-lg bg-purple-600 hover:bg-purple-500 text-white text-sm font-bold transition-colors disabled:opacity-50"
+        >
+          {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
+          Save ROI Data
+        </button>
+      </div>
+    </div>
+  )
+}
+
+// ─── Tasks Tab ─────────────────────────────────────────────────────────────────
+
+function TasksTab({ tournament, qc }) {
+  const { toast } = useToast()
+  const [tasks, setTasks] = useState(tournament?.task_board || [])
+  const [showForm, setShowForm] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [form, setForm] = useState({ title: '', assigned_to: '', deadline: '', priority: 'medium' })
+
+  const setF = (k) => (e) => setForm(prev => ({ ...prev, [k]: e.target.value }))
+
+  async function saveTasks(updatedTasks) {
+    try {
+      await apiCall(`/tournaments/${tournament.id}`, { method: 'PUT', body: { task_board: updatedTasks } })
+      qc.invalidateQueries({ queryKey: ['tournament', tournament.id] })
+    } catch {
+      toast({ title: 'Save failed', variant: 'destructive' })
+    }
+  }
+
+  async function handleAddTask() {
+    if (!form.title.trim()) return
+    setSaving(true)
+    const newTask = { id: Date.now().toString(), ...form, status: 'pending', created_at: new Date().toISOString() }
+    const updated = [...tasks, newTask]
+    setTasks(updated)
+    await saveTasks(updated)
+    setForm({ title: '', assigned_to: '', deadline: '', priority: 'medium' })
+    setShowForm(false)
+    setSaving(false)
+    toast({ title: 'Task added' })
+  }
+
+  async function handleMarkDone(taskId) {
+    const updated = tasks.map(t => t.id === taskId ? { ...t, status: 'done' } : t)
+    setTasks(updated)
+    await saveTasks(updated)
+  }
+
+  async function handleSetInProgress(taskId) {
+    const updated = tasks.map(t => t.id === taskId ? { ...t, status: 'in_progress' } : t)
+    setTasks(updated)
+    await saveTasks(updated)
+  }
+
+  const columns = [
+    { id: 'pending',     label: 'To Do',       filter: (t) => t.status === 'pending' },
+    { id: 'in_progress', label: 'In Progress',  filter: (t) => t.status === 'in_progress' },
+    { id: 'done',        label: 'Done',         filter: (t) => t.status === 'done' },
+  ]
+
+  const priorityBadge = {
+    high:   'bg-red-500/20 text-red-400',
+    medium: 'bg-yellow-500/20 text-yellow-400',
+    low:    'bg-green-500/20 text-green-400',
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <p className="text-sm text-zinc-400">{tasks.length} task{tasks.length !== 1 ? 's' : ''}</p>
+        <button
+          onClick={() => setShowForm(!showForm)}
+          className="flex items-center gap-1.5 px-3 py-2 rounded-lg border border-zinc-700 text-zinc-300 text-sm hover:border-zinc-600 hover:text-white transition-colors"
+        >
+          {showForm ? <X className="w-3.5 h-3.5" /> : <Plus className="w-3.5 h-3.5" />}
+          {showForm ? 'Cancel' : 'Add Task'}
+        </button>
+      </div>
+
+      {showForm && (
+        <div className="p-4 rounded-xl bg-zinc-900 border border-purple-500/30 space-y-3">
+          <h3 className="text-sm font-bold text-white">New Task</h3>
+          <input
+            value={form.title}
+            onChange={setF('title')}
+            placeholder="Task title"
+            className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white text-sm placeholder-zinc-600 focus:outline-none focus:border-purple-500"
+          />
+          <div className="grid grid-cols-2 gap-3">
+            <input
+              value={form.assigned_to}
+              onChange={setF('assigned_to')}
+              placeholder="Assigned to"
+              className="px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white text-sm placeholder-zinc-600 focus:outline-none focus:border-purple-500"
+            />
+            <input
+              type="date"
+              value={form.deadline}
+              onChange={setF('deadline')}
+              className="px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white text-sm focus:outline-none focus:border-purple-500"
+            />
+          </div>
+          <select
+            value={form.priority}
+            onChange={setF('priority')}
+            className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white text-sm focus:outline-none focus:border-purple-500"
+          >
+            <option value="high">High Priority</option>
+            <option value="medium">Medium Priority</option>
+            <option value="low">Low Priority</option>
+          </select>
+          <button
+            onClick={handleAddTask}
+            disabled={!form.title.trim() || saving}
+            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-purple-600 hover:bg-purple-500 text-white text-sm font-bold transition-colors disabled:opacity-50"
+          >
+            {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
+            Add Task
+          </button>
+        </div>
+      )}
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {columns.map(col => {
+          const colTasks = tasks.filter(col.filter)
+          return (
+            <div key={col.id} className="rounded-xl bg-zinc-900 border border-zinc-800 overflow-hidden">
+              <div className="px-4 py-3 border-b border-zinc-800 flex items-center justify-between">
+                <h3 className="text-xs font-bold text-zinc-400 uppercase tracking-wider">{col.label}</h3>
+                <span className="text-xs text-zinc-600">{colTasks.length}</span>
+              </div>
+              <div className="p-3 space-y-2 min-h-[80px]">
+                {colTasks.length === 0 ? (
+                  <p className="text-xs text-zinc-700 text-center py-4">No tasks</p>
+                ) : colTasks.map(task => (
+                  <div key={task.id} className="p-3 rounded-lg bg-zinc-800 border border-zinc-700 space-y-2">
+                    <p className="text-white text-sm font-medium">{task.title}</p>
+                    {task.assigned_to && (
+                      <p className="text-zinc-500 text-xs">→ {task.assigned_to}</p>
+                    )}
+                    {task.deadline && (
+                      <p className="text-zinc-500 text-xs">{fmtDate(task.deadline)}</p>
+                    )}
+                    <div className="flex items-center justify-between">
+                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${priorityBadge[task.priority] || priorityBadge.medium}`}>
+                        {task.priority}
+                      </span>
+                      {task.status === 'pending' && (
+                        <button
+                          onClick={() => handleSetInProgress(task.id)}
+                          className="text-[10px] text-blue-400 hover:text-blue-300 font-bold"
+                        >
+                          Start →
+                        </button>
+                      )}
+                      {task.status === 'in_progress' && (
+                        <button
+                          onClick={() => handleMarkDone(task.id)}
+                          className="text-[10px] text-green-400 hover:text-green-300 font-bold"
+                        >
+                          Mark Done ✓
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
 // ─── Main Component ─────────────────────────────────────────────────────────────
 
 export default function TournamentManage({ defaultTab = 'overview' }) {
@@ -492,6 +904,10 @@ export default function TournamentManage({ defaultTab = 'overview' }) {
       {activeTab === 'teams'     && <TeamsTab tournamentId={id} />}
       {activeTab === 'brackets'  && <BracketsTab tournament={tournament} />}
       {activeTab === 'providers' && <ProvidersTab tournamentId={id} />}
+      {activeTab === 'sponsors'  && <SponsorsTab tournament={tournament} />}
+      {activeTab === 'files'     && <FilesTab tournament={tournament} qc={qc} />}
+      {activeTab === 'roi'       && <RoiTab tournament={tournament} qc={qc} />}
+      {activeTab === 'tasks'     && <TasksTab tournament={tournament} qc={qc} />}
       {activeTab === 'chat'      && <ChatTab tournament={tournament} />}
       {activeTab === 'settings'  && <SettingsTab tournament={tournament} />}
     </div>
