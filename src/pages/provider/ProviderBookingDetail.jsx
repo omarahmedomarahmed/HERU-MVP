@@ -72,7 +72,7 @@ export default function ProviderBookingDetail() {
     } catch {} finally { setActioning(''); }
   };
 
-  if (loading) return <div className="flex items-center justify-center h-64"><Loader2 className="w-6 h-6 animate-spin text-emerald-400" /></div>;
+  if (loading) return <div className="flex items-center justify-center h-64"><Loader2 className="w-6 h-6 animate-spin text-cyan-400" /></div>;
   if (!booking) return <div className="text-center py-16 text-gray-500"><p>Booking not found</p></div>;
 
   const isProvider = booking.provider_id === userProfile?.id;
@@ -123,7 +123,7 @@ export default function ProviderBookingDetail() {
           <button
             key={t.id}
             onClick={() => setTab(t.id)}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${tab === t.id ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' : 'text-gray-400 hover:text-white'}`}
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${tab === t.id ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/30' : 'text-gray-400 hover:text-white'}`}
           >
             <t.icon className="w-4 h-4" /> {t.label}
           </button>
@@ -140,7 +140,7 @@ export default function ProviderBookingDetail() {
               const isMe = msg.sender_id === userProfile?.id;
               return (
                 <div key={i} className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}>
-                  <div className={`max-w-xs px-3 py-2 rounded-xl text-sm ${isMe ? 'bg-emerald-600 text-white' : 'bg-white/10 text-gray-200'}`}>
+                  <div className={`max-w-xs px-3 py-2 rounded-xl text-sm ${isMe ? 'bg-cyan-600 text-white' : 'bg-white/10 text-gray-200'}`}>
                     {!isMe && <p className="text-xs text-gray-400 mb-1">{msg.sender_name || 'Organizer'}</p>}
                     <p>{msg.message}</p>
                     <p className="text-xs opacity-60 mt-1 text-right">{msg.created_at ? new Date(msg.created_at).toLocaleTimeString('en-EG', { hour: '2-digit', minute: '2-digit' }) : ''}</p>
@@ -158,7 +158,7 @@ export default function ProviderBookingDetail() {
               placeholder="Type a message..."
               className="bg-white/5 border-white/10 text-white placeholder:text-gray-600 flex-1"
             />
-            <button onClick={sendMessage} disabled={sending || !message.trim()} className="p-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition-colors disabled:opacity-50">
+            <button onClick={sendMessage} disabled={sending || !message.trim()} className="p-2 bg-cyan-600 hover:bg-cyan-700 text-white rounded-lg transition-colors disabled:opacity-50">
               {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
             </button>
           </div>
@@ -172,7 +172,7 @@ export default function ProviderBookingDetail() {
             return (
               <div key={folder} className="bg-white/5 border border-white/10 rounded-xl p-4">
                 <h3 className="text-white font-medium text-sm mb-3 flex items-center gap-2">
-                  <Folder className="w-4 h-4 text-emerald-400" /> {folder}
+                  <Folder className="w-4 h-4 text-cyan-400" /> {folder}
                 </h3>
                 {folderFiles.length === 0 ? (
                   <p className="text-gray-600 text-xs">No files yet</p>

@@ -5,12 +5,13 @@ import { requireSponsor } from '../middleware/roleGuard.js';
 
 const router = Router();
 const PLAN_PRICES = {
-  starter:  { monthly: 150000, annual: 1500000 },
-  growth:   { monthly: 250000, annual: 2500000 },
-  premium:  { monthly: 500000, annual: 5000000 },
+  community: { monthly: 150000 },
+  premium:   { monthly: 300000 },
   // legacy aliases kept for existing DB rows
-  pro:        { monthly: 150000, annual: 1500000 },
-  enterprise: { monthly: 500000, annual: 5000000 },
+  starter:   { monthly: 150000 },
+  growth:    { monthly: 250000 },
+  pro:       { monthly: 150000 },
+  enterprise:{ monthly: 500000 },
 };
 
 router.get('/me', requireAuth, requireSponsor, async (req, res) => {
@@ -26,13 +27,12 @@ router.get('/me', requireAuth, requireSponsor, async (req, res) => {
 router.post('/', requireAuth, requireSponsor, async (req, res) => {
   try {
     const { plan, billing_cycle = 'monthly' } = req.body;
-    if (!plan || !PLAN_PRICES[plan]) return res.status(400).json({ error: 'Invalid plan. Choose: starter, growth, or premium' });
-    if (!['monthly','annual'].includes(billing_cycle)) return res.status(400).json({ error: 'billing_cycle must be monthly or annual' });
+    if (!plan || !PLAN_PRICES[plan]) return res.status(400).json({ error: 'Invalid plan. Choose: community or premium' });
+    if (!['monthly'].includes(billing_cycle)) billing_cycle = 'monthly';
     await supabaseAdmin.from('subscriptions').update({ status: 'cancelled' }).eq('sponsor_id', req.user.id).eq('status', 'active');
-    const amount = PLAN_PRICES[plan][billing_cycle];
+    const amount = PLAN_PRICES[plan].monthly;
     const renewalDate = new Date();
-    if (billing_cycle === 'monthly') renewalDate.setMonth(renewalDate.getMonth() + 1);
-    else renewalDate.setFullYear(renewalDate.getFullYear() + 1);
+    renewalDate.setMonth(renewalDate.getMonth() + 1);
     const { data, error } = await supabaseAdmin.from('subscriptions').insert({
       sponsor_id: req.user.id, plan, status: 'active', amount, billing_cycle,
       renewal_date: renewalDate.toISOString().split('T')[0],

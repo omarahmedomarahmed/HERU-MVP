@@ -35,14 +35,14 @@ CREATE INDEX IF NOT EXISTS idx_sponsor_profiles_user_id ON sponsor_profiles(user
 
 -- ============================================================
 -- SUBSCRIPTIONS
--- Starter / Growth / Premium plans (EGP 150K / 250K / 500K /mo)
+-- Free / Community / Premium plans (EGP 0 / 150K / 300K /mo)
 -- ============================================================
 
 CREATE TABLE IF NOT EXISTS subscriptions (
   id            UUID        PRIMARY KEY DEFAULT uuid_generate_v4(),
   sponsor_id    UUID        NOT NULL REFERENCES sponsor_profiles(id) ON DELETE CASCADE,
   -- canonical columns (used by backend routes)
-  plan          TEXT        NOT NULL CHECK (plan IN ('starter','growth','premium')),
+  plan          TEXT        NOT NULL CHECK (plan IN ('free','community','premium','starter','growth')),
   amount        NUMERIC(10,2) NOT NULL,
   billing_cycle TEXT        NOT NULL DEFAULT 'monthly'
                 CHECK (billing_cycle IN ('monthly','annual')),

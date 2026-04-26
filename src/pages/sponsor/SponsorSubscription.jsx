@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { CheckCircle, Zap, TrendingUp, Crown, AlertCircle, Loader2 } from 'lucide-react';
+import { CheckCircle, Zap, TrendingUp, Crown, Star, AlertCircle, Loader2 } from 'lucide-react';
 
 function getAuthToken() {
   const key = Object.keys(localStorage).find(k => k.startsWith('sb-') && k.endsWith('-auth-token'));
@@ -8,66 +8,76 @@ function getAuthToken() {
 
 const PLANS = [
   {
-    key: 'starter',
-    name: 'Starter',
-    icon: Zap,
-    color: 'blue',
-    monthly: 150000,
-    annual: 1500000,
-    features: [
-      '5 active sponsorships',
-      'Full Sponsorship Radar access',
-      'Analytics dashboard',
-      'Priority radar listing',
-      'Brand badge on packages',
-      'Email support',
-    ],
+    key: 'free',
+    name: 'Free',
+    icon: Star,
+    price: 0,
+    priceLabel: 'EGP 0',
+    period: 'per month',
+    desc: 'Access all sponsorship packages as one-off purchases.',
+    color: 'gray',
     highlight: false,
+    features: [
+      'Browse full sponsorship radar',
+      'One-off package purchases',
+      'Basic sponsor dashboard',
+      'Post-event reports',
+    ],
+    ctaLabel: 'Current Plan',
+    disabled: true,
   },
   {
-    key: 'growth',
-    name: 'Growth',
+    key: 'community',
+    name: 'Community',
     icon: TrendingUp,
+    price: 150000,
+    priceLabel: 'EGP 150,000',
+    period: 'per month',
+    desc: '2 online sponsorships per month with full analytics and support.',
     color: 'yellow',
-    monthly: 250000,
-    annual: 2500000,
+    highlight: true,
+    badge: 'Most Popular',
     features: [
-      '15 active sponsorships',
-      'Everything in Starter',
-      'Influencer marketplace',
-      'Corporate gaming events',
-      'Managed services access',
+      'Everything in Free',
+      '2 Online sponsorships / month',
+      'ROI tracking & analytics',
+      'Influencer marketplace access',
+      'Priority radar placement',
       'Dedicated account support',
     ],
-    highlight: true,
+    ctaLabel: 'Get Community',
   },
   {
     key: 'premium',
     name: 'Premium',
     icon: Crown,
-    color: 'purple',
-    monthly: 500000,
-    annual: 5000000,
+    price: 300000,
+    priceLabel: 'EGP 300,000',
+    period: 'per month',
+    desc: '2 online + 1 offline sponsorship per month, plus managed services.',
+    color: 'orange',
+    highlight: false,
     features: [
-      'Unlimited sponsorships',
-      'Everything in Growth',
-      'HERU Consultant booking',
+      'Everything in Community',
+      '2 Online + 1 Offline / month',
+      'Managed campaign service',
+      'Corporate activations builder',
       'Custom integrations',
       'Dedicated account manager',
-      'Custom reporting',
+      'Affiliate program access',
     ],
-    highlight: false,
+    ctaLabel: 'Get Premium',
   },
 ];
 
-const colorBorder = { blue: 'border-blue-500/40', yellow: 'border-yellow-500/40', purple: 'border-purple-500/40' };
-const colorBg    = { blue: 'bg-blue-500/10', yellow: 'bg-yellow-500/10', purple: 'bg-purple-500/10' };
-const colorIcon  = { blue: 'text-blue-400 bg-blue-500/20', yellow: 'text-yellow-400 bg-yellow-500/20', purple: 'text-purple-400 bg-purple-500/20' };
-const colorBtn   = { blue: 'bg-blue-600 hover:bg-blue-500', yellow: 'bg-yellow-500 hover:bg-yellow-400 text-black font-bold', purple: 'bg-purple-600 hover:bg-purple-500' };
-const colorText  = { blue: 'text-blue-400', yellow: 'text-yellow-400', purple: 'text-purple-400' };
+const colorBorder = { gray: 'border-white/10', yellow: 'border-yellow-500/40', orange: 'border-orange-500/40' };
+const colorBg     = { gray: 'bg-white/4', yellow: 'bg-yellow-900/20', orange: 'bg-orange-900/10' };
+const colorIcon   = { gray: 'text-gray-400 bg-white/8', yellow: 'text-yellow-400 bg-yellow-500/20', orange: 'text-orange-400 bg-orange-500/20' };
+const colorBtn    = { gray: 'bg-white/10 text-gray-400 cursor-default', yellow: 'bg-yellow-500 hover:bg-yellow-400 text-black font-bold', orange: 'bg-white/10 hover:bg-white/15 text-white' };
+const colorText   = { gray: 'text-gray-400', yellow: 'text-yellow-400', orange: 'text-orange-400' };
+const colorCheck  = { gray: 'text-gray-600', yellow: 'text-yellow-400', orange: 'text-gray-500' };
 
 export default function SponsorSubscription() {
-  const [billing, setBilling] = useState('monthly');
   const [current, setCurrent] = useState(null);
   const [loading, setLoading] = useState(true);
   const [purchasing, setPurchasing] = useState('');
@@ -84,12 +94,13 @@ export default function SponsorSubscription() {
   }, []);
 
   const handleSubscribe = async (planKey) => {
+    if (planKey === 'free') return;
     setPurchasing(planKey); setError(''); setSuccess('');
     try {
       const res = await fetch('/api/subscriptions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${getAuthToken()}` },
-        body: JSON.stringify({ plan: planKey, billing_cycle: billing }),
+        body: JSON.stringify({ plan: planKey, billing_cycle: 'monthly' }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Subscription failed');
@@ -118,23 +129,22 @@ export default function SponsorSubscription() {
     }
   };
 
-  const currentPlan = PLANS.find(p => p.key === current?.plan);
+  const activePlanKey = current?.plan || 'free';
+  const activePlan = PLANS.find(p => p.key === activePlanKey);
 
   return (
     <div className="max-w-5xl mx-auto space-y-8">
-      {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-white">Brand Plans</h1>
-        <p className="text-gray-400 mt-1">Choose a plan to unlock sponsorship tools, influencer marketplace, and managed campaigns across MENA.</p>
+        <h1 className="text-2xl font-bold text-white">HERU RADAR Plans</h1>
+        <p className="text-gray-400 mt-1">Choose your sponsorship tier. All plans billed monthly in EGP.</p>
       </div>
 
-      {/* Active plan banner */}
-      {!loading && current && currentPlan && (
-        <div className={`border rounded-xl p-4 flex items-center justify-between ${colorBorder[currentPlan.color]} ${colorBg[currentPlan.color]}`}>
+      {!loading && current && activePlan && activePlan.key !== 'free' && (
+        <div className={`border rounded-xl p-4 flex items-center justify-between ${colorBorder[activePlan.color]} ${colorBg[activePlan.color]}`}>
           <div className="flex items-center gap-3">
             <CheckCircle className="w-5 h-5 text-green-400 flex-shrink-0" />
             <div>
-              <p className="text-white font-medium">Active: {currentPlan.name} ({current.billing_cycle})</p>
+              <p className="text-white font-medium">Active: {activePlan.name}</p>
               {current.renewal_date && (
                 <p className="text-gray-400 text-xs mt-0.5">
                   Renews {new Date(current.renewal_date).toLocaleDateString('en-EG', { day: 'numeric', month: 'long', year: 'numeric' })}
@@ -161,43 +171,28 @@ export default function SponsorSubscription() {
         </div>
       )}
 
-      {/* Billing toggle */}
-      <div className="flex items-center justify-center gap-3">
-        <span className={`text-sm ${billing === 'monthly' ? 'text-white' : 'text-gray-500'}`}>Monthly</span>
-        <button
-          onClick={() => setBilling(b => b === 'monthly' ? 'annual' : 'monthly')}
-          className={`relative w-12 h-6 rounded-full transition-colors ${billing === 'annual' ? 'bg-yellow-500' : 'bg-white/20'}`}
-        >
-          <span className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${billing === 'annual' ? 'left-7' : 'left-1'}`} />
-        </button>
-        <span className={`text-sm ${billing === 'annual' ? 'text-white' : 'text-gray-500'}`}>
-          Annual <span className="text-green-400 text-xs ml-1">Save ~17%</span>
-        </span>
-      </div>
-
-      {/* Plan cards */}
       <div className="grid sm:grid-cols-3 gap-5">
         {PLANS.map(plan => {
           const Icon = plan.icon;
-          const price = billing === 'annual' ? plan.annual : plan.monthly;
-          const isActive = current?.plan === plan.key && current?.status === 'active';
+          const isActive = activePlanKey === plan.key;
 
           return (
             <div
               key={plan.key}
-              className={`relative border rounded-xl p-6 transition-all ${
+              className={`relative flex flex-col border rounded-xl p-6 transition-all ${
                 plan.highlight
-                  ? `${colorBorder[plan.color]} ${colorBg[plan.color]} ring-1 ring-yellow-500/30`
-                  : isActive
+                  ? `${colorBorder[plan.color]} ${colorBg[plan.color]} ring-1 ring-yellow-500/20`
+                  : isActive && plan.key !== 'free'
                     ? `${colorBorder[plan.color]} ${colorBg[plan.color]}`
-                    : 'bg-white/5 border-white/10'
+                    : `${colorBorder[plan.color]} ${colorBg[plan.color]}`
               }`}
             >
-              {plan.highlight && (
-                <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-4 py-1 rounded-full text-xs font-bold bg-yellow-500 text-black">
-                  Most Popular
+              {plan.badge && (
+                <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-4 py-1 rounded-full text-xs font-bold bg-yellow-500 text-black whitespace-nowrap">
+                  {plan.badge}
                 </div>
               )}
+
               <div className="flex items-center gap-3 mb-4">
                 <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${colorIcon[plan.color]}`}>
                   <Icon className="w-5 h-5" />
@@ -208,46 +203,43 @@ export default function SponsorSubscription() {
                 </div>
               </div>
 
-              <div className="mb-5">
-                <span className={`text-2xl font-black ${colorText[plan.color]}`}>
-                  EGP {price >= 1000000 ? (price / 1000000).toLocaleString() + 'M' : (price / 1000).toLocaleString() + 'K'}
-                </span>
-                <span className="text-gray-400 text-sm ml-1">/{billing === 'annual' ? 'year' : 'mo'}</span>
-                {billing === 'annual' && (
-                  <p className="text-xs text-gray-500 mt-1">≈ EGP {Math.round(price / 12) >= 1000000 ? (price / 12 / 1000000).toFixed(2) + 'M' : Math.round(price / 12 / 1000).toLocaleString() + 'K'} /month</p>
-                )}
+              <div className="mb-1">
+                <span className={`text-2xl font-black ${colorText[plan.color]}`}>{plan.priceLabel}</span>
+                <span className="text-gray-500 text-sm ml-1">/{plan.period}</span>
               </div>
+              <p className="text-xs text-gray-500 mb-5">{plan.desc}</p>
 
-              <ul className="space-y-2.5 mb-6">
+              <ul className="space-y-2.5 mb-6 flex-1">
                 {plan.features.map((f, i) => (
                   <li key={i} className="flex items-center gap-2 text-sm text-gray-300">
-                    <CheckCircle className={`w-3.5 h-3.5 ${colorText[plan.color]} flex-shrink-0`} />
+                    <CheckCircle className={`w-3.5 h-3.5 flex-shrink-0 ${colorCheck[plan.color]}`} />
                     {f}
                   </li>
                 ))}
               </ul>
 
               <button
-                onClick={() => handleSubscribe(plan.key)}
-                disabled={!!purchasing || isActive}
-                className={`w-full py-2.5 rounded-lg font-medium text-sm transition disabled:opacity-50 flex items-center justify-center gap-2 text-white ${colorBtn[plan.color]}`}
+                onClick={() => !isActive && handleSubscribe(plan.key)}
+                disabled={!!purchasing || isActive || plan.disabled}
+                className={`w-full py-2.5 rounded-lg text-sm transition disabled:opacity-60 flex items-center justify-center gap-2 ${
+                  isActive ? 'bg-white/5 text-gray-500 cursor-default' : colorBtn[plan.color]
+                }`}
               >
                 {purchasing === plan.key
                   ? <><Loader2 className="w-4 h-4 animate-spin" /> Processing...</>
                   : isActive
                     ? 'Current Plan'
-                    : `Get ${plan.name}`}
+                    : plan.ctaLabel}
               </button>
             </div>
           );
         })}
       </div>
 
-      {/* Free plan note */}
       <div className="p-4 bg-white/5 border border-white/10 rounded-xl text-center">
         <p className="text-gray-400 text-sm">
-          <span className="text-white font-medium">Free plan</span> — Browse the radar and view sponsorship packages at no cost.
-          Upgrade to Starter, Growth, or Premium for analytics, managed campaigns, and unlimited sponsorships.
+          All plans in EGP. Monthly billing. Cancel anytime from this page.
+          One-off package purchases are available on all plans — no subscription required.
         </p>
       </div>
     </div>
