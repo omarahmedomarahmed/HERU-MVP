@@ -1,10 +1,7 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { Subscription } from '@/api/heruClient';
 import { CheckCircle, Zap, TrendingUp, Crown, Star, AlertCircle, Loader2 } from 'lucide-react';
-
-function getAuthToken() {
-  const key = Object.keys(localStorage).find(k => k.startsWith('sb-') && k.endsWith('-auth-token'));
-  return JSON.parse(localStorage.getItem(key) || '{}')?.access_token || '';
-}
 
 const PLANS = [
   {
@@ -78,33 +75,33 @@ const colorText   = { gray: 'text-gray-400', yellow: 'text-yellow-400', orange: 
 const colorCheck  = { gray: 'text-gray-600', yellow: 'text-yellow-400', orange: 'text-gray-500' };
 
 export default function SponsorSubscription() {
-  const [current, setCurrent] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const qc = useQueryClient();
   const [purchasing, setPurchasing] = useState('');
-  const [cancelling, setCancelling] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
-  useEffect(() => {
-    fetch('/api/subscriptions/me', { headers: { 'Authorization': `Bearer ${getAuthToken()}` } })
-      .then(r => r.json())
-      .then(d => setCurrent(d.subscription || null))
-      .catch(() => {})
-      .finally(() => setLoading(false));
-  }, []);
+  const { data: subData, isLoading: loading } = useQuery({
+    queryKey: ['subscription-me'],
+    queryFn: () => Subscription.me().then(d => d?.subscription ?? null),
+    staleTime: 60_000,
+  });
+  const current = subData ?? null;
+
+  const { mutate: doCancel, isPending: cancelling } = useMutation({
+    mutationFn: () => Subscription.cancel(),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['subscription-me'] });
+      setSuccess('Subscription cancelled. Access continues until the end of your billing period.');
+    },
+    onError: (err) => setError(err.message),
+  });
 
   const handleSubscribe = async (planKey) => {
     if (planKey === 'free') return;
     setPurchasing(planKey); setError(''); setSuccess('');
     try {
-      const res = await fetch('/api/subscriptions', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${getAuthToken()}` },
-        body: JSON.stringify({ plan: planKey, billing_cycle: 'monthly' }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Subscription failed');
-      setCurrent(data.subscription);
+      await Subscription.create({ plan: planKey, billing_cycle: 'monthly' });
+      qc.invalidateQueries({ queryKey: ['subscription-me'] });
       setSuccess(`Successfully subscribed to ${PLANS.find(p => p.key === planKey)?.name}!`);
     } catch (err) {
       setError(err.message);
@@ -113,20 +110,10 @@ export default function SponsorSubscription() {
     }
   };
 
-  const handleCancel = async () => {
+  const handleCancel = () => {
     if (!window.confirm('Cancel your subscription? You will lose access at the end of the billing period.')) return;
-    setCancelling(true); setError('');
-    try {
-      const res = await fetch('/api/subscriptions/cancel', { method: 'PUT', headers: { 'Authorization': `Bearer ${getAuthToken()}` } });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Cancellation failed');
-      setCurrent(null);
-      setSuccess('Subscription cancelled. Access continues until the end of your billing period.');
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setCancelling(false);
-    }
+    setError('');
+    doCancel();
   };
 
   const activePlanKey = current?.plan || 'free';
@@ -179,13 +166,7 @@ export default function SponsorSubscription() {
           return (
             <div
               key={plan.key}
-              className={`relative flex flex-col border rounded-xl p-6 transition-all ${
-                plan.highlight
-                  ? `${colorBorder[plan.color]} ${colorBg[plan.color]} ring-1 ring-yellow-500/20`
-                  : isActive && plan.key !== 'free'
-                    ? `${colorBorder[plan.color]} ${colorBg[plan.color]}`
-                    : `${colorBorder[plan.color]} ${colorBg[plan.color]}`
-              }`}
+              className={`relative flex flex-col border rounded-xl p-6 transition-all ${colorBorder[plan.color]} ${colorBg[plan.color]} ${plan.highlight ? 'ring-1 ring-yellow-500/20' : ''}`}
             >
               {plan.badge && (
                 <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-4 py-1 rounded-full text-xs font-bold bg-yellow-500 text-black whitespace-nowrap">

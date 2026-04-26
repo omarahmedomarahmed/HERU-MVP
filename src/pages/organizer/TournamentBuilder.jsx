@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/lib/AuthContext';
-import { apiCall } from '@/api/heruClient';
+import { apiCall, Service } from '@/api/heruClient';
 import { useGames } from '@/hooks/useGames';
 import { useToast } from '@/components/ui/use-toast';
 import { uploadFile } from '@/lib/uploadFile';
@@ -125,7 +125,7 @@ export default function TournamentBuilder() {
   // Load approved service providers for the services step
   const { data: approvedServices = [] } = useQuery({
     queryKey: ['services-approved'],
-    queryFn: () => apiCall('/services?status=approved').then(d => d?.services || []),
+    queryFn: () => Service.list({ status: 'approved' }).then(d => d?.services || []),
     staleTime: 5 * 60_000,
   });
 

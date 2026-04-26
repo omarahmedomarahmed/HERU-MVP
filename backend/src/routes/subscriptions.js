@@ -26,9 +26,9 @@ router.get('/me', requireAuth, requireSponsor, async (req, res) => {
 
 router.post('/', requireAuth, requireSponsor, async (req, res) => {
   try {
-    const { plan, billing_cycle = 'monthly' } = req.body;
+    const { plan } = req.body;
+    const billing_cycle = 'monthly';
     if (!plan || !PLAN_PRICES[plan]) return res.status(400).json({ error: 'Invalid plan. Choose: community or premium' });
-    if (!['monthly'].includes(billing_cycle)) billing_cycle = 'monthly';
     await supabaseAdmin.from('subscriptions').update({ status: 'cancelled' }).eq('sponsor_id', req.user.id).eq('status', 'active');
     const amount = PLAN_PRICES[plan].monthly;
     const renewalDate = new Date();

@@ -1,7 +1,6 @@
-import React, { useState } from 'react'
+import React, { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useMutation } from '@tanstack/react-query'
-import { useAuth } from '@/lib/AuthContext'
 import { apiCall } from '@/api/heruClient'
 import {
   Swords, Users, Trophy, Link2, CheckCircle2,
@@ -34,10 +33,12 @@ function copyToClipboard(text) {
 
 export default function GamerTournamentBuilder() {
   const navigate = useNavigate()
-  const { user } = useAuth()
   const [step, setStep] = useState(0)
   const [created, setCreated] = useState(null)
   const [copied, setCopied] = useState(false)
+  const copyTimerRef = useRef(null)
+
+  useEffect(() => () => { if (copyTimerRef.current) clearTimeout(copyTimerRef.current) }, [])
 
   const [form, setForm] = useState({
     name: '',
@@ -53,7 +54,7 @@ export default function GamerTournamentBuilder() {
 
   const selectedFormat = FORMATS.find(f => f.value === form.format)
 
-  const { mutate: create, isLoading } = useMutation({
+  const { mutate: create, isPending } = useMutation({
     mutationFn: () => apiCall('/tournaments', {
       method: 'POST',
       body: JSON.stringify({
@@ -76,8 +77,7 @@ export default function GamerTournamentBuilder() {
   })
 
   const handleNext = () => {
-    if (step === 0 && !form.name.trim()) return
-    if (step === 0 && !form.format) return
+    if (step === 0 && (!form.name.trim() || !form.format)) return
     if (step === 1) { create(); return }
     setStep(s => s + 1)
   }
@@ -89,7 +89,7 @@ export default function GamerTournamentBuilder() {
   const handleCopy = () => {
     copyToClipboard(inviteLink)
     setCopied(true)
-    setTimeout(() => setCopied(false), 2000)
+    copyTimerRef.current = setTimeout(() => setCopied(false), 2000)
   }
 
   return (
@@ -321,10 +321,10 @@ export default function GamerTournamentBuilder() {
           )}
           <button
             onClick={handleNext}
-            disabled={isLoading || (step === 0 && !form.name.trim())}
+            disabled={isPending || (step === 0 && !form.name.trim())}
             className="flex items-center gap-2 px-5 py-2.5 rounded-lg bg-red-600 hover:bg-red-500 text-white text-sm font-bold transition-colors disabled:opacity-50"
           >
-            {isLoading ? <><Loader2 className="w-4 h-4 animate-spin" /> Creating...</> :
+            {isPending ? <><Loader2 className="w-4 h-4 animate-spin" /> Creating...</> :
              step === 1 ? <><CheckCircle2 className="w-4 h-4" /> Create Tournament</> :
              <>Next <ChevronRight className="w-4 h-4" /></>}
           </button>
