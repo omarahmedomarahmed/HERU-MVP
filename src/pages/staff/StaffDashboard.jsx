@@ -2,23 +2,26 @@ import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import {
-  Users, Trophy, DollarSign, Zap, Clock, AlertTriangle,
-  FileText, ArrowUpRight, TrendingUp, UserPlus
+  Users, Trophy, DollarSign, Zap, Clock, Radar,
+  ArrowUpRight, AlertTriangle, FileText,
 } from 'lucide-react';
 import { apiCall } from '@/api/heruClient';
+import StaffStatCard from '@/components/staff/StaffStatCard';
+import StaffBadge from '@/components/staff/StaffBadge';
 
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 
-function formatEGP(value) {
-  return `EGP ${(value || 0).toLocaleString('en-EG', { minimumFractionDigits: 0 })}`;
+function formatEGP(n) {
+  return `EGP ${(n || 0).toLocaleString('en-EG')}`;
 }
 
 function timeAgo(dateStr) {
   if (!dateStr) return '';
   const diff = Date.now() - new Date(dateStr).getTime();
   const mins = Math.floor(diff / 60000);
+  if (mins < 1) return 'just now';
   if (mins < 60) return `${mins}m ago`;
   const hrs = Math.floor(mins / 60);
   if (hrs < 24) return `${hrs}h ago`;
@@ -27,84 +30,15 @@ function timeAgo(dateStr) {
 }
 
 // ---------------------------------------------------------------------------
-// Stat card
+// Quick Actions
 // ---------------------------------------------------------------------------
 
-function StatCard({ icon: Icon, label, value, sub, color = 'blue' }) {
-  const colors = {
-    blue: 'bg-red-50 text-red-600',
-    green: 'bg-emerald-50 text-emerald-600',
-    amber: 'bg-amber-50 text-amber-600',
-    violet: 'bg-violet-50 text-violet-600',
-  };
-
-  return (
-    <div className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm">
-      <div className="flex items-start justify-between">
-        <div>
-          <p className="text-sm font-medium text-gray-500">{label}</p>
-          <p className="mt-1 text-2xl font-bold text-gray-900">{value}</p>
-          {sub && <p className="mt-1 text-xs text-gray-400">{sub}</p>}
-        </div>
-        <div className={`rounded-lg p-2.5 ${colors[color]}`}>
-          <Icon className="w-5 h-5" />
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// Status badge used in tables
-// ---------------------------------------------------------------------------
-
-function StatusBadge({ status }) {
-  const map = {
-    draft: 'bg-gray-100 text-gray-600',
-    published: 'bg-red-50 text-red-700',
-    live: 'bg-emerald-50 text-emerald-700',
-    completed: 'bg-gray-100 text-gray-500',
-    pending: 'bg-amber-50 text-amber-700',
-    unpaid: 'bg-red-50 text-red-600',
-    paid: 'bg-emerald-50 text-emerald-700',
-  };
-  return (
-    <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${map[status] || 'bg-gray-100 text-gray-600'}`}>
-      {(status || 'unknown').replace(/_/g, ' ')}
-    </span>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// Revenue mini-chart (simple bar list)
-// ---------------------------------------------------------------------------
-
-function RevenueChart({ months }) {
-  if (!months || months.length === 0) {
-    return <p className="text-sm text-gray-400 py-6 text-center">No revenue data yet</p>;
-  }
-
-  const max = Math.max(...months.map(m => m.amount), 1);
-
-  return (
-    <div className="space-y-3">
-      {months.map((m, i) => (
-        <div key={i} className="flex items-center gap-3">
-          <span className="w-20 text-xs font-medium text-gray-500 shrink-0">{m.label}</span>
-          <div className="flex-1 h-6 bg-gray-100 rounded-full overflow-hidden">
-            <div
-              className="h-full bg-red-500 rounded-full transition-all"
-              style={{ width: `${Math.max((m.amount / max) * 100, 2)}%` }}
-            />
-          </div>
-          <span className="text-xs font-semibold text-gray-700 w-28 text-right">
-            {formatEGP(m.amount)}
-          </span>
-        </div>
-      ))}
-    </div>
-  );
-}
+const QUICK_ACTIONS = [
+  { label: 'Review Pending Approvals', to: '/staff/approvals' },
+  { label: 'View Revenue', to: '/staff/revenue' },
+  { label: 'All Users', to: '/staff/users' },
+  { label: 'Manage Tournaments', to: '/staff/tournaments' },
+];
 
 // ---------------------------------------------------------------------------
 // Main component
@@ -124,53 +58,43 @@ export default function StaffDashboard() {
     }
   }, [navigate]);
 
-  // ---------- Data fetching ----------
-
-  const { data: dashboard, isLoading: dashLoading } = useQuery({
+  const { data: dashboard, isLoading } = useQuery({
     queryKey: ['staff-dashboard'],
     queryFn: () => apiCall('/staff/dashboard'),
     staleTime: 30_000,
     retry: 1,
   });
 
-  const { data: revenueData, isLoading: revLoading } = useQuery({
-    queryKey: ['staff-revenue'],
-    queryFn: () => apiCall('/staff/revenue'),
-    staleTime: 60_000,
-    retry: 1,
-  });
+  // Derived values
+  const stats              = dashboard?.stats || {};
+  const recentActivity     = dashboard?.recent_activity || dashboard?.audit_log || [];
+  const pendingApprovals   = (dashboard?.pending_approvals ?? 0) +
+                             (stats.pending_providers ?? 0) +
+                             (stats.pending_services ?? 0);
+  const unpaidBills        = dashboard?.unpaid_bills ?? 0;
+  const totalUsers         = stats.total_users ?? 0;
+  const liveTournaments    = stats.live_tournaments ?? stats.active_tournaments ?? 0;
+  const revenueMTD         = stats.revenue_mtd ?? dashboard?.revenue_mtd ?? 0;
+  const activeSponsorships = stats.active_sponsorships ?? 0;
+  const publishedTourneys  = stats.published_tournaments ?? stats.total_tournaments ?? 0;
 
-  // Derived values with safe fallbacks
-  const stats = dashboard?.stats || {};
-  const recentTournaments = dashboard?.recent_tournaments || [];
-  const recentUsers = dashboard?.recent_users || [];
-  const pendingApprovals = dashboard?.pending_approvals ?? 0;
-  const unpaidBills = dashboard?.unpaid_bills ?? 0;
-  const monthlyRevenue = revenueData?.monthly || [];
-  const totalRevenue = revenueData?.total_platform_fees ?? stats.total_revenue ?? 0;
-  const activeTournaments = stats.active_tournaments ?? 0;
-  const totalUsers = stats.total_users ?? 0;
-  const totalTournaments = stats.total_tournaments ?? 0;
-
-  // ---------- Loading state ----------
-
-  if (dashLoading) {
+  // ---------- Loading ----------
+  if (isLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="animate-pulse text-gray-400 text-sm">Loading dashboard...</div>
+      <div className="min-h-screen bg-[#080808] flex items-center justify-center">
+        <div className="animate-pulse text-zinc-500 text-sm">Loading dashboard...</div>
       </div>
     );
   }
 
-  // ---------- Render ----------
-
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-[#080808]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-2xl font-bold text-gray-900">Staff Dashboard</h1>
-          <p className="text-sm text-gray-500 mt-1">Platform overview and recent activity</p>
+          <h1 className="text-2xl font-bold text-zinc-100">Staff Dashboard</h1>
+          <p className="text-sm text-zinc-500 mt-1">Platform overview and recent activity</p>
         </div>
 
         {/* Alerts */}
@@ -179,7 +103,7 @@ export default function StaffDashboard() {
             {pendingApprovals > 0 && (
               <Link
                 to="/staff/approvals"
-                className="inline-flex items-center gap-2 rounded-lg bg-amber-50 border border-amber-200 px-4 py-2.5 text-sm font-medium text-amber-800 hover:bg-amber-100 transition"
+                className="inline-flex items-center gap-2 rounded-lg bg-amber-500/10 border border-amber-500/30 px-4 py-2.5 text-sm font-medium text-amber-400 hover:bg-amber-500/20 transition"
               >
                 <AlertTriangle className="w-4 h-4" />
                 {pendingApprovals} pending approval{pendingApprovals !== 1 ? 's' : ''}
@@ -189,7 +113,7 @@ export default function StaffDashboard() {
             {unpaidBills > 0 && (
               <Link
                 to="/staff/billing"
-                className="inline-flex items-center gap-2 rounded-lg bg-red-50 border border-red-200 px-4 py-2.5 text-sm font-medium text-red-800 hover:bg-red-100 transition"
+                className="inline-flex items-center gap-2 rounded-lg bg-red-500/10 border border-red-500/30 px-4 py-2.5 text-sm font-medium text-red-400 hover:bg-red-500/20 transition"
               >
                 <FileText className="w-4 h-4" />
                 {unpaidBills} unpaid bill{unpaidBills !== 1 ? 's' : ''}
@@ -199,127 +123,119 @@ export default function StaffDashboard() {
           </div>
         )}
 
-        {/* Stat cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-          <StatCard icon={Users} label="Total Users" value={totalUsers} color="blue" />
-          <StatCard icon={Trophy} label="Total Tournaments" value={totalTournaments} color="violet" />
-          <StatCard
-            icon={DollarSign}
-            label="Platform Revenue"
-            value={formatEGP(totalRevenue)}
-            sub="15% platform fees"
-            color="green"
+        {/* Stat cards — 6 across */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 mb-8">
+          <StaffStatCard
+            icon={Users}
+            label="Total Users"
+            value={totalUsers.toLocaleString()}
+            accent="red"
           />
-          <StatCard
+          <StaffStatCard
+            icon={Trophy}
+            label="Live Tournaments"
+            value={liveTournaments}
+            accent="violet"
+          />
+          <StaffStatCard
+            icon={DollarSign}
+            label="Revenue MTD"
+            value={formatEGP(revenueMTD)}
+            sub="15% platform fees"
+            accent="green"
+          />
+          <StaffStatCard
+            icon={Clock}
+            label="Pending Approvals"
+            value={pendingApprovals}
+            accent="amber"
+          />
+          <StaffStatCard
+            icon={Radar}
+            label="Active Sponsorships"
+            value={activeSponsorships}
+            accent="violet"
+          />
+          <StaffStatCard
             icon={Zap}
-            label="Active Tournaments"
-            value={activeTournaments}
-            sub="Live + Published"
-            color="amber"
+            label="Published Tournaments"
+            value={publishedTourneys}
+            accent="green"
           />
         </div>
 
         {/* Two-column layout */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Revenue chart - takes 2 cols */}
-          <div className="lg:col-span-2 bg-white rounded-xl border border-gray-200 shadow-sm">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
-              <div className="flex items-center gap-2">
-                <TrendingUp className="w-4 h-4 text-red-500" />
-                <h2 className="text-sm font-semibold text-gray-900">Monthly Revenue</h2>
-              </div>
+
+          {/* Activity feed — 2/3 */}
+          <div className="lg:col-span-2 bg-[#111111] border border-[#1e1e1e] rounded-xl overflow-hidden">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-[#1e1e1e]">
+              <h2 className="text-sm font-semibold text-zinc-100">Recent Activity</h2>
               <Link
-                to="/staff/revenue"
-                className="text-xs font-medium text-red-600 hover:text-red-700"
+                to="/staff/audit"
+                className="text-xs font-medium text-red-500 hover:text-red-400"
               >
-                View full report
+                View audit trail
               </Link>
             </div>
-            <div className="px-6 py-5">
-              {revLoading ? (
-                <p className="text-sm text-gray-400 py-6 text-center">Loading...</p>
-              ) : (
-                <RevenueChart months={monthlyRevenue} />
-              )}
-            </div>
+
+            {recentActivity.length === 0 ? (
+              <div className="px-6 py-12 text-center text-sm text-zinc-600">
+                No recent activity yet
+              </div>
+            ) : (
+              <ul className="divide-y divide-[#1e1e1e]">
+                {recentActivity.slice(0, 12).map((item, i) => (
+                  <li key={item.id ?? i} className="flex items-start justify-between px-6 py-3.5 hover:bg-[#161616] transition">
+                    <div className="flex items-start gap-3 min-w-0">
+                      <div className="w-7 h-7 rounded-full bg-red-500/10 text-red-500 flex items-center justify-center text-xs font-bold shrink-0 mt-0.5">
+                        {((item.user_email || item.action || '?').charAt(0)).toUpperCase()}
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-sm text-zinc-200 font-medium truncate">
+                          {item.action?.replace(/_/g, ' ') || 'Unknown action'}
+                        </p>
+                        <p className="text-xs text-zinc-500 truncate mt-0.5">
+                          {item.user_email || item.user_id?.slice(0, 8) || 'System'}
+                          {item.target_type ? ` · ${item.target_type}` : ''}
+                        </p>
+                      </div>
+                    </div>
+                    <span className="text-xs text-zinc-600 shrink-0 ml-4 mt-0.5">
+                      {timeAgo(item.created_at)}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
 
-          {/* Right column */}
-          <div className="space-y-6">
-            {/* Recent tournaments */}
-            <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
-              <div className="flex items-center justify-between px-5 py-3.5 border-b border-gray-100">
-                <div className="flex items-center gap-2">
-                  <Trophy className="w-4 h-4 text-violet-500" />
-                  <h2 className="text-sm font-semibold text-gray-900">Recent Tournaments</h2>
-                </div>
+          {/* Quick actions — 1/3 */}
+          <div className="bg-[#111111] border border-[#1e1e1e] rounded-xl overflow-hidden">
+            <div className="px-6 py-4 border-b border-[#1e1e1e]">
+              <h2 className="text-sm font-semibold text-zinc-100">Quick Actions</h2>
+            </div>
+            <div className="p-4 space-y-2">
+              {QUICK_ACTIONS.map((action) => (
                 <Link
-                  to="/staff/tournaments"
-                  className="text-xs font-medium text-red-600 hover:text-red-700"
+                  key={action.to}
+                  to={action.to}
+                  className="flex items-center justify-between w-full px-4 py-3 rounded-lg border border-[#1e1e1e] text-sm text-zinc-300 hover:text-zinc-100 hover:bg-[#161616] hover:border-[#2a2a2a] transition-colors group"
                 >
-                  View all
+                  <span>{action.label}</span>
+                  <ArrowUpRight className="w-3.5 h-3.5 text-zinc-600 group-hover:text-red-500 transition-colors" />
                 </Link>
-              </div>
-              <ul className="divide-y divide-gray-100">
-                {recentTournaments.length === 0 && (
-                  <li className="px-5 py-4 text-sm text-gray-400 text-center">No tournaments yet</li>
-                )}
-                {recentTournaments.slice(0, 5).map((t) => (
-                  <li key={t.id}>
-                    <Link
-                      to={`/staff/tournaments/${t.id}`}
-                      className="flex items-center justify-between px-5 py-3 hover:bg-gray-50 transition"
-                    >
-                      <div className="min-w-0">
-                        <p className="text-sm font-medium text-gray-900 truncate">{t.name}</p>
-                        <p className="text-xs text-gray-400">{t.game} {t.created_at ? `- ${timeAgo(t.created_at)}` : ''}</p>
-                      </div>
-                      <StatusBadge status={t.status} />
-                    </Link>
-                  </li>
-                ))}
-              </ul>
+              ))}
             </div>
 
-            {/* Recent registrations */}
-            <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
-              <div className="flex items-center justify-between px-5 py-3.5 border-b border-gray-100">
-                <div className="flex items-center gap-2">
-                  <UserPlus className="w-4 h-4 text-red-500" />
-                  <h2 className="text-sm font-semibold text-gray-900">Recent Registrations</h2>
-                </div>
-                <Link
-                  to="/staff/users"
-                  className="text-xs font-medium text-red-600 hover:text-red-700"
-                >
-                  View all
-                </Link>
-              </div>
-              <ul className="divide-y divide-gray-100">
-                {recentUsers.length === 0 && (
-                  <li className="px-5 py-4 text-sm text-gray-400 text-center">No users yet</li>
-                )}
-                {recentUsers.slice(0, 5).map((u) => (
-                  <li key={u.id}>
-                    <Link
-                      to={`/staff/users/${u.id}`}
-                      className="flex items-center justify-between px-5 py-3 hover:bg-gray-50 transition"
-                    >
-                      <div className="flex items-center gap-3 min-w-0">
-                        <div className="w-8 h-8 rounded-full bg-red-100 text-red-600 flex items-center justify-center text-xs font-bold shrink-0">
-                          {(u.full_name || u.email || '?').charAt(0).toUpperCase()}
-                        </div>
-                        <div className="min-w-0">
-                          <p className="text-sm font-medium text-gray-900 truncate">
-                            {u.full_name || u.email}
-                          </p>
-                          <p className="text-xs text-gray-400">{u.role} {u.created_at ? `- ${timeAgo(u.created_at)}` : ''}</p>
-                        </div>
-                      </div>
-                    </Link>
-                  </li>
-                ))}
-              </ul>
+            {/* Platform health note */}
+            <div className="mx-4 mb-4 mt-2 p-3 rounded-lg bg-red-500/5 border border-red-500/20">
+              <p className="text-xs text-zinc-500">
+                Platform fee:{' '}
+                <span className="text-red-400 font-semibold">15%</span>
+                {' '}on all transactions · Currency:{' '}
+                <span className="text-zinc-300 font-semibold">EGP</span>
+              </p>
             </div>
           </div>
         </div>
