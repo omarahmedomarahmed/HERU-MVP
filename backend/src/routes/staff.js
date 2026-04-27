@@ -85,15 +85,23 @@ router.get('/dashboard', requireAuth, requireStaff, async (req, res) => {
   }
 });
 
-// GET /users - list all users with filters (role, search)
+// GET /users - list all users with filters (role, search, status, page, limit)
+// Returns { data, total, page, limit } when page param is provided; plain array otherwise (legacy)
 router.get('/users', requireAuth, requireStaff, async (req, res) => {
   try {
-    const { role, search, limit = 100, offset = 0 } = req.query;
-    let query = supabaseAdmin.from('user_profiles').select('*');
+    const { role, search, status, page, limit = page ? 20 : 100, offset = 0 } = req.query;
+    const usePagination = page !== undefined;
+    const pageNum = Math.max(1, parseInt(page || 1, 10));
+    const limitNum = Math.min(100, Math.max(1, parseInt(limit, 10)));
+    const rangeStart = usePagination ? (pageNum - 1) * limitNum : Number(offset);
+    const rangeEnd = rangeStart + limitNum - 1;
+
+    let query = supabaseAdmin.from('user_profiles').select('*', { count: 'exact' });
     if (role) query = query.eq('role', role);
-    if (search) query = query.or(`full_name.ilike.%${search}%,role.ilike.%${search}%`);
-    query = query.order('created_at', { ascending: false }).range(Number(offset), Number(offset) + Number(limit) - 1);
-    const { data, error } = await query;
+    if (status) query = query.eq('status', status);
+    if (search) query = query.or(`username.ilike.%${search}%,full_name.ilike.%${search}%,email.ilike.%${search}%`);
+    query = query.order('created_at', { ascending: false }).range(rangeStart, rangeEnd);
+    const { data, error, count } = await query;
     if (error) throw error;
 
     // Enrich with emails from auth.users via admin API
@@ -106,7 +114,11 @@ router.get('/users', requireAuth, requireStaff, async (req, res) => {
       }
     }));
 
-    res.json(enriched);
+    if (usePagination) {
+      res.json({ data: enriched, total: count || 0, page: pageNum, limit: limitNum });
+    } else {
+      res.json(enriched);
+    }
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

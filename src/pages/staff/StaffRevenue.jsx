@@ -1,10 +1,8 @@
 import React, { useState, useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import {
-  DollarSign, TrendingUp, Briefcase, Star, CreditCard,
-  Zap, Download, Calendar,
-} from 'lucide-react'
+import { DollarSign, TrendingUp, Briefcase, Star, CreditCard, Download, Calendar } from 'lucide-react'
 import { Staff, apiCall } from '@/api/heruClient'
+import StaffPageHeader from '@/components/staff/StaffPageHeader'
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 const fmtEGP = (n) => `EGP ${(n || 0).toLocaleString('en-EG')}`
@@ -28,7 +26,6 @@ function getRangeDates(days) {
   }
 }
 
-// Start of current month
 function getMTDDates() {
   const now = new Date()
   const from = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().slice(0, 10)
@@ -45,7 +42,7 @@ const STREAM_COLORS = {
 }
 
 function StreamBadge({ stream }) {
-  const label = (stream || 'other').replace('_', ' ')
+  const label = (stream || 'other').replace(/_/g, ' ')
   const cls = STREAM_COLORS[stream] || 'bg-zinc-500/20 text-zinc-400 border border-zinc-500/30'
   return (
     <span className={`inline-flex items-center rounded px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider ${cls}`}>
@@ -101,17 +98,9 @@ export default function StaffRevenue() {
   const { from, to } = getRangeDates(RANGES[rangeIdx].days)
   const { from: mtdFrom, to: mtdTo } = getMTDDates()
 
-  // Revenue ledger from /revenue/ledger
   const { data: ledgerResp, isLoading } = useQuery({
-    queryKey: ['staff-revenue-ledger', from, to],
-    queryFn: () => apiCall(`/revenue/ledger`),
-    staleTime: 60_000,
-  })
-
-  // Staff-level summary from /staff/revenue
-  const { data: summary } = useQuery({
-    queryKey: ['staff-revenue-summary'],
-    queryFn: () => Staff.revenue(),
+    queryKey: ['staff-revenue', from, to],
+    queryFn: () => apiCall(`/revenue?from=${from}&to=${to}`),
     staleTime: 60_000,
   })
 
@@ -282,7 +271,7 @@ export default function StaffRevenue() {
                       {fmtEGP(row.fee_amount || row.platform_fee || 0)}
                     </td>
                     <td className="px-4 py-3 text-sm font-mono text-emerald-400">
-                      {fmtEGP(row.net_amount || (row.gross_amount - (row.fee_amount || 0)) || 0)}
+                      {fmtEGP(row.net_amount || ((row.gross_amount || 0) - (row.fee_amount || 0)))}
                     </td>
                     <td className="px-4 py-3 text-xs text-zinc-500">
                       {row.currency || 'EGP'}
