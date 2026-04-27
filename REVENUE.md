@@ -12,9 +12,8 @@ All fees are stored in the database and referenced in backend logic — no code 
 | Service booking | 15% | Organizer | HERU (on booking confirmation) |
 | Sponsorship package | 15% | Sponsor | HERU (on purchase) |
 | Coaching session | 15% | Gamer | HERU (on completion) |
-| Provider subscription | TBD | Provider | HERU (recurring MRR — not yet live) |
-| Sponsor Pro subscription | EGP 999/mo | Sponsor | HERU (recurring MRR) |
-| Sponsor Enterprise subscription | Custom | Sponsor | HERU (recurring MRR) |
+| Sponsor Community subscription | EGP 150,000/mo | Sponsor | HERU (recurring MRR) |
+| Sponsor Premium subscription | EGP 300,000/mo | Sponsor | HERU (recurring MRR) |
 
 ---
 
@@ -118,16 +117,20 @@ Subscription prices are hardcoded but can be moved to `app_settings`:
 
 ```javascript
 const SUBSCRIPTION_PRICES = {
-  pro:        999,   // EGP/month
-  enterprise: null,  // Custom — contact sales
+  free:      0,         // EGP/month — one-off access only
+  community: 150000,    // EGP/month — 2 online/mo
+  premium:   300000,    // EGP/month — 2 online + 1 offline/mo
+  // Legacy aliases still accepted by DB constraint:
+  starter:   150000,
+  growth:    250000,
 };
 ```
 
-To make them configurable:
+To make them configurable via DB:
 ```sql
 INSERT INTO app_settings (setting_key, setting_value)
-VALUES ('subscription_price_pro', '999'),
-       ('subscription_price_enterprise', '0')
+VALUES ('subscription_price_community', '150000'),
+       ('subscription_price_premium', '300000')
 ON CONFLICT (setting_key) DO UPDATE SET setting_value = EXCLUDED.setting_value;
 ```
 

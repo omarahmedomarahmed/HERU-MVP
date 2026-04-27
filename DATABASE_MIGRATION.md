@@ -10,12 +10,13 @@ The database schema is defined in `/supabase/migrations/` as sequential SQL file
 
 | File | Contents |
 |------|----------|
-| `100_fresh_schema_core.sql` | user_profiles, staff_access_keys, app_settings, cms_pages, audit_log, achievements, badges |
-| `101_fresh_schema_gamers.sql` | gamer_profiles, teams, team_members, tournaments, match_records, venues, leaderboard_entries, friendships, direct_messages |
-| `102_fresh_schema_organizers.sql` | organizer_profiles, organizer_verifications, deliverables, bills, orders, tournament_orders |
-| `103_fresh_schema_providers.sql` | service_provider_profiles, services, service_bookings, coaching_sessions, reviews, portfolio_items |
-| `104_fresh_schema_sponsors.sql` | sponsor_profiles, subscriptions, sponsorship_packages, sponsorships, managed_service_projects, heru_revenue_ledger |
-| `105_fresh_schema_rls.sql` | Row Level Security policies (Supabase-specific — see below) |
+| `100_core.sql` | user_profiles, staff_access_keys, app_settings, cms_pages, audit_log, achievements, badges, games |
+| `101_gamers.sql` | gamer_profiles, teams, tournaments, match_records, leaderboard_entries, friendships, direct_messages |
+| `102_organizers.sql` | organizer_profiles, organizer_verifications, deliverables, bills, orders, tournament_orders |
+| `103_providers.sql` | service_provider_profiles, services (9 categories), service_bookings, coaching_sessions, reviews, portfolio_items |
+| `104_sponsors.sql` | sponsor_profiles, subscriptions (free/community/premium), sponsorship_packages, sponsorships, managed_service_projects, heru_revenue_ledger |
+| `105_rls.sql` | Row Level Security policies (Supabase-specific — see below) |
+| `106_schema_fixes.sql` | participant_type constraint fix, venue_address/google_maps columns, roi_data, task_board, files columns |
 
 ---
 
@@ -50,12 +51,13 @@ pg_dump "postgres://postgres:[password]@[host]:5432/postgres" \
 ```bash
 # Apply migrations in order (skip 105_rls if not using Supabase RLS)
 psql "postgres://[user]:[password]@[new-host]:5432/[dbname]" \
-  -f supabase/migrations/100_fresh_schema_core.sql
-psql "..." -f supabase/migrations/101_fresh_schema_gamers.sql
-psql "..." -f supabase/migrations/102_fresh_schema_organizers.sql
-psql "..." -f supabase/migrations/103_fresh_schema_providers.sql
-psql "..." -f supabase/migrations/104_fresh_schema_sponsors.sql
-# Skip 105_fresh_schema_rls.sql unless your new DB supports Supabase auth.uid()
+  -f supabase/migrations/100_core.sql
+psql "..." -f supabase/migrations/101_gamers.sql
+psql "..." -f supabase/migrations/102_organizers.sql
+psql "..." -f supabase/migrations/103_providers.sql
+psql "..." -f supabase/migrations/104_sponsors.sql
+# Skip 105_rls.sql unless your new DB supports Supabase auth.uid()
+psql "..." -f supabase/migrations/106_schema_fixes.sql
 ```
 
 #### 3. Handle Supabase-specific SQL

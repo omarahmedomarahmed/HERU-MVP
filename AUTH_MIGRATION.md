@@ -387,5 +387,5 @@ When migrating auth providers:
 - [ ] If also migrating Realtime: replace Supabase subscriptions in GamerMessages.jsx
 - [ ] If also migrating Storage: replace Supabase storage calls in upload routes
 - [ ] Staff auth: no changes needed (it is already custom JWT)
-- [ ] Row Level Security (`105_fresh_schema_rls.sql`): remove or rewrite for new DB
+- [ ] Row Level Security (`105_rls.sql`): remove or rewrite for new DB
 - [ ] Test all 5 auth flows: gamer register, organizer register, sponsor register, provider register, staff login

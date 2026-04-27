@@ -2,6 +2,27 @@
 
 ---
 
+## Scripts Reference
+
+All deployment and setup scripts live in `scripts/`:
+
+| Script | Purpose | Usage |
+|--------|---------|-------|
+| `scripts/setup-db.sh` | Guide for running DB migrations in Supabase | `bash scripts/setup-db.sh` |
+| `scripts/setup-vps.sh` | Install Node/Nginx/PM2/Certbot on fresh Ubuntu VPS | `sudo bash scripts/setup-vps.sh` |
+| `scripts/deploy-full.sh` | Full one-shot deployment (deps + build + nginx + PM2) | `bash scripts/deploy-full.sh` |
+| `scripts/harden-vps.sh` | Security hardening (UFW, Fail2ban, SSH, sysctl) | `sudo bash scripts/harden-vps.sh` |
+
+**Recommended order for a fresh server:**
+1. `scripts/setup-vps.sh` — install system dependencies
+2. Clone the repo into `/var/www/heru.gg`
+3. `scripts/setup-db.sh` — run DB migrations in Supabase
+4. `scripts/deploy-full.sh` — build + configure + start
+5. `scripts/harden-vps.sh` — lock down the server
+6. `certbot --nginx -d heru.gg -d www.heru.gg` — add SSL
+
+---
+
 ## Local Development Setup
 
 ### Step 1 — Install prerequisites
