@@ -53,6 +53,7 @@ psql "$DATABASE_URL" -f supabase/migrations/102_organizers.sql
 psql "$DATABASE_URL" -f supabase/migrations/103_providers.sql
 psql "$DATABASE_URL" -f supabase/migrations/104_sponsors.sql
 psql "$DATABASE_URL" -f supabase/migrations/105_rls.sql
+psql "$DATABASE_URL" -f supabase/migrations/106_schema_fixes.sql
 ```
 
 ### 4. Run locally
@@ -182,6 +183,7 @@ See `SETUP.md` for full instructions. Quick summary:
 | **[HANDOVER.md](./HANDOVER.md)** | **Start here** — full platform state, maintenance, migration guides |
 | [PRODUCT_REQUIREMENTS.md](./PRODUCT_REQUIREMENTS.md) | Full PRD — all features, flows, and data models |
 | [SETUP.md](./SETUP.md) | Step-by-step VPS deployment |
+| [STAFF_REWRITE_PLAN.md](./STAFF_REWRITE_PLAN.md) | Complete plan for staff panel front+back end rewrite |
 | [DATABASE_MIGRATION.md](./DATABASE_MIGRATION.md) | How to migrate DB to MySQL/Firebase/PostgreSQL |
 | [AUTH_MIGRATION.md](./AUTH_MIGRATION.md) | How to swap Supabase Auth |
 | [REVENUE.md](./REVENUE.md) | Revenue ledger deep-dive |
@@ -203,9 +205,9 @@ See `SETUP.md` for full instructions. Quick summary:
 ### Sponsor Model
 6. Sponsors **never see tournament cost breakdowns** — they see packages only (price, deliverables, reach)
 7. Organizer contribution percentage is **never shown publicly**
-8. Sponsor subscription plans: **Free** (basic radar browsing), **Pro** (EGP 1,500/mo), **Enterprise** (custom)
-9. Internal Campaign Builder requires **Enterprise subscription**
-10. Managed Services and HERU Consultant require **Pro or higher**
+8. Sponsor subscription plans: **Free** (EGP 0 — one-off purchases), **Community** (EGP 150K/mo — 2 online/mo), **Premium** (EGP 300K/mo — 2 online + 1 offline/mo)
+9. Internal Campaign Builder and Managed Services are available on **Community or Premium**
+10. Annual billing cycle available at discounted rate (`billing_cycle = 'annual'`)
 11. No co-organizer model — sponsors buy structured packages, never partial ownership
 
 ### Organizer Model

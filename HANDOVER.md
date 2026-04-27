@@ -74,12 +74,13 @@ Hosting:     Hostinger VPS (Ubuntu 22.04, Nginx, PM2)
   logic/          tournament.js, billing.js, notifications.js
 
 /supabase/migrations/
-  100_fresh_schema_core.sql        user_profiles, staff, settings, CMS
-  101_fresh_schema_gamers.sql      gamers, teams, tournaments, matches
-  102_fresh_schema_organizers.sql  organizers, deliverables, bills
-  103_fresh_schema_providers.sql   providers, services, bookings, coaching
-  104_fresh_schema_sponsors.sql    sponsors, subscriptions, packages, revenue
-  105_fresh_schema_rls.sql         Row Level Security policies
+  100_core.sql           user_profiles, staff, settings, CMS, games, badges
+  101_gamers.sql         gamers, teams, tournaments, matches, friendships, DMs
+  102_organizers.sql     organizers, deliverables, bills, verification
+  103_providers.sql      providers, services (9 categories), bookings, coaching, reviews
+  104_sponsors.sql       sponsors, subscriptions (free/community/premium), packages, revenue ledger
+  105_rls.sql            Row Level Security policies
+  106_schema_fixes.sql   participant_type constraint fix, venue_address, roi_data, task_board, files
 ```
 
 > Files 001–022 are legacy migrations from before the platform pivot — **ignore on fresh installs**.
@@ -135,11 +136,10 @@ Organizer books provider
 
 ### Sponsor Subscription
 ```
-Free:       Radar browsing + 1 active sponsorship
-Starter:    EGP 150,000/mo — unlimited sponsorships
-Growth:     EGP 250,000/mo — + influencer hub + managed projects
-Premium:    EGP 500,000/mo — + Internal Campaign Builder + consultant access
-Annual:     1.5M / 2.5M / 5M EGP/year
+Free:       EGP 0/mo — Radar browsing + one-off purchases
+Community:  EGP 150,000/mo — 2 online sponsorships/month
+Premium:    EGP 300,000/mo — 2 online + 1 offline sponsorship/month
+Annual:     discounted billing cycle (billing_cycle = 'annual')
 ```
 
 ---
@@ -156,8 +156,8 @@ All business-critical assumptions are configurable. Here's how:
 ### Change Subscription Prices
 1. **Staff Settings page** → Platform Assumptions → Subscription Pricing
 2. OR: Update `PLAN_PRICES` in `backend/src/routes/subscriptions.js`
-3. Plans: `starter` (EGP 150K/mo), `growth` (EGP 250K/mo), `premium` (EGP 500K/mo)
-4. Legacy aliases `pro` and `enterprise` still accepted by the backend
+3. Current plans: `free` (EGP 0), `community` (EGP 150K/mo), `premium` (EGP 300K/mo)
+4. Legacy aliases `starter`, `growth`, `pro`, `enterprise` still accepted by the backend CHECK constraint
 
 ### Add a New Service Category
 1. Add to the categories array in `ProviderAuthRegister.jsx` and `ProviderServiceNew.jsx`

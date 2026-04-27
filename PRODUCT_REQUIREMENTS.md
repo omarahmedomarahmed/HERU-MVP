@@ -21,16 +21,17 @@ HERU.gg is a **four-sided esports marketplace** for MENA (Egypt, Saudi Arabia, U
 ## Product 1: HERU Arena (For Gamers)
 
 ### Pages
-- `/gamer/home` — Feed with live tournaments, team invites
-- `/gamer/profile` — Edit profile, connected accounts, stats
+- `/gamer/home` — Feed with live tournaments + Community Tournament Builder CTA + Live Leaderboard widget
+- `/gamer/build` — **Community Tournament Builder** (private scrims, clan wars, mini brackets — invite-only)
+- `/gamer/profile` — Edit profile (tabs: Games first, Overview, Teams, Friends, Messages, Stats, Achievements, Tournaments)
 - `/gamer/teams` — Browse and manage teams
 - `/gamer/tournaments` — Browse tournaments, view brackets
 - `/gamer/tournaments/:id` — Tournament detail (join, brackets, chat, updates)
 - `/gamer/bookings` — Coaching sessions booked
-- `/gamer/friends` — Friend requests and list
-- `/gamer/messages` — Direct messages
+- `/gamer/friends` — Friend requests and list (also accessible as profile tab)
+- `/gamer/messages` — Direct messages (also accessible as profile tab)
 - `/gamer/orders` — Gamer Shop orders
-- `/gamer/billing` — Payment history
+- `/gamer/billing` — Payment history (coaching sessions only; free product note shown)
 - `/gamer/connect` — Connected gaming accounts (Discord, Riot; Epic/Steam/Tencent planned)
 - `/gamer/notifications` — All notifications
 
@@ -113,17 +114,17 @@ HERU.gg is a **four-sided esports marketplace** for MENA (Egypt, Saudi Arabia, U
 - `/sponsor/managed-services` — Request managed campaigns (Pro+)
 - `/sponsor/managed-services/new` — Submit new project brief
 - `/sponsor/managed-services/:id` — Project detail + chat with consultant
-- `/sponsor/builder` — Internal Campaign Builder (Enterprise only)
+- `/sponsor/builder` — Internal Campaign Builder (Community/Premium)
+- `/sponsor/subscription` — Manage plan (Free/Community/Premium with monthly/annual toggle)
 - `/sponsor/billing` — All transactions (packages, subscriptions, influencer bookings)
-- `/sponsor/subscription` — Manage plan (Free/Pro/Enterprise)
 - `/sponsor/profile` — Brand profile
 
 ### Subscription Plans (Assumptions — changeable by staff)
 | Plan | Price | Key Features |
 |------|-------|-------------|
-| Free | EGP 0/mo | Radar browsing, 1 active sponsorship |
-| Pro | EGP 1,500/mo | Unlimited sponsorships, influencer hub, managed projects |
-| Enterprise | Custom | Everything + Internal Builder + consultant + custom reporting |
+| Free | EGP 0/mo | Radar browsing, one-off package purchases |
+| Community | EGP 150,000/mo | 2 online sponsorships/month, influencer hub, managed projects |
+| Premium | EGP 300,000/mo | 2 online + 1 offline sponsorship/month, Campaign Builder, consultant access |
 
 ### Data Model
 - `sponsor_profiles`: user_id, brand_name, industry, website, subscription_plan
@@ -137,12 +138,13 @@ HERU.gg is a **four-sided esports marketplace** for MENA (Egypt, Saudi Arabia, U
 
 ### Pages
 - `/provider/dashboard` — Overview: bookings, income, pending approvals
-- `/provider/services` — My service listings
-- `/provider/services/new` — Create new service listing
-- `/provider/bookings` — All bookings (incoming + active + completed)
-- `/provider/bookings/:id` — Booking detail + chat with organizer
-- `/provider/income` — Income breakdown by category (gross, fee, net)
+- `/provider/services` — My service listings (status: pending/approved/rejected)
+- `/provider/services/new` — Create new service listing (9 categories + custom fields per category)
+- `/provider/bookings` — All bookings (incoming + active + completed, status filters)
+- `/provider/bookings/:id` — Booking detail + chat with organizer + file upload/download + escrow confirm
+- `/provider/income` — Income breakdown: escrow held/released, 85% net display, payout history
 - `/provider/profile` — Public portfolio profile
+- `/provider/tournaments/:id` — Tournament CRM view (read + communicate + upload files — no edit access)
 
 ### Public Pages
 - `/providers/:id` — Provider public profile (services, portfolio, reviews)
@@ -150,17 +152,23 @@ HERU.gg is a **four-sided esports marketplace** for MENA (Egypt, Saudi Arabia, U
 - `/coaches/:id` — Coach profile
 - `/influencers` — Special browse page for influencer providers
 
-### Service Categories & Custom Fields
+### Service Categories & Custom Fields (9 categories)
 
-| Category | Custom Fields |
-|----------|---------------|
-| **Venue** | capacity, location, address, amenities, images, price_per_day |
-| **Production** | equipment_list, team_size, previous_events, streaming_capability |
-| **Branding & Design** | design_style, formats, turnaround_days, portfolio_links |
-| **Marketing** | channels (Discord/social/influencer), audience_size, engagement_rate |
-| **Talent (Caster/Host)** | languages, games, past_events, voice_sample |
-| **Coaching** | game, rank, methodology, session_duration, availability |
-| **Influencer** | platform (YouTube/TikTok/Twitch), followers, avg_views, niche |
+| Category DB Value | Display Name | Custom Fields |
+|-------------------|--------------|---------------|
+| `Venue` | Specialized Gaming Venue | capacity, location, address, amenities, price_per_day |
+| `Coaching` | Coach | game, rank, methodology, session_duration, availability (shown to gamers) |
+| `Talent` | Talent & Influencer | languages, games, past_events, platforms, followers, avg_views |
+| `Production` | Media Production | equipment_list, team_size, streaming_capability |
+| `Marketing` | Marketing | channels, audience_size, engagement_rate |
+| `Community` | Gaming Community | platform (Discord/FB/IG/TikTok), community_size, niche |
+| `Hardware` | Gaming Hardware & Setup | product_types, brands, rental_or_sale |
+| `EventVendor` | Offline Event Vendors | vendor_type, service_area, min_order |
+| `TournamentMgmt` | Tournament Management | experience_years, games_managed, team_size |
+
+Coaches (`Coaching` category) appear on `/coaches` public browse page.
+Talent/Influencers appear on `/influencers` public browse page.
+All other categories appear in the Tournament Builder provider marketplace.
 
 ### Approval Flow
 1. Provider registers → profile status = `pending`
@@ -172,6 +180,37 @@ HERU.gg is a **four-sided esports marketplace** for MENA (Egypt, Saudi Arabia, U
 - `service_provider_profiles`: user_id, display_name, categories[], approval_status, bio, portfolio
 - `services`: provider_id, title, category, description, price, custom_fields (JSONB), approval_status
 - `service_bookings`: service_id, organizer_id, tournament_id, total_amount, status, escrow_status
+
+---
+
+## Tournament CRM — Multi-Sided Access
+
+The Tournament Management page (`/organizer/tournaments/:id/manage`) is a shared CRM accessed differently by each stakeholder.
+
+| Stakeholder | Route | Access Level |
+|-------------|-------|-------------|
+| Organizer | `/organizer/tournaments/:id/manage` | Full access: edit, assign tasks, upload/download files, set ROI, manage providers, chat |
+| Service Provider | `/provider/tournaments/:id` | Read + communicate + upload files + see assigned tasks — no edit |
+| Sponsor | `/sponsor/radar/:t/package/:p` → CRM view | View numbers, brackets, teams, files, communicate with organizer — no edit |
+| Gamer (joined) | `/gamer/tournaments/:id` | See dedicated match + brackets |
+| Public | `/tournaments/:id` | Brackets (BracketVisual with team names), updates, public chat |
+
+### Organizer CRM Tabs
+1. **Overview** — status, settings, registration toggle, radar toggle
+2. **Teams** — registered teams + seeding
+3. **Brackets** — visual bracket editor
+4. **Providers** — booked service providers + task assignment + deadline + chat
+5. **Sponsors** — active sponsorships, ROI/reach numbers, income (85% net shown)
+6. **Files** — upload/download tournament files (shared with providers)
+7. **ROI & Reach** — fill in: estimated_reach, actual_views, engagement_rate, social_impressions, sponsor_score
+8. **Tasks** — 3-column kanban (pending/in-progress/done) with provider assignment
+
+### Venue in Builder
+When organizer selects "offline" tournament, the Builder shows:
+- Venue service providers from `/api/services?category=Venue` in Step 4
+- Option to enter own venue address (text)
+- Option to paste Google Maps link
+Both stored in `venue_address` and `venue_google_maps` columns.
 
 ---
 

@@ -59,36 +59,37 @@ Staff access keys: `HERU-STAFF-OMAR-2026`, `HERU-STAFF-OPS-2026`
 
 ### Public
 ```
-/                           Landing page
-/tournaments                Browse tournaments
-/tournaments/:id            Tournament detail
+/                           Landing page (startup-style, bg-zinc-950, esports bg images)
+/pricing                    Standalone pricing page (4 tabs per stakeholder)
+/tournaments                Browse tournaments (live first, visual bracket display)
+/tournaments/:id            Tournament detail (BracketVisual with team names, not IDs)
 /teams/:id                  Team profile
 /organizer/:id              Organizer public profile
-/radar                      Sponsorship radar (public)
-/coaches                    Coach marketplace (public)
-/leaderboards               Leaderboards (public)
+/radar                      Sponsorship radar (public browse — auth-gated for purchasing)
+/coaches                    Coach marketplace (public, wrapped in GamerLayout when auth'd)
+/leaderboards               Leaderboards (public, wrapped in GamerLayout when auth'd)
 /influencers                Influencer browse (public)
-/for-gamers                 Gamer value prop page
-/for-organizers             Organizer value prop page
-/for-sponsors               Sponsor value prop page
-/for-providers              Provider value prop page
+/for-gamers                 HERU ARENA value prop (visual timeline, esports backgrounds)
+/for-organizers             HERU BUILDER value prop (visual timeline, esports backgrounds)
+/for-sponsors               HERU RADAR value prop (Free/Community/Premium tiers)
+/for-providers              HERU GIGs value prop (9 service categories, visual timeline)
 /providers/:id              Provider public profile
 /auth                       Auth choice (4 tiles)
 ```
 
 ### Gamer (/gamer/*)
 ```
-/gamer/home                 Feed + quick actions
+/gamer/home                 Feed + community tournament builder CTA + live leaderboard widget
 /gamer/build                Community Tournament Builder (private scrims & bracket events)
-/gamer/profile              My profile (edit)
+/gamer/profile              My profile (tabs: Games first, Overview, Teams, Friends, Stats, Achievements, Tournaments)
 /gamer/teams                My teams
 /gamer/teams/:id            Team detail
 /gamer/tournaments          Browse tournaments
 /gamer/bookings             My coaching sessions
-/gamer/friends              Friends list + requests
-/gamer/messages             Direct messages
+/gamer/friends              Friends list + requests (also tab on profile)
+/gamer/messages             Direct messages (also tab on profile)
 /gamer/notifications        Notifications
-/gamer/billing              Billing
+/gamer/billing              Billing (coaching sessions only; free product note)
 /gamer/orders               Marketplace orders
 /gamer/orders/:id           Order detail
 /gamer/connect              Connected accounts
@@ -98,11 +99,12 @@ Staff access keys: `HERU-STAFF-OMAR-2026`, `HERU-STAFF-OPS-2026`
 ```
 /organizer/dashboard        Main dashboard
 /organizer/tournaments      My tournaments
-/organizer/tournaments/new  Tournament builder
-/organizer/tournaments/:id/manage  Tournament management
-/organizer/radar            Sponsorship radar (my packages)
+/organizer/tournaments/new  Tournament builder (5 steps: game → details → prizepool → services → publish)
+/organizer/tournaments/:id/manage  Multi-sided CRM (organizer: full; provider: read+files+chat; sponsor: view+chat)
+/organizer/radar            Radar overview (read-only — see other packages and sponsorship landscape)
 /organizer/profile          My organizer profile
-/organizer/billing          Billing
+/organizer/billing          Service booking costs + invoices
+/organizer/income           Sponsorship income ledger (85/15 split display)
 /organizer/verification     Verification request
 /organizer/messages         Messages
 /organizer/teams            Teams
@@ -127,36 +129,40 @@ Staff access keys: `HERU-STAFF-OMAR-2026`, `HERU-STAFF-OPS-2026`
 ### Service Provider (/provider/*)
 ```
 /provider/dashboard         Main dashboard
-/provider/services          My services
-/provider/services/new      Create service listing
-/provider/bookings          My bookings
-/provider/bookings/:id      Booking detail + chat
-/provider/profile           My profile
+/provider/services          My services (status: pending/approved/rejected)
+/provider/services/new      Create service listing (9 categories + custom fields)
+/provider/bookings          My bookings (status filters)
+/provider/bookings/:id      Booking detail + chat + file sharing + escrow confirm
+/provider/profile           My profile + portfolio
+/provider/income            Earnings, escrow status, payout history (85% net display)
+/provider/tournaments/:id   Tournament CRM view (read + communicate + upload files, no edit)
 ```
 
 ### Staff (/staff/*)
 ```
-/staff/dashboard            Overview
-/staff/tournaments          All tournaments
-/staff/users                All users
-/staff/approvals            Approvals (5 tabs: pending/approved/rejected/services/verifications)
-/staff/revenue              Revenue ledger (3 streams)
-/staff/analytics            Growth + game stats
+/staff/dashboard            Overview (KPIs, revenue, activity feed)
+/staff/tournaments          All tournaments (filter/search/approve/reject)
+/staff/users                All users (4 role tabs, ban/approve)
+/staff/approvals            Approvals (providers, services, verifications, teams, tournaments)
+/staff/revenue              Revenue ledger (service fee + sponsorship fee + subscription MRR)
+/staff/analytics            Growth + game stats (charts)
 /staff/cms                  CMS pages editor
-/staff/platform-control     Feature toggles
+/staff/platform-control     Feature toggles + fee settings
 /staff/managed-projects     Sponsor consultant requests
-/staff/orders               All orders
-/staff/billing              Billing
-/staff/organizers           Organizer profiles
-/staff/services             Service listings (approve/reject)
-/staff/radar                Radar oversight
-/staff/settings             App settings
-/staff/badges               Badges
-/staff/venues               Venues
-/staff/audit                Audit trail
-/staff/gamers               All gamers
+/staff/orders               All marketplace orders
+/staff/billing              Billing overview
+/staff/organizers           Organizer profiles + verification status
+/staff/services             Service listings (approve/reject with staff notes)
+/staff/radar                Radar oversight (all packages + sponsorships)
+/staff/settings             App settings + platform assumptions
+/staff/badges               Badges management
+/staff/venues               Venue submissions
+/staff/audit                Audit trail (all actions)
+/staff/gamers               All gamers (profile, ban, stats)
 /staff/teams                All teams
-/staff/tournament-builder   Tournament builder (staff)
+/staff/tournament-builder   Staff tournament builder
+/staff/messages             Platform-wide messages
+/staff/marketplace          Marketplace/orders overview
 ```
 
 ---
@@ -188,8 +194,9 @@ Migrations are in `/supabase/migrations/`. Apply these in order on a fresh insta
 | `103_providers.sql` | service_provider_profiles (slug, social_links, approval_status), services (9 categories: Venue/Coaching/Talent/Production/Marketing/Community/Hardware/EventVendor/TournamentMgmt, custom_fields), provider_portfolio_items (type, client_name, deliverables, links, testimonial), provider_past_projects, service_bookings (total_price, net_to_provider, denorm columns), coaching_sessions (gamer_rating, session_type, duration_minutes generated), reviews |
 | `104_sponsors.sql` | sponsor_profiles (subscription_plan/status/renewal_date), subscriptions (plan CHECK: free/community/premium/starter/growth for legacy, amount, billing_cycle, renewal_date), sponsorship_packages, sponsorships (package_name/sponsor_brand/tournament_name), managed_service_projects, heru_revenue_ledger (both stream/entity and source_type/source_id naming conventions) |
 | `105_rls.sql` | Row Level Security policies for all tables including staff_sessions, games, notifications |
+| `106_schema_fixes.sql` | Fixes participant_type CHECK constraint (adds 'duo','individual'), adds missing tournament columns (is_private, venue_address, venue_google_maps, roi_data, task_board, files), updates subscriptions plan CHECK to include pro/enterprise legacy aliases |
 
-Apply in order 100 → 105 on a fresh database. No other migration files are needed.
+Apply in order 100 → 106 on a fresh database. No other migration files are needed.
 
 For migrating to a different database: see `DATABASE_MIGRATION.md`.
 For migrating to a different auth provider: see `AUTH_MIGRATION.md`.
@@ -221,11 +228,11 @@ All routes in `/backend/src/routes/`. Key new routes:
 ## COMPONENT ARCHITECTURE
 
 **Layouts** (in `/src/components/layouts/`):
-- `GamerLayout` — gamer pages (no sidebar, top nav)
+- `GamerLayout` — gamer pages (top nav, no sidebar; HeruLogo in header; friends+messages as tabs not nav)
 - `OrganizerLayout` — organizer dashboard (dark sidebar, purple/blue)
 - `SponsorLayout` — sponsor dashboard (dark sidebar, yellow accents)
 - `ProviderLayout` — provider dashboard (dark sidebar, cyan accents)
-- `StaffLayout` — staff pages (light theme, professional)
+- `StaffLayout` — staff pages (dark `bg-[#080808]`, red accent, collapsible sidebar, 5 sections, "God Mode" badge)
 
 **Auth Guards** (in `/src/lib/auth-guards.jsx`):
 - `RequireGamer`, `RequireOrganizer`, `RequireSponsor`, `RequireProvider`, `RequireStaff`
