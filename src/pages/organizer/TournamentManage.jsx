@@ -490,13 +490,58 @@ function SettingsTab({ tournament }) {
 
 // ─── Sponsors Tab ─────────────────────────────────────────────────────────────
 
-function SponsorsTab({ tournament }) {
+function SponsorsTab({ tournament, userProfile }) {
+  const { toast } = useToast()
+  const qc = useQueryClient()
+
   const { data: raw, isLoading } = useQuery({
     queryKey: ['tournament-sponsorships', tournament.id],
     queryFn: () => apiCall(`/sponsorships?tournament_id=${tournament.id}`),
     staleTime: 30_000,
   })
   const sponsorships = Array.isArray(raw) ? raw : raw?.sponsorships || raw?.data || []
+
+  const { data: pkgRaw, isLoading: pkgsLoading, refetch: refetchPackages } = useQuery({
+    queryKey: ['tournament-packages', tournament.id],
+    queryFn: () => apiCall(`/sponsorship-packages?tournament_id=${tournament.id}`),
+    staleTime: 30_000,
+  })
+  const packages = Array.isArray(pkgRaw) ? pkgRaw : pkgRaw?.packages || pkgRaw?.data || []
+
+  const { data: orgProfileData } = useQuery({
+    queryKey: ['organizer-profile-me'],
+    queryFn: () => apiCall('/organizer-profiles/me'),
+    staleTime: 0,
+  })
+  const isVerified = !!(orgProfileData?.is_verified)
+
+  const [showPkgForm, setShowPkgForm] = useState(false)
+  const [newPkg, setNewPkg] = useState({ name: '', tier: 'gold', price: '', description: '' })
+  const [creating, setCreating] = useState(false)
+
+  const createPkg = async () => {
+    if (!newPkg.name.trim() || !newPkg.price) return
+    setCreating(true)
+    try {
+      await apiCall('/sponsorship-packages', {
+        method: 'POST',
+        body: JSON.stringify({
+          ...newPkg,
+          tournament_id: tournament.id,
+          organizer_id: userProfile?.id || orgProfileData?.id,
+          price: Number(newPkg.price),
+        }),
+      })
+      refetchPackages()
+      setShowPkgForm(false)
+      setNewPkg({ name: '', tier: 'gold', price: '', description: '' })
+      toast({ title: 'Package created' })
+    } catch {
+      toast({ title: 'Failed to create package', variant: 'destructive' })
+    } finally {
+      setCreating(false)
+    }
+  }
 
   const totalIncome = sponsorships.reduce((s, sp) => s + Number(sp.amount || 0), 0)
   const heruFee = totalIncome * 0.15
@@ -511,62 +556,154 @@ function SponsorsTab({ tournament }) {
     cancelled: 'bg-zinc-500/20 text-zinc-400',
   }
 
-  if (isLoading) return <div className="flex justify-center py-16"><Loader2 className="w-5 h-5 animate-spin text-purple-400" /></div>
-
-  if (sponsorships.length === 0) {
-    return (
-      <div className="text-center py-16 bg-zinc-900 rounded-xl border border-zinc-800">
-        <Star className="w-10 h-10 text-zinc-700 mx-auto mb-3" />
-        <p className="text-zinc-500 text-sm">No active sponsorships yet. Enable radar listing in Settings.</p>
-      </div>
-    )
-  }
+  if (isLoading || pkgsLoading) return <div className="flex justify-center py-16"><Loader2 className="w-5 h-5 animate-spin text-purple-400" /></div>
 
   return (
-    <div className="space-y-4">
-      {/* Summary */}
-      <div className="grid grid-cols-3 gap-3">
-        {[
-          { label: 'Total Income', value: formatEGP(totalIncome), color: 'text-yellow-400' },
-          { label: 'HERU Fee (15%)', value: formatEGP(heruFee), color: 'text-orange-400' },
-          { label: 'Net to You (85%)', value: formatEGP(netToOrg), color: 'text-green-400' },
-        ].map(card => (
-          <div key={card.label} className="p-4 rounded-xl bg-zinc-900 border border-zinc-800">
-            <p className="text-zinc-500 text-xs mb-1">{card.label}</p>
-            <p className={`text-lg font-bold ${card.color}`}>{card.value}</p>
+    <div className="space-y-6">
+      {/* Package Creation for Verified Organizers */}
+      {isVerified && (
+        <div className="p-5 rounded-xl bg-zinc-900 border border-zinc-800">
+          <div className="flex items-center justify-between mb-3">
+            <div>
+              <h3 className="text-sm font-bold text-white">Sponsorship Packages</h3>
+              <p className="text-xs text-zinc-500 mt-0.5">{packages.length} package{packages.length !== 1 ? 's' : ''} created</p>
+            </div>
+            <button
+              onClick={() => setShowPkgForm(!showPkgForm)}
+              className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-yellow-600 hover:bg-yellow-500 text-white text-xs font-bold transition-colors"
+            >
+              {showPkgForm ? <X className="w-3.5 h-3.5" /> : <Plus className="w-3.5 h-3.5" />}
+              {showPkgForm ? 'Cancel' : 'Create Package'}
+            </button>
           </div>
-        ))}
-      </div>
 
-      {/* Table */}
-      <div className="rounded-xl bg-zinc-900 border border-zinc-800 overflow-hidden">
-        <table className="w-full text-sm">
-          <thead className="border-b border-zinc-800">
-            <tr className="text-zinc-500 text-xs uppercase">
-              <th className="text-left p-4">Brand</th>
-              <th className="text-left p-4 hidden md:table-cell">Package</th>
-              <th className="text-right p-4">Amount</th>
-              <th className="text-center p-4">Status</th>
-              <th className="text-right p-4 hidden md:table-cell">Date</th>
-            </tr>
-          </thead>
-          <tbody>
-            {sponsorships.map(s => (
-              <tr key={s.id} className="border-b border-zinc-800/50 hover:bg-zinc-800/30 transition-colors">
-                <td className="p-4 text-white font-medium">{s.sponsor_brand || s.sponsor_id || '—'}</td>
-                <td className="p-4 text-zinc-400 hidden md:table-cell">{s.package_name || '—'}</td>
-                <td className="p-4 text-yellow-400 font-semibold text-right">{formatEGP(s.amount)}</td>
-                <td className="p-4 text-center">
-                  <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${statusStyle[s.status] || statusStyle.pending}`}>
-                    {s.status || 'pending'}
-                  </span>
-                </td>
-                <td className="p-4 text-zinc-500 text-right hidden md:table-cell">{fmtDate(s.paid_at || s.created_at)}</td>
+          {showPkgForm && (
+            <div className="mt-4 space-y-3 p-4 rounded-xl bg-zinc-800/50 border border-yellow-500/20">
+              <h4 className="text-xs font-bold text-yellow-400 uppercase tracking-wider">New Sponsorship Package</h4>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <input
+                  value={newPkg.name}
+                  onChange={e => setNewPkg(p => ({ ...p, name: e.target.value }))}
+                  placeholder="Package name (e.g. Gold Sponsor)"
+                  className="px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white text-sm placeholder-zinc-600 focus:outline-none focus:border-yellow-500"
+                />
+                <select
+                  value={newPkg.tier}
+                  onChange={e => setNewPkg(p => ({ ...p, tier: e.target.value }))}
+                  className="px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white text-sm focus:outline-none focus:border-yellow-500"
+                >
+                  <option value="platinum">Platinum</option>
+                  <option value="gold">Gold</option>
+                  <option value="silver">Silver</option>
+                  <option value="bronze">Bronze</option>
+                </select>
+              </div>
+              <input
+                type="number"
+                value={newPkg.price}
+                onChange={e => setNewPkg(p => ({ ...p, price: e.target.value }))}
+                placeholder="Price (EGP)"
+                className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white text-sm placeholder-zinc-600 focus:outline-none focus:border-yellow-500"
+              />
+              <textarea
+                value={newPkg.description}
+                onChange={e => setNewPkg(p => ({ ...p, description: e.target.value }))}
+                placeholder="What does this package include? (logo placement, shoutouts, banner, etc.)"
+                rows={3}
+                className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white text-sm placeholder-zinc-600 focus:outline-none focus:border-yellow-500 resize-none"
+              />
+              <button
+                onClick={createPkg}
+                disabled={!newPkg.name.trim() || !newPkg.price || creating}
+                className="flex items-center gap-2 px-4 py-2 rounded-lg bg-yellow-600 hover:bg-yellow-500 text-white text-sm font-bold transition-colors disabled:opacity-50"
+              >
+                {creating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
+                Create Package
+              </button>
+            </div>
+          )}
+
+          {packages.length > 0 && (
+            <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {packages.map(pkg => (
+                <div key={pkg.id} className="p-3 rounded-xl bg-zinc-800 border border-zinc-700">
+                  <div className="flex items-center justify-between">
+                    <p className="text-white font-semibold text-sm">{pkg.name || pkg.package_name}</p>
+                    <span className="text-xs px-2 py-0.5 rounded-full bg-yellow-500/20 text-yellow-400 font-bold capitalize">{pkg.tier}</span>
+                  </div>
+                  <p className="text-yellow-400 font-bold text-sm mt-1">{formatEGP(pkg.price)}</p>
+                  {pkg.description && <p className="text-zinc-500 text-xs mt-1 line-clamp-2">{pkg.description}</p>}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {!isVerified && (
+        <div className="p-4 rounded-xl bg-yellow-500/5 border border-yellow-500/20">
+          <p className="text-yellow-400 text-sm font-medium">Verification required to create sponsorship packages</p>
+          <p className="text-zinc-500 text-xs mt-1">Get verified to unlock the ability to list your tournament on the Sponsorship Radar and create packages for sponsors.</p>
+          <Link to="/organizer/verification" className="text-xs text-purple-400 hover:underline mt-2 inline-block">Apply for verification →</Link>
+        </div>
+      )}
+
+      {/* Income Summary */}
+      {totalIncome > 0 && (
+        <div className="grid grid-cols-3 gap-3">
+          {[
+            { label: 'Total Income', value: formatEGP(totalIncome), color: 'text-yellow-400' },
+            { label: 'HERU Fee (15%)', value: formatEGP(heruFee), color: 'text-orange-400' },
+            { label: 'Net to You (85%)', value: formatEGP(netToOrg), color: 'text-green-400' },
+          ].map(card => (
+            <div key={card.label} className="p-4 rounded-xl bg-zinc-900 border border-zinc-800">
+              <p className="text-zinc-500 text-xs mb-1">{card.label}</p>
+              <p className={`text-lg font-bold ${card.color}`}>{card.value}</p>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Active Sponsorships Table */}
+      {sponsorships.length === 0 ? (
+        <div className="text-center py-12 bg-zinc-900 rounded-xl border border-zinc-800">
+          <Star className="w-10 h-10 text-zinc-700 mx-auto mb-3" />
+          <p className="text-zinc-500 text-sm">No active sponsorships yet.</p>
+          {isVerified && <p className="text-zinc-600 text-xs mt-1">Create packages above to attract sponsors via the Radar.</p>}
+        </div>
+      ) : (
+        <div className="rounded-xl bg-zinc-900 border border-zinc-800 overflow-hidden">
+          <div className="px-4 py-3 border-b border-zinc-800">
+            <h3 className="text-xs font-bold text-zinc-400 uppercase tracking-wider">Active Sponsorships</h3>
+          </div>
+          <table className="w-full text-sm">
+            <thead className="border-b border-zinc-800">
+              <tr className="text-zinc-500 text-xs uppercase">
+                <th className="text-left p-4">Brand</th>
+                <th className="text-left p-4 hidden md:table-cell">Package</th>
+                <th className="text-right p-4">Amount</th>
+                <th className="text-center p-4">Status</th>
+                <th className="text-right p-4 hidden md:table-cell">Date</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+            </thead>
+            <tbody>
+              {sponsorships.map(s => (
+                <tr key={s.id} className="border-b border-zinc-800/50 hover:bg-zinc-800/30 transition-colors">
+                  <td className="p-4 text-white font-medium">{s.sponsor_brand || s.sponsor_id || '—'}</td>
+                  <td className="p-4 text-zinc-400 hidden md:table-cell">{s.package_name || '—'}</td>
+                  <td className="p-4 text-yellow-400 font-semibold text-right">{formatEGP(s.amount)}</td>
+                  <td className="p-4 text-center">
+                    <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${statusStyle[s.status] || statusStyle.pending}`}>
+                      {s.status || 'pending'}
+                    </span>
+                  </td>
+                  <td className="p-4 text-zinc-500 text-right hidden md:table-cell">{fmtDate(s.paid_at || s.created_at)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   )
 }
@@ -901,6 +1038,7 @@ export default function TournamentManage({ defaultTab = 'overview' }) {
   const navigate = useNavigate()
   const qc = useQueryClient()
   const { toast } = useToast()
+  const { userProfile } = useAuth()
   const [activeTab, setActiveTab] = useState(defaultTab)
 
   const { data: tournament, isLoading } = useQuery({
@@ -987,7 +1125,7 @@ export default function TournamentManage({ defaultTab = 'overview' }) {
       {activeTab === 'teams'     && <TeamsTab tournamentId={id} tournament={tournament} />}
       {activeTab === 'brackets'  && <BracketsTab tournament={tournament} />}
       {activeTab === 'providers' && <ProvidersTab tournamentId={id} />}
-      {activeTab === 'sponsors'  && <SponsorsTab tournament={tournament} />}
+      {activeTab === 'sponsors'  && <SponsorsTab tournament={tournament} userProfile={userProfile} />}
       {activeTab === 'files'     && <FilesTab tournament={tournament} qc={qc} />}
       {activeTab === 'roi'       && <RoiTab tournament={tournament} qc={qc} />}
       {activeTab === 'tasks'     && <TasksTab tournament={tournament} qc={qc} />}

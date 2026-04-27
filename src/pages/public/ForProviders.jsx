@@ -116,18 +116,18 @@ export default function ForProviders() {
             >
               List Your Services <ArrowRight className="w-5 h-5" />
             </Link>
-            <Link
-              to="/coaches"
+            <button
+              onClick={() => document.getElementById('categories-section')?.scrollIntoView({ behavior: 'smooth' })}
               className="inline-flex items-center gap-2 border border-zinc-700 hover:border-zinc-500 text-zinc-300 hover:text-white font-bold px-8 py-4 rounded-xl transition-colors text-lg"
             >
-              Browse Marketplace <TrendingUp className="w-5 h-5" />
-            </Link>
+              See Categories <TrendingUp className="w-5 h-5" />
+            </button>
           </div>
         </div>
       </section>
 
       {/* 9 SERVICE CATEGORIES */}
-      <section className="relative py-20 px-4 overflow-hidden">
+      <section id="categories-section" className="relative py-20 px-4 overflow-hidden">
         <img
           src="https://images.unsplash.com/photo-1560253023-3ec5d502959f?w=1920&q=70"
           alt=""

@@ -2,7 +2,7 @@ import React from 'react'
 import { Link } from 'react-router-dom'
 import PublicNav from '@/components/public/PublicNav'
 import HeruLogo from '@/components/shared/HeruLogo'
-import { Trophy, Users, Package, Building2, DollarSign, Settings, FileText, BarChart3, Layers, ChevronRight, ArrowRight } from 'lucide-react'
+import { Trophy, Users, Package, DollarSign, Settings, FileText, BarChart3, Layers, ChevronRight, ArrowRight } from 'lucide-react'
 
 const STEPS = [
   {
@@ -269,25 +269,6 @@ export default function ForOrganizers() {
               className="inline-flex items-center gap-2 bg-purple-700 hover:bg-purple-600 text-white font-bold px-10 py-4 rounded-xl transition-colors text-lg"
             >
               Free to create tournaments <ArrowRight className="w-5 h-5" />
-            </Link>
-          </div>
-        </div>
-      </section>
-
-      {/* BUILD IT FOR ME CTA */}
-      <section className="py-16 px-4">
-        <div className="max-w-3xl mx-auto">
-          <div className="p-10 rounded-2xl bg-gradient-to-br from-zinc-900 to-zinc-800 border border-zinc-700 text-center">
-            <Building2 className="w-10 h-10 text-purple-400 mx-auto mb-4" />
-            <h2 className="text-2xl font-black text-white mb-3">Not sure where to start?</h2>
-            <p className="text-zinc-400 mb-6">
-              Book a HERU consultant to build your tournament for you. We handle everything from planning to execution.
-            </p>
-            <Link
-              to="/sponsor/managed-services"
-              className="inline-flex items-center gap-2 bg-purple-700 hover:bg-purple-600 text-white font-bold px-8 py-3 rounded-xl transition-colors"
-            >
-              Talk to a Consultant <ArrowRight className="w-4 h-4" />
             </Link>
           </div>
         </div>

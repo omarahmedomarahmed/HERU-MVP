@@ -4,6 +4,8 @@ import { useQuery } from '@tanstack/react-query';
 import { apiCall } from '@/api/heruClient';
 import HeruLogo from '@/components/shared/HeruLogo';
 import { Trophy, TrendingUp, Medal, Loader2, Crown } from 'lucide-react';
+import { useAuth } from '@/lib/AuthContext';
+import GamerLayout from '@/components/layouts/GamerLayout';
 
 const GAMES = ['Valorant', 'CS2', 'League of Legends', 'PUBG', 'FIFA', 'Fortnite'];
 
@@ -14,7 +16,7 @@ function RankBadge({ position }) {
   return <span className="text-sm font-black text-gray-500 w-5 text-center">{position}</span>;
 }
 
-export default function Leaderboards() {
+function LeaderboardsContent() {
   const [game, setGame] = useState(GAMES[0]);
 
   const { data: rawEntries = [], isLoading } = useQuery({
@@ -109,4 +111,13 @@ export default function Leaderboards() {
       </div>
     </div>
   );
+}
+
+export default function Leaderboards() {
+  const { userProfile } = useAuth()
+  const isGamer = userProfile?.role === 'gamer'
+  if (isGamer) {
+    return <GamerLayout><LeaderboardsContent /></GamerLayout>
+  }
+  return <LeaderboardsContent />
 }

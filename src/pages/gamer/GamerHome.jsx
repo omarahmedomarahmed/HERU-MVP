@@ -264,29 +264,6 @@ export default function GamerHome() {
       {/* HERU Leaderboard */}
       <LeaderboardSection />
 
-      {/* Leaderboard Quick Stats */}
-      <section className="mb-10">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-2">
-            <TrendingUp className="w-5 h-5 text-red-500" />
-            <h2 className="text-lg font-bold text-white">Your Standing</h2>
-          </div>
-          <Link to="/leaderboards"><GlowButton variant="ghost" size="sm">Full Leaderboard <ArrowRight className="w-4 h-4" /></GlowButton></Link>
-        </div>
-        <div className="grid grid-cols-3 gap-4">
-          {[
-            { label: 'Tournament Wins', value: profile?.wins || 0, icon: Trophy, color: 'text-yellow-400' },
-            { label: 'Tournaments Played', value: profile?.tournaments_played || 0, icon: Swords, color: 'text-red-400' },
-            { label: 'Teams', value: profile?.team_count || 0, icon: Users, color: 'text-blue-400' },
-          ].map(({ label, value, icon: Icon, color }) => (
-            <FloatingPanel key={label} className="p-4 text-center">
-              <Icon className={`w-6 h-6 ${color} mx-auto mb-2`} />
-              <p className="text-2xl font-black text-white">{value}</p>
-              <p className="text-gray-500 text-xs mt-1">{label}</p>
-            </FloatingPanel>
-          ))}
-        </div>
-      </section>
 
       {/* Tournaments Section */}
       <section className="mb-10">
@@ -436,7 +413,7 @@ export default function GamerHome() {
 function LeaderboardSection() {
   const { data: leaderboard = [] } = useQuery({
     queryKey: ['home-leaderboard'],
-    queryFn: () => apiCall('/leaderboards?limit=5'),
+    queryFn: () => apiCall('/leaderboards?limit=10'),
     staleTime: 5 * 60_000,
     enabled: true,
   });
@@ -462,30 +439,17 @@ function LeaderboardSection() {
           </div>
         ) : (
           <div className="divide-y divide-zinc-800/50">
-            {entries.slice(0, 5).map((entry, i) => {
-              const rank = entry.rank || i + 1;
-              const rankColor = rank === 1 ? 'text-yellow-400' : rank === 2 ? 'text-slate-300' : rank === 3 ? 'text-amber-600' : 'text-zinc-500';
-              return (
-                <div key={entry.id || i} className="flex items-center gap-4 px-5 py-3 hover:bg-white/5 transition-colors">
-                  <span className={`w-7 text-center font-black text-lg ${rankColor}`}>{rank}</span>
-                  <div className="w-9 h-9 rounded-full bg-gradient-to-br from-red-600/30 to-zinc-800 flex items-center justify-center overflow-hidden border border-zinc-700/50 flex-shrink-0">
-                    {entry.avatar ? (
-                      <img src={entry.avatar} alt="" className="w-full h-full object-cover" />
-                    ) : (
-                      <Star className="w-4 h-4 text-red-400" />
-                    )}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-white font-bold truncate">{entry.username || entry.display_name || 'Player'}</p>
-                    {entry.game && <p className="text-zinc-500 text-xs">{entry.game}</p>}
-                  </div>
-                  <div className="text-right flex-shrink-0">
-                    {entry.wins != null && <p className="text-emerald-400 text-xs font-bold">{entry.wins}W</p>}
-                    {entry.points != null && <p className="text-red-400 text-sm font-black">{entry.points?.toLocaleString()} pts</p>}
-                  </div>
+            {entries.map((entry, idx) => (
+              <div key={entry.id || idx} className="flex items-center gap-3 py-2 px-4 border-b border-zinc-800 hover:bg-white/5 transition-colors">
+                <span className="text-zinc-500 text-sm w-6">#{idx + 1}</span>
+                <img src={entry.avatar || '/default.png'} className="w-7 h-7 rounded-full object-cover border border-zinc-700/50" onError={e => { e.target.style.display = 'none' }} alt="" />
+                <div className="flex-1 min-w-0">
+                  <div className="text-zinc-100 text-sm font-medium truncate">{entry.username || entry.display_name || 'Player'}</div>
+                  {entry.riot_id && <div className="text-zinc-500 text-xs truncate">{entry.riot_id}</div>}
                 </div>
-              );
-            })}
+                <span className="ml-auto text-red-400 font-bold text-sm flex-shrink-0">{entry.score || entry.points || 0}</span>
+              </div>
+            ))}
           </div>
         )}
       </FloatingPanel>

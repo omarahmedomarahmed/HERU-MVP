@@ -222,10 +222,10 @@ export default function OrganizerPublicProfile() {
               {pastTournaments.map(t => {
                 const report = reports.find(r => r.tournament_id === t.id);
                 return (
-                  <div key={t.id} className="rounded-xl border border-white/5 bg-gradient-to-br from-zinc-900 to-zinc-950 overflow-hidden">
+                  <Link key={t.id} to={`/tournaments/${t.id}`} className="group block rounded-xl border border-white/5 bg-gradient-to-br from-zinc-900 to-zinc-950 overflow-hidden hover:border-red-500/30 transition-all">
                     <div className="h-32 bg-gradient-to-br from-zinc-800 to-zinc-900 relative overflow-hidden">
                       {t.tournament_image ? (
-                        <img src={t.tournament_image} alt="" className="w-full h-full object-cover opacity-60" />
+                        <img src={t.tournament_image} alt="" className="w-full h-full object-cover opacity-60 group-hover:scale-105 transition-transform duration-500" />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center">
                           <Trophy className="w-8 h-8 text-zinc-700" />
@@ -234,20 +234,19 @@ export default function OrganizerPublicProfile() {
                       <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 to-transparent" />
                     </div>
                     <div className="p-4">
-                      <h3 className="font-bold text-sm mb-1 truncate">{t.name}</h3>
+                      <h3 className="font-bold text-sm mb-1 truncate group-hover:text-red-400 transition-colors">{t.name}</h3>
                       <p className="text-zinc-500 text-xs mb-3">{t.game} · {fmtDate(t.schedule)}</p>
                       <div className="flex items-center justify-between text-xs text-zinc-500">
                         <span className="flex items-center gap-1"><Users className="w-3 h-3" /> {t.teams?.length || 0} teams</span>
                         {t.prizepool_total > 0 && <span className="text-yellow-500">{fmtEGP(t.prizepool_total)}</span>}
                       </div>
                       {report && (
-                        <Link to={`/tournaments/${t.id}/report`}
-                          className="mt-3 inline-flex items-center gap-1 text-xs text-red-400 hover:text-red-300 transition-colors">
+                        <span className="mt-3 inline-flex items-center gap-1 text-xs text-red-400">
                           <BarChart3 className="w-3 h-3" /> View Report <ExternalLink className="w-2.5 h-2.5" />
-                        </Link>
+                        </span>
                       )}
                     </div>
-                  </div>
+                  </Link>
                 );
               })}
             </div>

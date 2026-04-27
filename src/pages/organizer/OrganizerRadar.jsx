@@ -82,6 +82,7 @@ export default function OrganizerRadar() {
     queryKey: ['organizer-profile-me'],
     queryFn: () => apiCall('/organizer-profiles/me'),
     retry: false,
+    staleTime: 0,
   });
 
   const { data: packagesData, isLoading: packagesLoading } = useQuery({

@@ -3,7 +3,9 @@ import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { apiCall } from '@/api/heruClient';
 import HeruLogo from '@/components/shared/HeruLogo';
-import { Search, Star, Filter, Gamepad2, Loader2 } from 'lucide-react';
+import { Search, Star, Gamepad2, Loader2 } from 'lucide-react';
+import { useAuth } from '@/lib/AuthContext';
+import GamerLayout from '@/components/layouts/GamerLayout';
 
 const GAMES = ['All', 'Valorant', 'CS2', 'League of Legends', 'PUBG', 'FIFA', 'Fortnite'];
 
@@ -68,7 +70,7 @@ function CoachCard({ coach }) {
   );
 }
 
-export default function Coaches() {
+function CoachesContent() {
   const [game, setGame] = useState('All');
   const [search, setSearch] = useState('');
 
@@ -147,4 +149,13 @@ export default function Coaches() {
       </div>
     </div>
   );
+}
+
+export default function Coaches() {
+  const { userProfile } = useAuth()
+  const isGamer = userProfile?.role === 'gamer'
+  if (isGamer) {
+    return <GamerLayout><CoachesContent /></GamerLayout>
+  }
+  return <CoachesContent />
 }

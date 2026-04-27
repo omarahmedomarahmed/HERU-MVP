@@ -2,7 +2,9 @@ import { Toaster } from "@/components/ui/toaster"
 import { QueryClientProvider } from '@tanstack/react-query'
 import { queryClientInstance } from '@/lib/query-client'
 import NavigationTracker from '@/lib/NavigationTracker'
-import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom'
+import { BrowserRouter as Router, Route, Routes, Navigate, useLocation } from 'react-router-dom'
+import { useEffect } from 'react'
+import { AnimatePresence, motion } from 'framer-motion'
 import NotFound from './pages/public/NotFound'
 import { AuthProvider } from '@/lib/AuthContext'
 import { RequireGamer, RequireOrganizer, RequireSponsor, RequireProvider, RequireStaff } from '@/lib/auth-guards'
@@ -60,6 +62,9 @@ import GamerBookings from './pages/gamer/GamerBookings'
 import GamerFriends from './pages/gamer/GamerFriends'
 import GamerMessages from './pages/gamer/GamerMessages'
 import GamerTournamentBuilder from './pages/gamer/GamerTournamentBuilder'
+
+// Gamer layout
+import GamerLayout from '@/components/layouts/GamerLayout'
 
 // Organizer pages
 import OrganizerLayout from '@/components/layouts/OrganizerLayout'
@@ -135,13 +140,29 @@ import StaffGamers from './pages/staff/StaffGamers'
 import StaffTeams from './pages/staff/StaffTeams'
 import StaffTournamentBuilder from './pages/staff/StaffTournamentBuilder'
 
-function App() {
+function ScrollToTop() {
+  const { pathname } = useLocation()
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'instant' })
+  }, [pathname])
+  return null
+}
+
+function AppContent() {
+  const location = useLocation()
   return (
-    <AuthProvider>
-      <QueryClientProvider client={queryClientInstance}>
-        <Router>
-          <NavigationTracker />
-          <Routes>
+    <>
+      <ScrollToTop />
+      <NavigationTracker />
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={location.pathname}
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -8 }}
+          transition={{ duration: 0.2, ease: 'easeOut' }}
+        >
+          <Routes location={location}>
             {/* ============ PUBLIC ZONE ============ */}
             <Route path="/" element={<Home />} />
             <Route path="/tournaments" element={<Tournaments />} />
@@ -193,7 +214,7 @@ function App() {
             <Route path="/gamer/notifications" element={<RequireGamer><GamerNotifications /></RequireGamer>} />
             <Route path="/gamer/connect" element={<RequireGamer><ConnectedAccounts /></RequireGamer>} />
             <Route path="/gamer/connected-accounts" element={<RequireGamer><ConnectedAccounts /></RequireGamer>} />
-            <Route path="/gamer/build" element={<RequireGamer><GamerTournamentBuilder /></RequireGamer>} />
+            <Route path="/gamer/build" element={<RequireGamer><GamerLayout><GamerTournamentBuilder /></GamerLayout></RequireGamer>} />
             <Route path="/gamer/bookings" element={<RequireGamer><GamerBookings /></RequireGamer>} />
             <Route path="/gamer/friends" element={<RequireGamer><GamerFriends /></RequireGamer>} />
             <Route path="/gamer/messages" element={<RequireGamer><GamerMessages /></RequireGamer>} />
@@ -300,6 +321,18 @@ function App() {
             {/* 404 */}
             <Route path="*" element={<NotFound />} />
           </Routes>
+        </motion.div>
+      </AnimatePresence>
+    </>
+  )
+}
+
+function App() {
+  return (
+    <AuthProvider>
+      <QueryClientProvider client={queryClientInstance}>
+        <Router>
+          <AppContent />
         </Router>
         <Toaster />
       </QueryClientProvider>
