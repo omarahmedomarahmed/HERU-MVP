@@ -1,7 +1,6 @@
 import React from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { apiCall } from '@/api/heruClient'
-import OrganizerLayout from '@/components/layouts/OrganizerLayout'
 import { TrendingUp, DollarSign, Clock, CheckCircle2 } from 'lucide-react'
 
 export default function OrganizerIncome() {
@@ -27,8 +26,7 @@ export default function OrganizerIncome() {
   }
 
   return (
-    <OrganizerLayout>
-      <div className="max-w-5xl mx-auto space-y-6">
+    <div className="max-w-5xl mx-auto space-y-6">
         <div>
           <h1 className="text-2xl font-bold text-white">Sponsorship Income</h1>
           <p className="text-zinc-400 mt-1 text-sm">Revenue from sponsorship package sales — 85% goes to you, 15% to HERU</p>
@@ -95,7 +93,6 @@ export default function OrganizerIncome() {
             </div>
           )}
         </div>
-      </div>
-    </OrganizerLayout>
+    </div>
   )
 }

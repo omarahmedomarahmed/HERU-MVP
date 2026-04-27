@@ -126,9 +126,13 @@ router.post('/request', requireAuth, async (req, res) => {
       .insert({ user_id: req.user.id, friend_id, status: 'pending' })
       .select()
       .single();
-    if (error) throw error;
+    if (error) {
+      if (error.code === '23505') return res.status(409).json({ error: 'Friend request already exists' });
+      throw error;
+    }
     res.status(201).json(data);
   } catch (err) {
+    if (err.code === '23505') return res.status(409).json({ error: 'Friend request already exists' });
     res.status(500).json({ error: err.message });
   }
 });

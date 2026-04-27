@@ -5,6 +5,7 @@ import { useAuth } from '@/lib/AuthContext'
 import { apiCall } from '@/api/heruClient'
 import { useToast } from '@/components/ui/use-toast'
 import { uploadFile } from '@/lib/uploadFile'
+import BracketVisual from '@/components/tournament/BracketVisual'
 import {
   Trophy, Users, GitBranch, MessageSquare, Settings,
   Loader2, Calendar, Gamepad2, DollarSign, Globe,
@@ -144,13 +145,49 @@ function OverviewTab({ tournament, onStatusChange, isUpdating }) {
 
 // ─── Teams Tab ─────────────────────────────────────────────────────────────────
 
-function TeamsTab({ tournamentId }) {
+function TeamsTab({ tournamentId, tournament }) {
+  const { toast } = useToast()
+  const qc = useQueryClient()
+
   const { data: raw, isLoading } = useQuery({
     queryKey: ['tournament-teams', tournamentId],
     queryFn: () => apiCall(`/tournaments/${tournamentId}/teams`),
     staleTime: 30_000,
   })
-  const teams = Array.isArray(raw) ? raw : raw?.teams || raw?.data || []
+  const apiTeams = Array.isArray(raw) ? raw : raw?.teams || raw?.data || []
+
+  // If API returns empty, try to resolve from tournament.teams array (may be IDs or objects)
+  const rawTournamentTeams = tournament?.teams || []
+  const hasApiTeams = apiTeams.length > 0
+  const teamIdsToFetch = !hasApiTeams
+    ? rawTournamentTeams.filter(t => typeof t === 'string')
+    : []
+
+  const { data: fetchedTeams = [] } = useQuery({
+    queryKey: ['tournament-teams-resolve', tournamentId, teamIdsToFetch],
+    queryFn: () => Promise.all(
+      teamIdsToFetch.map(teamId =>
+        apiCall(`/teams/${teamId}`).catch(() => ({ id: teamId, name: teamId }))
+      )
+    ),
+    enabled: !hasApiTeams && teamIdsToFetch.length > 0,
+    staleTime: 60_000,
+  })
+
+  // Merge: prefer API teams, fallback to resolved IDs or inline objects
+  const inlineObjects = !hasApiTeams ? rawTournamentTeams.filter(t => typeof t === 'object') : []
+  const teams = hasApiTeams ? apiTeams : [...inlineObjects, ...fetchedTeams]
+
+  async function removeTeam(teamId) {
+    try {
+      await apiCall(`/tournaments/${tournamentId}/teams/${teamId}`, { method: 'DELETE' })
+      qc.invalidateQueries({ queryKey: ['tournament-teams', tournamentId] })
+      qc.invalidateQueries({ queryKey: ['tournament', tournamentId] })
+      toast({ title: 'Team removed' })
+    } catch {
+      toast({ title: 'Failed to remove team', variant: 'destructive' })
+    }
+  }
 
   if (isLoading) return <div className="flex justify-center py-16"><Loader2 className="w-5 h-5 animate-spin text-purple-400" /></div>
 
@@ -168,34 +205,57 @@ function TeamsTab({ tournamentId }) {
       <div className="flex items-center justify-between mb-4">
         <p className="text-sm text-zinc-400">{teams.length} team{teams.length !== 1 ? 's' : ''} registered</p>
       </div>
-      {teams.map((t) => (
-        <div key={t.id} className="flex items-center justify-between p-4 rounded-xl bg-zinc-900 border border-zinc-800">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-zinc-800 flex items-center justify-center overflow-hidden">
-              {t.team_logo || t.logo ? (
-                <img src={t.team_logo || t.logo} alt="" className="w-full h-full object-cover" />
-              ) : (
-                <Users className="w-5 h-5 text-zinc-600" />
-              )}
-            </div>
-            <div>
-              <p className="text-white font-semibold text-sm">{t.team_name || t.name || 'Team'}</p>
-              <p className="text-zinc-500 text-xs">{t.members?.length || 0} members</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
-            {t.checked_in && (
-              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-green-500/10 text-green-400 border border-green-500/20">CHECKED IN</span>
-            )}
-            <Link
-              to={`/teams/${t.team_id || t.id}`}
-              className="text-xs text-zinc-500 hover:text-zinc-300 transition-colors px-2 py-1 rounded-lg hover:bg-zinc-800"
-            >
-              View
-            </Link>
-          </div>
-        </div>
-      ))}
+      <div className="rounded-xl bg-zinc-900 border border-zinc-800 overflow-hidden">
+        <table className="w-full text-sm">
+          <thead className="border-b border-zinc-800">
+            <tr className="text-zinc-500 text-xs uppercase">
+              <th className="text-left p-4">Team</th>
+              <th className="text-left p-4 hidden sm:table-cell">Members</th>
+              <th className="text-left p-4 hidden md:table-cell">Status</th>
+              <th className="text-right p-4">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {teams.map((t) => (
+              <tr key={t.id} className="border-b border-zinc-800/50 hover:bg-zinc-800/30 transition-colors">
+                <td className="p-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-lg bg-zinc-800 flex items-center justify-center overflow-hidden shrink-0">
+                      {t.team_logo || t.logo ? (
+                        <img src={t.team_logo || t.logo} alt="" className="w-full h-full object-cover" />
+                      ) : (
+                        <Users className="w-4 h-4 text-zinc-600" />
+                      )}
+                    </div>
+                    <Link
+                      to={`/teams/${t.team_id || t.id}`}
+                      className="text-purple-400 hover:underline font-semibold"
+                    >
+                      {t.team_name || t.name || 'Unknown Team'}
+                    </Link>
+                  </div>
+                </td>
+                <td className="p-4 text-zinc-400 hidden sm:table-cell">{t.members?.length || 0}</td>
+                <td className="p-4 hidden md:table-cell">
+                  {t.checked_in ? (
+                    <span className="px-2 py-0.5 bg-green-500/20 text-green-400 rounded-full text-xs font-bold">Checked In</span>
+                  ) : (
+                    <span className="px-2 py-0.5 bg-emerald-500/20 text-emerald-400 rounded-full text-xs font-bold">Registered</span>
+                  )}
+                </td>
+                <td className="p-4 text-right">
+                  <button
+                    onClick={() => removeTeam(t.team_id || t.id)}
+                    className="text-xs text-red-400 hover:underline"
+                  >
+                    Remove
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   )
 }
@@ -203,23 +263,46 @@ function TeamsTab({ tournamentId }) {
 // ─── Brackets Tab ──────────────────────────────────────────────────────────────
 
 function BracketsTab({ tournament }) {
+  const qc = useQueryClient()
   const brackets = tournament.brackets || []
+
+  const { data: allTeamsRaw } = useQuery({
+    queryKey: ['all-teams'],
+    queryFn: () => apiCall('/teams?limit=200'),
+    staleTime: 5 * 60_000,
+  })
+  const allTeams = Array.isArray(allTeamsRaw) ? allTeamsRaw : allTeamsRaw?.teams || allTeamsRaw?.data || []
+
   if (brackets.length === 0) {
     return (
       <div className="text-center py-16 bg-zinc-900 rounded-xl border border-zinc-800">
         <GitBranch className="w-10 h-10 text-zinc-700 mx-auto mb-3" />
-        <p className="text-zinc-500 text-sm mb-2">No bracket generated yet</p>
-        <p className="text-xs text-zinc-600">Brackets are generated automatically when the tournament goes live with registered teams.</p>
+        <p className="text-zinc-500 text-sm mb-2">No brackets created yet.</p>
+        <p className="text-xs text-zinc-600 mb-4">Brackets are generated automatically when the tournament goes live with registered teams.</p>
+        <button
+          onClick={() => {/* generate initial brackets */}}
+          className="mt-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 text-sm font-bold transition-colors"
+        >
+          Generate Brackets
+        </button>
       </div>
     )
   }
+
   return (
-    <div className="p-5 rounded-xl bg-zinc-900 border border-zinc-800">
-      <p className="text-sm text-zinc-400">Bracket data available. Visual bracket editor coming soon.</p>
-      <pre className="mt-3 text-xs text-zinc-600 overflow-auto max-h-96">
-        {JSON.stringify(brackets, null, 2)}
-      </pre>
-    </div>
+    <BracketVisual
+      brackets={brackets}
+      teams={tournament.teams || []}
+      allTeams={allTeams}
+      editable={true}
+      onMatchUpdate={async (matchId, updates) => {
+        await apiCall(`/tournaments/${tournament.id}/brackets/${matchId}`, {
+          method: 'PUT',
+          body: JSON.stringify(updates),
+        })
+        qc.invalidateQueries({ queryKey: ['tournament', tournament.id] })
+      }}
+    />
   )
 }
 
@@ -901,7 +984,7 @@ export default function TournamentManage({ defaultTab = 'overview' }) {
           isUpdating={statusMutation.isPending}
         />
       )}
-      {activeTab === 'teams'     && <TeamsTab tournamentId={id} />}
+      {activeTab === 'teams'     && <TeamsTab tournamentId={id} tournament={tournament} />}
       {activeTab === 'brackets'  && <BracketsTab tournament={tournament} />}
       {activeTab === 'providers' && <ProvidersTab tournamentId={id} />}
       {activeTab === 'sponsors'  && <SponsorsTab tournament={tournament} />}

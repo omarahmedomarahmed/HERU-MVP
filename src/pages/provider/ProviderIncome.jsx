@@ -1,7 +1,6 @@
 import React from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { apiCall } from '@/api/heruClient'
-import ProviderLayout from '@/components/layouts/ProviderLayout'
 import { TrendingUp, DollarSign, CheckCircle2, Clock, Loader2, Package, Info } from 'lucide-react'
 
 const fmtEGP = (n) => 'EGP ' + (n || 0).toLocaleString()
@@ -42,8 +41,7 @@ export default function ProviderIncome() {
   const thisMonth = thisMonthBookings.reduce((s, b) => s + Number(b.total_price || b.amount || 0), 0)
 
   return (
-    <ProviderLayout>
-      <div className="max-w-5xl mx-auto space-y-6">
+    <div className="max-w-5xl mx-auto space-y-6">
         <div>
           <h1 className="text-2xl font-bold text-white">Income</h1>
           <p className="text-zinc-400 mt-1 text-sm">Your earnings from service bookings</p>
@@ -133,7 +131,6 @@ export default function ProviderIncome() {
             </div>
           )}
         </div>
-      </div>
-    </ProviderLayout>
+    </div>
   )
 }

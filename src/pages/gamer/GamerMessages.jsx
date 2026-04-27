@@ -14,7 +14,7 @@ export default function GamerMessages() {
 
   const { data: rawConversations = [], isLoading: cLoading } = useQuery({
     queryKey: ['dm-conversations', user?.id],
-    queryFn: () => apiCall('/direct-messages/conversations'),
+    queryFn: () => apiCall('/direct-messages'),
     enabled: !!user?.id,
     staleTime: 15_000,
     refetchInterval: 15_000,
@@ -33,7 +33,7 @@ export default function GamerMessages() {
 
   const sendMutation = useMutation({
     mutationFn: ({ recipient_id, content }) =>
-      apiCall('/direct-messages', { method: 'POST', body: { recipient_id, content } }),
+      apiCall('/direct-messages', { method: 'POST', body: { recipient_id, message: content } }),
     onSuccess: () => {
       setMessageInput('');
       queryClient.invalidateQueries({ queryKey: ['dm-thread', user?.id, selectedPartner] });

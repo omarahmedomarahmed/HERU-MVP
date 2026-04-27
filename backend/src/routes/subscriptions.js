@@ -14,9 +14,30 @@ const PLAN_PRICES = {
   enterprise:{ monthly: 500000 },
 };
 
+// Helper: get sponsor profile id from user id
+async function getSponsorProfileId(userId) {
+  const { data, error } = await supabaseAdmin
+    .from('sponsor_profiles')
+    .select('id')
+    .eq('user_id', userId)
+    .single();
+  if (error || !data) return null;
+  return data.id;
+}
+
 router.get('/me', requireAuth, requireSponsor, async (req, res) => {
   try {
-    const { data, error } = await supabaseAdmin.from('subscriptions').select('*').eq('sponsor_id', req.user.id).eq('status', 'active').order('created_at', { ascending: false }).limit(1).single();
+    const sponsorProfileId = await getSponsorProfileId(req.user.id);
+    if (!sponsorProfileId) return res.json({ subscription: null });
+
+    const { data, error } = await supabaseAdmin
+      .from('subscriptions')
+      .select('*')
+      .eq('sponsor_id', sponsorProfileId)
+      .eq('status', 'active')
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .single();
     if (error) return res.json({ subscription: null });
     res.json({ subscription: data });
   } catch (err) {
@@ -29,28 +50,75 @@ router.post('/', requireAuth, requireSponsor, async (req, res) => {
     const { plan } = req.body;
     const billing_cycle = 'monthly';
     if (!plan || !PLAN_PRICES[plan]) return res.status(400).json({ error: 'Invalid plan. Choose: community or premium' });
-    await supabaseAdmin.from('subscriptions').update({ status: 'cancelled' }).eq('sponsor_id', req.user.id).eq('status', 'active');
+
+    // Get the sponsor profile id (not user_profiles.id)
+    const sponsorProfileId = await getSponsorProfileId(req.user.id);
+    if (!sponsorProfileId) return res.status(404).json({ error: 'Sponsor profile not found. Please complete your profile first.' });
+
+    // Cancel any existing active subscription
+    await supabaseAdmin
+      .from('subscriptions')
+      .update({ status: 'cancelled' })
+      .eq('sponsor_id', sponsorProfileId)
+      .eq('status', 'active');
+
     const amount = PLAN_PRICES[plan].monthly;
     const renewalDate = new Date();
     renewalDate.setMonth(renewalDate.getMonth() + 1);
+
     const { data, error } = await supabaseAdmin.from('subscriptions').insert({
-      sponsor_id: req.user.id, plan, status: 'active', amount, billing_cycle,
+      sponsor_id: sponsorProfileId,
+      plan,
+      status: 'active',
+      amount,
+      billing_cycle,
       renewal_date: renewalDate.toISOString().split('T')[0],
     }).select().single();
     if (error) throw error;
-    await supabaseAdmin.from('sponsor_profiles').update({ subscription_plan: plan, subscription_status: 'active', subscription_renewal_date: renewalDate.toISOString().split('T')[0], updated_at: new Date().toISOString() }).eq('user_id', req.user.id);
-    await supabaseAdmin.from('heru_revenue_ledger').insert({ source_type: 'subscription', source_id: data.id, gross_amount: amount, heru_fee: amount, net_amount: 0, currency: 'EGP' });
+
+    await supabaseAdmin
+      .from('sponsor_profiles')
+      .update({
+        subscription_plan: plan,
+        subscription_status: 'active',
+        subscription_renewal_date: renewalDate.toISOString().split('T')[0],
+        updated_at: new Date().toISOString(),
+      })
+      .eq('user_id', req.user.id);
+
+    await supabaseAdmin.from('heru_revenue_ledger').insert({
+      source_type: 'subscription',
+      source_id: data.id,
+      gross_amount: amount,
+      heru_fee: amount,
+      net_amount: 0,
+      currency: 'EGP',
+    });
+
     res.status(201).json({ subscription: data });
   } catch (err) {
+    console.error('[subscriptions POST /]', err);
     res.status(500).json({ error: 'Failed to create subscription' });
   }
 });
 
 router.put('/cancel', requireAuth, requireSponsor, async (req, res) => {
   try {
-    const { error } = await supabaseAdmin.from('subscriptions').update({ status: 'cancelled', updated_at: new Date().toISOString() }).eq('sponsor_id', req.user.id).eq('status', 'active');
+    const sponsorProfileId = await getSponsorProfileId(req.user.id);
+    if (!sponsorProfileId) return res.status(404).json({ error: 'Sponsor profile not found' });
+
+    const { error } = await supabaseAdmin
+      .from('subscriptions')
+      .update({ status: 'cancelled', updated_at: new Date().toISOString() })
+      .eq('sponsor_id', sponsorProfileId)
+      .eq('status', 'active');
     if (error) throw error;
-    await supabaseAdmin.from('sponsor_profiles').update({ subscription_plan: 'free', subscription_status: 'cancelled', updated_at: new Date().toISOString() }).eq('user_id', req.user.id);
+
+    await supabaseAdmin
+      .from('sponsor_profiles')
+      .update({ subscription_plan: 'free', subscription_status: 'cancelled', updated_at: new Date().toISOString() })
+      .eq('user_id', req.user.id);
+
     res.json({ success: true });
   } catch (err) {
     res.status(500).json({ error: 'Failed to cancel subscription' });

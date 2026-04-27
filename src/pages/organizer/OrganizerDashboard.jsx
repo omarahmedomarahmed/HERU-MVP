@@ -202,7 +202,7 @@ export default function OrganizerDashboard() {
     queryKey: ['organizer-profile-me'],
     queryFn: () => OrganizerProfile.me(),
     enabled: !!user,
-    staleTime: 60_000,
+    staleTime: 0,
   })
 
   // Fetch this organizer's tournaments
@@ -217,7 +217,7 @@ export default function OrganizerDashboard() {
   })
 
   // Fetch open radar listings
-  const isVerified = orgProfile?.is_verified ?? userProfile?.is_verified ?? false
+  const isVerified = !!(orgProfile?.is_verified)
   const {
     data: radarData,
     isLoading: radarLoading,

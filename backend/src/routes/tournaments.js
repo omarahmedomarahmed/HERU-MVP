@@ -27,6 +27,8 @@ const TOURNAMENT_COLUMNS = new Set([
   'riot_provider_id','riot_tournament_id','riot_region',
   // Valorant (016_schema_fixes.sql)
   'val_map_pool','val_act_id',
+  // Community tournaments
+  'is_community',
 ]);
 
 function sanitizeTournamentData(data) {
@@ -126,23 +128,29 @@ router.get('/:id', async (req, res) => {
 });
 
 // POST / - create tournament
-router.post('/', requireAuth, requireRole('organizer', 'admin'), async (req, res) => {
+router.post('/', requireAuth, requireRole('organizer', 'admin', 'gamer'), async (req, res) => {
   try {
-    // Auto-populate organizer_brand from the organizer's profile
-    const { data: orgProfile } = await supabaseAdmin
-      .from('organizer_profiles')
-      .select('brand_name, brand_logo, location, is_verified')
-      .eq('user_id', req.user.id)
-      .single();
+    // If gamer is creating a community tournament, skip organizer_profiles lookup
+    const isGamer = req.user.role === 'gamer';
+    let orgProfile = null;
+    if (!isGamer) {
+      const { data } = await supabaseAdmin
+        .from('organizer_profiles')
+        .select('brand_name, brand_logo, location, is_verified')
+        .eq('user_id', req.user.id)
+        .single();
+      orgProfile = data;
+    }
 
     const tournament = {
       ...sanitizeTournamentData(req.body),
       organizer_id: req.user.id,
       main_organizer_id: req.user.id,
       status: 'draft',
+      is_community: isGamer ? true : (req.body.is_community || false),
       organizer_brand: req.body.organizer_brand || {
-        name: orgProfile?.brand_name || '',
-        brand_name: orgProfile?.brand_name || '',
+        name: orgProfile?.brand_name || req.user.username || '',
+        brand_name: orgProfile?.brand_name || req.user.username || '',
         logo: orgProfile?.brand_logo || '',
         brand_logo: orgProfile?.brand_logo || '',
         location: orgProfile?.location || '',

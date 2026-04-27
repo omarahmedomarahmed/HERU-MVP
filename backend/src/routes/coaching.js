@@ -13,7 +13,7 @@ router.get('/', async (req, res) => {
       .from('service_provider_profiles')
       .select('id, user_id, display_name, bio, avatar, rating, review_count, provider_type, coach_games, coach_rank, coach_availability, hourly_rate')
       .eq('provider_type', 'coach')
-      .eq('is_approved', true)
+      .eq('approval_status', 'approved')
       .range(Number(offset), Number(offset) + Number(limit) - 1);
     if (game) query = query.contains('coach_games', [game]);
     const { data, error } = await query;

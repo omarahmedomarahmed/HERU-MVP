@@ -72,7 +72,7 @@ export default function GamerLayout({ children, user: userProp, profile: profile
     queryKey: ['dm-conversations', user?.id],
     queryFn: async () => {
       try {
-        const data = await apiCall('/direct-messages/conversations');
+        const data = await apiCall('/direct-messages');
         return Array.isArray(data) ? data : data?.data || [];
       } catch { return []; }
     },

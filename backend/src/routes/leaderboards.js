@@ -18,7 +18,10 @@ router.get('/', async (req, res) => {
     if (region) query = query.eq('region', region);
     if (season) query = query.eq('season', season);
     const { data, error } = await query;
-    if (error) throw error;
+    if (error) {
+      console.error('[leaderboards GET /]', error);
+      throw error;
+    }
     res.json(data);
   } catch (err) {
     res.status(500).json({ error: err.message });

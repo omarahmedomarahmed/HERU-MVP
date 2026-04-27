@@ -436,7 +436,7 @@ export default function GamerHome() {
 function LeaderboardSection() {
   const { data: leaderboard = [] } = useQuery({
     queryKey: ['home-leaderboard'],
-    queryFn: () => apiCall('/api/leaderboards?limit=5&game=all'),
+    queryFn: () => apiCall('/leaderboards?limit=5'),
     staleTime: 5 * 60_000,
     enabled: true,
   });

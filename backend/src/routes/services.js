@@ -5,16 +5,36 @@ import { requireProvider } from '../middleware/roleGuard.js';
 
 const router = Router();
 
-// GET /services — list approved services, filterable by category
+// GET /services — list services (approved by default; staff can filter by any status)
 router.get('/', async (req, res) => {
   try {
-    const { category, provider_id, limit = 50, offset = 0 } = req.query;
+    const { category, provider_id, status, limit = 50, offset = 0 } = req.query;
+
+    // Determine if request comes from a valid staff session
+    let isAdmin = false;
+    const staffToken = req.headers['x-staff-token'];
+    if (staffToken) {
+      const { data: session } = await supabaseAdmin
+        .from('staff_sessions')
+        .select('id')
+        .eq('session_token', staffToken)
+        .eq('is_active', true)
+        .single();
+      if (session) isAdmin = true;
+    }
+
     let query = supabaseAdmin
       .from('services')
       .select('*, service_provider_profiles(id,display_name,avatar,rating,is_approved,approval_status)')
-      .eq('status', 'approved')
-      .order('rating', { ascending: false })
+      .order('created_at', { ascending: false })
       .range(Number(offset), Number(offset) + Number(limit) - 1);
+
+    // Staff can filter by any status; public always gets approved only
+    if (isAdmin && status) {
+      query = query.eq('status', status);
+    } else {
+      query = query.eq('status', 'approved');
+    }
 
     if (category) query = query.eq('category', category);
     if (provider_id) query = query.eq('provider_id', provider_id);
@@ -218,6 +238,69 @@ router.put('/:id', requireAuth, requireProvider, async (req, res) => {
   } catch (err) {
     console.error('[services PUT /:id]', err);
     res.status(500).json({ error: 'Failed to update service' });
+  }
+});
+
+// PUT /services/:id/approve — staff approve
+router.put('/:id/approve', requireAuth, async (req, res) => {
+  try {
+    if (req.user.role !== 'admin') return res.status(403).json({ error: 'Access denied' });
+    const { staff_adjusted_price, staff_notes } = req.body;
+    const updateData = {
+      status: 'approved',
+      approved_by: req.user.id,
+      approved_at: new Date().toISOString(),
+      staff_notes: staff_notes || null,
+    };
+    if (staff_adjusted_price) updateData.staff_adjusted_price = staff_adjusted_price;
+    const { data, error } = await supabaseAdmin
+      .from('services')
+      .update(updateData)
+      .eq('id', req.params.id)
+      .select()
+      .single();
+    if (error) throw error;
+    res.json({ service: data });
+  } catch (err) {
+    console.error('[services PUT /:id/approve]', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// PUT /services/:id/reject — staff reject
+router.put('/:id/reject', requireAuth, async (req, res) => {
+  try {
+    if (req.user.role !== 'admin') return res.status(403).json({ error: 'Access denied' });
+    const { staff_notes } = req.body;
+    const { data, error } = await supabaseAdmin
+      .from('services')
+      .update({ status: 'rejected', staff_notes: staff_notes || null, updated_at: new Date().toISOString() })
+      .eq('id', req.params.id)
+      .select()
+      .single();
+    if (error) throw error;
+    res.json({ service: data });
+  } catch (err) {
+    console.error('[services PUT /:id/reject]', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// PUT /services/:id/suspend — staff suspend
+router.put('/:id/suspend', requireAuth, async (req, res) => {
+  try {
+    if (req.user.role !== 'admin') return res.status(403).json({ error: 'Access denied' });
+    const { data, error } = await supabaseAdmin
+      .from('services')
+      .update({ status: 'suspended', updated_at: new Date().toISOString() })
+      .eq('id', req.params.id)
+      .select()
+      .single();
+    if (error) throw error;
+    res.json({ service: data });
+  } catch (err) {
+    console.error('[services PUT /:id/suspend]', err);
+    res.status(500).json({ error: err.message });
   }
 });
 

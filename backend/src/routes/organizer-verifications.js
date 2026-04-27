@@ -43,10 +43,38 @@ router.put('/:id', requireAuth, requireAdmin, async (req, res) => {
   }
 });
 
+// Staff-accessible version (checks X-Staff-Token header, no requireAuth needed)
+router.get('/staff', async (req, res) => {
+  try {
+    const staffToken = req.headers['x-staff-token'];
+    if (!staffToken) return res.status(401).json({ error: 'Staff token required' });
+    const { data: session } = await supabaseAdmin
+      .from('staff_sessions')
+      .select('id')
+      .eq('session_token', staffToken)
+      .eq('is_active', true)
+      .single();
+    if (!session) return res.status(401).json({ error: 'Invalid staff token' });
+
+    const { status = 'pending' } = req.query;
+    const validStatuses = ['pending', 'approved', 'rejected', 'all'];
+    let query = supabaseAdmin
+      .from('organizer_verifications')
+      .select('*, organizer_profiles(brand_name,brand_logo,user_id)');
+    if (status !== 'all') query = query.eq('status', status);
+    query = query.order('created_at', { ascending: true });
+    const { data, error } = await query;
+    if (error) throw error;
+    res.json({ verifications: data });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 router.get('/', requireAuth, requireAdmin, async (req, res) => {
   try {
     const { status = 'pending' } = req.query;
-    const { data, error } = await supabaseAdmin.from('organizer_verifications').select('*, organizer_profiles(brand_name,brand_logo)').eq('status', status).order('created_at', { ascending: true });
+    const { data, error } = await supabaseAdmin.from('organizer_verifications').select('*, organizer_profiles(brand_name,brand_logo,user_id)').eq('status', status).order('created_at', { ascending: true });
     if (error) throw error;
     res.json({ verifications: data });
   } catch (err) {

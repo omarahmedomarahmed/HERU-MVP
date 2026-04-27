@@ -2,8 +2,7 @@ import React from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
 import { apiCall } from '@/api/heruClient'
-import SponsorLayout from '@/components/layouts/SponsorLayout'
-import { DollarSign, Star, Clock, CreditCard, CheckCircle2, Loader2, Receipt } from 'lucide-react'
+import { DollarSign, Star, Clock, CreditCard, CheckCircle2, Receipt } from 'lucide-react'
 
 const fmtEGP = (n) => 'EGP ' + (n || 0).toLocaleString()
 const fmtDate = (d) => d ? new Date(d).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : '—'
@@ -49,8 +48,7 @@ export default function SponsorBilling() {
   const subCost = subscription?.amount || 0
 
   return (
-    <SponsorLayout>
-      <div className="max-w-5xl mx-auto space-y-6">
+    <div className="max-w-5xl mx-auto space-y-6">
         <div>
           <h1 className="text-2xl font-bold text-white">Billing</h1>
           <p className="text-zinc-400 mt-1 text-sm">Your sponsorship purchases and subscription</p>
@@ -160,7 +158,6 @@ export default function SponsorBilling() {
             </div>
           )}
         </div>
-      </div>
-    </SponsorLayout>
+    </div>
   )
 }

@@ -1,7 +1,6 @@
 import React from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { apiCall } from '@/api/heruClient'
-import OrganizerLayout from '@/components/layouts/OrganizerLayout'
 import { DollarSign, Package, CheckCircle2, Clock, AlertCircle } from 'lucide-react'
 
 export default function OrganizerBilling() {
@@ -25,8 +24,7 @@ export default function OrganizerBilling() {
   }
 
   return (
-    <OrganizerLayout>
-      <div className="max-w-5xl mx-auto space-y-6">
+    <div className="max-w-5xl mx-auto space-y-6">
         <div>
           <h1 className="text-2xl font-bold text-white">Billing &amp; Costs</h1>
           <p className="text-zinc-400 mt-1 text-sm">Service provider bookings and platform fees</p>
@@ -95,7 +93,6 @@ export default function OrganizerBilling() {
             </div>
           )}
         </div>
-      </div>
-    </OrganizerLayout>
+    </div>
   )
 }
