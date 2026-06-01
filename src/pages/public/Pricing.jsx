@@ -1,500 +1,478 @@
-import React, { useState } from 'react'
+import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import PublicNav from '@/components/public/PublicNav'
+import PublicFooter from '@/components/public/PublicFooter'
+import { motion } from 'framer-motion'
 import {
-  CheckCircle2, ArrowRight, Zap, Gamepad2, Building2, Radar, Briefcase,
-  Shield, DollarSign, Package, Star
+  CheckCircle2, ArrowRight, Gamepad2, Building2, Radar, Briefcase,
+  Shield, DollarSign, Package, Star, TrendingUp, Globe
 } from 'lucide-react'
 
-// ─── Images ────────────────────────────────────
-const HERO_BG     = 'https://images.unsplash.com/photo-1551103782-8ab07afd45c1?w=1920&q=80'
-const IMG_ARENA   = 'https://images.unsplash.com/photo-1542751371-adc38448a05e?w=800&q=80'
-const IMG_BUILDER = 'https://images.unsplash.com/photo-1560253023-3ec5d502959f?w=800&q=80'
-const IMG_RADAR   = 'https://images.unsplash.com/photo-1493711662062-fa541adb3fc8?w=800&q=80'
-const IMG_GIGS    = 'https://images.unsplash.com/photo-1511512578047-dfb367046420?w=800&q=80'
+// ─── Tab Data ─────────────────────────────────────────────────────────────────
 
-const PRODUCTS = [
-  { key: 'Gamers',     icon: Gamepad2,  label: 'HERU ARENA',   color: 'text-red-400',    border: 'border-red-500',    bg: 'bg-red-500' },
-  { key: 'Organizers', icon: Building2, label: 'HERU BUILDER', color: 'text-purple-400', border: 'border-purple-500', bg: 'bg-purple-500' },
-  { key: 'Sponsors',   icon: Radar,     label: 'HERU RADAR',   color: 'text-yellow-400', border: 'border-yellow-500', bg: 'bg-yellow-500' },
-  { key: 'Providers',  icon: Briefcase, label: 'HERU GIGs',    color: 'text-cyan-400',   border: 'border-cyan-500',   bg: 'bg-cyan-500' },
+const TABS = [
+  { key: 'arena',   label: 'HERU Arena',   icon: Gamepad2,  color: 'text-red-400',    activeBg: 'bg-red-500/10 border-red-500/30', dot: 'bg-red-500' },
+  { key: 'builder', label: 'HERU Builder', icon: Building2, color: 'text-purple-400', activeBg: 'bg-purple-500/10 border-purple-500/30', dot: 'bg-purple-500' },
+  { key: 'radar',   label: 'HERU Radar',   icon: Radar,     color: 'text-yellow-400', activeBg: 'bg-yellow-500/10 border-yellow-500/30', dot: 'bg-yellow-500' },
+  { key: 'gigs',    label: 'HERU Gigs',    icon: Briefcase, color: 'text-cyan-400',   activeBg: 'bg-cyan-500/10 border-cyan-500/30', dot: 'bg-cyan-500' },
 ]
 
-// ─── Gamer Pricing ─────────────────────────────
-function GamerPricing() {
+// ─── Arena Tab ────────────────────────────────────────────────────────────────
+
+function ArenaTab() {
   return (
-    <div className="space-y-12">
-      {/* Hero card */}
-      <div className="relative rounded-3xl overflow-hidden border border-red-500/20">
-        <img src={IMG_ARENA} alt="HERU ARENA" className="absolute inset-0 w-full h-full object-cover opacity-15" />
-        <div className="absolute inset-0 bg-gradient-to-r from-zinc-950/95 to-zinc-950/70" />
-        <div className="relative grid md:grid-cols-2 gap-0">
-          <div className="p-12">
-            <div className="inline-flex items-center gap-2 bg-red-500/10 border border-red-500/20 text-red-400 text-xs font-bold px-4 py-2 rounded-full mb-6 tracking-widest uppercase">
-              <Gamepad2 className="w-3.5 h-3.5" /> HERU ARENA
-            </div>
-            <h2 className="text-5xl font-black text-white mb-3">
-              <span className="text-red-400">EGP 0</span>
-            </h2>
-            <p className="text-zinc-400 mb-2 text-lg">per month — forever</p>
-            <p className="text-zinc-500 text-sm mb-8">HERU ARENA is completely free. Every single feature.</p>
+    <div className="space-y-8">
+      <div className="relative rounded-3xl overflow-hidden border border-red-500/15 p-10 lg:p-14">
+        <div className="absolute inset-0 bg-gradient-to-br from-red-950/30 to-zinc-950/80" />
+        <div className="relative grid md:grid-cols-2 gap-10 items-center">
+          <div>
+            <span className="inline-flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.2em] px-3 py-1.5 rounded-full bg-red-500/10 border border-red-500/20 text-red-400 mb-6">
+              <Gamepad2 className="h-3 w-3" /> HERU Arena
+            </span>
+            <p className="text-6xl font-black text-white mb-2">EGP 0</p>
+            <p className="text-zinc-400 text-xl mb-2">per month — forever</p>
+            <p className="text-zinc-500 text-base mb-8 leading-relaxed">
+              HERU Arena is completely free. Every feature. Every tournament. Every capability. No subscription required. No paywall. Ever.
+            </p>
             <Link to="/auth/gamer/register"
-              className="inline-flex items-center gap-2 bg-red-600 hover:bg-red-500 text-white font-bold px-8 py-4 rounded-xl transition-all shadow-lg shadow-red-600/25">
-              Join Free <ArrowRight className="w-4 h-4" />
+              className="inline-flex items-center gap-2 bg-red-600 hover:bg-red-500 text-white font-bold px-7 py-3.5 rounded-xl transition-all shadow-lg shadow-red-600/25">
+              Join Free
+              <ArrowRight className="h-4 w-4" />
             </Link>
+            <p className="text-xs text-zinc-600 mt-3">No credit card required.</p>
           </div>
-          <div className="p-12 flex items-center">
-            <div className="w-full">
-              <p className="text-xs font-bold text-zinc-500 uppercase tracking-widest mb-4">Everything included:</p>
-              <div className="grid grid-cols-1 gap-2">
-                {[
-                  'Join unlimited tournaments',
-                  'Create & manage teams',
-                  'Book coaching sessions',
-                  'Community bracket builder',
-                  'Friends & direct messages',
-                  'View full leaderboards',
-                  'Riot & Valorant account linking',
-                  'Achievement badges & rank',
-                ].map((f) => (
-                  <div key={f} className="flex items-center gap-3 text-zinc-300 text-sm">
-                    <CheckCircle2 className="w-4 h-4 text-red-400 shrink-0" /> {f}
-                  </div>
-                ))}
-              </div>
+          <div>
+            <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-[0.15em] mb-5">Everything included</p>
+            <div className="space-y-2.5">
+              {[
+                'Join unlimited tournaments',
+                'Create and manage teams',
+                'Book coaching sessions',
+                'Community bracket builder',
+                'Friend requests and direct messages',
+                'Full leaderboard access and rankings',
+                'Riot and Valorant account linking',
+                'Achievement badges and rank display',
+                'Public gamer profile and portfolio',
+                'Tournament history and match records',
+              ].map(f => (
+                <div key={f} className="flex items-center gap-3 text-zinc-300 text-sm">
+                  <CheckCircle2 className="w-4 h-4 text-red-400 shrink-0" />
+                  {f}
+                </div>
+              ))}
             </div>
           </div>
         </div>
       </div>
 
-      {/* Why Free */}
-      <div className="text-center p-10 rounded-2xl bg-red-500/5 border border-red-500/15">
-        <h3 className="text-2xl font-black text-white mb-3">Why is it free?</h3>
-        <p className="text-zinc-400 max-w-xl mx-auto leading-relaxed">
-          Gamers are the heartbeat of HERU. More players means more tournaments, which means more sponsorship, which funds bigger prize pools.
-          The flywheel runs on free gamers. That's why we'll never charge you.
+      <div className="p-8 rounded-2xl bg-red-500/4 border border-red-500/10 text-center">
+        <h3 className="text-xl font-black text-white mb-3">Why is HERU Arena free?</h3>
+        <p className="text-zinc-400 max-w-xl mx-auto leading-relaxed text-sm">
+          Gamers are the foundation of the entire HERU ecosystem. More players means more tournaments, which attracts more sponsorship, which funds larger prize pools for gamers. The ecosystem flywheel runs on free, empowered players.
         </p>
       </div>
     </div>
   )
 }
 
-// ─── Organizer Pricing ─────────────────────────
-function OrganizerPricing() {
+// ─── Builder Tab ──────────────────────────────────────────────────────────────
+
+function BuilderTab() {
   return (
     <div className="space-y-8">
-      {/* Hero */}
-      <div className="relative rounded-3xl overflow-hidden border border-purple-500/20">
-        <img src={IMG_BUILDER} alt="HERU BUILDER" className="absolute inset-0 w-full h-full object-cover opacity-15" />
-        <div className="absolute inset-0 bg-gradient-to-r from-zinc-950/95 to-zinc-950/70" />
-        <div className="relative p-12 text-center">
-          <div className="inline-flex items-center gap-2 bg-purple-500/10 border border-purple-500/20 text-purple-400 text-xs font-bold px-4 py-2 rounded-full mb-6 tracking-widest uppercase">
-            <Building2 className="w-3.5 h-3.5" /> HERU BUILDER
-          </div>
-          <h2 className="text-5xl font-black text-white mb-3">Free to Create.</h2>
-          <p className="text-zinc-400 text-lg mb-2">We only earn when you do.</p>
-          <p className="text-zinc-500 text-sm mb-8">15% platform fee on transactions. Zero upfront.</p>
+      <div className="relative rounded-3xl overflow-hidden border border-purple-500/15 p-10 lg:p-14">
+        <div className="absolute inset-0 bg-gradient-to-br from-purple-950/30 to-zinc-950/80" />
+        <div className="relative text-center max-w-2xl mx-auto">
+          <span className="inline-flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.2em] px-3 py-1.5 rounded-full bg-purple-500/10 border border-purple-500/20 text-purple-400 mb-6">
+            <Building2 className="h-3 w-3" /> HERU Builder
+          </span>
+          <h2 className="text-4xl font-black text-white mb-3">Free to build.</h2>
+          <p className="text-zinc-400 text-xl mb-2">We only earn when you earn.</p>
+          <p className="text-zinc-500 text-sm mb-8 max-w-lg mx-auto leading-relaxed">
+            Platform access is completely free. HERU charges a 15% fee on completed service bookings and sponsorship package sales only.
+          </p>
           <Link to="/auth/organizer/register"
-            className="inline-flex items-center gap-2 bg-purple-700 hover:bg-purple-600 text-white font-bold px-8 py-4 rounded-xl transition-all shadow-lg shadow-purple-700/25">
-            Start Building Free <ArrowRight className="w-4 h-4" />
+            className="inline-flex items-center gap-2 bg-purple-700 hover:bg-purple-600 text-white font-bold px-7 py-3.5 rounded-xl transition-all shadow-lg shadow-purple-700/25">
+            Start Building Free
+            <ArrowRight className="h-4 w-4" />
           </Link>
         </div>
       </div>
 
-      {/* Two fee cards */}
-      <div className="grid md:grid-cols-2 gap-6">
-        <div className="p-10 rounded-3xl bg-zinc-900 border border-zinc-800 hover:border-purple-500/30 transition-all">
-          <div className="flex items-center gap-3 mb-8">
-            <div className="w-12 h-12 rounded-xl bg-purple-500/10 flex items-center justify-center">
-              <Package className="w-6 h-6 text-purple-400" />
+      <div className="grid md:grid-cols-2 gap-5">
+        <div className="p-8 rounded-2xl bg-white/[0.03] border border-purple-500/15">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="w-10 h-10 rounded-xl bg-purple-500/10 flex items-center justify-center">
+              <Package className="w-5 h-5 text-purple-400" />
             </div>
-            <h3 className="text-xl font-black text-white">Service Bookings</h3>
+            <h3 className="text-lg font-black text-white">Service Booking Fee</h3>
           </div>
-          <div className="space-y-4 mb-6">
+          <div className="space-y-3 mb-5">
             {[
-              { label: 'Organizer pays provider', value: 'EGP amount' },
-              { label: 'HERU platform fee', value: '15%', color: 'text-purple-400 text-xl' },
-              { label: 'Provider receives', value: '85%', color: 'text-green-400 text-xl' },
+              { label: 'Organizer pays to provider', value: 'EGP amount' },
+              { label: 'HERU platform fee', value: '15%', highlight: 'text-purple-400' },
+              { label: 'Provider receives', value: '85%', highlight: 'text-green-400' },
             ].map(row => (
-              <div key={row.label} className="flex items-center justify-between py-3 border-b border-zinc-800 last:border-0">
-                <span className="text-zinc-400 text-sm">{row.label}</span>
-                <span className={`font-bold ${row.color || 'text-white'}`}>{row.value}</span>
+              <div key={row.label} className="flex items-center justify-between py-3 border-b border-white/5 last:border-0">
+                <span className="text-zinc-500 text-sm">{row.label}</span>
+                <span className={`font-black text-lg ${row.highlight || 'text-white'}`}>{row.value}</span>
               </div>
             ))}
           </div>
-          <p className="text-zinc-500 text-xs">Escrow-protected. Released on confirmed delivery.</p>
+          <p className="text-zinc-600 text-xs">Payment held in escrow and released on confirmed delivery.</p>
         </div>
 
-        <div className="p-10 rounded-3xl bg-zinc-900 border border-purple-500/25 shadow-lg shadow-purple-500/5">
-          <div className="flex items-center gap-3 mb-8">
-            <div className="w-12 h-12 rounded-xl bg-purple-500/10 flex items-center justify-center">
-              <DollarSign className="w-6 h-6 text-purple-400" />
+        <div className="p-8 rounded-2xl bg-purple-500/5 border border-purple-500/20">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="w-10 h-10 rounded-xl bg-purple-500/10 flex items-center justify-center">
+              <DollarSign className="w-5 h-5 text-purple-400" />
             </div>
-            <h3 className="text-xl font-black text-white">Sponsorship Income</h3>
+            <h3 className="text-lg font-black text-white">Sponsorship Income Fee</h3>
           </div>
-          <div className="space-y-4 mb-6">
+          <div className="space-y-3 mb-5">
             {[
-              { label: 'Sponsor pays package', value: 'EGP amount' },
-              { label: 'HERU platform fee', value: '15%', color: 'text-purple-400 text-xl' },
-              { label: 'You receive', value: '85%', color: 'text-green-400 text-3xl' },
+              { label: 'Sponsor pays for package', value: 'EGP amount' },
+              { label: 'HERU platform fee', value: '15%', highlight: 'text-purple-400' },
+              { label: 'Organizer receives', value: '85%', highlight: 'text-green-400' },
             ].map(row => (
-              <div key={row.label} className="flex items-center justify-between py-3 border-b border-zinc-800 last:border-0">
-                <span className="text-zinc-400 text-sm">{row.label}</span>
-                <span className={`font-bold ${row.color || 'text-white'}`}>{row.value}</span>
+              <div key={row.label} className="flex items-center justify-between py-3 border-b border-purple-500/10 last:border-0">
+                <span className="text-zinc-500 text-sm">{row.label}</span>
+                <span className={`font-black text-lg ${row.highlight || 'text-white'}`}>{row.value}</span>
               </div>
             ))}
           </div>
-          <p className="text-zinc-500 text-xs">You keep the majority on every sponsorship deal.</p>
+          <p className="text-zinc-600 text-xs">Organizer keeps 85% of every sponsorship package sold.</p>
+        </div>
+      </div>
+
+      <div className="p-7 rounded-2xl bg-white/[0.02] border border-white/8">
+        <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-[0.15em] mb-4">Free platform features</p>
+        <div className="grid sm:grid-cols-2 gap-2">
+          {[
+            'Unlimited tournament creation',
+            'Full bracket engine (all formats)',
+            'Service provider marketplace browsing',
+            'Team and player management',
+            'Tournament CRM dashboard',
+            'Public organizer profile',
+            'Sponsorship package builder',
+            'Multi-tournament management',
+          ].map(f => (
+            <div key={f} className="flex items-center gap-2.5 text-sm text-zinc-400">
+              <CheckCircle2 className="w-3.5 h-3.5 text-purple-400 shrink-0" />
+              {f}
+            </div>
+          ))}
         </div>
       </div>
     </div>
   )
 }
 
-// ─── Sponsor Pricing ───────────────────────────
-const SPONSOR_TIERS = [
+// ─── Radar Tab ────────────────────────────────────────────────────────────────
+
+const RADAR_TIERS = [
   {
     name: 'Free',
-    monthlyPrice: 0,
-    annualPrice: 0,
-    accent: 'text-zinc-300',
-    bg: 'bg-zinc-900',
-    border: 'border-zinc-700',
-    badge: null,
-    features: ['Browse radar', 'One-off purchases', 'Basic dashboard', 'Post-event reports'],
+    price: 'EGP 0',
+    period: '/month',
+    highlight: false,
+    desc: 'Explore the market and access all discovery tools at no cost.',
+    features: [
+      'Explore all sponsorship packages',
+      'Book influencers directly',
+      'Book HERU consultants',
+      'Access the Radar dashboard',
+      'Analytics and filtering tools',
+      'One-off package purchases',
+    ],
     cta: 'Start Free',
-    ctaClass: 'border border-zinc-600 hover:border-zinc-300 text-zinc-300 hover:text-white',
+    ctaHref: '/auth/sponsor/register',
+    style: 'bg-white/[0.02] border-white/8',
+    ctaStyle: 'bg-white/8 hover:bg-white/12 text-white border border-white/15',
   },
   {
-    name: 'Community',
-    monthlyPrice: 150000,
-    annualPrice: 1500000,
-    accent: 'text-yellow-400',
-    bg: 'bg-yellow-500/5',
-    border: 'border-yellow-500/40',
-    badge: 'Most Popular',
+    name: 'Starter',
+    price: 'EGP 150,000',
+    period: '/month',
+    highlight: false,
+    desc: 'Consistent monthly esports activations for brands entering the market.',
     features: [
       'Everything in Free',
-      '2 Online sponsorships/month',
-      'ROI tracking & analytics',
-      'Influencer marketplace',
-      'Priority listing',
-      'Account support',
+      '4 online activations per month',
+      'Fully managed by HERU team',
+      'Dedicated account consultant',
+      'Monthly performance report',
+      'Priority Radar placement',
     ],
-    cta: 'Get Community',
-    ctaClass: 'bg-yellow-600 hover:bg-yellow-500 text-black font-black',
+    cta: 'Choose Starter',
+    ctaHref: '/auth/sponsor/register',
+    style: 'bg-white/[0.02] border-white/8',
+    ctaStyle: 'bg-yellow-600 hover:bg-yellow-500 text-white',
+  },
+  {
+    name: 'Growth',
+    price: 'EGP 250,000',
+    period: '/month',
+    highlight: true,
+    badge: 'Most Popular',
+    desc: 'Scaled presence with online and offline activations plus full PR coverage.',
+    features: [
+      'Everything in Starter',
+      '4 online activations per month',
+      '1 offline activation per month',
+      'Fully managed by HERU',
+      'PR coverage included',
+      'Brand content planning',
+    ],
+    cta: 'Choose Growth',
+    ctaHref: '/auth/sponsor/register',
+    style: 'bg-yellow-500/8 border-yellow-500/35 shadow-xl shadow-yellow-500/10',
+    ctaStyle: 'bg-yellow-500 hover:bg-yellow-400 text-black font-black shadow-lg shadow-yellow-500/25',
   },
   {
     name: 'Premium',
-    monthlyPrice: 300000,
-    annualPrice: 3000000,
-    accent: 'text-yellow-300',
-    bg: 'bg-zinc-900',
-    border: 'border-yellow-500/20',
-    badge: null,
+    price: 'EGP 500,000',
+    period: '/month',
+    highlight: false,
+    desc: 'Maximum presence with full managed services, content, and coverage.',
     features: [
-      'Everything in Community',
-      '2 Online + 1 Offline/month',
-      'Full influencer marketplace',
-      'Managed campaigns',
-      'Custom integrations',
-      'Dedicated account manager',
-      'Custom reporting',
+      'Everything in Growth',
+      '4 online activations per month',
+      '4 offline activations per month',
+      'PR and media coverage',
+      'Content production included',
+      'Full event coverage',
+      'Corporate Builder access',
+      'Dedicated HERU consultant',
     ],
-    cta: 'Get Premium',
-    ctaClass: 'border border-yellow-500/40 hover:border-yellow-400 text-yellow-400 hover:text-white hover:bg-yellow-500/10',
+    cta: 'Choose Premium',
+    ctaHref: '/auth/sponsor/register',
+    style: 'bg-white/[0.02] border-white/8',
+    ctaStyle: 'bg-white/8 hover:bg-white/12 text-white border border-white/15',
   },
 ]
 
-function SponsorPricing() {
-  const [billing, setBilling] = useState('monthly')
-
+function RadarTab() {
   return (
     <div className="space-y-8">
-      {/* Header image */}
-      <div className="relative h-48 rounded-3xl overflow-hidden border border-yellow-500/20">
-        <img src={IMG_RADAR} alt="HERU RADAR" className="w-full h-full object-cover opacity-30" />
-        <div className="absolute inset-0 bg-gradient-to-r from-zinc-950/90 via-zinc-950/60 to-zinc-950/90" />
-        <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
-          <div className="inline-flex items-center gap-2 bg-yellow-500/10 border border-yellow-500/20 text-yellow-400 text-xs font-bold px-4 py-2 rounded-full mb-3 tracking-widest uppercase">
-            <Radar className="w-3.5 h-3.5" /> HERU RADAR — Sponsors
-          </div>
-          <h2 className="text-3xl font-black text-white">Start free. Scale when you're ready.</h2>
-        </div>
+      <div className="text-center mb-10">
+        <h2 className="text-3xl font-black text-white mb-3">Choose your activation tier.</h2>
+        <p className="text-zinc-400 text-base max-w-xl mx-auto">Start free and explore the market. Scale up with monthly managed activations as your esports presence grows.</p>
       </div>
-
-      {/* Billing toggle */}
-      <div className="flex justify-center">
-        <div className="inline-flex items-center gap-1 bg-zinc-900 border border-zinc-700 rounded-xl p-1">
-          <button onClick={() => setBilling('monthly')}
-            className={`px-6 py-2.5 rounded-lg text-sm font-bold transition-all ${
-              billing === 'monthly' ? 'bg-yellow-600 text-black shadow' : 'text-zinc-400 hover:text-white'
-            }`}>Monthly</button>
-          <button onClick={() => setBilling('annual')}
-            className={`px-6 py-2.5 rounded-lg text-sm font-bold transition-all ${
-              billing === 'annual' ? 'bg-yellow-600 text-black shadow' : 'text-zinc-400 hover:text-white'
-            }`}>
-            Annual
-            <span className="ml-2 text-xs bg-yellow-500/20 text-yellow-400 px-1.5 py-0.5 rounded-full">2 months free</span>
-          </button>
-        </div>
-      </div>
-
-      {/* Tier cards */}
-      <div className="grid md:grid-cols-3 gap-6">
-        {SPONSOR_TIERS.map((tier) => {
-          const price = billing === 'monthly' ? tier.monthlyPrice : tier.annualPrice
-          const period = billing === 'monthly' ? '/month' : '/year'
-          return (
-            <div key={tier.name}
-              className={`relative flex flex-col rounded-3xl ${tier.bg} border ${tier.border} p-10 transition-all hover:-translate-y-1 duration-300`}>
-              {tier.badge && (
-                <div className="absolute -top-4 left-1/2 -translate-x-1/2">
-                  <span className="bg-yellow-600 text-black text-xs font-black px-5 py-1.5 rounded-full shadow-lg">{tier.badge}</span>
-                </div>
-              )}
-              <div className="mb-8">
-                <h3 className={`text-lg font-black mb-1 ${tier.accent}`}>{tier.name}</h3>
-                <div className="text-5xl font-black text-white leading-none mb-1">
-                  {price === 0 ? 'EGP 0' : 'EGP ' + price.toLocaleString()}
-                </div>
-                <div className="text-zinc-500 text-sm">{period}</div>
+      <div className="grid md:grid-cols-2 xl:grid-cols-4 gap-4">
+        {RADAR_TIERS.map(tier => (
+          <div
+            key={tier.name}
+            className={`relative flex flex-col p-7 rounded-2xl border transition-all duration-300 ${tier.style}`}
+          >
+            {tier.badge && (
+              <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+                <span className="inline-flex items-center text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full bg-yellow-500 text-black">
+                  {tier.badge}
+                </span>
               </div>
-              <ul className="space-y-3 mb-10 flex-1">
-                {tier.features.map((f) => (
-                  <li key={f} className="flex items-start gap-2.5 text-sm text-zinc-300">
-                    <CheckCircle2 className="w-4 h-4 text-yellow-400 shrink-0 mt-0.5" />{f}
-                  </li>
-                ))}
-              </ul>
-              <Link to="/auth/sponsor/register"
-                className={`w-full text-center font-bold py-3.5 px-6 rounded-xl transition-all ${tier.ctaClass}`}>
-                {tier.cta}
-              </Link>
-            </div>
-          )
-        })}
-      </div>
-      <p className="text-center text-zinc-500 text-sm">15% platform fee on all sponsorship purchases. Subscription covers bundled monthly activations.</p>
-    </div>
-  )
-}
-
-// ─── Provider Pricing ──────────────────────────
-function ProviderPricing() {
-  return (
-    <div className="space-y-8">
-      {/* Hero */}
-      <div className="relative rounded-3xl overflow-hidden border border-cyan-500/20">
-        <img src={IMG_GIGS} alt="HERU GIGs" className="absolute inset-0 w-full h-full object-cover opacity-20" />
-        <div className="absolute inset-0 bg-gradient-to-r from-zinc-950/95 to-zinc-950/70" />
-        <div className="relative grid md:grid-cols-2 gap-0">
-          <div className="p-12 flex items-center">
-            <div>
-              <div className="inline-flex items-center gap-2 bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 text-xs font-bold px-4 py-2 rounded-full mb-6 tracking-widest uppercase">
-                <Briefcase className="w-3.5 h-3.5" /> HERU GIGs
+            )}
+            <div className="mb-6">
+              <h3 className={`text-lg font-black mb-3 ${tier.highlight ? 'text-yellow-400' : 'text-white'}`}>{tier.name}</h3>
+              <div className="mb-1">
+                <span className="text-2xl font-black text-white">{tier.price}</span>
+                <span className="text-zinc-500 text-sm ml-1">{tier.period}</span>
               </div>
-              <h2 className="text-6xl font-black text-white mb-2 leading-none">85%</h2>
-              <p className="text-2xl font-bold text-white mb-2">You Keep</p>
-              <p className="text-zinc-400 mb-8">15% HERU fee per completed booking only.</p>
-              <Link to="/auth/provider/register"
-                className="inline-flex items-center gap-2 bg-cyan-600 hover:bg-cyan-500 text-white font-bold px-8 py-4 rounded-xl transition-all shadow-lg shadow-cyan-600/25">
-                List Your Services <ArrowRight className="w-4 h-4" />
-              </Link>
+              <p className="text-xs text-zinc-500 leading-relaxed mt-2">{tier.desc}</p>
             </div>
+            <ul className="space-y-2 mb-7 flex-1">
+              {tier.features.map(f => (
+                <li key={f} className="flex items-start gap-2 text-sm text-zinc-400">
+                  <CheckCircle2 className={`h-3.5 w-3.5 shrink-0 mt-0.5 ${tier.highlight ? 'text-yellow-400' : 'text-zinc-500'}`} />
+                  {f}
+                </li>
+              ))}
+            </ul>
+            <Link to={tier.ctaHref}
+              className={`flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold transition-all ${tier.ctaStyle}`}>
+              {tier.cta}
+              <ArrowRight className="h-3.5 w-3.5" />
+            </Link>
           </div>
-          <div className="p-12 flex items-center">
-            <div className="w-full">
-              <p className="text-xs font-bold text-zinc-500 uppercase tracking-widest mb-4">What's included:</p>
-              <div className="space-y-3">
-                {[
-                  'No monthly subscription required',
-                  'Only pay when you earn',
-                  'Escrow-protected payouts',
-                  'Full CRM access included',
-                  'Public portfolio page',
-                  'Rating & review system',
-                  'Staff approval = quality signal',
-                  '9 service category support',
-                ].map((f) => (
-                  <div key={f} className="flex items-center gap-3 text-zinc-300 text-sm">
-                    <CheckCircle2 className="w-4 h-4 text-cyan-400 shrink-0" /> {f}
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
+        ))}
       </div>
-
-      {/* Example earnings */}
-      <div className="p-10 rounded-3xl bg-zinc-900 border border-zinc-800">
-        <h3 className="text-xl font-black text-white mb-6 text-center">Example Earnings</h3>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-          {[
-            { booking: 'EGP 5,000',  net: 'EGP 4,250',  label: 'Small Booking' },
-            { booking: 'EGP 25,000', net: 'EGP 21,250', label: 'Mid Booking' },
-            { booking: 'EGP 50,000', net: 'EGP 42,500', label: 'Large Booking' },
-          ].map(({ booking, net, label }) => (
-            <div key={label} className="text-center p-6 rounded-2xl bg-zinc-800/50 border border-zinc-700/50">
-              <p className="text-xs text-zinc-500 uppercase tracking-widest mb-3">{label}</p>
-              <p className="text-zinc-400 text-sm mb-1">Booking: <span className="text-white font-semibold">{booking}</span></p>
-              <p className="text-2xl font-black text-cyan-400">{net}</p>
-              <p className="text-xs text-zinc-500 mt-1">you receive (85%)</p>
-            </div>
-          ))}
-        </div>
+      <div className="p-6 rounded-2xl bg-white/[0.02] border border-white/8 text-center">
+        <p className="text-zinc-500 text-sm">
+          All plans billed monthly. Custom enterprise pricing available for large brands and agencies.{' '}
+          <Link to="/auth/sponsor/register" className="text-yellow-400 hover:text-yellow-300">Contact sales.</Link>
+        </p>
       </div>
     </div>
   )
 }
 
-// ─── Main Page ─────────────────────────────────
-const TAB_ACCENT = {
-  Gamers:     'border-red-500 text-red-400',
-  Organizers: 'border-purple-500 text-purple-400',
-  Sponsors:   'border-yellow-500 text-yellow-400',
-  Providers:  'border-cyan-500 text-cyan-400',
-}
+// ─── Gigs Tab ─────────────────────────────────────────────────────────────────
 
-function Footer() {
+function GigsTab() {
   return (
-    <footer className="border-t border-zinc-800/60 py-14 px-4">
-      <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
-        <div>
-          <p className="text-xl font-black text-white mb-1">HERU<span className="text-red-500">.</span>gg</p>
-          <p className="text-sm text-zinc-500">The Esports OS for MENA</p>
+    <div className="space-y-8">
+      <div className="relative rounded-3xl overflow-hidden border border-cyan-500/15 p-10 lg:p-14">
+        <div className="absolute inset-0 bg-gradient-to-br from-cyan-950/30 to-zinc-950/80" />
+        <div className="relative grid md:grid-cols-2 gap-10 items-center">
+          <div>
+            <span className="inline-flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.2em] px-3 py-1.5 rounded-full bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 mb-6">
+              <Briefcase className="h-3 w-3" /> HERU Gigs
+            </span>
+            <p className="text-5xl font-black text-white mb-2">Free to List</p>
+            <p className="text-zinc-400 text-xl mb-2">15% fee on bookings only</p>
+            <p className="text-zinc-500 text-sm mb-8 leading-relaxed">
+              No monthly subscription. No listing fees. HERU earns only when you earn — a 15% platform fee on completed bookings.
+            </p>
+            <div className="p-5 rounded-xl bg-cyan-500/8 border border-cyan-500/15 mb-8">
+              <p className="text-cyan-400 font-bold text-base mb-1">85% goes directly to you</p>
+              <p className="text-zinc-500 text-sm">For every EGP 1,000 booking, you receive EGP 850 after the platform fee is applied.</p>
+            </div>
+            <Link to="/auth/provider/register"
+              className="inline-flex items-center gap-2 bg-cyan-600 hover:bg-cyan-500 text-white font-bold px-7 py-3.5 rounded-xl transition-all shadow-lg shadow-cyan-600/25">
+              Join Free
+              <ArrowRight className="h-4 w-4" />
+            </Link>
+          </div>
+          <div>
+            <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-[0.15em] mb-5">Everything included</p>
+            <div className="space-y-2.5">
+              {[
+                'Professional service listing page',
+                'Public portfolio and gallery',
+                'Verified rating and review system',
+                'Marketplace discovery placement',
+                'Tournament Builder integration',
+                'Direct organizer messaging',
+                'File sharing and delivery tracking',
+                'Escrow payment protection',
+                'Income tracking dashboard',
+              ].map(f => (
+                <div key={f} className="flex items-center gap-3 text-zinc-300 text-sm">
+                  <CheckCircle2 className="w-4 h-4 text-cyan-400 shrink-0" />
+                  {f}
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
-        <div className="flex gap-6 text-sm text-zinc-500">
-          <Link to="/for-gamers" className="hover:text-white transition-colors">ARENA</Link>
-          <Link to="/for-organizers" className="hover:text-white transition-colors">BUILDER</Link>
-          <Link to="/for-sponsors" className="hover:text-white transition-colors">RADAR</Link>
-          <Link to="/for-providers" className="hover:text-white transition-colors">GIGs</Link>
-        </div>
-        <p className="text-zinc-600 text-xs">© 2026 HERU.gg — All rights reserved.</p>
       </div>
-    </footer>
+
+      <div className="grid md:grid-cols-3 gap-4">
+        {[
+          { icon: Briefcase, title: '9 Categories', desc: 'Coaches, Influencers, Designers, Production, Casters, Analysts, Venues, Marketing, Gaming Centers.', color: 'text-cyan-400', bg: 'bg-cyan-500/8' },
+          { icon: Shield,    title: 'Escrow Protected', desc: 'All payments held until the organizer confirms delivery. Zero risk of non-payment.', color: 'text-green-400', bg: 'bg-green-500/8' },
+          { icon: Star,      title: 'Review System', desc: 'Build a verified rating and review history with every completed booking.', color: 'text-yellow-400', bg: 'bg-yellow-500/8' },
+        ].map(item => (
+          <div key={item.title} className="p-6 rounded-2xl bg-white/[0.03] border border-white/8">
+            <div className={`w-11 h-11 rounded-xl flex items-center justify-center mb-4 ${item.bg} ${item.color}`}>
+              <item.icon className="h-5 w-5" />
+            </div>
+            <h3 className="font-black text-white mb-2">{item.title}</h3>
+            <p className="text-sm text-zinc-500 leading-relaxed">{item.desc}</p>
+          </div>
+        ))}
+      </div>
+    </div>
   )
 }
+
+// ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function Pricing() {
-  const [activeTab, setActiveTab] = useState('Gamers')
+  const [activeTab, setActiveTab] = useState('arena')
+
+  const tabContent = { arena: ArenaTab, builder: BuilderTab, radar: RadarTab, gigs: GigsTab }
+  const ActiveContent = tabContent[activeTab]
 
   return (
-    <div className="min-h-screen bg-zinc-950 text-white flex flex-col">
+    <div className="min-h-screen bg-zinc-950 text-white">
       <PublicNav />
 
-      {/* ── HERO ── */}
-      <section className="relative py-24 px-4 overflow-hidden">
-        <div className="absolute inset-0">
-          <img src={HERO_BG} alt="" className="w-full h-full object-cover opacity-10" />
-          <div className="absolute inset-0 bg-gradient-to-b from-zinc-950/60 to-zinc-950" />
+      {/* ─── Header ──────────────────────────────────────────────────── */}
+      <section className="relative pt-32 pb-16 px-4 overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-b from-zinc-950 to-transparent" />
+        <div className="absolute top-0 left-1/4 w-[500px] h-[500px] rounded-full bg-red-600/5 blur-[120px] pointer-events-none" />
+        <div className="absolute top-0 right-1/4 w-[400px] h-[400px] rounded-full bg-purple-600/5 blur-[120px] pointer-events-none" />
+        <div className="relative max-w-4xl mx-auto text-center">
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}>
+            <span className="inline-flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500 px-4 py-2 rounded-full border border-white/8 bg-white/3 mb-6">
+              Pricing
+            </span>
+            <h1 className="text-5xl sm:text-6xl font-black text-white mb-5 leading-tight">
+              Transparent pricing.<br />
+              <span className="bg-gradient-to-r from-red-400 to-orange-400 bg-clip-text text-transparent">
+                Built for every stakeholder.
+              </span>
+            </h1>
+            <p className="text-zinc-400 text-xl max-w-2xl mx-auto leading-relaxed">
+              Four products. Four pricing models. Designed to align HERU's success with yours — we only earn when you do.
+            </p>
+          </motion.div>
         </div>
-        <div className="absolute top-1/2 left-1/4 w-96 h-96 rounded-full bg-white/3 blur-[120px]" />
-        <div className="relative max-w-4xl mx-auto text-center pt-16">
-          <div className="inline-flex items-center gap-2 bg-white/5 border border-zinc-700 text-zinc-400 text-xs font-bold px-4 py-2 rounded-full mb-6 tracking-widest uppercase">
-            <Zap className="w-3.5 h-3.5" /> Transparent Pricing
-          </div>
-          <h1 className="text-6xl md:text-7xl font-black text-white mb-4 leading-[1.05]">
-            Simple, Fair Pricing
-          </h1>
-          <p className="text-xl text-zinc-400 max-w-xl mx-auto mb-12">
-            No surprises. Every stakeholder has a clear, transparent pricing model.
-          </p>
+      </section>
 
-          {/* 4 product mini-cards */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-3xl mx-auto">
-            {PRODUCTS.map(p => (
-              <button
-                key={p.key}
-                onClick={() => setActiveTab(p.key)}
-                className={`p-5 rounded-2xl border transition-all duration-300 text-center group
-                  ${activeTab === p.key
-                    ? `${p.bg} bg-opacity-15 ${p.border} border-opacity-60 shadow-lg`
-                    : 'bg-white/4 border-white/10 hover:border-white/20'
+      {/* ─── Tab Navigation ──────────────────────────────────────────── */}
+      <section className="sticky top-16 z-30 px-4 py-4 bg-zinc-950/95 backdrop-blur-xl border-b border-white/5">
+        <div className="max-w-5xl mx-auto">
+          <div className="flex gap-2 overflow-x-auto scrollbar-hide">
+            {TABS.map(tab => {
+              const isActive = activeTab === tab.key
+              return (
+                <button
+                  key={tab.key}
+                  onClick={() => setActiveTab(tab.key)}
+                  className={`flex items-center gap-2.5 px-5 py-2.5 rounded-xl border text-sm font-bold whitespace-nowrap transition-all duration-200 shrink-0 ${
+                    isActive ? tab.activeBg : 'bg-white/[0.02] border-white/8 text-zinc-500 hover:text-zinc-300 hover:bg-white/4'
                   }`}
-              >
-                <p.icon className={`h-6 w-6 mx-auto mb-2 ${activeTab === p.key ? p.color : 'text-zinc-400'}`} />
-                <p className={`text-xs font-black ${activeTab === p.key ? p.color : 'text-zinc-400'}`}>{p.label}</p>
-              </button>
-            ))}
+                >
+                  <span className={`h-2 w-2 rounded-full ${tab.dot} ${isActive ? 'opacity-100' : 'opacity-40'}`} />
+                  <tab.icon className={`h-4 w-4 ${isActive ? tab.color : 'text-zinc-500'}`} />
+                  <span className={isActive ? tab.color : 'text-zinc-400'}>{tab.label}</span>
+                </button>
+              )
+            })}
           </div>
         </div>
       </section>
 
-      {/* ── TABS ── */}
-      <div className="sticky top-16 z-30 border-b border-zinc-800 bg-zinc-950/95 backdrop-blur-xl px-4">
-        <div className="max-w-5xl mx-auto flex gap-0 overflow-x-auto scrollbar-hide">
-          {PRODUCTS.map((p) => (
-            <button
-              key={p.key}
-              onClick={() => setActiveTab(p.key)}
-              className={`flex items-center gap-2 px-6 py-4 text-sm font-bold border-b-2 transition-all whitespace-nowrap flex-shrink-0 ${
-                activeTab === p.key ? TAB_ACCENT[p.key] : 'border-transparent text-zinc-500 hover:text-zinc-300'
-              }`}
-            >
-              <p.icon className="w-4 h-4" />
-              {p.label}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* ── CONTENT ── */}
-      <section className="py-16 px-4 flex-1">
+      {/* ─── Tab Content ─────────────────────────────────────────────── */}
+      <section className="px-4 py-16 min-h-screen">
         <div className="max-w-5xl mx-auto">
-          {activeTab === 'Gamers'     && <GamerPricing />}
-          {activeTab === 'Organizers' && <OrganizerPricing />}
-          {activeTab === 'Sponsors'   && <SponsorPricing />}
-          {activeTab === 'Providers'  && <ProviderPricing />}
+          <motion.div
+            key={activeTab}
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.35 }}
+          >
+            <ActiveContent />
+          </motion.div>
         </div>
       </section>
 
-      {/* ── ALL PLANS SUMMARY ── */}
-      <section className="py-16 px-4 border-t border-zinc-800/60">
+      {/* ─── Compare Summary ─────────────────────────────────────────── */}
+      <section className="px-4 py-24 border-t border-white/5">
         <div className="max-w-5xl mx-auto">
-          <div className="text-center mb-10">
-            <h2 className="text-3xl font-black text-white mb-2">All products at a glance</h2>
-            <p className="text-zinc-500">Choose your role. Get started today.</p>
+          <div className="text-center mb-12">
+            <h2 className="text-3xl font-black text-white mb-3">All four products at a glance.</h2>
+            <p className="text-zinc-500">The complete pricing overview across the HERU ecosystem.</p>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {[
-              {
-                Icon: Gamepad2, name: 'HERU ARENA', role: 'Gamers',
-                price: 'EGP 0 / mo', tagline: 'Compete & Connect',
-                color: 'text-red-400', bg: 'bg-red-500/8', border: 'border-red-500/20',
-                cta: 'Join Free', href: '/auth/gamer/register', ctaColor: 'bg-red-600 hover:bg-red-500',
-              },
-              {
-                Icon: Building2, name: 'HERU BUILDER', role: 'Organizers',
-                price: '15% fee only', tagline: 'Build & Get Funded',
-                color: 'text-purple-400', bg: 'bg-purple-500/8', border: 'border-purple-500/20',
-                cta: 'Build Free', href: '/auth/organizer/register', ctaColor: 'bg-purple-700 hover:bg-purple-600',
-              },
-              {
-                Icon: Radar, name: 'HERU RADAR', role: 'Sponsors',
-                price: 'From EGP 0', tagline: 'Sponsor & Measure',
-                color: 'text-yellow-400', bg: 'bg-yellow-500/8', border: 'border-yellow-500/20',
-                cta: 'Start Free', href: '/auth/sponsor/register', ctaColor: 'bg-yellow-600 hover:bg-yellow-500 text-black',
-              },
-              {
-                Icon: Briefcase, name: 'HERU GIGs', role: 'Providers',
-                price: '85% payout', tagline: 'Get Booked & Paid',
-                color: 'text-cyan-400', bg: 'bg-cyan-500/8', border: 'border-cyan-500/20',
-                cta: 'List Services', href: '/auth/provider/register', ctaColor: 'bg-cyan-600 hover:bg-cyan-500',
-              },
-            ].map(p => (
-              <div key={p.name} className={`flex flex-col p-8 rounded-2xl ${p.bg} border ${p.border} hover:-translate-y-1 transition-all duration-300`}>
-                <div className={`w-12 h-12 rounded-xl ${p.bg} flex items-center justify-center mb-4`}>
-                  <p.Icon className={`h-6 w-6 ${p.color}`} />
-                </div>
-                <p className={`text-xs font-bold uppercase tracking-widest ${p.color} mb-1`}>{p.role}</p>
-                <h3 className="text-lg font-black text-white mb-1">{p.name}</h3>
-                <p className="text-zinc-500 text-sm mb-4">{p.tagline}</p>
-                <p className={`text-2xl font-black ${p.color} mb-6`}>{p.price}</p>
-                <Link to={p.href}
-                  className={`mt-auto text-center py-3 px-6 rounded-xl text-sm font-bold text-white transition-all ${p.ctaColor}`}>
-                  {p.cta}
+              { label: 'HERU Arena',   note: 'Free — forever',          sub: 'All features included. No subscription.', color: 'text-red-400', border: 'border-red-500/15', bg: 'bg-red-500/5', href: '/auth/gamer/register', cta: 'Join Free' },
+              { label: 'HERU Builder', note: 'Free + 15% fee',          sub: 'Platform access free. Fee on transactions only.', color: 'text-purple-400', border: 'border-purple-500/15', bg: 'bg-purple-500/5', href: '/auth/organizer/register', cta: 'Start Building' },
+              { label: 'HERU Radar',   note: 'Free to EGP 500K/mo',    sub: 'Four tiers: Free, Starter, Growth, Premium.', color: 'text-yellow-400', border: 'border-yellow-500/15', bg: 'bg-yellow-500/5', href: '/auth/sponsor/register', cta: 'Explore Radar' },
+              { label: 'HERU Gigs',    note: 'Free + 15% fee',          sub: 'Free to list. 85% payout on bookings.', color: 'text-cyan-400', border: 'border-cyan-500/15', bg: 'bg-cyan-500/5', href: '/auth/provider/register', cta: 'List Services' },
+            ].map(item => (
+              <div key={item.label} className={`p-6 rounded-2xl border ${item.border} ${item.bg} flex flex-col`}>
+                <h3 className={`font-black text-base mb-1.5 ${item.color}`}>{item.label}</h3>
+                <p className="text-white font-bold text-lg mb-1">{item.note}</p>
+                <p className="text-zinc-500 text-xs leading-relaxed mb-6 flex-1">{item.sub}</p>
+                <Link to={item.href}
+                  className={`flex items-center justify-center gap-1.5 px-4 py-2 rounded-lg text-xs font-bold transition-all border ${item.border} ${item.color} hover:bg-white/5`}>
+                  {item.cta}
+                  <ArrowRight className="h-3 w-3" />
                 </Link>
               </div>
             ))}
@@ -502,7 +480,36 @@ export default function Pricing() {
         </div>
       </section>
 
-      <Footer />
+      {/* ─── CTA ─────────────────────────────────────────────────────── */}
+      <section className="relative py-24 px-4 overflow-hidden">
+        <div className="absolute inset-0">
+          <div className="absolute top-0 left-1/3 w-[400px] h-[400px] rounded-full bg-red-600/6 blur-[120px]" />
+          <div className="absolute bottom-0 right-1/3 w-[400px] h-[400px] rounded-full bg-purple-600/6 blur-[120px]" />
+        </div>
+        <div className="relative max-w-3xl mx-auto text-center">
+          <h2 className="text-4xl font-black text-white mb-5">Ready to get started?</h2>
+          <p className="text-zinc-400 text-lg mb-10">
+            Choose your role in the HERU ecosystem and begin building your presence in MENA esports today.
+          </p>
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3">
+            {[
+              { label: 'I am a Gamer',     href: '/auth/gamer/register',    color: 'text-red-400',    border: 'border-red-500/20',    bg: 'bg-red-500/5', cta: 'Play Free' },
+              { label: 'I am an Organizer',href: '/auth/organizer/register', color: 'text-purple-400', border: 'border-purple-500/20', bg: 'bg-purple-500/5', cta: 'Build' },
+              { label: 'I am a Sponsor',   href: '/auth/sponsor/register',   color: 'text-yellow-400', border: 'border-yellow-500/20', bg: 'bg-yellow-500/5', cta: 'Activate' },
+              { label: 'I am a Provider',  href: '/auth/provider/register',  color: 'text-cyan-400',   border: 'border-cyan-500/20',   bg: 'bg-cyan-500/5', cta: 'Get Booked' },
+            ].map(item => (
+              <Link key={item.label} to={item.href}
+                className={`flex flex-col items-center p-5 rounded-2xl border ${item.border} ${item.bg} hover:bg-white/5 hover:border-white/15 transition-all duration-300 group`}>
+                <p className="text-xs text-zinc-500 mb-2">{item.label}</p>
+                <p className={`font-black text-lg ${item.color}`}>{item.cta}</p>
+                <ArrowRight className="h-4 w-4 text-zinc-600 group-hover:text-white mt-2 transition-colors" />
+              </Link>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <PublicFooter />
     </div>
   )
 }
