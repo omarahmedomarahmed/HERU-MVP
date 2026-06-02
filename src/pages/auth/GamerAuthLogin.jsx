@@ -53,29 +53,28 @@ export default function GamerAuthLogin() {
   return (
     <div className="min-h-screen flex bg-zinc-950">
       {/* ── Left Image Panel ── */}
-      <div className="hidden lg:flex lg:w-1/2 relative flex-col justify-between overflow-hidden">
-        <img src={SIDE_IMG} alt="HERU ARENA" className="absolute inset-0 w-full h-full object-cover opacity-50" />
-        <div className="absolute inset-0 bg-gradient-to-br from-red-950/80 via-zinc-950/70 to-zinc-950/90" />
-        <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-transparent to-transparent" />
+      <div className="hidden lg:flex lg:w-1/2 relative flex-col overflow-hidden">
+        <img src={SIDE_IMG} alt="HERU ARENA" className="absolute inset-0 w-full h-full object-cover opacity-40" />
+        <div className="absolute inset-0 bg-gradient-to-br from-red-950/85 via-zinc-950/75 to-zinc-950/95" />
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-zinc-950" />
 
-        <div className="relative z-10 p-10">
-          <Link to="/">
+        <div className="relative z-10 p-10 flex flex-col h-full">
+          <Link to="/" className="mb-8">
             <HeruLogo className="h-10" />
           </Link>
-        </div>
 
-        <div className="relative z-10 p-10">
-          <div className="mb-6">
-            <div className="inline-flex items-center gap-2 bg-red-500/15 border border-red-500/30 text-red-400 text-xs font-bold px-3 py-1.5 rounded-full mb-6 uppercase tracking-widest">
-              <Gamepad2 className="w-3.5 h-3.5" /> HERU ARENA
+          <div className="mb-8">
+            <div className="inline-flex items-center gap-2 bg-red-500/15 border border-red-500/30 text-red-400 text-xs font-bold px-3 py-1.5 rounded-full mb-5 uppercase tracking-[0.15em]">
+              <Gamepad2 className="w-3.5 h-3.5" /> HERU Arena
             </div>
-            <h2 className="text-4xl font-black text-white leading-tight mb-3">Compete. Climb.<br/>Connect.</h2>
-            <p className="text-zinc-400 text-base leading-relaxed">MENA's premier esports platform for competitive gamers.</p>
+            <h2 className="text-4xl font-black text-white leading-tight mb-3">Compete. Improve.<br/>Build your identity.</h2>
+            <p className="text-zinc-400 text-base leading-relaxed">The competitive platform for every serious gamer in MENA.</p>
           </div>
+
           <div className="space-y-3">
             {BULLETS.map(({ icon: Icon, text }) => (
               <div key={text} className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-lg bg-red-500/15 flex items-center justify-center shrink-0">
+                <div className="w-8 h-8 rounded-lg bg-red-500/15 border border-red-500/20 flex items-center justify-center shrink-0">
                   <Icon className="w-4 h-4 text-red-400" />
                 </div>
                 <span className="text-zinc-300 text-sm font-medium">{text}</span>
