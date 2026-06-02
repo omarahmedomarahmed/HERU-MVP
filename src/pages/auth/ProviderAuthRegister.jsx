@@ -179,7 +179,7 @@ export default function ProviderAuthRegister() {
 
             {error && (
               <div className="flex items-start gap-2.5 bg-cyan-500/8 border border-cyan-500/20 rounded-xl p-4">
-                <AlertTriangle className="w-4 h-4 text-cyan-400 mt-0.5 shrink-0" /
+                <AlertTriangle className="w-4 h-4 text-cyan-400 mt-0.5 shrink-0" />
                 <p className="text-cyan-300 text-sm">{error}</p>
               </div>
             )}
