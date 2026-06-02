@@ -417,7 +417,7 @@ export default function Home() {
       {/* ─── STATS ────────────────────────────────────────────────────── */}
       <section className="relative py-20 px-4 border-y border-white/5 overflow-hidden">
         <div className="absolute inset-0">
-          <img src="https://images.unsplash.com/photo-1533174072545-7a4b6ad7a6c3?w=1920&q=80" alt="" className="w-full h-full object-cover opacity-80" />
+          <img src="https://images.unsplash.com/photo-1533174072545-7a4b6ad7a6c3?w=1920&q=80" alt="" className="w-full h-full object-cover opacity-20" />
           <div className="absolute inset-0 bg-zinc-950/92" />
         </div>
         <div className="relative max-w-5xl mx-auto">
@@ -467,7 +467,7 @@ export default function Home() {
       <section className="relative py-32 px-4 overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-b from-transparent via-red-950/5 to-transparent" />
         <div className="absolute inset-0">
-          <img src="https://images.unsplash.com/photo-1613490900234-4b484862e5d4?w=1920&q=5" alt="" className="w-full h-full object-cover opacity-5" />
+          <img src="https://images.unsplash.com/photo-1613490900234-4b484862e5d4?w=1920&q=5" alt="" className="w-full h-full object-cover opacity-20" />
           <div className="absolute inset-0 bg-zinc-950/5" />
         </div>
         <div className="max-w-6xl mx-auto">
@@ -507,7 +507,7 @@ export default function Home() {
       {/* ─── HOW THE ECOSYSTEM WORKS (FLYWHEEL) ──────────────────────── */}
       <section className="relative py-32 px-4 overflow-hidden">
         <div className="absolute inset-0">
-          <img src={FLYWHEEL_BG} alt="" className="w-full h-full object-cover opacity-7" />
+          <img src={FLYWHEEL_BG} alt="" className="w-full h-full object-cover opacity-20" />
           <div className="absolute inset-0 bg-gradient-to-b from-zinc-950 via-zinc-950/93 to-zinc-950" />
         </div>
         <div className="max-w-6xl mx-auto">
@@ -575,7 +575,7 @@ export default function Home() {
       {/* ─── INFRASTRUCTURE / FEATURES ────────────────────────────────── */}
       <section className="relative py-32 px-4 overflow-hidden">
         <div className="absolute inset-0">
-          <img src={INFRA_BG} alt="" className="w-full h-full object-cover opacity-80" />
+          <img src={INFRA_BG} alt="" className="w-full h-full object-cover opacity-20" />
           <div className="absolute inset-0 bg-zinc-950/92" />
         </div>
         <div className="max-w-6xl mx-auto relative">
@@ -729,7 +729,7 @@ export default function Home() {
       {/* ─── ENTERPRISE ───────────────────────────────────────────────── */}
       <section className="relative py-32 px-4 overflow-hidden">
         <div className="absolute inset-0">
-          <img src={ENTERPRISE_BG} alt="" className="w-full h-full object-cover opacity-80" />
+          <img src={ENTERPRISE_BG} alt="" className="w-full h-full object-cover opacity-20" />
           <div className="absolute inset-0 bg-zinc-950/93" />
         </div>
         <div className="max-w-6xl mx-auto relative">
