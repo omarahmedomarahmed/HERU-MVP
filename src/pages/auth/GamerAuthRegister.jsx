@@ -77,24 +77,22 @@ export default function GamerAuthRegister() {
   return (
     <div className="min-h-screen flex bg-zinc-950">
       {/* ── Left Panel ── */}
-      <div className="hidden lg:flex lg:w-1/2 relative flex-col justify-between overflow-hidden">
-        <img src={SIDE_IMG} alt="HERU ARENA" className="absolute inset-0 w-full h-full object-cover opacity-50" />
-        <div className="absolute inset-0 bg-gradient-to-br from-red-950/80 via-zinc-950/60 to-zinc-950/90" />
-        <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-transparent to-transparent" />
+      <div className="hidden lg:flex lg:w-1/2 relative flex-col overflow-hidden">
+        <img src={SIDE_IMG} alt="HERU ARENA" className="absolute inset-0 w-full h-full object-cover opacity-40" />
+        <div className="absolute inset-0 bg-gradient-to-br from-red-950/85 via-zinc-950/75 to-zinc-950/95" />
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-zinc-950" />
 
-        <div className="relative z-10 p-10">
-          <Link to="/"><HeruLogo className="h-10" /></Link>
-        </div>
+        <div className="relative z-10 p-10 flex flex-col h-full">
+          <Link to="/" className="mb-8"><HeruLogo className="h-10" /></Link>
 
-        <div className="relative z-10 p-10">
-          <div className="inline-flex items-center gap-2 bg-red-500/15 border border-red-500/30 text-red-400 text-xs font-bold px-3 py-1.5 rounded-full mb-5 uppercase tracking-widest">
-            <Gamepad2 className="w-3.5 h-3.5" /> Free Forever
+          <div className="inline-flex items-center gap-2 bg-red-500/15 border border-red-500/30 text-red-400 text-xs font-bold px-3 py-1.5 rounded-full mb-5 uppercase tracking-[0.15em] w-fit">
+            <Gamepad2 className="w-3.5 h-3.5" /> HERU Arena
           </div>
-          <h2 className="text-4xl font-black text-white leading-tight mb-4">Join MENA's<br/>Esports Scene.</h2>
+          <h2 className="text-4xl font-black text-white leading-tight mb-4">Join MENA's esports ecosystem. Free forever.</h2>
           <div className="space-y-3">
             {PERKS.map(p => (
               <div key={p} className="flex items-center gap-3">
-                <div className="w-5 h-5 rounded-full bg-red-500/20 flex items-center justify-center shrink-0">
+                <div className="w-5 h-5 rounded-full bg-red-500/20 border border-red-500/20 flex items-center justify-center shrink-0">
                   <CheckCircle className="w-3 h-3 text-red-400" />
                 </div>
                 <span className="text-zinc-300 text-sm">{p}</span>
