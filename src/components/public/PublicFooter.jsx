@@ -83,11 +83,11 @@ export default function PublicFooter() {
             </ul>
           </div>
 
-          {/* Platform */}
+          {/* SOLUTIONS */}
           <div>
-            <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-[0.15em] mb-4">Platform</p>
+            <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-[0.15em] mb-4">SOLUTIONS</p>
             <ul className="space-y-2.5">
-              {PLATFORM.map(p => (
+              {SOLUTIONS.map(p => (
                 <li key={p.href}>
                   <Link to={p.href} className="text-sm text-zinc-400 hover:text-white transition-colors">{p.label}</Link>
                 </li>
