@@ -37,6 +37,8 @@ import ForOrganizers from './pages/public/ForOrganizers'
 import ForSponsors from './pages/public/ForSponsors'
 import ForProviders from './pages/public/ForProviders'
 import Pricing from './pages/public/Pricing'
+import About from './pages/public/About'
+import Resources from './pages/public/Resources'
 
 // Public discovery pages
 import Coaches from './pages/public/Coaches'
@@ -180,6 +182,8 @@ function AppContent() {
             <Route path="/for-sponsors" element={<ForSponsors />} />
             <Route path="/for-providers" element={<ForProviders />} />
             <Route path="/pricing" element={<Pricing />} />
+            <Route path="/about" element={<About />} />
+            <Route path="/resources" element={<Resources />} />
             <Route path="/providers/:id" element={<ProviderPublicProfile />} />
             <Route path="/gamer/:id" element={<GamerProfileView />} />
 
