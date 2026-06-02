@@ -467,8 +467,8 @@ export default function Home() {
       <section className="relative py-32 px-4 overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-b from-transparent via-red-950/5 to-transparent" />
         <div className="absolute inset-0">
-          <img src="https://images.unsplash.com/photo-1613490900234-4b484862e5d4?w=1920&q=80" alt="" className="w-full h-full object-cover opacity-5" />
-          <div className="absolute inset-0 bg-zinc-950/80" />
+          <img src="https://images.unsplash.com/photo-1613490900234-4b484862e5d4?w=1920&q=5" alt="" className="w-full h-full object-cover opacity-5" />
+          <div className="absolute inset-0 bg-zinc-950/5" />
         </div>
         <div className="max-w-6xl mx-auto">
           <div className="grid lg:grid-cols-2 gap-16 items-center">
