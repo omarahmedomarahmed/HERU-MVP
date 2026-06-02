@@ -32,3 +32,4 @@ backend/node_modules
 
 .env
 supabase/.temp/
+core\nn

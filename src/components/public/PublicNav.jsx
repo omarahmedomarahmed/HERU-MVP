@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { Link, useLocation } from 'react-router-dom'
-import { ChevronDown, Menu, X, ArrowRight } from 'lucide-react'
+import { ChevronDown, Menu, X, ArrowRight, Phone, Mail } from 'lucide-react'
 import HeruLogo from '@/components/shared/HeruLogo'
 
 // ─── Nav Data ───────────────────────────────────────────────────────────────
@@ -45,12 +45,13 @@ const PRODUCTS = [
 ]
 
 const SOLUTIONS = [
-  { label: 'Gamers',            href: '/for-gamers',     desc: 'Compete in professional esports tournaments' },
-  { label: 'Organizers',        href: '/for-organizers', desc: 'Build and monetize world-class events' },
-  { label: 'Sponsors',          href: '/for-sponsors',   desc: 'Activate brands in the gaming ecosystem' },
-  { label: 'Service Providers', href: '/for-providers',  desc: 'Get discovered and booked by organizers' },
-  { label: 'Publishers',        href: '/for-organizers', desc: 'Run official title-sanctioned tournaments' },
-  { label: 'Brands',            href: '/for-sponsors',   desc: 'Enter gaming with managed activations' },
+  { label: 'Gamers',            href: '/for-gamers',        desc: 'Compete in professional esports tournaments' },
+  { label: 'Organizers',        href: '/for-organizers',    desc: 'Build and monetize world-class events' },
+  { label: 'Sponsors & Brands', href: '/for-sponsors',      desc: 'Activate brands in the gaming ecosystem' },
+  { label: 'Coaches',           href: '/for-coaches',       desc: 'Grow your coaching business on HERU' },
+  { label: 'Influencers',       href: '/for-influencers',   desc: 'Monetize your audience and gaming brand' },
+  { label: 'Service Providers', href: '/for-providers',     desc: 'Get discovered and booked by organizers' },
+  { label: 'Game Publishers',   href: '/for-publishers',    desc: 'Run title-sanctioned events and grow player base' },
 ]
 
 const SIGN_IN = [
@@ -64,7 +65,7 @@ const SIGN_IN = [
 
 function ProductsDropdown({ onClose }) {
   return (
-    <div className="absolute left-0 top-full mt-2 w-[620px] bg-zinc-900/98 backdrop-blur-xl border border-zinc-700/50 rounded-2xl shadow-2xl shadow-black/50 z-50 overflow-hidden">
+    <div className="absolute left-0 top-full mt-2 w-[620px] bg-zinc-900 backdrop-blur-xl border border-zinc-700 rounded-2xl shadow-2xl shadow-black/70 z-50 overflow-hidden" style={{background:'rgba(9,9,11,0.97)'}}>
       <div className="p-2">
         <div className="px-4 pt-3 pb-2">
           <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-[0.15em]">Products</p>
@@ -99,7 +100,7 @@ function ProductsDropdown({ onClose }) {
 
 function SolutionsDropdown({ onClose }) {
   return (
-    <div className="absolute left-0 top-full mt-2 w-72 bg-zinc-900/98 backdrop-blur-xl border border-zinc-700/50 rounded-2xl shadow-2xl shadow-black/50 z-50 overflow-hidden">
+    <div className="absolute left-0 top-full mt-2 w-72 bg-zinc-900 backdrop-blur-xl border border-zinc-700 rounded-2xl shadow-2xl shadow-black/70 z-50 overflow-hidden" style={{background:'rgba(9,9,11,0.97)'}}>
       <div className="p-2">
         <div className="px-4 pt-3 pb-2">
           <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-[0.15em]">Solutions</p>
@@ -122,7 +123,7 @@ function SolutionsDropdown({ onClose }) {
 
 function SignInDropdown({ onClose }) {
   return (
-    <div className="absolute right-0 top-full mt-2 w-56 bg-zinc-900/98 backdrop-blur-xl border border-zinc-700/50 rounded-2xl shadow-2xl shadow-black/50 z-50 overflow-hidden">
+    <div className="absolute right-0 top-full mt-2 w-56 bg-zinc-900 backdrop-blur-xl border border-zinc-700 rounded-2xl shadow-2xl shadow-black/70 z-50 overflow-hidden" style={{background:'rgba(9,9,11,0.97)'}}>
       <div className="p-2">
         <div className="px-4 pt-3 pb-2">
           <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-[0.15em]">Sign in as</p>
@@ -236,6 +237,12 @@ export default function PublicNav() {
               className="px-3 py-2 rounded-lg text-sm font-medium text-zinc-400 hover:text-white hover:bg-white/5 transition-all duration-200"
             >
               Resources
+            </Link>
+            <Link
+              to="/contact"
+              className="px-3 py-2 rounded-lg text-sm font-medium text-zinc-400 hover:text-white hover:bg-white/5 transition-all duration-200"
+            >
+              Contact
             </Link>
           </nav>
 

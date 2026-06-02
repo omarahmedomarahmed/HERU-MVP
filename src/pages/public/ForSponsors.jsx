@@ -10,6 +10,9 @@ import {
 } from 'lucide-react'
 
 const HERO_FALLBACK = 'https://images.unsplash.com/photo-1493711662062-fa541adb3fc8?w=1920&q=80'
+const FEATURES_BG = 'https://images.unsplash.com/photo-1611532736597-de2d4265fba3?w=1920&q=80'
+const PLANS_BG = 'https://images.unsplash.com/photo-1560419015-7c427e8ae5ba?w=1920&q=80'
+const FINAL_BG_SP = 'https://images.unsplash.com/photo-1542751371-adc38448a05e?w=1920&q=80'
 
 const CAPABILITIES = [
   {

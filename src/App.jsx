@@ -8,6 +8,7 @@ import { AnimatePresence, motion } from 'framer-motion'
 import NotFound from './pages/public/NotFound'
 import { AuthProvider } from '@/lib/AuthContext'
 import { RequireGamer, RequireOrganizer, RequireSponsor, RequireProvider, RequireStaff } from '@/lib/auth-guards'
+import FloatingBar from '@/components/shared/FloatingBar'
 
 // Auth pages
 import AuthChoice from './pages/public/AuthChoice'
@@ -25,6 +26,10 @@ import ResetPassword from './pages/auth/ResetPassword'
 
 // Public pages
 import Home from './pages/public/Home'
+import ContactUs from './pages/public/ContactUs'
+import ForInfluencers from './pages/public/ForInfluencers'
+import ForCoaches from './pages/public/ForCoaches'
+import ForPublishers from './pages/public/ForPublishers'
 import Tournaments from './pages/public/Tournaments'
 import TournamentPublic from './pages/public/TournamentPublic'
 import Teams from './pages/public/Teams'
@@ -156,6 +161,7 @@ function AppContent() {
     <>
       <ScrollToTop />
       <NavigationTracker />
+      <FloatingBar />
       <AnimatePresence mode="wait">
         <motion.div
           key={location.pathname}
@@ -186,6 +192,10 @@ function AppContent() {
             <Route path="/resources" element={<Resources />} />
             <Route path="/providers/:id" element={<ProviderPublicProfile />} />
             <Route path="/gamer/:id" element={<GamerProfileView />} />
+            <Route path="/contact" element={<ContactUs />} />
+            <Route path="/for-influencers" element={<ForInfluencers />} />
+            <Route path="/for-coaches" element={<ForCoaches />} />
+            <Route path="/for-publishers" element={<ForPublishers />} />
 
             {/* ============ AUTH ZONE ============ */}
             <Route path="/auth" element={<AuthChoice />} />

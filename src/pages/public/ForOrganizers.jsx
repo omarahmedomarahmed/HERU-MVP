@@ -10,6 +10,9 @@ import {
 } from 'lucide-react'
 
 const HERO_FALLBACK = 'https://images.unsplash.com/photo-1560253023-3ec5d502959f?w=1920&q=80'
+const WORKFLOW_BG = 'https://images.unsplash.com/photo-1497366216548-37526070297c?w=1920&q=80'
+const PRICING_BG = 'https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=1920&q=80'
+const FINAL_BG = 'https://images.unsplash.com/photo-1542751371-adc38448a05e?w=1920&q=80'
 
 const CAPABILITIES = [
   {
@@ -279,15 +282,19 @@ export default function ForOrganizers() {
       </section>
 
       {/* ─── WORKFLOW ─────────────────────────────────────────────────── */}
-      <section className="py-32 px-4 border-y border-white/5">
-        <div className="max-w-5xl mx-auto">
+      <section className="relative py-32 px-4 border-y border-white/5 overflow-hidden">
+        <div className="absolute inset-0">
+          <img src={WORKFLOW_BG} alt="" className="w-full h-full object-cover opacity-7" />
+          <div className="absolute inset-0 bg-zinc-950/93" />
+        </div>
+        <div className="max-w-5xl mx-auto relative z-10">
           <div className="text-center mb-16">
             <h2 className="text-4xl font-black text-white mb-4">How it works.</h2>
             <p className="text-zinc-400 text-lg">From concept to execution — the full event workflow in four stages.</p>
           </div>
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {WORKFLOW.map((w) => (
-              <div key={w.step} className="p-6 rounded-2xl bg-white/[0.03] border border-white/8">
+              <div key={w.step} className="p-6 rounded-2xl bg-zinc-900/80 border border-white/8 hover:border-white/18 transition-all card-hover">
                 <p className={`text-5xl font-black opacity-10 mb-3 ${w.color}`}>{w.step}</p>
                 <div className={`h-2 w-2 rounded-full ${w.dot} mb-4`} />
                 <h3 className="font-black text-white mb-2 text-[15px]">{w.title}</h3>
@@ -299,8 +306,12 @@ export default function ForOrganizers() {
       </section>
 
       {/* ─── PRICING ──────────────────────────────────────────────────── */}
-      <section className="py-32 px-4">
-        <div className="max-w-4xl mx-auto">
+      <section className="relative py-32 px-4 overflow-hidden">
+        <div className="absolute inset-0">
+          <img src={PRICING_BG} alt="" className="w-full h-full object-cover opacity-6" />
+          <div className="absolute inset-0 bg-zinc-950/93" />
+        </div>
+        <div className="max-w-4xl mx-auto relative z-10">
           <div className="text-center mb-12">
             <h2 className="text-4xl font-black text-white mb-4">Transparent pricing.</h2>
             <p className="text-zinc-400 text-lg">Platform access is free. HERU earns a 15% fee on service bookings and sponsorship income only.</p>
@@ -353,6 +364,8 @@ export default function ForOrganizers() {
       {/* ─── FINAL CTA ────────────────────────────────────────────────── */}
       <section className="relative py-24 px-4 overflow-hidden">
         <div className="absolute inset-0">
+          <img src={FINAL_BG} alt="" className="w-full h-full object-cover opacity-10" />
+          <div className="absolute inset-0 bg-gradient-to-b from-zinc-950 via-zinc-950/85 to-zinc-950" />
           <div className="absolute top-0 right-1/3 w-[400px] h-[400px] rounded-full bg-purple-600/8 blur-[120px]" />
         </div>
         <div className="relative max-w-3xl mx-auto text-center">

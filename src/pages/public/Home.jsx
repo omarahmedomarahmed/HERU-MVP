@@ -15,6 +15,11 @@ import {
 // ─── Video Sources (Pexels esports footage) ─────────────────────────────────
 const HERO_VIDEO = 'https://www.pexels.com/video/8728384/download/?fps=25&h=1080&w=1920'
 const HERO_FALLBACK = 'https://images.unsplash.com/photo-1542751371-adc38448a05e?w=1920&q=80'
+const PRODUCTS_BG = 'https://images.unsplash.com/photo-1511512578047-dfb367046420?w=1920&q=80'
+const FLYWHEEL_BG = 'https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=1920&q=80'
+const INFRA_BG = 'https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=1920&q=80'
+const ENTERPRISE_BG = 'https://images.unsplash.com/photo-1497366216548-37526070297c?w=1920&q=80'
+const CTA_BG = 'https://images.unsplash.com/photo-1548438294-1ad5d5f4f063?w=1920&q=80'
 
 // ─── Data ────────────────────────────────────────────────────────────────────
 
@@ -216,11 +221,13 @@ function ProductCard({ p, index }) {
       initial={{ opacity: 0, y: 30 }}
       animate={isInView ? { opacity: 1, y: 0 } : {}}
       transition={{ duration: 0.5, delay: index * 0.08 }}
-      className={`group flex flex-col rounded-2xl border bg-gradient-to-br ${p.gradFrom} ${p.gradTo}
+      className={`group relative flex flex-col rounded-2xl border bg-gradient-to-br ${p.gradFrom} ${p.gradTo}
                    ${p.border} ${p.hoverBorder} overflow-hidden transition-all duration-500
-                   hover:-translate-y-2 hover:shadow-2xl`}
+                   hover:-translate-y-2 hover:shadow-2xl cursor-pointer`}
     >
-      <div className="p-7 flex-1 flex flex-col">
+      {/* Entire card is a link */}
+      <Link to={p.href} className="absolute inset-0 z-0" aria-label={p.name} />
+      <div className="p-7 flex-1 flex flex-col relative z-10">
         {/* Header */}
         <div className="flex items-start justify-between mb-5">
           <div>
@@ -229,7 +236,7 @@ function ProductCard({ p, index }) {
             </span>
             <h3 className="text-xl font-black text-white leading-tight">{p.name}</h3>
           </div>
-          <div className={`w-11 h-11 rounded-xl flex items-center justify-center shrink-0 ${p.pill}`}>
+          <div className={`w-11 h-11 rounded-xl flex items-center justify-center shrink-0 ${p.pill} group-hover:scale-110 transition-transform`}>
             <p.Icon className="h-5 w-5" />
           </div>
         </div>
@@ -248,13 +255,13 @@ function ProductCard({ p, index }) {
 
         <div className="mt-auto space-y-2">
           <p className={`text-xs font-bold uppercase tracking-widest ${p.check} opacity-70`}>{p.stat}</p>
-          <div className="flex gap-2">
+          <div className="flex gap-2" onClick={e => e.stopPropagation()}>
             <Link to={p.ctaHref}
-              className={`flex-1 text-center px-4 py-2.5 rounded-xl text-sm font-bold text-white transition-all shadow-lg ${p.ctaBg}`}>
+              className={`flex-1 text-center px-4 py-2.5 rounded-xl text-sm font-bold text-white transition-all shadow-lg ${p.ctaBg} relative z-20`}>
               {p.cta}
             </Link>
             <Link to={p.href}
-              className="px-3 py-2.5 rounded-xl text-sm font-medium text-zinc-400 hover:text-white bg-white/5 hover:bg-white/10 border border-white/8 hover:border-white/15 transition-all">
+              className="px-3 py-2.5 rounded-xl text-sm font-medium text-zinc-400 hover:text-white bg-white/5 hover:bg-white/10 border border-white/8 hover:border-white/15 transition-all relative z-20">
               Details
             </Link>
           </div>
@@ -408,7 +415,11 @@ export default function Home() {
       </section>
 
       {/* ─── STATS ────────────────────────────────────────────────────── */}
-      <section className="relative py-20 px-4 border-y border-white/5">
+      <section className="relative py-20 px-4 border-y border-white/5 overflow-hidden">
+        <div className="absolute inset-0">
+          <img src="https://images.unsplash.com/photo-1533174072545-7a4b6ad7a6c3?w=1920&q=80" alt="" className="w-full h-full object-cover opacity-6" />
+          <div className="absolute inset-0 bg-zinc-950/92" />
+        </div>
         <div className="relative max-w-5xl mx-auto">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-10">
             {STATS.map((s) => (
@@ -420,6 +431,10 @@ export default function Home() {
 
       {/* ─── ECOSYSTEM / PRODUCTS ─────────────────────────────────────── */}
       <section className="relative py-32 px-4 overflow-hidden">
+        <div className="absolute inset-0">
+          <img src={PRODUCTS_BG} alt="" className="w-full h-full object-cover opacity-6" />
+          <div className="absolute inset-0 bg-gradient-to-b from-zinc-950 via-zinc-950/92 to-zinc-950" />
+        </div>
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-px h-20 bg-gradient-to-b from-transparent to-white/8" />
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16">
@@ -451,6 +466,10 @@ export default function Home() {
       {/* ─── PROBLEM SECTION ──────────────────────────────────────────── */}
       <section className="relative py-32 px-4 overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-b from-transparent via-red-950/5 to-transparent" />
+        <div className="absolute inset-0">
+          <img src="https://images.unsplash.com/photo-1613490900234-4b484862e5d4?w=1920&q=80" alt="" className="w-full h-full object-cover opacity-5" />
+          <div className="absolute inset-0 bg-zinc-950/80" />
+        </div>
         <div className="max-w-6xl mx-auto">
           <div className="grid lg:grid-cols-2 gap-16 items-center">
             <div>
@@ -487,7 +506,10 @@ export default function Home() {
 
       {/* ─── HOW THE ECOSYSTEM WORKS (FLYWHEEL) ──────────────────────── */}
       <section className="relative py-32 px-4 overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-white/[0.02] to-transparent" />
+        <div className="absolute inset-0">
+          <img src={FLYWHEEL_BG} alt="" className="w-full h-full object-cover opacity-7" />
+          <div className="absolute inset-0 bg-gradient-to-b from-zinc-950 via-zinc-950/93 to-zinc-950" />
+        </div>
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-16">
             <span className="inline-flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500 px-4 py-2 rounded-full border border-white/8 bg-white/3 mb-5">
@@ -552,7 +574,11 @@ export default function Home() {
 
       {/* ─── INFRASTRUCTURE / FEATURES ────────────────────────────────── */}
       <section className="relative py-32 px-4 overflow-hidden">
-        <div className="max-w-6xl mx-auto">
+        <div className="absolute inset-0">
+          <img src={INFRA_BG} alt="" className="w-full h-full object-cover opacity-6" />
+          <div className="absolute inset-0 bg-zinc-950/92" />
+        </div>
+        <div className="max-w-6xl mx-auto relative">
           <div className="text-center mb-16">
             <h2 className="text-4xl sm:text-5xl font-black text-white mb-5">
               Built for scale. Designed for professionals.
@@ -564,7 +590,7 @@ export default function Home() {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {INFRASTRUCTURE.map(({ Icon, title, desc, color, bg }) => (
               <div key={title}
-                className="group flex gap-4 p-6 rounded-2xl bg-white/[0.03] border border-white/8 hover:border-white/15 hover:bg-white/5 transition-all duration-300">
+                className="group flex gap-4 p-6 rounded-2xl bg-white/[0.03] border border-white/8 hover:border-white/15 hover:bg-white/5 transition-all duration-300 card-hover">
                 <div className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 ${bg} ${color} group-hover:scale-105 transition-transform duration-300`}>
                   <Icon className="h-5 w-5" />
                 </div>
@@ -702,7 +728,11 @@ export default function Home() {
 
       {/* ─── ENTERPRISE ───────────────────────────────────────────────── */}
       <section className="relative py-32 px-4 overflow-hidden">
-        <div className="max-w-6xl mx-auto">
+        <div className="absolute inset-0">
+          <img src={ENTERPRISE_BG} alt="" className="w-full h-full object-cover opacity-7" />
+          <div className="absolute inset-0 bg-zinc-950/93" />
+        </div>
+        <div className="max-w-6xl mx-auto relative">
           <div className="text-center mb-16">
             <span className="inline-flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500 px-4 py-2 rounded-full border border-white/8 bg-white/3 mb-5">
               Enterprise & Institutional
@@ -715,17 +745,27 @@ export default function Home() {
             </p>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {ENTERPRISE_USE_CASES.map(({ label, desc }) => (
-              <div key={label} className="p-6 rounded-2xl bg-white/[0.03] border border-white/8 hover:border-white/15 hover:bg-white/5 transition-all duration-300">
-                <h3 className="font-bold text-white mb-2">{label}</h3>
+            {[
+              { label: 'Brands', desc: 'Activate esports marketing at scale with managed campaigns and full reporting.', href: '/for-sponsors' },
+              { label: 'Publishers', desc: 'Run official title-sanctioned tournaments with structured brackets and leaderboards.', href: '/for-publishers' },
+              { label: 'Communities', desc: 'Build private leagues, scrims, and ranked brackets for your player base.', href: '/for-organizers' },
+              { label: 'Tournament Operators', desc: 'Manage complex multi-stage events with full operational infrastructure.', href: '/for-organizers' },
+              { label: 'Gaming Centers', desc: 'Host local events and expand reach through regional tournament networks.', href: '/for-organizers' },
+              { label: 'Agencies', desc: 'Deliver end-to-end esports productions through the HERU Gigs marketplace.', href: '/for-providers' },
+            ].map(({ label, desc, href }) => (
+              <Link key={label} to={href} className="group p-6 rounded-2xl bg-white/[0.03] border border-white/8 hover:border-white/20 hover:bg-white/6 transition-all duration-300 card-hover block">
+                <div className="flex items-center justify-between mb-2">
+                  <h3 className="font-bold text-white group-hover:text-red-300 transition-colors">{label}</h3>
+                  <ChevronRight className="h-4 w-4 text-zinc-700 group-hover:text-white transition-all group-hover:translate-x-1" />
+                </div>
                 <p className="text-sm text-zinc-500 leading-relaxed">{desc}</p>
-              </div>
+              </Link>
             ))}
           </div>
           <div className="text-center mt-10">
-            <Link to="/auth/sponsor/register"
+            <Link to="/contact"
               className="inline-flex items-center gap-2 px-7 py-3.5 rounded-xl font-bold bg-white/8 hover:bg-white/12 text-white text-[15px] transition-all border border-white/10 hover:border-white/20">
-              Contact Sales
+              Contact Our Team
               <ArrowRight className="h-4 w-4" />
             </Link>
           </div>
@@ -771,6 +811,8 @@ export default function Home() {
       {/* ─── FINAL CTA ────────────────────────────────────────────────── */}
       <section className="relative py-32 px-4 overflow-hidden">
         <div className="absolute inset-0">
+          <img src={CTA_BG} alt="" className="w-full h-full object-cover opacity-10" />
+          <div className="absolute inset-0 bg-gradient-to-b from-zinc-950 via-zinc-950/85 to-zinc-950" />
           <div className="absolute top-0 left-1/4 w-[500px] h-[500px] rounded-full bg-red-600/8 blur-[140px]" />
           <div className="absolute bottom-0 right-1/4 w-[500px] h-[500px] rounded-full bg-purple-600/8 blur-[140px]" />
         </div>

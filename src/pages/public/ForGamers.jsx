@@ -10,6 +10,10 @@ import {
 } from 'lucide-react'
 
 const HERO_FALLBACK = 'https://images.unsplash.com/photo-1542751371-adc38448a05e?w=1920&q=80'
+const CAPABILITIES_BG = 'https://images.unsplash.com/photo-1511512578047-dfb367046420?w=1920&q=80'
+const GAMES_BG = 'https://images.unsplash.com/photo-1593305841991-05c297ba4575?w=1920&q=80'
+const JOURNEY_BG = 'https://images.unsplash.com/photo-1560419015-7c427e8ae5ba?w=1920&q=80'
+const FINAL_BG = 'https://images.unsplash.com/photo-1548438294-1ad5d5f4f063?w=1920&q=80'
 
 const CAPABILITIES = [
   {
@@ -235,7 +239,11 @@ export default function ForGamers() {
 
       {/* ─── CAPABILITIES ─────────────────────────────────────────────── */}
       <section className="relative py-32 px-4 overflow-hidden">
-        <div className="max-w-7xl mx-auto">
+        <div className="absolute inset-0">
+          <img src={CAPABILITIES_BG} alt="" className="w-full h-full object-cover opacity-6" />
+          <div className="absolute inset-0 bg-gradient-to-b from-zinc-950 via-zinc-950/93 to-zinc-950" />
+        </div>
+        <div className="max-w-7xl mx-auto relative z-10">
           <div className="text-center mb-16">
             <span className="inline-flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500 px-4 py-2 rounded-full border border-white/8 bg-white/3 mb-5">
               Platform Capabilities
@@ -305,12 +313,16 @@ export default function ForGamers() {
       </section>
 
       {/* ─── GAMES ────────────────────────────────────────────────────── */}
-      <section className="py-20 px-4 border-y border-white/5">
-        <div className="max-w-5xl mx-auto text-center">
+      <section className="relative py-20 px-4 border-y border-white/5 overflow-hidden">
+        <div className="absolute inset-0">
+          <img src={GAMES_BG} alt="" className="w-full h-full object-cover opacity-8" />
+          <div className="absolute inset-0 bg-zinc-950/92" />
+        </div>
+        <div className="max-w-5xl mx-auto text-center relative z-10">
           <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500 mb-5">Supported Games</p>
           <div className="flex flex-wrap justify-center gap-2.5">
             {GAMES.map(g => (
-              <span key={g} className="px-4 py-2 rounded-lg bg-white/[0.03] border border-white/8 text-sm text-zinc-400 hover:text-white hover:bg-white/6 hover:border-white/15 transition-all cursor-default">
+              <span key={g} className="px-4 py-2 rounded-lg bg-white/[0.05] border border-white/10 text-sm text-zinc-300 hover:text-white hover:bg-white/10 hover:border-white/20 transition-all cursor-default font-medium">
                 {g}
               </span>
             ))}
@@ -319,17 +331,21 @@ export default function ForGamers() {
       </section>
 
       {/* ─── JOURNEY ──────────────────────────────────────────────────── */}
-      <section className="py-32 px-4">
-        <div className="max-w-5xl mx-auto">
+      <section className="relative py-32 px-4 overflow-hidden">
+        <div className="absolute inset-0">
+          <img src={JOURNEY_BG} alt="" className="w-full h-full object-cover opacity-8" />
+          <div className="absolute inset-0 bg-gradient-to-b from-zinc-950 via-zinc-950/93 to-zinc-950" />
+        </div>
+        <div className="max-w-5xl mx-auto relative z-10">
           <div className="text-center mb-16">
             <h2 className="text-4xl font-black text-white mb-4">Your competitive journey starts here.</h2>
             <p className="text-zinc-400 text-lg">From signup to ranked — four steps to your esports identity.</p>
           </div>
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {JOURNEY.map((j, i) => (
-              <div key={j.step} className="relative p-6 rounded-2xl bg-white/[0.03] border border-white/8">
+              <div key={j.step} className="relative p-6 rounded-2xl bg-zinc-900/80 border border-white/8 hover:border-white/18 transition-all card-hover">
                 <p className={`text-5xl font-black opacity-10 mb-3 ${j.color}`}>{j.step}</p>
-                <div className={`h-2 w-2 rounded-full ${j.dot} mb-4`} />
+                <div className={`h-3 w-3 rounded-full ${j.dot} mb-4 shadow-lg`} />
                 <h3 className="font-black text-white mb-2 text-[15px]">{j.title}</h3>
                 <p className="text-sm text-zinc-500 leading-relaxed">{j.desc}</p>
               </div>
@@ -390,6 +406,8 @@ export default function ForGamers() {
       {/* ─── FINAL CTA ────────────────────────────────────────────────── */}
       <section className="relative py-24 px-4 overflow-hidden">
         <div className="absolute inset-0">
+          <img src={FINAL_BG} alt="" className="w-full h-full object-cover opacity-10" />
+          <div className="absolute inset-0 bg-gradient-to-b from-zinc-950 via-zinc-950/85 to-zinc-950" />
           <div className="absolute top-0 left-1/3 w-[400px] h-[400px] rounded-full bg-red-600/8 blur-[120px]" />
         </div>
         <div className="relative max-w-3xl mx-auto text-center">

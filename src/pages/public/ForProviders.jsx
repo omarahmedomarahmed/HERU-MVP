@@ -10,6 +10,8 @@ import {
 } from 'lucide-react'
 
 const HERO_FALLBACK = 'https://images.unsplash.com/photo-1511512578047-dfb367046420?w=1920&q=80'
+const CATEGORIES_BG = 'https://images.unsplash.com/photo-1498049794561-7780e7231661?w=1920&q=80'
+const HOW_BG = 'https://images.unsplash.com/photo-1497366216548-37526070297c?w=1920&q=80'
 
 const CATEGORIES = [
   { label: 'Coaches', desc: 'Game-specific 1-on-1 coaching for gamers across all levels and titles.' },
