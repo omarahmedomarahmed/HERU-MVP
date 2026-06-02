@@ -1,152 +1,362 @@
 import { useState, useEffect, useRef } from 'react'
 import { Link, useLocation } from 'react-router-dom'
-import { ChevronDown, Menu, X, LogIn, Zap } from 'lucide-react'
+import { ChevronDown, Menu, X, ArrowRight } from 'lucide-react'
 import HeruLogo from '@/components/shared/HeruLogo'
 
-const LOGIN_LINKS = [
-  { label: 'Gamer',            href: '/auth/gamer/login',     color: 'text-red-400' },
-  { label: 'Organizer',        href: '/auth/organizer/login', color: 'text-purple-400' },
-  { label: 'Sponsor / Brand',  href: '/auth/sponsor/login',   color: 'text-yellow-400' },
-  { label: 'Service Provider', href: '/auth/provider/login',  color: 'text-cyan-400' },
-]
+// ─── Nav Data ───────────────────────────────────────────────────────────────
 
 const PRODUCTS = [
-  { to: '/for-gamers',    emoji: '⚔',  label: 'ARENA',   name: 'Gamers',    color: 'text-red-500' },
-  { to: '/for-organizers', emoji: '🏗', label: 'BUILDER', name: 'Organizers', color: 'text-purple-500' },
-  { to: '/for-sponsors',  emoji: '📡', label: 'RADAR',   name: 'Sponsors',  color: 'text-yellow-500' },
-  { to: '/for-providers', emoji: '💼', label: 'GIGs',    name: 'Providers', color: 'text-cyan-500' },
+  {
+    name: 'HERU Arena',
+    label: 'For Gamers',
+    desc: 'Compete, improve, and build your esports identity.',
+    href: '/for-gamers',
+    color: 'text-red-400',
+    dot: 'bg-red-500',
+    pill: 'bg-red-500/10 border-red-500/20 text-red-400',
+  },
+  {
+    name: 'HERU Builder',
+    label: 'For Organizers',
+    desc: 'Build tournaments, manage operations, monetize events.',
+    href: '/for-organizers',
+    color: 'text-purple-400',
+    dot: 'bg-purple-500',
+    pill: 'bg-purple-500/10 border-purple-500/20 text-purple-400',
+  },
+  {
+    name: 'HERU Radar',
+    label: 'For Sponsors & Brands',
+    desc: 'Discover opportunities, activate campaigns, reach gaming audiences.',
+    href: '/for-sponsors',
+    color: 'text-yellow-400',
+    dot: 'bg-yellow-500',
+    pill: 'bg-yellow-500/10 border-yellow-500/20 text-yellow-400',
+  },
+  {
+    name: 'HERU Gigs',
+    label: 'For Service Providers',
+    desc: 'Showcase services, get discovered, get booked.',
+    href: '/for-providers',
+    color: 'text-cyan-400',
+    dot: 'bg-cyan-500',
+    pill: 'bg-cyan-500/10 border-cyan-500/20 text-cyan-400',
+  },
 ]
 
-function LoginDropdown({ onClose }) {
+const SOLUTIONS = [
+  { label: 'Gamers',            href: '/for-gamers',     desc: 'Compete in professional esports tournaments' },
+  { label: 'Organizers',        href: '/for-organizers', desc: 'Build and monetize world-class events' },
+  { label: 'Sponsors',          href: '/for-sponsors',   desc: 'Activate brands in the gaming ecosystem' },
+  { label: 'Service Providers', href: '/for-providers',  desc: 'Get discovered and booked by organizers' },
+  { label: 'Publishers',        href: '/for-organizers', desc: 'Run official title-sanctioned tournaments' },
+  { label: 'Brands',            href: '/for-sponsors',   desc: 'Enter gaming with managed activations' },
+]
+
+const SIGN_IN = [
+  { label: 'Gamer',            href: '/auth/gamer/login',     color: 'text-red-400',    dot: 'bg-red-500' },
+  { label: 'Organizer',        href: '/auth/organizer/login', color: 'text-purple-400', dot: 'bg-purple-500' },
+  { label: 'Sponsor / Brand',  href: '/auth/sponsor/login',   color: 'text-yellow-400', dot: 'bg-yellow-500' },
+  { label: 'Service Provider', href: '/auth/provider/login',  color: 'text-cyan-400',   dot: 'bg-cyan-500' },
+]
+
+// ─── Dropdown Components ─────────────────────────────────────────────────────
+
+function ProductsDropdown({ onClose }) {
   return (
-    <div className="absolute right-0 mt-2 w-48 bg-zinc-900 border border-zinc-700 rounded-xl shadow-xl z-50 overflow-hidden backdrop-blur-md">
-      <p className="text-xs font-semibold text-zinc-500 uppercase tracking-widest px-4 pt-3 pb-2">Sign in as</p>
-      {LOGIN_LINKS.map((l) => (
-        <Link
-          key={l.href}
-          to={l.href}
-          onClick={onClose}
-          className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium hover:bg-white/5 transition-colors ${l.color}`}
-        >
-          <LogIn className="h-3.5 w-3.5" />
-          {l.label}
-        </Link>
-      ))}
+    <div className="absolute left-0 top-full mt-2 w-[620px] bg-zinc-900/98 backdrop-blur-xl border border-zinc-700/50 rounded-2xl shadow-2xl shadow-black/50 z-50 overflow-hidden">
+      <div className="p-2">
+        <div className="px-4 pt-3 pb-2">
+          <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-[0.15em]">Products</p>
+        </div>
+        <div className="grid grid-cols-2 gap-1">
+          {PRODUCTS.map((p) => (
+            <Link
+              key={p.href}
+              to={p.href}
+              onClick={onClose}
+              className="group flex items-start gap-3 p-4 rounded-xl hover:bg-white/5 transition-all duration-200"
+            >
+              <span className={`mt-1 h-2 w-2 rounded-full ${p.dot} shrink-0`} />
+              <div>
+                <p className={`text-sm font-bold ${p.color} leading-none mb-1`}>{p.name}</p>
+                <p className="text-[11px] text-zinc-500 leading-none mb-1.5">{p.label}</p>
+                <p className="text-xs text-zinc-400 leading-relaxed">{p.desc}</p>
+              </div>
+            </Link>
+          ))}
+        </div>
+        <div className="border-t border-zinc-800 mt-2 pt-3 pb-1 px-4">
+          <Link to="/pricing" onClick={onClose} className="flex items-center justify-between group">
+            <span className="text-xs text-zinc-500 group-hover:text-white transition-colors">View all pricing plans</span>
+            <ArrowRight className="h-3.5 w-3.5 text-zinc-600 group-hover:text-white transition-colors" />
+          </Link>
+        </div>
+      </div>
     </div>
   )
 }
 
-export default function PublicNav() {
-  const [loginOpen, setLoginOpen] = useState(false)
-  const [mobileOpen, setMobileOpen] = useState(false)
-  const location = useLocation()
-  const loginRef = useRef(null)
+function SolutionsDropdown({ onClose }) {
+  return (
+    <div className="absolute left-0 top-full mt-2 w-72 bg-zinc-900/98 backdrop-blur-xl border border-zinc-700/50 rounded-2xl shadow-2xl shadow-black/50 z-50 overflow-hidden">
+      <div className="p-2">
+        <div className="px-4 pt-3 pb-2">
+          <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-[0.15em]">Solutions</p>
+        </div>
+        {SOLUTIONS.map((s) => (
+          <Link
+            key={s.label}
+            to={s.href}
+            onClick={onClose}
+            className="flex flex-col px-4 py-3 rounded-xl hover:bg-white/5 transition-all duration-200"
+          >
+            <span className="text-sm font-semibold text-zinc-100 leading-none mb-0.5">{s.label}</span>
+            <span className="text-xs text-zinc-500">{s.desc}</span>
+          </Link>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+function SignInDropdown({ onClose }) {
+  return (
+    <div className="absolute right-0 top-full mt-2 w-56 bg-zinc-900/98 backdrop-blur-xl border border-zinc-700/50 rounded-2xl shadow-2xl shadow-black/50 z-50 overflow-hidden">
+      <div className="p-2">
+        <div className="px-4 pt-3 pb-2">
+          <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-[0.15em]">Sign in as</p>
+        </div>
+        {SIGN_IN.map((s) => (
+          <Link
+            key={s.href}
+            to={s.href}
+            onClick={onClose}
+            className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-white/5 transition-all duration-200"
+          >
+            <span className={`h-2 w-2 rounded-full ${s.dot} shrink-0`} />
+            <span className={`text-sm font-semibold ${s.color}`}>{s.label}</span>
+          </Link>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+// ─── Nav Item with Dropdown ───────────────────────────────────────────────────
+
+function NavDropdown({ label, children, align = 'left' }) {
+  const [open, setOpen] = useState(false)
+  const ref = useRef(null)
 
   useEffect(() => {
-    setLoginOpen(false)
+    function handler(e) {
+      if (ref.current && !ref.current.contains(e.target)) setOpen(false)
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [])
+
+  return (
+    <div ref={ref} className="relative">
+      <button
+        onClick={() => setOpen(o => !o)}
+        className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200
+          ${open ? 'text-white bg-white/8' : 'text-zinc-400 hover:text-white hover:bg-white/5'}`}
+      >
+        {label}
+        <ChevronDown className={`h-3.5 w-3.5 transition-transform duration-200 ${open ? 'rotate-180' : ''}`} />
+      </button>
+      {open && children({ onClose: () => setOpen(false) })}
+    </div>
+  )
+}
+
+// ─── Main Nav ────────────────────────────────────────────────────────────────
+
+export default function PublicNav() {
+  const [mobileOpen, setMobileOpen] = useState(false)
+  const [mobileSection, setMobileSection] = useState(null)
+  const [scrolled, setScrolled] = useState(false)
+  const location = useLocation()
+
+  useEffect(() => {
     setMobileOpen(false)
+    setMobileSection(null)
   }, [location.pathname])
 
   useEffect(() => {
-    function onClickOutside(e) {
-      if (loginRef.current && !loginRef.current.contains(e.target)) setLoginOpen(false)
-    }
-    document.addEventListener('mousedown', onClickOutside)
-    return () => document.removeEventListener('mousedown', onClickOutside)
+    const onScroll = () => setScrolled(window.scrollY > 20)
+    window.addEventListener('scroll', onScroll, { passive: true })
+    return () => window.removeEventListener('scroll', onScroll)
   }, [])
 
   return (
     <>
-      <header className="fixed top-0 inset-x-0 z-40 bg-zinc-950/95 backdrop-blur-xl border-b border-zinc-800/50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      <header
+        className={`fixed top-0 inset-x-0 z-40 transition-all duration-300 ${
+          scrolled
+            ? 'bg-zinc-950/98 backdrop-blur-xl border-b border-zinc-800/60 shadow-lg shadow-black/20'
+            : 'bg-transparent backdrop-blur-md border-b border-transparent'
+        }`}
+      >
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
 
           {/* Logo */}
-          <Link to="/" className="flex items-center flex-shrink-0">
+          <Link to="/" className="flex items-center flex-shrink-0 mr-4">
             <HeruLogo className="h-8" />
           </Link>
 
-          {/* 4 Product buttons — center */}
-          <nav className="hidden md:flex items-center gap-1">
-            {PRODUCTS.map((p) => (
-              <Link
-                key={p.to}
-                to={p.to}
-                className="group flex items-center gap-2 px-4 py-2 rounded-lg hover:bg-white/5 transition-all"
-              >
-                <span className={`${p.color} text-lg leading-none`}>{p.emoji}</span>
-                <div>
-                  <div className="text-xs text-zinc-500 leading-none">{p.label}</div>
-                  <div className="text-sm font-semibold text-zinc-100 leading-none mt-0.5">{p.name}</div>
-                </div>
-              </Link>
-            ))}
+          {/* Desktop Nav */}
+          <nav className="hidden lg:flex items-center gap-1 flex-1">
+            <NavDropdown label="Products">
+              {({ onClose }) => <ProductsDropdown onClose={onClose} />}
+            </NavDropdown>
+
+            <NavDropdown label="Solutions">
+              {({ onClose }) => <SolutionsDropdown onClose={onClose} />}
+            </NavDropdown>
+
+            <Link
+              to="/pricing"
+              className="px-3 py-2 rounded-lg text-sm font-medium text-zinc-400 hover:text-white hover:bg-white/5 transition-all duration-200"
+            >
+              Pricing
+            </Link>
+
+            <Link
+              to="/about"
+              className="px-3 py-2 rounded-lg text-sm font-medium text-zinc-400 hover:text-white hover:bg-white/5 transition-all duration-200"
+            >
+              About
+            </Link>
+
+            <Link
+              to="/resources"
+              className="px-3 py-2 rounded-lg text-sm font-medium text-zinc-400 hover:text-white hover:bg-white/5 transition-all duration-200"
+            >
+              Resources
+            </Link>
           </nav>
 
-          {/* Right side: Login dropdown + Get Started */}
-          <div className="hidden md:flex items-center gap-2">
-            <div ref={loginRef} className="relative">
-              <button
-                onClick={() => setLoginOpen(l => !l)}
-                className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors
-                  ${loginOpen ? 'text-white bg-white/10' : 'text-zinc-300 hover:text-white hover:bg-white/5'}`}
-              >
-                <LogIn className="h-4 w-4" />
-                Sign In
-                <ChevronDown className={`h-3 w-3 transition-transform duration-200 ${loginOpen ? 'rotate-180' : ''}`} />
-              </button>
-              {loginOpen && <LoginDropdown onClose={() => setLoginOpen(false)} />}
-            </div>
+          {/* Desktop Right */}
+          <div className="hidden lg:flex items-center gap-2">
+            <NavDropdown label="Sign In" align="right">
+              {({ onClose }) => <SignInDropdown onClose={onClose} />}
+            </NavDropdown>
             <Link
               to="/auth"
-              className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold bg-red-600 hover:bg-red-500 text-white transition-colors"
+              className="flex items-center gap-1.5 px-5 py-2 rounded-lg text-sm font-bold bg-red-600 hover:bg-red-500 text-white transition-all duration-200 shadow-lg shadow-red-600/20 hover:shadow-red-500/30"
             >
-              <Zap className="h-3.5 w-3.5" />
               Get Started
             </Link>
           </div>
 
-          {/* Mobile hamburger */}
+          {/* Mobile Hamburger */}
           <button
-            className="md:hidden p-2 rounded-lg text-zinc-300 hover:text-white hover:bg-white/10 transition-colors"
+            className="lg:hidden p-2 rounded-lg text-zinc-300 hover:text-white hover:bg-white/10 transition-colors"
             onClick={() => setMobileOpen(o => !o)}
+            aria-label="Toggle menu"
           >
             {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </button>
         </div>
       </header>
 
-      {/* Mobile menu */}
+      {/* Mobile Menu */}
       {mobileOpen && (
-        <div className="fixed inset-0 z-30 pt-16 bg-zinc-950/99 overflow-y-auto md:hidden">
-          <div className="p-4 space-y-2">
-            <p className="text-xs font-semibold text-zinc-500 uppercase tracking-widest px-1 pb-1">Products</p>
-            {PRODUCTS.map((p) => (
-              <Link
-                key={p.to}
-                to={p.to}
-                onClick={() => setMobileOpen(false)}
-                className="flex items-center gap-3 px-4 py-3 rounded-xl bg-white/5 hover:bg-white/10 transition-colors"
-              >
-                <span className={`${p.color} text-xl leading-none`}>{p.emoji}</span>
-                <div>
-                  <div className="text-xs text-zinc-500 leading-none">{p.label}</div>
-                  <div className="text-sm font-semibold text-zinc-100 leading-none mt-0.5">{p.name}</div>
-                </div>
-              </Link>
-            ))}
-            <div className="border-t border-white/10 pt-4 mt-2 space-y-2">
-              <p className="text-xs font-semibold text-zinc-500 uppercase tracking-widest px-1">Sign in as</p>
-              {LOGIN_LINKS.map((l) => (
-                <Link key={l.href} to={l.href} onClick={() => setMobileOpen(false)}
-                  className={`flex items-center gap-2 px-4 py-3 rounded-xl bg-white/5 text-sm font-medium ${l.color}`}>
-                  <LogIn className="h-4 w-4" />
-                  {l.label}
+        <div className="fixed inset-0 z-30 pt-16 bg-zinc-950/99 overflow-y-auto lg:hidden">
+          <div className="p-4 space-y-1 max-w-sm mx-auto">
+
+            {/* Products section */}
+            <button
+              className="w-full flex items-center justify-between px-4 py-3 rounded-xl hover:bg-white/5 transition-colors text-left"
+              onClick={() => setMobileSection(s => s === 'products' ? null : 'products')}
+            >
+              <span className="text-sm font-semibold text-zinc-100">Products</span>
+              <ChevronDown className={`h-4 w-4 text-zinc-500 transition-transform ${mobileSection === 'products' ? 'rotate-180' : ''}`} />
+            </button>
+            {mobileSection === 'products' && (
+              <div className="pl-4 space-y-1">
+                {PRODUCTS.map((p) => (
+                  <Link
+                    key={p.href}
+                    to={p.href}
+                    onClick={() => setMobileOpen(false)}
+                    className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-white/5 transition-colors"
+                  >
+                    <span className={`h-2 w-2 rounded-full ${p.dot}`} />
+                    <div>
+                      <p className={`text-sm font-bold ${p.color}`}>{p.name}</p>
+                      <p className="text-xs text-zinc-500">{p.label}</p>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            )}
+
+            {/* Solutions section */}
+            <button
+              className="w-full flex items-center justify-between px-4 py-3 rounded-xl hover:bg-white/5 transition-colors text-left"
+              onClick={() => setMobileSection(s => s === 'solutions' ? null : 'solutions')}
+            >
+              <span className="text-sm font-semibold text-zinc-100">Solutions</span>
+              <ChevronDown className={`h-4 w-4 text-zinc-500 transition-transform ${mobileSection === 'solutions' ? 'rotate-180' : ''}`} />
+            </button>
+            {mobileSection === 'solutions' && (
+              <div className="pl-4 space-y-1">
+                {SOLUTIONS.map((s) => (
+                  <Link
+                    key={s.label}
+                    to={s.href}
+                    onClick={() => setMobileOpen(false)}
+                    className="flex flex-col px-4 py-2.5 rounded-xl hover:bg-white/5 transition-colors"
+                  >
+                    <span className="text-sm font-semibold text-zinc-200">{s.label}</span>
+                    <span className="text-xs text-zinc-500">{s.desc}</span>
+                  </Link>
+                ))}
+              </div>
+            )}
+
+            <Link to="/pricing" onClick={() => setMobileOpen(false)}
+              className="flex items-center px-4 py-3 rounded-xl hover:bg-white/5 transition-colors text-sm font-semibold text-zinc-100">
+              Pricing
+            </Link>
+
+            <Link to="/about" onClick={() => setMobileOpen(false)}
+              className="flex items-center px-4 py-3 rounded-xl hover:bg-white/5 transition-colors text-sm font-semibold text-zinc-100">
+              About
+            </Link>
+
+            <Link to="/resources" onClick={() => setMobileOpen(false)}
+              className="flex items-center px-4 py-3 rounded-xl hover:bg-white/5 transition-colors text-sm font-semibold text-zinc-100">
+              Resources
+            </Link>
+
+            <div className="border-t border-zinc-800/60 pt-3 mt-3 space-y-1">
+              <p className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest px-4 pb-1">Sign In</p>
+              {SIGN_IN.map((s) => (
+                <Link
+                  key={s.href}
+                  to={s.href}
+                  onClick={() => setMobileOpen(false)}
+                  className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-white/5 transition-colors"
+                >
+                  <span className={`h-2 w-2 rounded-full ${s.dot}`} />
+                  <span className={`text-sm font-semibold ${s.color}`}>{s.label}</span>
                 </Link>
               ))}
-              <Link to="/auth" onClick={() => setMobileOpen(false)}
-                className="flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-red-600 text-white font-semibold text-sm mt-2">
-                <Zap className="h-4 w-4" />
-                Get Started Free
+            </div>
+
+            <div className="pt-2">
+              <Link
+                to="/auth"
+                onClick={() => setMobileOpen(false)}
+                className="flex items-center justify-center gap-2 w-full px-4 py-3.5 rounded-xl bg-red-600 hover:bg-red-500 text-white font-bold text-sm transition-colors"
+              >
+                Get Started
+                <ArrowRight className="h-4 w-4" />
               </Link>
             </div>
           </div>
