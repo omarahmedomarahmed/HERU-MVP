@@ -51,25 +51,23 @@ export default function ProviderAuthLogin() {
   return (
     <div className="min-h-screen flex bg-zinc-950">
       {/* ── Left Image Panel ── */}
-      <div className="hidden lg:flex lg:w-1/2 relative flex-col justify-between overflow-hidden">
-        <img src={SIDE_IMG} alt="HERU GIGs" className="absolute inset-0 w-full h-full object-cover opacity-40" />
-        <div className="absolute inset-0 bg-gradient-to-br from-cyan-950/80 via-zinc-950/70 to-zinc-950/90" />
-        <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-transparent to-transparent" />
+      <div className="hidden lg:flex lg:w-1/2 relative flex-col overflow-hidden">
+        <img src={SIDE_IMG} alt="HERU GIGs" className="absolute inset-0 w-full h-full object-cover opacity-35" />
+        <div className="absolute inset-0 bg-gradient-to-br from-cyan-950/85 via-zinc-950/75 to-zinc-950/95" />
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-zinc-950" />
 
-        <div className="relative z-10 p-10">
-          <Link to="/"><HeruLogo className="h-10" /></Link>
-        </div>
+        <div className="relative z-10 p-10 flex flex-col h-full">
+          <Link to="/" className="mb-8"><HeruLogo className="h-10" /></Link>
 
-        <div className="relative z-10 p-10">
-          <div className="inline-flex items-center gap-2 bg-cyan-500/15 border border-cyan-500/30 text-cyan-400 text-xs font-bold px-3 py-1.5 rounded-full mb-6 uppercase tracking-widest">
-            <Briefcase className="w-3.5 h-3.5" /> HERU GIGs
+          <div className="inline-flex items-center gap-2 bg-cyan-500/15 border border-cyan-500/30 text-cyan-400 text-xs font-bold px-3 py-1.5 rounded-full mb-5 uppercase tracking-[0.15em] w-fit">
+            <Briefcase className="w-3.5 h-3.5" /> HERU Gigs
           </div>
-          <h2 className="text-4xl font-black text-white leading-tight mb-3">Get Paid to<br/>Power Esports.</h2>
-          <p className="text-zinc-400 text-base leading-relaxed mb-6">List your services. Get booked. Get paid.</p>
+          <h2 className="text-4xl font-black text-white leading-tight mb-3">Showcase services. Get discovered. Get booked.</h2>
+          <p className="text-zinc-400 text-base leading-relaxed mb-6">The professional services marketplace for the MENA esports industry.</p>
           <div className="space-y-3">
             {BULLETS.map(({ icon: Icon, text }) => (
               <div key={text} className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-lg bg-cyan-500/15 flex items-center justify-center shrink-0">
+                <div className="w-8 h-8 rounded-lg bg-cyan-500/15 border border-cyan-500/20 flex items-center justify-center shrink-0">
                   <Icon className="w-4 h-4 text-cyan-400" />
                 </div>
                 <span className="text-zinc-300 text-sm font-medium">{text}</span>
