@@ -76,17 +76,19 @@ router.get('/:id/stats', async (req, res) => {
   try {
     const { data: profile } = await supabaseAdmin
       .from('gamer_profiles')
-      .select('team_ids, username, avatar, games, is_talent, talent_type, talent_rating')
+      .select('team_ids, username, avatar, games, is_talent, talent_type, talent_rating, total_matches, total_wins, tournaments_played, tournaments_won')
       .or(`id.eq.${req.params.id},user_id.eq.${req.params.id}`)
       .single();
     if (!profile) return res.status(404).json({ error: 'Gamer not found' });
+    const totalMatches = profile.total_matches || 0;
+    const totalWins = profile.total_wins || 0;
     res.json({
       ...profile,
       teams_count: (profile.team_ids || []).length,
       games_count: (profile.games || []).length,
-      win_rate: 0,
-      tournaments_played: 0,
-      tournaments_won: 0,
+      win_rate: totalMatches > 0 ? Math.round((totalWins / totalMatches) * 100) : 0,
+      tournaments_played: profile.tournaments_played || 0,
+      tournaments_won: profile.tournaments_won || 0,
     });
   } catch (err) {
     res.status(500).json({ error: err.message });
