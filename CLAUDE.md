@@ -919,20 +919,27 @@ Pyramid Clash, Mirage Strikers, Anubis Rising, Scarab Squad
 
 ---
 
-## WHAT TO DO FIRST (execution order)
+## CURRENT STATUS (as of July 2026)
 
-1. Read all files in /src — understand the component structure
-2. Create /backend folder with Express app
-3. Create /supabase folder with migrations
-4. Write all SQL migration files
-5. Write all Express route files
-6. Replace Base44 SDK calls in /src with fetch() calls to /api
-7. Replace Base44 auth with Supabase auth hooks
-8. Add React Router routes for all new URL paths
-9. Clean up duplicate page components
-10. Create .env.example
-11. Write deployment docs in README.md
-12. Test locally: `npx supabase start` + `npm run dev` (backend) + `npm run dev` (frontend)
+All major build work is DONE. The platform is feature-complete and ready for deployment.
+
+### Completed:
+1. All Base44 SDK calls replaced with heruClient.js (CRUD factory pattern)
+2. All Base44 auth replaced with Supabase Auth (email/password + JWT)
+3. Backend built: 24 Express route modules, middleware, business logic
+4. Database: 19 migration files (001-019) + seed.sql for fresh Supabase projects
+5. Frontend: all pages wired to backend, route protection, real data
+6. DevOps: Nginx config, PM2 setup, VPS deployment guide, CI/CD workflow
+7. Documentation: CLAUDE.md, README.md, ENGINEER_HANDOVER.md, VPS_DEPLOY.md, SETUP_STATUS.md
+
+### Remaining manual steps:
+- Create fresh Supabase project and run all 19 migrations in order
+- Run seed.sql
+- Create demo users in Supabase Auth Dashboard
+- Add env vars to backend/.env (including SUPABASE_ANON_KEY)
+- Test full auth and tournament flows end-to-end
+- Configure Paymob keys when ready for payment testing
+- Set up Hostinger VPS (see VPS_DEPLOY.md)
 
 ---
 
@@ -952,32 +959,56 @@ Pyramid Clash, Mirage Strikers, Anubis Rising, Scarab Squad
 
 ---
 
-## FILES TO CREATE
+## PROJECT STRUCTURE
 
 ```
-/CLAUDE.md              (this file — already exists)
-/README.md              (setup and deployment instructions)
-/.env.example           (all environment variables)
-/.gitignore             (node_modules, dist, .env)
+/CLAUDE.md                  This file — full project context
+/README.md                  Setup and deployment instructions
+/ENGINEER_HANDOVER.md       Quick-start handover for new engineers
+/VPS_DEPLOY.md              Hostinger VPS deployment guide
+/SETUP_STATUS.md            Current build status checklist
+/.env.example               All environment variables
+/.gitignore                 node_modules, dist, .env
+/src/                       React 18 + Vite frontend
+  /api/heruClient.js        Frontend API client (CRUD factory)
+  /lib/AuthContext.jsx       Auth state management
+  /lib/staffAuth.js          Staff session management
+  /pages/                   All page components (gamer/, organizer/, staff/)
 /backend/
-  index.js
+  index.js                  Express app entry point
   package.json
-  src/routes/           (one file per entity group)
-  src/middleware/       (auth, roleGuard, staffGuard)
-  src/lib/              (supabase, paymob, resend)
-  src/logic/            (tournament, billing, radar, notifications)
+  src/routes/               24 route modules (one per entity group)
+  src/middleware/            auth.js, roleGuard.js, staffGuard.js
+  src/lib/                  supabase.js, paymob.js, resend.js
+  src/logic/                tournament.js, billing.js, radar.js, notifications.js
 /supabase/
-  migrations/
-    001_initial_schema.sql
-    002_rls_policies.sql
-    003_indexes.sql
+  migrations/               19 migration files (001-019), run in order
+    001_extensions_and_types.sql
+    002_core_tables.sql
+    003_teams.sql
+    004_tournaments.sql
+    005_marketplace.sql
+    006_tournament_orders.sql
+    007_billing.sql
+    008_radar.sql
+    009_gigs.sql
+    010_match_records.sql
+    011_approval_requests.sql
+    012_staff_and_settings.sql
+    013_achievements_promos_games.sql
+    014_reports_deliverables_pages.sql
+    015_audit_logs.sql
+    016_rls_policies.sql
+    017_indexes.sql
+    018_storage.sql
+    019_functions_and_triggers.sql
   seed/
-    seed.sql
+    seed.sql                Staff keys, settings, games, marketplace, promos, achievements
 /nginx/
-  heru.gg.conf          (Nginx config for VPS)
+  heru.gg.conf              Nginx config for VPS
 /.github/
   workflows/
-    deploy.yml          (CI/CD to Hostinger VPS)
+    deploy.yml              CI/CD to Hostinger VPS
 ```
 
 ---
