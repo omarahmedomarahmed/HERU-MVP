@@ -175,7 +175,7 @@ See `VPS_DEPLOY.md` for full Hostinger VPS deployment steps.
 ## Business Rules — Hardcoded, Never Change
 
 | Rule | Value | Where Enforced |
-|------|-------|-----------|
+|------|-------|--------------|
 | Platform fee | 15% | `backend/src/logic/tournament.js`, Tournament Builder sidebar |
 | Minimum co-org commitment | 33% | `backend/src/logic/radar.js`, commitment slider min |
 | Maximum parties per tournament | 3 | Radar commit validation |
